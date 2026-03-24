@@ -1,14 +1,17 @@
-import type { Config } from 'tailwindcss';
+import type { Config } from "tailwindcss";
 
 const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary: '#000000'
-      }
-    }
+        colors: {
+          primary: "#0ea5e9",
+          secondary: "#6366f1",
+        },
+      },
+    },
   },
-  plugins: []
+  plugins: [],
 };
 
 export default config;

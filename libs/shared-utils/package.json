@@ -6,8 +6,11 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
+    "dev": "tsup --watch",
     "build": "tsup",
-    "watch": "tsup --watch"
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write ."
   },
   "devDependencies": {
     "tsup": "^8.0.0",
