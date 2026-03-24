@@ -1,0 +1,25 @@
+// === tsconfig.base.json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+
+    "jsx": "react-jsx",
+
+    "baseUrl": ".",
+
+    "paths": {
+      "@debridgers/ui-web": ["packages/ui-web/src"],
+      "@debridgers/ui-app": ["packages/ui-app/src"],
+      "@debridgers/shared-theme": ["libs/shared-theme/src"],
+      "@debridgers/shared-utils": ["libs/shared-utils/src"]
+    }
+  }
+}
