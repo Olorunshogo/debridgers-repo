@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    ports:
+      - "4000:4000"
+    env_file:
+      - apps/backend/.env
+
+  landing:
+    build:
+      context: .
+      dockerfile: docker/landing.Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - apps/landing-page/.env
+    depends_on:
+      - backend

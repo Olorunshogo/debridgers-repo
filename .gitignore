@@ -1,0 +1,75 @@
+# Dependencies
+node_modules
+.pnpm-store/
+
+# Build outputs
+dist
+build
+.output
+.cache
+!build/functions/
+
+# Testing
+coverage
+.nyc_output
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea
+*.sublime-*
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Package manager files
+.pnpm-debug.log
+.npmrc
+
+# Temporary filess
+tmp
+*.tmp
+*.temp
+.cache
+.turbo
+.qodo
+
+# Generated files
+.generated
+stats.html
+tsconfig.tsbuildinfo
+.eslintcache
+
+# Remix specific
+/public/build
+/api/index.js
+/api/index.js.map
+
+
+.nx/cache
+.nx/workspace-data
+
+storybook-static
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
+
+vite.config.*.timestamp*
+vitest.config.*.timestamp*
+test-output
+
+.nx/polygraph
