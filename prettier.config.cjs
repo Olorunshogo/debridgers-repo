@@ -1,8 +1,8 @@
 // === config/prettier.config.cjs
 module.exports = {
   singleQuote: true,
-  trailingComma: 'all',
+  trailingComma: "all",
   printWidth: 100,
   semi: true,
-  plugins: ['prettier-plugin-tailwindcss']
+  plugins: ["prettier-plugin-tailwindcss"],
 };

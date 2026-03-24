@@ -13,8 +13,11 @@
     }
   },
   "scripts": {
+    "dev": "tsup --watch",
     "build": "tsup",
-    "watch": "tsup --watch"
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write ."
   },
   "peerDependencies": {
     "react": "^18.0.0"

@@ -6,17 +6,22 @@
   "main": "index.js",
   "keywords": [],
   "scripts": {
-    "dev": "concurrently \"pnpm dev:apps\" \"pnpm dev:packages\"",
-    "dev:apps": "pnpm --filter ./apps/... dev",
-    "dev:packages": "pnpm --filter ./packages/... --parallel watch",
-    "buildd": "pnpm -r build",
-    "devv": "pnpm -r dev",
+    "dev": "pnpm -r dev",
     "build": "pnpm -r build",
-    "start": "pnpm -r start",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
+    "lint": "pnpm -r lint",
+    "lint:fix": "pnpm -r lint:fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "test": "pnpm -r test",
+    "prepare": "husky || true",
+    "dev-landing-page": "pnpm --filter @debridgers/landing-page dev",
+    "build-landing-page": "pnpm --filter @debridgers/landing-page build",
+    "lint-landing-page": "pnpm --filter @debridgers/landing-page lint",
+    "dev-backend": "pnpm --filter @debridgers/backend dev",
+    "build-backend": "pnpm --filter @debridgers/backend build",
+    "lint-backend": "pnpm --filter @debridgers/backend lint",
+    "dev-ui-web": "pnpm --filter @debridgers/ui-web dev",
+    "build-ui-web": "pnpm --filter @debridgers/ui-web build",
+    "lint-ui-web": "pnpm --filter @debridgers/ui-web lint"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.47.0",
@@ -28,12 +33,19 @@
     "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-react": "^7.35.0",
     "eslint-plugin-react-hooks": "^5.0.0",
+    "lint-staged": "^16.4.0",
     "prettier": "^3.4.2",
     "prettier-plugin-tailwindcss": "^0.7.1",
     "tsup": "^8.0.1",
     "typescript": "^5.9.2",
     "vite": "^5.4.0",
     "vitest": "^1.6.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
   },
   "author": "",
   "license": "MIT",

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 type Props = {
   children: React.ReactNode;
@@ -6,7 +6,14 @@ type Props = {
 
 export function MobileButton({ children }: Props) {
   return (
-    <button style={{ padding: 12, borderRadius: 8, background: 'black', color: 'white' }}>
+    <button
+      style={{
+        padding: 12,
+        borderRadius: 8,
+        background: "black",
+        color: "white",
+      }}
+    >
       {children}
     </button>
   );
