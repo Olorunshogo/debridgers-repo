@@ -2,12 +2,47 @@
   "name": "debridgers-repo",
   "version": "1.0.0",
   "description": "",
+  "private": true,
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "keywords": [],
+  "scripts": {
+    "dev": "concurrently \"pnpm dev:apps\" \"pnpm dev:packages\"",
+    "dev:apps": "pnpm --filter ./apps/... dev",
+    "dev:packages": "pnpm --filter ./packages/... --parallel watch",
+    "buildd": "pnpm -r build",
+    "devv": "pnpm -r dev",
+    "build": "pnpm -r build",
+    "start": "pnpm -r start",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.47.0",
+    "@typescript-eslint/parser": "^8.47.0",
+    "concurrently": "^8.2.2",
+    "eslint": "^9.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.35.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "prettier": "^3.4.2",
+    "prettier-plugin-tailwindcss": "^0.7.1",
+    "tsup": "^8.0.1",
+    "typescript": "^5.9.2",
+    "vite": "^5.4.0",
+    "vitest": "^1.6.0"
+  },
   "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@10.32.1"
+  "license": "MIT",
+  "packageManager": "pnpm@10.32.1",
+  "dependencies": {
+    "@react-router/dev": "^7.13.2",
+    "@react-router/node": "^7.13.2",
+    "@react-router/serve": "^7.13.2",
+    "react-router": "^7.13.2",
+    "react-router-dom": "^7.13.2"
+  }
 }
