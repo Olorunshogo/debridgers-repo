@@ -2,12 +2,60 @@
   "name": "debridgers-repo",
   "version": "1.0.0",
   "description": "",
+  "private": true,
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "keywords": [],
+  "scripts": {
+    "dev": "pnpm -r dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "lint:fix": "pnpm -r lint:fix",
+    "format": "prettier --write .",
+    "test": "pnpm -r test",
+    "prepare": "husky || true",
+    "dev-landing-page": "pnpm --filter @debridgers/landing-page dev",
+    "build-landing-page": "pnpm --filter @debridgers/landing-page build",
+    "lint-landing-page": "pnpm --filter @debridgers/landing-page lint",
+    "dev-backend": "pnpm --filter @debridgers/backend dev",
+    "build-backend": "pnpm --filter @debridgers/backend build",
+    "lint-backend": "pnpm --filter @debridgers/backend lint",
+    "dev-ui-web": "pnpm --filter @debridgers/ui-web dev",
+    "build-ui-web": "pnpm --filter @debridgers/ui-web build",
+    "lint-ui-web": "pnpm --filter @debridgers/ui-web lint"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.47.0",
+    "@typescript-eslint/parser": "^8.47.0",
+    "concurrently": "^8.2.2",
+    "eslint": "^9.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.35.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.4.2",
+    "prettier-plugin-tailwindcss": "^0.7.1",
+    "tsup": "^8.0.1",
+    "typescript": "^5.9.2",
+    "validate-branch-name": "^1.3.2",
+    "vite": "^5.4.0",
+    "vitest": "^1.6.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  },
   "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@10.32.1"
+  "license": "MIT",
+  "packageManager": "pnpm@10.32.1",
+  "dependencies": {
+    "@react-router/dev": "^7.13.2",
+    "@react-router/node": "^7.13.2",
+    "@react-router/serve": "^7.13.2",
+    "react-router": "^7.13.2",
+    "react-router-dom": "^7.13.2"
+  }
 }
