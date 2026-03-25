@@ -1,4 +1,3 @@
-// === config/eslint.config.mjs
 import tseslint from "@typescript-eslint/eslint-plugin";
 import tsparser from "@typescript-eslint/parser";
 import react from "eslint-plugin-react";
@@ -8,16 +7,16 @@ import prettierConfig from "eslint-config-prettier";
 
 export default [
   {
-    ignores: ["dist", "node_modules"],
+    ignores: ["**/dist", "**/node_modules", "**/.react-router", "**/build"],
   },
   {
-    files: ["**/*.ts", "**/*.tsx", "**/*.js"],
+    files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
     languageOptions: {
       parser: tsparser,
       parserOptions: {
         ecmaVersion: "latest",
         sourceType: "module",
-        jsx: true,
+        ecmaFeatures: { jsx: true },
       },
     },
     plugins: {
@@ -30,20 +29,34 @@ export default [
       react: { version: "detect" },
     },
     rules: {
+      // Prettier
       "prettier/prettier": "error",
 
+      // React
       "react/react-in-jsx-scope": "off",
       "react/prop-types": "off",
+      "react/jsx-no-target-blank": "error",
+      "react/jsx-key": ["error", { checkFragmentShorthand: true }],
+      "react/no-array-index-key": "warn",
+      "react/no-unescaped-entities": "warn",
 
+      // React Hooks
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
 
+      // TypeScript
       "@typescript-eslint/no-unused-vars": [
         "warn",
-        { argsIgnorePattern: "^_" },
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-non-null-assertion": "warn",
+      "@typescript-eslint/explicit-module-boundary-types": "off",
 
+      // General
       "no-console": ["warn", { allow: ["warn", "error"] }],
+      "prefer-const": "error",
+      "no-var": "error",
     },
   },
   prettierConfig,

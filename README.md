@@ -257,6 +257,28 @@ docker compose -f docker/docker-compose.yml up
 
 ## Troubleshooting
 
+**Clean the pnpm store (remove unreferenced/cached packages)**
+
+```bash
+pnpm store prune
+```
+
+**Hard reset the pnpm store entirely**
+
+```bash
+pnpm store clear
+```
+
+**Module not found for a workspace package**d lockfile, then reinstall)\*\*
+
+```bash
+find . -name "node_modules" -type d -prune -exec rm -rf '{}' +
+find . -name "node_modules" -type d -not -path "*/.git/*" | xargs rm -rf
+
+find . -name "pnpm-lock.yaml" -type f -delete
+pnpm install
+```
+
 **Module not found for a workspace package**
 Make sure the package has been built if it's consumed via `dist/`:
 

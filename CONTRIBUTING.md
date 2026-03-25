@@ -32,8 +32,11 @@ npm install -g pnpm
 ## Setup
 
 ```bash
+# Clone the repo
 git clone git@github.com:debridger/debridgers-repo.git
 cd debridgers-repo
+
+# Install all workspace dependencies
 pnpm install
 ```
 
@@ -41,7 +44,7 @@ pnpm install
 
 ## Branch Naming
 
-Branch names are validated on every `git push` via a pre-push hook. Pushes with invalid names are rejected automatically.
+push` via a pre-push hook. Pushes with invalid names are rejected automatically.
 
 ### Format
 
@@ -53,27 +56,30 @@ Use lowercase and hyphens. Keep the description short but meaningful.
 
 ### Allowed Prefixes
 
-| Prefix   | When to use                                        |
-| -------- | -------------------------------------------------- |
-| feature  | New functionality or capability                    |
-| fix      | Bug fix                                            |
-| refactor | Code restructure with no behavior change           |
-| hotfix   | Urgent production fix                              |
-| release  | Release preparation                                |
-| conflict | Resolving a merge conflict                         |
-| chore    | Maintenance — deps, config, tooling, docs, cleanup |
+| Prefix     | When to use                                        |
+| ---------- | -------------------------------------------------- |
+| `feature`  | New functionality or capability                    |
+| `fix`      | Bug fix                                            |
+| `refactor` | Code restructure with no behavior change           |
+| `hotfix`   | Urgent production fix                              |
+| `release`  | Release preparation                                |
+| `conflict` | Resolving a merge conflict                         |
+| `chore`    | Maintenance — deps, config, tooling, docs, cleanup |
 
 ### Examples
 
 ```bash
 git checkout -b feature/product-listing-page
+git checkout -b feature/homepage
 git checkout -b fix/cart-total-calculation
 git checkout -b chore/update-dependencies
 git checkout -b refactor/simplify-auth-flow
 git checkout -b hotfix/payment-crash-on-submit
 ```
 
-> main, develop, and live are the only branches that do not need a prefix — and you should never push to them directly.
+> ❌ `feat/homepage` — invalid, `feat` is not an allowed prefix. Use `feature/` instead.
+
+> `main`, `develop`, and `live` are the only branches that don't need a prefix — and you should never push to them directly.
 
 ---
 
@@ -98,7 +104,7 @@ Keep the subject line under 72 characters. Add a body if the change needs more c
 
 Every contribution follows this flow:
 
-**1. Always start from the latest develop**
+**1. Always start from the latest `develop`**
 
 ```bash
 git checkout develop
@@ -108,19 +114,19 @@ git pull origin develop
 **2. Create your branch**
 
 ```bash
-git checkout -b feature/your-feature-name
+git chee/your-feature-name
 ```
 
 **3. Make your changes**
 
-Work in the relevant app or package. See the README for how the repo is structured and how to run things locally.
+ME.md) for how the repo is structured and how to run things locally.
 
 **4. Run quality checks before committing**
 
 ```bash
-pnpm lint:fix
-pnpm format
-pnpm test
+pnpm lint:fix   # fix lint issues
+pnpm format     # format all files
+pnpm test       # run tests
 ```
 
 **5. Commit your changes**
@@ -138,57 +144,58 @@ Pre-commit hooks will automatically run Prettier and ESLint on staged files.
 git push -u origin feature/your-feature-name
 ```
 
-The pre-push hook validates your branch name and runs tests. If either fails, the push is aborted.
+The pre-pus your branch name and run tests. If either fails, the push is aborted.
 
-**7. Open a Pull Request against develop**
+Request against `develop`\*\*
 
-Go to GitHub and open a PR from your branch into develop.
+Go to GitHub and open a PR from your branch into `develop`. See [Opening a Pull Request](#opening-a-pull-request).
 
 ---
 
 ## Code Quality
 
+This repo uses ESLint, Prettier, and Husky to keep code consistent.
+
 ```bash
-pnpm lint        # check for issues
-pnpm lint:fix    # fix issues automatically
-pnpm format      # format all files
-pnpm test        # run all tests
+# Check for lint issues
+pnpm lint
+
+# Fix lint issues automatically
+pnpm lint:fix
+
+# Format all files
+pnpm format
+
+# Run all tests
+pnpm test
 ```
 
-Pre-commit hooks run eslint --fix and prettier --write on staged files automatically when you commit.
+failing\*\*
 
----
+Fix the failing tests locally before pushing:
 
-## Opening a Pull Request
-
-- Always target develop — never main or live
-- Write a clear PR title that describes what changed
-- Add a short description explaining the why, not just the what
-- Keep PRs focused — one feature or fix per PR
-- Make sure all checks pass before requesting review
-- Request a review from at least one team member
-
-### PR Title Format
-
-```
-feat: add product listing page
-fix: correct cart total on quantity change
-chore: upgrade vite to v6
+```bash
+pnpm test
 ```
 
----
+**Merge conflicts with `develop`**
 
-## Protected Branches
+```bash
+git checkout develop
+git pull origin develop
+git checkout your-branch
+git merge develop
+# resolve conflicts, then
+git add .
+git commit -m "conflict: resolve merge with develop"
+git push
+```
 
-| Branch  | Can you push directly?             |
-| ------- | ---------------------------------- |
-| main    | No — restricted to repo owner only |
-| develop | No — PRs only                      |
-| live    | No — PRs only                      |
+Rs only |
 
-All work flows through PRs into develop. The repo owner promotes develop to main or live when ready.
+These branches represent production (`main`/`live`) and the integration branch (`develop`). All work flows through PRs into `develop`, and `develop` is promoted to `main`/`live` by the repo owner when ready.
 
-Never commit directly to main, develop, or live.
+**Never commit directly to `main`, `develop`, or `live`.**
 
 ---
 
@@ -203,23 +210,35 @@ git branch -m old-name feature/new-name
 git push -u origin feature/new-name
 ```
 
-**Push rejected — tests failing**
+\*\*Push rejected — tests v6
 
-Fix the failing tests locally before pushing:
-
-```bash
-pnpm test
 ```
 
-**Merge conflicts with develop**
+---
 
-```bash
-git checkout develop
-git pull origin develop
-git checkout your-branch
-git merge develop
-# resolve conflicts, then
-git add .
-git commit -m "conflict: resolve merge with develop"
-git push
+## Protected Branches
+
+| Branch    | Can you push directly? |
+| --------- | ---------------------- |
+| `main`    | No — restricted to repo owner only |
+| `develop` | No — PRs only          |
+| `live`    | No — Pommit.
+
+---
+
+## Opening a Pull Request
+
+- Always target `develop` — never `main` or `live`
+- Write a clear PR title that describes what changed
+- Add a short description explaining the why, not just the what
+- Keep PRs focused — one feature or fix per PR makes review easier
+- Make sure all checks pass (lint, format, tests) before requesting review
+- Request a review from at least one team member
+
+### PR Title Format
+
 ```
+
+feat: add product listing page
+fix: correct cart total on quantity change
+chore: upgrade vite to Pre-commit hooks run `eslint --fix` and `prettier --write` on staged `.ts`, `.tsx`, `.js`, `.jsx` files automatically when you c

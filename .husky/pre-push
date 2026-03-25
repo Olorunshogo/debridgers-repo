@@ -1,18 +1,18 @@
 #!/usr/bin/env sh
 
-# 1️⃣ Validate branch name
-branch_name=$(git symbolic-ref --short HEAD)
+set -e
 
+# 1️⃣ Validate branch name
 echo "🔖 Validating branch name..."
 npx validate-branch-name || {
   echo "❌ Invalid branch name. Push aborted."
   exit 1
 }
 
-# 2️⃣ Run tests before push (lint-staged already ran in pre-commit)
+# 2️⃣ Run tests before push
 echo "🧪 Running all tests before push..."
-npm run test || {
-  echo "❌ Tests failed! Push aborted."
+pnpm test || {
+  echo "❌ Tests failed. Push aborted."
   exit 1
 }
 
@@ -24,23 +24,22 @@ z40=0000000000000000000000000000000000000000
 
 while read local_ref local_sha remote_ref remote_sha
 do
-    if [ "$remote_ref" = "$protected_branch" ]; then
-
-        if [ "$current_user" != "$allowed_user" ]; then
-            echo "❌ Only $allowed_user can push to main."
-            exit 1
-        fi
-
-        if [ "$local_sha" = "$z40" ]; then
-            echo "❌ Deleting main is restricted."
-            exit 1
-        fi
-
-        if ! git merge-base --is-ancestor "$remote_sha" "$local_sha"; then
-            echo "❌ Force push to main is restricted."
-            exit 1
-        fi
+  if [ "$remote_ref" = "$protected_branch" ]; then
+    if [ "$current_user" != "$allowed_user" ]; then
+      echo "❌ Only $allowed_user can push to main."
+      exit 1
     fi
+
+    if [ "$local_sha" = "$z40" ]; then
+      echo "❌ Deleting main is restricted."
+      exit 1
+    fi
+
+    if ! git merge-base --is-ancestor "$remote_sha" "$local_sha"; then
+      echo "❌ Force push to main is restricted."
+      exit 1
+    fi
+  fi
 done
 
 echo "✅ Pre-push checks passed."

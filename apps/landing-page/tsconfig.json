@@ -15,7 +15,6 @@
     "rootDirs": [".", "./.react-router/types"],
     "baseUrl": ".",
     "paths": {
-      "~/*": ["./app/*"],
       "@/*": ["./app/*"],
       "@debridgers/ui-app": ["../../packages/ui-app/src"],
       "@debridgers/ui-web": ["../../packages/ui-web/src"]

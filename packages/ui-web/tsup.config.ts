@@ -6,5 +6,5 @@ export default defineConfig({
   dts: { tsconfig: "tsconfig.build.json" },
   sourcemap: true,
   clean: true,
-  external: ["react", "react-dom"],
+  external: ["react", "react-dom", "lucide-react"],
 });
