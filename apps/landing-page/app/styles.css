@@ -1,3 +1,185 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Font Syne Import */
+@import url("https://fonts.googleapis.com/css2?family=Syne:wght@400..800&display=swap");
+
+/* Font openSans Import */
+@import url("https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap");
+
+@import "tailwindcss";
+
+:root {
+  --navbar-h: 4.5rem;
+  --theme-orange: #ea4335;
+  --theme-orange-dash: #ea5228;
+  --theme-orange-dark: #67150e;
+  --theme-orange-dark-2: #1d0202;
+  --theme-orange-dark-3: #3c0a06;
+
+  --white: #ffffff;
+  --black: #000000;
+
+  --heading-black: #1e1e1e;
+  --heading-black2: #010a12;
+
+  --heading-dash: #010a12;
+  --text-dash: #181b19;
+  --red-dash: #ff0707;
+  --green-dash: #087060;
+
+  --text-colour: #49454f;
+  --text-colour2: #795d5a;
+  --text-colour3: #1c1c1c;
+  --text-placeholder: #969393;
+  --blue: #136ce3;
+  --blue-light: #04b7fe;
+
+  --bg-gray: #f5f5f5;
+
+  --bg-pink: #fff9f8;
+  --bg-blue: #f9fbff;
+  --bg-red: #fff5f5;
+  --bg-red-light: #faccc8;
+  --green-2: #27ae60;
+  --bg-dash-card: #fbfbfb;
+
+  --dash-pink-bg: #fff7f5;
+  --dash-pink-border: rgba(240, 224, 219, 0.38);
+
+  --border-gray: #d9d9d9;
+  --border-pink: #c2d9c0;
+  --border-red: #edcac7;
+  --border-input: #d9d9d9;
+  --border-button: #e5d4d2;
+  --border-blue: #cfe3ff;
+  --border-dash: #acacac;
+  --border-dashed: #585757;
+
+  --border-dash-card: #534f4f38;
+  --border-dash-table: rgba(132, 132, 132, 0.2);
+
+  --border-dashed: #585757;
+  --error-red: #ff383c;
+
+  --icon-primary: #1e1e1e;
+  --icon-secondary: #757575;
+  --icon-tertiary: #b3b3b3;
+
+  --gap-sm: 0.5rem; /* 8px */
+  --gap-md: 0.75rem; /* 12px */
+  --gap-base: 1rem; /* 16px */
+  --gap-lg: 1.25rem; /* 20px */
+  --gap-xl: 1.5rem; /* 24px */
+  --gap-2xl: 2rem; /* 32px */
+  --gap-3xl: 2.5rem; /* 40px */
+
+  --space-sm: 0.5rem; /* 8px */
+  --space-md: 0.75rem; /* 12px */
+  --space-base: 1rem; /* 16px */
+}
+
+@layer utilities {
+  .font-inter {
+    font-family: var(--font-inter), sans-serif !important;
+  }
+
+  .font-openSans {
+    font-family: "Open Sans", sans-serif !important;
+    font-optical-sizing: auto;
+    font-variation-settings: "wdth" 100;
+  }
+
+  .font-syne {
+    font-family: "Syne", sans-serif !important;
+    font-optical-sizing: auto;
+  }
+}
+
+@layer utilities {
+  .card-shadow-four {
+    box-shadow: 0 1px 1px 0 rgba(0, 1, 2, 0, 0.04);
+  }
+
+  .card-shadow-eight {
+    box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.08);
+  }
+
+  .card-shadow-twelve {
+    box-shadow: 0 0.5px 0.5px 0 rgba(0, 0, 0, 0.12);
+  }
+}
+
+/* @apply mx-auto w-full max-w-[1440px]; */
+@layer components {
+  .default-max-width {
+    @apply mx-auto w-full max-w-[700px];
+  }
+
+  .default-page-max-width {
+    @apply mx-auto w-full max-w-[500px];
+  }
+
+  .dashboard-max-width {
+    @apply mx-auto w-full max-w-[1420px];
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Syne", sans-serif;
+  }
+}
+
+/* Global styles to let the browser to match my theme for input fields */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px var(--white) inset !important;
+  -webkit-text-fill-color: var(--text-colour) !important;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+/* Hide arrows in Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Hide arrows in Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Tailwindcss Size Guide */
+/* 
+text-xs    | 0.833rem   | 10px
+text-sm    | 0.0.857rem   | 12px
+text-md    | 0.875rem  | 14px
+text-base  | 1rem      | 16px
+text-lg    | 1.125rem  | 18px
+text-xl    | 1.25rem   | 20px
+text-2xl   | 1.5rem    | 24px
+text-3xl   | 1.875rem  | 30px
+text-4xl   | 2.25rem   | 36px
+text-5xl   | 3rem      | 48px
+text-6xl   | 3.75rem   | 60px
+text-7xl   | 4.5rem    | 72px
+text-8xl   | 6rem      | 96px
+text-9xl   | 8rem      | 128px */
