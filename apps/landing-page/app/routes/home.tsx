@@ -13,7 +13,7 @@ import {
   Smartphone,
   MessageCircle,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 const stats = [
   { value: "92%", label: "resident of Kaduna are using us." },
@@ -59,7 +59,7 @@ export default function Home() {
             { text: " Stress." },
           ]}
           subtext="Fresh foodstuff delivered straight to your door or shop — at the same price you'd pay at Central Market."
-          secondaryCta={{ label: "See how it works →", href: "#how-it-works" }}
+          secondaryCta={{ label: "See how it works ", href: "#how-it-works" }}
           trustItems={[
             { icon: CheckCircle, label: "Guarantee fresh produce" },
             { icon: MapPin, label: "Sarbon Tasha • Narayi • Kakuri" },
