@@ -1,0 +1,167 @@
+import { useState } from "react";
+import { Link } from "react-router";
+import { Phone, Mail } from "lucide-react";
+
+export default function Footer() {
+  const [email, setEmail] = useState("");
+
+  return (
+    <footer
+      className="relative overflow-hidden text-white"
+      style={{ backgroundColor: "var(--color-primary)" }}
+    >
+      <div className="mx-auto max-w-7xl px-6 pt-16 pb-10">
+        <div className="grid grid-cols-1 gap-y-12 md:grid-cols-12 md:gap-x-8">
+          {/* Brand */}
+          <div className="md:col-span-4">
+            <h2 className="text-4xl leading-tight font-bold">
+              Market Prices.
+              <br />
+              Zero{" "}
+              <span style={{ color: "var(--color-secondary)" }}>
+                Market Stress
+              </span>
+              .
+            </h2>
+            <p className="mt-4 text-sm text-green-300">
+              Fresh foodstuff delivered straight to your door at market prices.
+            </p>
+          </div>
+
+          {/* Support */}
+          <div className="md:col-span-2">
+            <p
+              className="mb-5 text-xs font-semibold tracking-widest uppercase"
+              style={{ color: "var(--color-secondary)" }}
+            >
+              Support
+            </p>
+            <nav className="flex flex-col gap-3 text-sm">
+              {[
+                { label: "Home", to: "/" },
+                { label: "About Us", to: "/about" },
+                { label: "Contact Us", to: "/contact" },
+              ].map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className="cursor-pointer text-green-200 transition-all duration-300 ease-in-out hover:text-white"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          {/* Need Help */}
+          <div className="md:col-span-3">
+            <p
+              className="mb-5 text-xs font-semibold tracking-widest uppercase"
+              style={{ color: "var(--color-secondary)" }}
+            >
+              Need Help?
+            </p>
+            <div className="flex flex-col gap-3 text-sm">
+              <p className="text-xs font-medium tracking-wider text-green-400 uppercase">
+                Call us directly
+              </p>
+              <a
+                href="tel:+2348167042797"
+                className="flex cursor-pointer items-center gap-2 text-green-200 transition-all duration-300 ease-in-out hover:text-white"
+              >
+                <Phone className="h-4 w-4 shrink-0" />
+                +234 816 704 2797
+              </a>
+              <p className="mt-2 text-xs font-medium tracking-wider text-green-400 uppercase">
+                Email us at
+              </p>
+              <a
+                href="mailto:support@debridger.com"
+                className="flex cursor-pointer items-center gap-2 text-green-200 transition-all duration-300 ease-in-out hover:text-white"
+              >
+                <Mail className="h-4 w-4 shrink-0" />
+                support@debridger.com
+              </a>
+              <a
+                href="mailto:partner@debridger.com"
+                className="flex cursor-pointer items-center gap-2 text-green-200 transition-all duration-300 ease-in-out hover:text-white"
+              >
+                <Mail className="h-4 w-4 shrink-0" />
+                partner@debridger.com
+              </a>
+            </div>
+          </div>
+
+          {/* Keep in Touch */}
+          <div className="md:col-span-3">
+            <p
+              className="mb-5 text-xs font-semibold tracking-widest uppercase"
+              style={{ color: "var(--color-secondary)" }}
+            >
+              Keep in Touch
+            </p>
+            <div className="flex overflow-hidden rounded-full border border-white/20 bg-white/10">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email address"
+                className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white placeholder:text-white/50 focus:outline-none"
+              />
+              <button
+                type="button"
+                className="cursor-pointer rounded-full px-5 py-2 text-sm font-semibold text-white transition-all duration-300 ease-in-out hover:opacity-90"
+                style={{ backgroundColor: "var(--color-primary)" }}
+              >
+                Submit
+              </button>
+            </div>
+
+            {/* Brand Circles */}
+            <div className="mt-8 flex gap-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-600 text-sm font-bold">
+                S
+              </div>
+              <div
+                className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold"
+                style={{ backgroundColor: "var(--color-secondary)" }}
+              >
+                A
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500 text-sm font-bold">
+                O
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Bar */}
+      <div className="border-t border-white/10 py-6">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 text-xs text-green-300 md:flex-row">
+          <p>© 2026 Debridger. Delivering fresh to Kaduna South.</p>
+          <div className="flex gap-6">
+            {[
+              { label: "Privacy", to: "/privacy" },
+              { label: "Contact", to: "/contact" },
+              { label: "WhatsApp", to: "https://wa.me/2347012288798" },
+            ].map((link) => (
+              <Link
+                key={link.label}
+                to={link.to}
+                className="cursor-pointer transition-all duration-300 ease-in-out hover:text-white"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Large faded background wordmark */}
+      <div className="pointer-events-none absolute right-8 bottom-0 hidden text-[140px] leading-none font-extrabold tracking-tighter text-white/5 select-none xl:block">
+        debridger
+      </div>
+    </footer>
+  );
+}

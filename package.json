@@ -1,27 +1,39 @@
 {
   "name": "debridgers-repo",
   "version": "1.0.0",
-  "description": "",
+  "description": "A marketplace platform connecting farmers directly with buyers for fresh farm produce.",
   "private": true,
   "main": "index.js",
-  "keywords": [],
+  "keywords": [
+    "farm",
+    "produce",
+    "marketplace",
+    "farmers",
+    "buyers",
+    "fresh-produce",
+    "agriculture",
+    "farm-to-table",
+    "ecommerce",
+    "monorepo"
+  ],
   "scripts": {
-    "dev": "pnpm -r dev",
+    "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "lint:fix": "pnpm -r lint:fix",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "prepare": "husky || true",
-    "dev-landing-page": "pnpm --filter @debridgers/landing-page dev",
-    "build-landing-page": "pnpm --filter @debridgers/landing-page build",
-    "lint-landing-page": "pnpm --filter @debridgers/landing-page lint",
-    "dev-backend": "pnpm --filter @debridgers/backend dev",
-    "build-backend": "pnpm --filter @debridgers/backend build",
-    "lint-backend": "pnpm --filter @debridgers/backend lint",
-    "dev-ui-web": "pnpm --filter @debridgers/ui-web dev",
-    "build-ui-web": "pnpm --filter @debridgers/ui-web build",
-    "lint-ui-web": "pnpm --filter @debridgers/ui-web lint"
+    "dev:landing": "pnpm --filter @debridgers/landing-page dev",
+    "build:landing": "pnpm --filter @debridgers/landing-page build",
+    "typecheck:landing": "pnpm --filter @debridgers/landing-page typecheck",
+    "dev:backend": "pnpm --filter @debridgers/backend dev",
+    "build:backend": "pnpm --filter @debridgers/backend build",
+    "dev:ui-web": "pnpm --filter @debridgers/ui-web dev",
+    "build:ui-web": "pnpm --filter @debridgers/ui-web build",
+    "watch:ui-web": "pnpm --filter @debridgers/ui-web watch"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.47.0",
@@ -38,7 +50,6 @@
     "prettier-plugin-tailwindcss": "^0.7.1",
     "tsup": "^8.0.1",
     "typescript": "^5.9.2",
-    "validate-branch-name": "^1.3.2",
     "vite": "^5.4.0",
     "vitest": "^1.6.0"
   },
@@ -46,16 +57,16 @@
     "*.{ts,tsx,js,jsx}": [
       "eslint --fix",
       "prettier --write"
+    ],
+    "*.{json,css,scss,md}": [
+      "prettier --write"
     ]
+  },
+  "validate-branch-name": {
+    "pattern": "^(main|develop|live){1}$|^(feature|fix|refactor|hotfix|release|conflict|chore)/.+$",
+    "errorMsg": "Branch name structure: feature/short-description\nAllowed prefixes: feature, fix, refactor, hotfix, release, conflict, chore"
   },
   "author": "",
   "license": "MIT",
-  "packageManager": "pnpm@10.32.1",
-  "dependencies": {
-    "@react-router/dev": "^7.13.2",
-    "@react-router/node": "^7.13.2",
-    "@react-router/serve": "^7.13.2",
-    "react-router": "^7.13.2",
-    "react-router-dom": "^7.13.2"
-  }
+  "packageManager": "pnpm@10.32.1"
 }
