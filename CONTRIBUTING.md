@@ -70,11 +70,14 @@ Use lowercase and hyphens. Keep the description short but meaningful.
 
 ```bash
 git checkout -b feature/product-listing-page
+git checkout -b feature/homepage
 git checkout -b fix/cart-total-calculation
 git checkout -b chore/update-dependencies
 git checkout -b refactor/simplify-auth-flow
 git checkout -b hotfix/payment-crash-on-submit
 ```
+
+> ❌ `feat/homepage` — invalid, `feat` is not an allowed prefix. Use `feature/` instead.
 
 > `main`, `develop`, and `live` are the only branches that don't need a prefix — and you should never push to them directly.
 
