@@ -11,9 +11,9 @@ export default function Footer() {
       style={{ backgroundColor: "var(--color-primary)" }}
     >
       <div className="mx-auto max-w-7xl px-6 pt-16 pb-10">
-        <div className="grid grid-cols-1 gap-y-12 md:grid-cols-12 md:gap-x-8">
+        <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
           {/* Brand */}
-          <div className="md:col-span-4">
+          <div className="flex flex-col gap-(--gap-base)">
             <h2 className="text-4xl leading-tight font-bold">
               Market Prices.
               <br />
@@ -23,20 +23,20 @@ export default function Footer() {
               </span>
               .
             </h2>
-            <p className="mt-4 text-sm text-green-300">
+            <p className="text-sm text-green-300">
               Fresh foodstuff delivered straight to your door at market prices.
             </p>
           </div>
 
           {/* Support */}
-          <div className="md:col-span-2">
+          <div className="flex flex-col gap-(--gap-lg)">
             <p
-              className="mb-5 text-xs font-semibold tracking-widest uppercase"
+              className="text-xs font-semibold tracking-widest uppercase"
               style={{ color: "var(--color-secondary)" }}
             >
               Support
             </p>
-            <nav className="flex flex-col gap-3 text-sm">
+            <nav className="flex flex-col gap-(--gap-base) text-sm">
               {[
                 { label: "Home", to: "/" },
                 { label: "About Us", to: "/about" },
@@ -54,14 +54,14 @@ export default function Footer() {
           </div>
 
           {/* Need Help */}
-          <div className="md:col-span-3">
+          <div className="flex flex-col gap-(--gap-lg)">
             <p
-              className="mb-5 text-xs font-semibold tracking-widest uppercase"
+              className="text-xs font-semibold tracking-widest uppercase"
               style={{ color: "var(--color-secondary)" }}
             >
               Need Help?
             </p>
-            <div className="flex flex-col gap-3 text-sm">
+            <div className="flex flex-col gap-(--gap-base) text-sm">
               <p className="text-xs font-medium tracking-wider text-green-400 uppercase">
                 Call us directly
               </p>
@@ -72,7 +72,7 @@ export default function Footer() {
                 <Phone className="h-4 w-4 shrink-0" />
                 +234 816 704 2797
               </a>
-              <p className="mt-2 text-xs font-medium tracking-wider text-green-400 uppercase">
+              <p className="text-xs font-medium tracking-wider text-green-400 uppercase">
                 Email us at
               </p>
               <a
@@ -93,9 +93,9 @@ export default function Footer() {
           </div>
 
           {/* Keep in Touch */}
-          <div className="md:col-span-3">
+          <div className="flex flex-col gap-(--gap-lg) md:col-span-3">
             <p
-              className="mb-5 text-xs font-semibold tracking-widest uppercase"
+              className="text-xs font-semibold tracking-widest uppercase"
               style={{ color: "var(--color-secondary)" }}
             >
               Keep in Touch
@@ -115,22 +115,6 @@ export default function Footer() {
               >
                 Submit
               </button>
-            </div>
-
-            {/* Brand Circles */}
-            <div className="mt-8 flex gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-600 text-sm font-bold">
-                S
-              </div>
-              <div
-                className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold"
-                style={{ backgroundColor: "var(--color-secondary)" }}
-              >
-                A
-              </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500 text-sm font-bold">
-                O
-              </div>
             </div>
           </div>
         </div>

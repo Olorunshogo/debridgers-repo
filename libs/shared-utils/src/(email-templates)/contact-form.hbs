@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>New Contact Form Message</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+</head>
+<body style="margin:0; padding:0; font-family: Arial, Helvetica, sans-serif; background:#f4f4f4;">
+  <div style="max-width:600px; margin:20px auto; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.1);">
+    <div style="background:#2B6036; padding:32px; text-align:center;">
+      <h1 style="color:#ffffff; margin:0; font-size:28px;">New Message Received</h1>
+    </div>
+
+    <div style="padding:40px 32px;">
+      <p style="font-size:18px; color:#333;">Hello Admin,</p>
+      <p style="font-size:16px; color:#555; line-height:1.6;">
+        Someone just submitted the contact form on Debridger:
+      </p>
+
+      <div style="background:#f8f9fa; padding:28px; border-radius:8px; margin:32px 0; border-left:5px solid #2B6036;">
+        <p style="margin:0 0 12px 0;"><strong>Name:</strong> {{name}}</p>
+        <p style="margin:0 0 12px 0;"><strong>Email:</strong> <a href="mailto:{{email}}" style="color:#2B6036;">{{email}}</a></p>
+        <p style="margin:16px 0 0 0;"><strong>Message:</strong></p>
+        <p style="margin-top:8px; font-size:15px; color:#333; white-space:pre-line; line-height:1.6;">
+          {{message}}
+        </p>
+      </div>
+
+      <p style="color:#666; font-size:15px;">
+        Reply directly to <a href="mailto:{{email}}" style="color:#2B6036;">{{email}}</a> to respond.
+      </p>
+    </div>
+
+    <div style="background:#f0f0f0; padding:24px; text-align:center; font-size:12px; color:#999;">
+      © {{year}} Debridger • Contact form submission
+    </div>
+  </div>
+</body>
+</html>
