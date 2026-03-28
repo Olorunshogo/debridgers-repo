@@ -13,6 +13,7 @@
   "dependencies": {
     "@debridgers/shared-theme": "workspace:*",
     "@debridgers/ui-web": "workspace:*",
+    "@iconify/react": "^6.0.2",
     "@react-router/node": "7.13.2",
     "@react-router/serve": "7.13.2",
     "framer-motion": "^12.38.0",

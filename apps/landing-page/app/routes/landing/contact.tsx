@@ -219,7 +219,7 @@ export default function ContactPage() {
         />
 
         {/* Page title banner */}
-        <div className="flex flex-col items-center gap-(--gap-base) px-6 pt-36 pb-20 text-center text-white">
+        <div className="px-lg flex flex-col items-center gap-(--gap-base) pt-36 pb-20 text-center text-white">
           <p
             className="text-xs font-semibold tracking-widest uppercase"
             style={{ color: "var(--color-secondary)" }}
@@ -235,9 +235,9 @@ export default function ContactPage() {
         </div>
       </div>
 
-      <main className="font-openSans bg-[#F4F7F5]">
-        <section className="mx-auto max-w-7xl px-6 py-16 lg:py-24">
-          <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16">
+      <main className="font-openSans bg-bg-light">
+        <section className="px-section sm:px-section-px-sm lg:px-section-px-lg py-section-py-sm lg:py-section-py-lg mx-auto max-w-7xl">
+          <div className="gap-4xl grid grid-cols-1 lg:grid-cols-2">
             {/* ── Form ── */}
             <div className="flex flex-col gap-(--gap-2xl) rounded-2xl bg-white p-8 shadow-sm">
               <div className="flex flex-col gap-(--gap-sm)">

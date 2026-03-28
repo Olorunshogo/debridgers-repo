@@ -20,7 +20,7 @@ export function SubmitButton({
     <button
       type="submit"
       disabled={loading || disabled}
-      className={`inline-flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold text-white transition-opacity duration-200 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 ${className ?? ""}`}
+      className={`px-lg inline-flex w-full items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold text-white transition-opacity duration-200 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 ${className ?? ""}`}
       style={{ backgroundColor: "var(--color-primary)" }}
     >
       {loading ? (
