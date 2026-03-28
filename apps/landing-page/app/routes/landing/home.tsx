@@ -5,6 +5,7 @@ import { HeroSection } from "../../components/HeroSection";
 import { Icon } from "@iconify/react";
 import { motion } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
+import { PrimaryLink, WhatsAppButton } from "@debridgers/ui-web";
 
 // === Why Debridgers
 interface WhyCardData {
@@ -15,13 +16,13 @@ interface WhyCardData {
 
 const whyCardsData: WhyCardData[] = [
   {
-    icon: "lucide:shield",
+    icon: "lucide:lock-keyhole",
     title: "Fixed, fair prices",
     description:
       "No more guessing what rice costs today. Our prices are set weekly and always reflect real market rates — nothing more.",
   },
   {
-    icon: "lucide:check-circle",
+    icon: "lucide:check",
     title: "Quality guaranteed",
     description:
       "If you're not satisfied, we replace the orders. No questions asked. Our reputation depends on what lands at your door.",
@@ -46,7 +47,7 @@ function WhyCard({ card, isActive, onHover }: WhyCardProps) {
       onHoverStart={onHover}
       whileHover={{ y: -10 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`group flex h-full cursor-default flex-col gap-8 rounded-3xl p-6 transition-all duration-300 ease-in-out ${
+      className={`group font-syne gap-base lg:gap-xl py-base px-3xl flex h-full cursor-default flex-col rounded-3xl transition-all duration-300 ease-in-out ${
         isActive
           ? "bg-primary text-white"
           : "border-gray hover:border-primary border bg-white"
@@ -56,8 +57,8 @@ function WhyCard({ card, isActive, onHover }: WhyCardProps) {
       <div
         className={`flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-300 ${
           isActive
-            ? "bg-white/20 text-white"
-            : "bg-primary/20 text-primary/70 group-hover:bg-white/20 group-hover:text-white"
+            ? "bg-[#789B7C] text-[#FCFDFD]"
+            : "bg-[#789B7C] text-[#FCFDFD] group-hover:bg-white/20 group-hover:text-white"
         }`}
       >
         <Icon icon={card.icon} className="h-6 w-6" />
@@ -66,17 +67,15 @@ function WhyCard({ card, isActive, onHover }: WhyCardProps) {
       {/* Content */}
       <div className="flex flex-col gap-4">
         <h3
-          className={`text-xl font-bold transition-colors duration-300 ${
-            isActive ? "text-white" : "text-gray-900 group-hover:text-white"
+          className={`text-xl font-bold transition-colors duration-300 lg:text-2xl ${
+            isActive ? "text-white" : "text-text group-hover:text-white"
           }`}
         >
           {card.title}
         </h3>
         <p
-          className={`flex-1 text-base leading-relaxed transition-colors duration-300 ${
-            isActive
-              ? "text-emerald-100"
-              : "text-gray-600 group-hover:text-emerald-100"
+          className={`font-open-sans flex-1 text-base leading-relaxed transition-colors duration-300 lg:text-lg ${
+            isActive ? "text-white" : "text-text group-hover:text-emerald-100"
           }`}
         >
           {card.description}
@@ -98,54 +97,54 @@ const deliverCategories: DeliverCategory[] = [
     title: "Grain & Staples",
     subtitle: "Rice, Beans, Garri",
     images: [
-      "/images/hero-image-1.png",
-      "/images/hero-image-2.png",
-      "/images/hero-image-3.png",
+      "/images/deliver-grains-staples-1.jpg",
+      "/images/deliver-grains-staples-2.jpg",
+      "/images/deliver-grains-staples-3.jpg",
     ],
   },
   {
     title: "Grains",
     subtitle: "Beans",
     images: [
-      "/images/hero-image-2.png",
-      "/images/hero-image-3.png",
-      "/images/hero-image-1.png",
+      "/images/deliver-grains-1.jpg",
+      "/images/deliver-grains-2.jpg",
+      "/images/deliver-grains-3.jpg",
     ],
   },
   {
     title: "Oil & Protein",
     subtitle: "Groundnut oil, Palm Oil",
     images: [
-      "/images/hero-image-3.png",
-      "/images/hero-image-1.png",
-      "/images/hero-image-2.png",
+      "/images/deliver-oil-protein-1.jpg",
+      "/images/deliver-oil-protein-2.jpg",
+      "/images/deliver-oil-protein-3.jpg",
     ],
   },
   {
     title: "Tubers",
     subtitle: "Yam, Potato",
     images: [
-      "/images/market-woman.jpg",
-      "/images/hero-image-1.png",
-      "/images/hero-image-2.png",
+      "/images/deliver-tubers-1.jpg",
+      "/images/deliver-tubers-2.jpg",
+      "/images/deliver-tubers-3.jpg",
     ],
   },
   {
     title: "Vegetables",
     subtitle: "Tomatoes, Pepper, Onion",
     images: [
-      "/images/hero-image-2.png",
-      "/images/market-woman.jpg",
-      "/images/hero-image-3.png",
+      "/images/deliver-vegetables-1.jpg",
+      "/images/deliver-vegetables-2.jpg",
+      "/images/deliver-vegetables-3.jpg",
     ],
   },
   {
     title: "Proteins",
     subtitle: "Fish, Chicken, Beef",
     images: [
-      "/images/hero-image-3.png",
-      "/images/hero-image-2.png",
-      "/images/market-woman.jpg",
+      "/images/deliver-proteins-1.jpg",
+      "/images/deliver-proteins-2.jpg",
+      "/images/deliver-proteins-3.jpg",
     ],
   },
 ];
@@ -180,7 +179,7 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
       onHoverEnd={() => setHovered(false)}
       whileHover={{ scale: 1.04 }}
       transition={{ duration: 0.3 }}
-      className="group relative h-[320px] w-[260px] shrink-0 cursor-pointer overflow-hidden rounded-3xl shadow-lg"
+      className="group relative h-[320px] w-[260px] shrink-0 cursor-default overflow-hidden rounded-3xl shadow-lg"
     >
       {/* Image carousel — slides left-to-right */}
       {category.images.map((src, idx) => (
@@ -203,43 +202,24 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
       ))}
 
       {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/15 to-transparent" />
+      <div className="absolute inset-0 bg-linear-to-t from-black/60 via-[#666666]/30 to-transparent" />
 
       {/* Label */}
-      <div className="absolute right-0 bottom-0 left-0 flex flex-col gap-(--space-sm) p-(--space-base) transition-transform duration-300 ease-in-out group-hover:-translate-y-2">
-        <p className="text-sm font-bold text-white">{category.title}</p>
-        <p className="text-xs text-white/70">{category.subtitle}</p>
+      <div className="font-open-sans absolute right-0 bottom-0 left-0 flex flex-col gap-1 px-(--space-base) pb-(--space-base) text-white">
+        <p className="text-lg font-semibold">{category.title}</p>
+        <p className="text-base">{category.subtitle}</p>
       </div>
 
-      {/* Hover badge */}
-      {/* <div
-        className="top-md right-md absolute rounded-full px-(--space-md) py-1 text-xs font-semibold text-white opacity-0 transition-opacity duration-300 ease-in-out group-hover:opacity-100"
-        style={{ backgroundColor: "var(--secondary-color)" }}
-      >
-        Order now
-      </div> */}
       {/* Hover "Order now" badge */}
-      <div className="absolute top-4 right-4 rounded-full bg-emerald-600 px-4 py-1 text-xs font-semibold text-white opacity-0 transition-all duration-300 group-hover:opacity-100">
-        Order now
+      <div className="absolute top-4 right-4 opacity-0 transition-all duration-300 group-hover:opacity-100">
+        <PrimaryLink
+          href="https://wa.me/+2348167042797"
+          className="h-10 text-sm"
+        >
+          Order Now
+        </PrimaryLink>
       </div>
 
-      {/* Image indicator dots */}
-      {/* {hovered && (
-        <div className="absolute top-(--space-md) right-0 left-0 flex justify-center gap-(--space-sm)">
-          {images.map((_, i) => (
-            <span
-              key={i}
-              className="h-1.5 w-1.5 rounded-full transition-all duration-300"
-              style={{
-                backgroundColor:
-                  i === activeIndex
-                    ? "var(--secondary-color)"
-                    : "rgba(255,255,255,0.5)",
-              }}
-            />
-          ))}
-        </div>
-      )} */}
       {/* Image dots (visible only on hover) */}
       {hovered && category.images.length > 1 && (
         <div className="absolute bottom-20 left-1/2 flex -translate-x-1/2 gap-1.5">
@@ -259,30 +239,58 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
 
 // === WhatWeDeliver: 4 cards visible on lg, infinite marquee through all 6
 function WhatWeDeliver() {
-  const [offset, setOffset] = useState(0);
+  const [offset, setOffset] = useState<number>(0);
+  const [isHovered, setIsHovered] = useState<boolean>(false);
   const cardWidth = 260; // w-[260px]
   const gap = 32; // gap-8 = 32px
   const step = cardWidth + gap;
   const totalCards = deliverCategories.length; // 6
 
   // === Auto-slide every 4 seconds (one card at a time)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setOffset((prev) => (prev + 1) % totalCards);
-    }, 4000);
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     setOffset((prev) => (prev + 1) % totalCards);
+  //   }, 4000);
 
-    return () => clearInterval(interval);
-  }, [totalCards]);
+  //   return () => clearInterval(interval);
+  // }, [totalCards]);
+  useEffect(() => {
+    if (!isHovered) {
+      const interval = setInterval(() => {
+        setOffset((prev) => (prev + 1) % totalCards);
+      }, 4000);
+
+      return () => clearInterval(interval); // Clean up the interval when the component unmounts or when hover state changes
+    }
+  }, [isHovered, totalCards]);
+
+  // const ConcentricCircles = () => {
+  //   return (
+  //     <div className="absolute top-[-370px] right-[-200px] h-[723px] w-[723px] rotate-[119deg]">
+  //       {[0, 40, 80].map((offset, i) => (
+  //         <div
+  //           key={i}
+  //           className="absolute rounded-full border-[20px] border-[#A5BDA8]"
+  //           style={{ inset: `${offset}px` }}
+  //         />
+  //       ))}
+  //     </div>
+  //   );
+  // };
 
   return (
-    <section className="w-full overflow-hidden bg-white py-20">
-      <div className="gap-3xl px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto flex w-full max-w-7xl flex-col">
+    <section className="font-syne py-section-py sm:py-section-py-sm lg:py-section-py-lg relative w-full overflow-hidden bg-white">
+      <div
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        className="gap-3xl px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto flex w-full max-w-7xl flex-col"
+      >
         {/* Header */}
-        <div className="gap-md flex flex-col">
-          <p className="text-primary text-sm font-semibold tracking-widest uppercase">
+        <div className="gap-md lg:gap-xl flex flex-col">
+          <p className="text-primary-light text-xl tracking-widest">
             What we deliver
           </p>
-          <h2 className="text-primary text-4xl leading-tight font-bold lg:max-w-1/2 lg:text-5xl">
+          <h2 className="text-primary font-syne max-w-[830px] text-3xl leading-tight font-extrabold sm:text-4xl lg:max-w-1/2 lg:text-[50px] lg:font-extrabold">
             Everything you spend on at the market.
           </h2>
         </div>
@@ -290,17 +298,15 @@ function WhatWeDeliver() {
         {/* Infinite Carousel Container */}
         <div className="relative">
           {/* Fade gradients */}
-          <div className="pointer-events-none absolute top-0 left-0 z-10 h-full w-20 bg-gradient-to-r from-white to-transparent" />
-          <div className="pointer-events-none absolute top-0 right-0 z-10 h-full w-20 bg-gradient-to-l from-white to-transparent" />
-
-          {/* Viewport - shows exactly 4 cards on lg+ */}
+          {/* <div className="pointer-events-none absolute top-0 left-0 z-10 h-full w-20 bg-linear-to-r from-[#666666]/30 to-transparent" />
+          <div className="pointer-events-none absolute top-0 right-0 z-10 h-full w-20 bg-linear-to-l from-[#666666]/0 to-transparent" /> */}
           <div className="px-lg lg:px-xl overflow-hidden">
             <motion.div
               className="flex gap-8"
               style={{
                 transform: `translateX(-${offset * step}px)`,
               }}
-              transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }} // smooth cubic-bezier
+              transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
               animate={{ x: `-${offset * step}px` }}
             >
               {/* Duplicate the array for seamless infinite loop */}
@@ -321,10 +327,21 @@ function WhatWeDeliver() {
 }
 
 // === Stats
-const stats = [
-  { value: "92%", label: "resident of Kaduna are using us." },
-  { value: "1000+", label: "areas in Kaduna South we serve" },
-  { value: "0", label: "hidden fees — ever" },
+interface Stat {
+  value: number;
+  label: string;
+}
+
+const stats: Stat[] = [
+  { value: 92, label: "resident of Kaduna are using us." },
+  { value: 1000, label: "areas in Kaduna South we serve" },
+  { value: 0, label: "hidden fees — ever" },
+];
+
+const statsFormatters: Array<(v: number) => string> = [
+  (v) => `${v}%`,
+  (v) => `${v}+`,
+  (v) => String(Number(v) + 0),
 ];
 
 // === Metadata
@@ -343,21 +360,23 @@ export default function Home() {
   const [activeWhyCardIndex, setActiveWhyCardIndex] = useState<number>(0);
   return (
     <>
+      {/* Header */}
+      <div className="top-md sticky z-50">
+        <Header
+          navLinks={[
+            { label: "How it works", href: "#how-it-works" },
+            { label: "Product", href: "#product" },
+            { label: "Why Us", href: "#why-us" },
+          ]}
+          signUpHref="/signup"
+        />
+      </div>
+
       {/* Hero Section */}
-      <div className="relative flex min-h-screen w-full flex-col">
-        {/* Header */}
-        <div className="absolute w-full">
-          <Header
-            navLinks={[
-              { label: "How it works", href: "#how-it-works" },
-              { label: "Product", href: "#product" },
-              { label: "Why Us", href: "#why-us" },
-            ]}
-            signUpHref="/signup"
-          />
-        </div>
+      <div className="relative flex w-full flex-col">
         {/* Hero Section */}
-        <div className="flex min-h-0 w-full flex-1">
+        <div className="-mt-navbar-h flex min-h-0 w-full flex-1">
+          <div className="from-primary -mt-navbar-h via-primary to-primary absolute inset-0 z-0 overflow-hidden bg-linear-to-b" />
           <HeroSection
             images={[
               "/images/hero-image-1.png",
@@ -389,7 +408,10 @@ export default function Home() {
       </div>
 
       {/* How It Works */}
-      <section id="how-it-works" className="py-section-py-lg bg-white">
+      <section
+        id="how-it-works"
+        className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative bg-white"
+      >
         <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto max-w-7xl">
           <div className="grid items-center gap-(--space-4xl) lg:grid-cols-2">
             {/* Left Content */}
@@ -398,51 +420,48 @@ export default function Home() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="gap-base flex flex-col"
+              className="gap-3xl flex flex-col"
             >
-              <p
-                className="text-sm font-semibold tracking-widest uppercase"
-                style={{ color: "var(--primary-color)" }}
-              >
-                How it works
-              </p>
-
-              <div className="gap-3xl flex flex-col">
-                <h2 className="text-4xl leading-tight font-bold text-gray-900 lg:text-5xl">
+              <div className="gap-md flex flex-col">
+                <p className="text-text-colour text-[14px] font-semibold">
+                  How it works
+                </p>
+                <h2 className="text-text text-xl leading-tight font-bold sm:text-3xl lg:text-5xl">
                   From market to your door in two steps
                 </h2>
+              </div>
 
-                <div className="flex flex-col">
-                  {/* Step 1 */}
-                  <div className="border-gray py-base flex gap-(--space-lg) border-b">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center text-sm font-bold text-gray-900">
-                      01
-                    </div>
-                    <div className="flex flex-col gap-(--space-sm)">
-                      <h3 className="text-xl font-semibold text-gray-900">
-                        Send us your order
-                      </h3>
-                      <p className="text-base leading-relaxed text-gray-600">
-                        Chat on WhatsApp, call, or browse our catalog. Tell us
-                        what you need — rice, beans, palm oil, anything.
-                      </p>
-                    </div>
+              <div className="flex flex-col">
+                {/* Step 1 */}
+                <div className="py-base text-text flex gap-(--space-lg) border-b border-[#E5E7EB]">
+                  <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
+                    01
                   </div>
+                  <div className="flex flex-col gap-(--space-sm)">
+                    <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
+                      Send us your order
+                    </h3>
+                    <p className="font-open-sans text-[14px] leading-relaxed lg:text-base">
+                      Chat on WhatsApp, call, or browse our catalog. Tell us
+                      what you need — rice, beans, palm oil, anything.
+                    </p>
+                  </div>
+                </div>
 
-                  {/* Step 2 */}
-                  <div className="py-base flex gap-(--space-lg)">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center text-sm font-bold text-gray-900">
-                      02
-                    </div>
-                    <div className="flex flex-col gap-(--space-sm)">
-                      <h3 className="text-xl font-semibold text-gray-900">
-                        Delivered to you
-                      </h3>
-                      <p className="text-base leading-relaxed text-gray-600">
-                        Your order arrives at your home or shop at the market
-                        price you agreed. No surprises, no hidden fees.
-                      </p>
-                    </div>
+                {/* Step 2 */}
+
+                <div className="py-base text-text flex gap-(--space-lg)">
+                  <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
+                    02
+                  </div>
+                  <div className="flex flex-col gap-(--space-sm)">
+                    <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
+                      Delivered to you
+                    </h3>
+                    <p className="font-open-sans text-[14px] leading-relaxed lg:text-base">
+                      Your order arrives at your home or shop at the market
+                      price you agreed. No surprises, no hidden fees.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -460,19 +479,17 @@ export default function Home() {
                 <img
                   src="/images/market-woman.jpg"
                   alt="Smiling Nigerian woman at fresh produce market"
-                  className="h-auto w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-105"
+                  className="h-full max-h-[516px] w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-105 lg:max-h-[530px]"
                 />
                 {/* Delivery Info Card */}
-                <div
-                  className="absolute right-(--space-xl) bottom-(--space-xl) left-(--space-xl) flex flex-col gap-(--space-sm) rounded-2xl p-(--space-xl) text-white"
-                  style={{ backgroundColor: "var(--primary-color)" }}
-                >
-                  <div className="flex items-center gap-(--space-sm) text-sm font-medium text-green-300">
-                    <div className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
+                <div className="bg-primary-light border-primary-light absolute right-[10px] bottom-[10px] left-[10px] flex flex-col gap-[10px] rounded-3xl border px-[24px] py-[12px] text-white shadow-md">
+                  <div className="flex items-center gap-[10px] text-[14px] lg:text-base">
                     Next Delivery
                   </div>
-                  <p className="text-xl font-semibold">Kaduna South • Today</p>
-                  <p className="text-sm text-green-200">
+                  <p className="text-[14px] font-semibold lg:text-lg">
+                    Kaduna South • Today
+                  </p>
+                  <p className="text-sm lg:text-base">
                     Order before 12pm to experience same day delivery
                   </p>
                 </div>
@@ -483,21 +500,21 @@ export default function Home() {
       </section>
 
       {/* Why Debridgers */}
-      <section id="why-us" className="bg-bg-light py-section-py-lg">
+      <section
+        id="why-us"
+        className="py-section-py sm:py-section-py-sm lg:py-section-py-lg font-syne relative bg-[#F6F3F3]"
+      >
         <div className="px-section-px sm:px-section-px-sm lg:px-section gap-3xl mx-auto flex w-full max-w-7xl flex-col">
-          <div className="flex flex-col items-center gap-(--space-base) text-center">
-            <p
-              className="text-sm font-semibold tracking-widest uppercase"
-              style={{ color: "var(--primary-color)" }}
-            >
+          <div className="flex flex-col gap-(--space-md) lg:gap-(--space-xl)">
+            <p className="text-primary-light text-xl tracking-widest">
               Why Debridger
             </p>
-            <h2 className="text-4xl font-bold text-gray-900 lg:text-5xl">
+            <h2 className="text-primary w-full max-w-[730px] text-3xl font-bold sm:text-4xl lg:text-5xl lg:font-extrabold">
               We solve what the market can&apos;t.
             </h2>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="font-syne grid gap-6 lg:grid-cols-3">
             {whyCardsData.map((card, index) => (
               <WhyCard
                 key={card.title}
@@ -513,139 +530,130 @@ export default function Home() {
       {/* What We Deliver */}
       <WhatWeDeliver />
 
+      {/* Stats Section */}
+      <section className="py-section-py sm:py-section-py-sm lg:py-section-py-lg font-syne bg-primary relative overflow-hidden text-white">
+        {/* <div className="pointer-events-none absolute top-8 right-8 h-56 w-56 rounded-full border border-white/10" />
+        <div className="pointer-events-none absolute right-24 bottom-16 h-80 w-80 rounded-full border border-white/10" /> */}
+
+        <div className="px-section-px z-10-px sm:px-section-px-sm lg:px-section-px-lg lg:gap-4xl relative mx-auto flex max-w-7xl flex-col">
+          <div className="font-syne pb-2xl flex flex-col gap-(--space-md)">
+            <p className="text-text2 text-xl tracking-[3px] uppercase">
+              Early Numbers
+            </p>
+            <h2 className="w-full max-w-[831px] text-3xl leading-tight font-bold sm:text-4xl lg:text-5xl lg:font-extrabold">
+              People are already excited.
+            </h2>
+          </div>
+
+          <div className="gap-base grid grid-cols-3 sm:gap-(--space-3xl)">
+            {stats.map((stat, i) => {
+              const displayValue = statsFormatters[i](stat.value);
+              return (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: i * 0.1 }}
+                  className="flex flex-col gap-(--space-sm) lg:w-[236px]"
+                >
+                  <div className="text-secondary font-syne text-2xl leading-none font-extrabold sm:text-4xl lg:text-5xl">
+                    {displayValue}
+                  </div>
+                  <p className="font-open-sans text-[14px] text-white sm:text-base lg:text-lg">
+                    {stat.label}
+                  </p>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Concentric Circles */}
+        <div className="absolute top-[-320px] right-[-320px] z-2 h-[400px] w-[500px] rotate-[127deg] sm:top-[-180px] sm:right-[-120px] sm:h-[400px] sm:w-[400px] lg:top-[-270px] lg:right-[-380px] lg:h-[700px] lg:w-[700px]">
+          {/* Outer */}
+          <div className="pointer-events-none absolute inset-0 rounded-full border-[20px] border-[#A5BDA8]/40" />
+
+          {/* Middle */}
+          <div className="pointer-events-none absolute inset-[40px] rounded-full border-[20px] border-[#A5BDA8]/40" />
+
+          {/* Inner */}
+          <div className="pointer-events-none absolute inset-[80px] rounded-full border-[20px] border-[#A5BDA8]/40" />
+        </div>
+      </section>
+
       {/* GetStarted Section */}
-      <section className="py-section-py-lg relative overflow-hidden bg-white">
+      <section className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative overflow-hidden bg-white">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute top-16 left-1/4 h-80 w-80 rounded-full bg-green-100 opacity-60 blur-3xl" />
           <div className="absolute right-1/4 bottom-8 h-72 w-72 rounded-full bg-amber-100 opacity-50 blur-3xl" />
         </div>
 
-        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg relative mx-auto flex w-full flex-col items-center justify-center gap-(--space-3xl) text-center">
-          <p
-            className="text-sm font-semibold tracking-widest uppercase"
-            style={{ color: "var(--primary-color)" }}
-          >
-            Get started
-          </p>
-
-          <h2 className="text-4xl leading-tight font-bold text-gray-900 lg:text-6xl">
-            Your first
-            <br />
-            delivery is on us.
-          </h2>
-
-          <p className="max-w-[500px] text-lg text-gray-600">
-            Join early and get free delivery on your first order. Just send us a
-            WhatsApp and we&apos;ll take it from there.
-          </p>
-
-          <motion.a
-            href="https://wa.me/2347012288798"
-            target="_blank"
-            rel="noopener noreferrer"
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.97 }}
-            className="inline-flex cursor-pointer items-center gap-(--space-md) rounded-full px-10 py-(--space-base) text-base font-semibold text-black shadow-lg transition-all duration-300 ease-in-out"
-            style={{ backgroundColor: "var(--secondary-color)" }}
-          >
-            <Icon icon="logos:whatsapp-icon" className="h-5 w-5" />
-            Chat with us on WhatsApp
-          </motion.a>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section
-        className="py-section-py-lg relative overflow-hidden text-white"
-        style={{ backgroundColor: "var(--primary-color)" }}
-      >
-        <div className="pointer-events-none absolute top-8 right-8 h-56 w-56 rounded-full border border-white/10" />
-        <div className="pointer-events-none absolute right-24 bottom-16 h-80 w-80 rounded-full border border-white/10" />
-
-        <div className="px-section sm:px-section-px-sm lg:px-section-px-lg relative mx-auto max-w-7xl">
-          <div className="flex flex-col gap-(--space-base)">
-            <p
-              className="text-xs font-semibold tracking-[3px] uppercase"
-              style={{ color: "var(--secondary-color)" }}
-            >
-              Early Numbers
+        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-xl relative mx-auto flex w-full flex-col items-center justify-center text-center lg:gap-(--space-3xl)">
+          <div className="gap-md flex flex-col">
+            <p className="text-primary-light font-open-sans text-center text-lg font-semibold tracking-widest lg:text-xl">
+              Get started
             </p>
-            <h2 className="text-4xl leading-tight font-bold lg:text-5xl">
-              People are already excited.
+
+            <h2 className="text-primary font-syne mx-auto w-full max-w-[257px] text-center text-4xl leading-tight font-extrabold sm:max-w-[500px] lg:max-w-[831px] lg:text-5xl">
+              Your first delivery is on us.
             </h2>
+
+            <p className="text-primary font-open-sans mx-auto w-full max-w-[256px] max-w-[831px] text-base sm:max-w-[500px] lg:text-lg">
+              Join early and get free delivery on your first order. Just send us
+              a WhatsApp and we&apos;ll take it from there.
+            </p>
           </div>
 
-          <div className="mt-12 grid grid-cols-1 gap-(--space-3xl) sm:grid-cols-3">
-            {stats.map((stat, i) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="flex flex-col gap-(--space-sm)"
-              >
-                <div
-                  className="text-6xl leading-none font-extrabold lg:text-7xl"
-                  style={{ color: "var(--secondary-color)" }}
-                >
-                  {stat.value}
-                </div>
-                <p className="text-base text-green-200">{stat.label}</p>
-              </motion.div>
-            ))}
-          </div>
+          <WhatsAppButton label="Chat with us on whatsApp" />
         </div>
       </section>
 
       {/* Partnership Section */}
-      <section className="bg-bg-light py-section-py-lg">
-        <div className="px-section sm:px-section-px-sm lg:px-section-px-lg mx-auto w-full max-w-7xl">
-          <div className="grid items-start gap-(--space-4xl) lg:grid-cols-12">
+      <section className="relativepy-section-py sm:py-section-py-sm lg:py-section-py-lg bg-[#F6F3F3]">
+        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto w-full max-w-7xl">
+          <div className="grid gap-(--space-4xl) lg:grid-cols-2">
             {/* Left Content */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="flex flex-col gap-(--space-xl) lg:col-span-7"
+              className="lg:gap-3xl gap-xl flex flex-col"
             >
-              <div
-                className="inline-flex w-fit items-center gap-(--space-sm) rounded-full border px-(--space-base) py-1.5 text-xs font-semibold tracking-widest uppercase"
-                style={{
-                  borderColor: "var(--primary-color)",
-                  color: "var(--primary-color)",
-                }}
-              >
-                Official Partnership
-              </div>
+              <div className="gap-xl flex flex-col">
+                <div className="bg-primary-light text-primary font-open-sans border-primary inline-flex w-fit items-center gap-(--space-sm) rounded-full border border-1 px-(--space-base) py-1.5 text-base tracking-widest uppercase lg:text-lg">
+                  Official Partnership
+                </div>
 
-              <div className="flex flex-col gap-(--space-base)">
-                <p className="text-sm font-semibold tracking-widest text-gray-500 uppercase">
+                <p className="text-text font-open-sans text-base tracking-widest uppercase lg:text-lg">
                   Stronger Together
                 </p>
-                <h2 className="text-4xl leading-tight font-bold text-gray-900 lg:text-5xl">
-                  Backed by those who&apos;ve been doing this longest.
-                </h2>
-                <p className="max-w-[700px] text-base leading-relaxed text-gray-600">
-                  Debridger is proudly partnering with an established agro
-                  marketplace that has been connecting Nigerian farmers directly
-                  to buyers long before we launched. Together, we bring a wider
-                  farmer network and deeper reach to your doorstep.
-                </p>
               </div>
 
-              <Link
-                to="/agrolinking"
-                className="group inline-flex w-fit cursor-pointer items-center gap-(--space-sm) font-semibold transition-all duration-300 ease-in-out hover:gap-(--space-base)"
-                style={{ color: "var(--secondary-color)" }}
+              <h2 className="text-text w-full text-xl leading-tight font-extrabold sm:max-w-[500px] sm:text-2xl lg:max-w-[601px] lg:text-3xl">
+                Backed by those who&apos;ve been doing this longest.
+              </h2>
+
+              <p className="text-text text-base leading-relaxed lg:max-w-[570px] lg:text-lg">
+                Debridger is proudly partnering with an established agro
+                marketplace that has been connecting Nigerian farmers directly
+                to buyers long before we launched. Together, we bring a wider
+                farmer network and deeper reach to your doorstep.
+              </p>
+
+              <a
+                href="https://agrolinking.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group text-secondary inline-flex w-fit cursor-pointer items-center gap-(--space-sm) text-lg transition-all duration-300 ease-in-out hover:gap-(--space-base) sm:text-xl lg:text-2xl"
               >
                 See what Agrolinking does
                 <Icon
                   icon="lucide:arrow-right"
                   className="h-4 w-4 transition-transform duration-300 ease-in-out group-hover:translate-x-1"
                 />
-              </Link>
+              </a>
             </motion.div>
 
             {/* Right: Partner Card */}
@@ -654,58 +662,55 @@ export default function Home() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.15 }}
-              className="lg:col-span-5"
+              className="bg-primary-light flex h-full max-h-[352px] flex-col gap-[32px] rounded-3xl px-8 py-12 text-white"
             >
-              <div
-                className="flex h-full flex-col gap-(--space-2xl) rounded-3xl p-8 text-white"
-                style={{ backgroundColor: "var(--primary-color)" }}
-              >
-                <div className="flex items-start justify-between gap-(--space-base)">
-                  <div className="flex flex-col gap-(--space-sm)">
-                    <div className="text-xl font-bold">
-                      agr
-                      <span style={{ color: "var(--secondary-color)" }}>o</span>
-                      linking
-                    </div>
-                    <div className="text-sm text-green-300">
-                      Farm-to-table marketplace.
-                      <br />
-                      Est. Nigeria.
-                    </div>
+              <div className="flex items-center justify-between gap-(--space-base)">
+                <div className="flex flex-col gap-(--space-sm)">
+                  <div className="h-[23px] w-[123px]">
+                    <img src="/agroLinking-logo.png" alt="Agro-Linking Logo" />
                   </div>
 
-                  <div className="flex shrink-0 items-center gap-(--space-sm) rounded-full bg-green-700/60 px-(--space-base) py-1.5 text-sm font-medium">
-                    <Icon
-                      icon="lucide:check"
-                      className="h-3.5 w-3.5 text-green-300"
-                    />
-                    Partner
+                  <div className="font-open-sans text-base text-white">
+                    Farm-to-table marketplace.
+                    <br />
+                    Est. Nigeria.
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-(--space-base)">
-                  <p className="text-xs font-semibold tracking-widest text-green-400 uppercase">
-                    What this means for you
-                  </p>
-
-                  <ul className="flex flex-col gap-(--space-base) text-sm text-green-100">
-                    {[
-                      "Access to a larger, verified network of food directly from farm",
-                      "More consistent stock — even during off-season period",
-                      "Two teams, one mission — fresh food at honest prices",
-                    ].map((item) => (
-                      <li key={item} className="flex gap-(--space-md)">
-                        <span
-                          className="mt-0.5 shrink-0"
-                          style={{ color: "var(--secondary-color)" }}
-                        >
-                          •
-                        </span>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
+                <div className="bg-primary flex shrink-0 items-center gap-(--space-md) rounded-full px-(--space-base) py-1 text-base lg:text-lg">
+                  <Icon
+                    icon="lucide:check"
+                    className="h-3.5 w-3.5 text-white"
+                  />
+                  Partner
                 </div>
+              </div>
+
+              <div className="font-open-sans flex flex-col gap-(--space-xl)">
+                <p className="font-open-sans text-base tracking-widest text-white uppercase lg:text-lg">
+                  What this means for you
+                </p>
+
+                <ul className="flex flex-col gap-(--space-base) text-sm text-green-100">
+                  {[
+                    "Access to a larger, verified network of food directly from farm",
+                    "More consistent stock — even during off-season period",
+                    "Two teams, one mission — fresh food at honest prices",
+                  ].map((item) => (
+                    <li
+                      key={item}
+                      className="font-open-sans flex items-center gap-(--space-md)"
+                    >
+                      <span
+                        className="mt-0.5 shrink-0"
+                        style={{ color: "var(--secondary-color)" }}
+                      >
+                        •
+                      </span>
+                      <span className="text-base text-white"> {item}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </motion.div>
           </div>

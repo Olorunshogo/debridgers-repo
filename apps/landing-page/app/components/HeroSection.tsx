@@ -54,7 +54,7 @@ export function HeroSection({
   }, [trustItems.length]);
 
   return (
-    <section className="font-syne relative flex min-h-full w-full flex-col overflow-hidden">
+    <section className="font-syne relative mx-auto flex h-full max-h-[1064px] w-full max-w-[1440px] flex-col overflow-hidden">
       {/* Background layer */}
       <div className="absolute inset-0 z-0">
         <AnimatePresence mode="wait">
@@ -63,11 +63,11 @@ export function HeroSection({
               key={currentIndex}
               src={images[currentIndex]}
               alt=""
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.8 }}
-              className="absolute inset-0 h-full w-full object-cover"
+              initial={{ x: "100%" }}
+              animate={{ x: "0%" }}
+              exit={{ x: "-100%" }}
+              transition={{ duration: 0.1, ease: "easeInOut" }}
+              className="absolute inset-0 h-full w-full object-contain object-cover"
             />
           )}
         </AnimatePresence>
@@ -75,9 +75,9 @@ export function HeroSection({
 
       {/* Content Wrapper */}
       <div className="gap-2xl px-section-px sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col justify-between">
-        <div className="relative flex flex-1 flex-col">
+        <div className="relative flex flex-1 flex-col pt-[80px] sm:pt-[100px] lg:pt-[120px]">
           {/* Left Content */}
-          <div className="gap-xl lg:gap-2xl flex flex-1 flex-col justify-center pt-24">
+          <div className="gap-xl lg:gap-4xl flex flex-1 flex-col justify-center py-24 sm:py-28 lg:py-32">
             {/* Location badge */}
             <div className="px-base text-primary border-primary font-syne p-md inline-flex w-fit items-center gap-[10px] rounded-full border border-white/30 bg-[#A5BDA8] text-xl shadow-md backdrop-blur-lg">
               <span className="bg-primary h-1.5 w-1.5 rounded-full" />
@@ -202,7 +202,7 @@ export function HeroSection({
           </div>
 
           {/* Trust bar */}
-          <div className="bg-primary py-xl px-base mx-auto w-4/5 shadow-md">
+          <div className="bg-primary py-xl px-base mx-auto w-full shadow-md">
             {/* Mobile: slideshow, one item at a time */}
             <div className="relative flex h-6 items-center justify-center overflow-hidden lg:hidden">
               <AnimatePresence mode="wait">

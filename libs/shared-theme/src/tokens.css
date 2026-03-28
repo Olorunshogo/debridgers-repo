@@ -15,7 +15,7 @@
 
   /* ── Text colours ── */
   --text-colour: #414652;
-  --text-colour2: #795d5a;
+  --text-colour2: #a5bda8;
   --text-placeholder: #969393;
 
   /* ── Status colours ── */
@@ -44,6 +44,9 @@
   --icon-primary: #1e1e1e;
   --icon-secondary: #757575;
   --icon-tertiary: #b3b3b3;
+
+  /* ── Layout ── */
+  --navbar-h: 74px;
 
   /* ── Spacing scale (gap + padding/margin — same values, one scale) ── */
   --space-sm: 0.5rem; /* 8px  */
