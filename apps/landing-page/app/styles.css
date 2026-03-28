@@ -1,21 +1,86 @@
+/* Font imports must come FIRST — before @import "tailwindcss" */
+@import url("https://fonts.googleapis.com/css2?family=Syne:wght@400..800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+
 @import "tailwindcss";
 @import "@debridgers/shared-theme/tokens.css";
 
-/* Font Syne Import */
-@import url("https://fonts.googleapis.com/css2?family=Syne:wght@400..800&display=swap");
+@source "../../../packages/ui-web/src/**/*.{ts,tsx}";
 
-/* Font openSans Import */
-@import url("https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap");
-
+/* ── Landing-page-specific layout tokens ── */
 :root {
-  /* Layout — landing-page specific */
-  --navbar-h: 4.5rem;
+  --navbar-h: 4.75rem;
 
-  --section-px: 1.5rem;
-  --section-px-sm: 2rem;
-  --section-px-lg: 4rem;
-  --section-py: 4rem;
-  --section-py-lg: 6rem;
+  --section-px: 1rem;
+  --section-px-sm: 1.5rem;
+  --section-px-lg: 2rem;
+
+  --section-py: 2rem;
+  --section-py-sm: 3rem;
+  --section-py-lg: 4rem;
+}
+
+/* ── @theme: bridges CSS vars → Tailwind utility classes ── */
+@theme inline {
+  /* Fonts */
+  --font-syne: "Syne", sans-serif;
+  --font-open-sans: "Open Sans", sans-serif;
+
+  /* Brand colours → bg-primary, text-primary, border-primary … */
+  --color-primary: var(--primary-color);
+  --color-primary-light: var(--primary-color-light);
+  --color-secondary: var(--secondary-color);
+  --color-secondary-light: var(--secondary-color-light);
+
+  /* Base */
+  --color-white: var(--white);
+  --color-black: var(--black);
+
+  /* Headings */
+  --color-heading: var(--heading-colour);
+  --color-heading2: var(--heading-colour2);
+
+  /* Text */
+  --color-text: var(--text-colour);
+  --color-text2: var(--text-colour2);
+  --color-text-placeholder: var(--text-placeholder);
+
+  /* Status */
+  --color-good-green: var(--good-green);
+  --color-error-red: var(--error-red);
+  --color-warning-yellow: var(--warning-yellow);
+
+  /* Backgrounds */
+  --color-bg-gray: var(--bg-gray);
+  --color-bg-light: var(--bg-light);
+
+  /* Borders */
+  --color-border-gray: var(--border-gray);
+
+  /* Icons */
+  --color-icon-primary: var(--icon-primary);
+  --color-icon-secondary: var(--icon-secondary);
+  --color-icon-tertiary: var(--icon-tertiary);
+
+  /* ── Spacing scale → mt-sm, p-base, gap-xl, top-3xl … ── */
+  --spacing-sm: var(--space-sm);
+  --spacing-md: var(--space-md);
+  --spacing-base: var(--space-base);
+  --spacing-lg: var(--space-lg);
+  --spacing-xl: var(--space-xl);
+  --spacing-2xl: var(--space-2xl);
+  --spacing-3xl: var(--space-3xl);
+  --spacing-4xl: var(--space-4xl);
+
+  /* Layout tokens → mt-navbar-h, px-section-px-lg, py-section-py … */
+  --spacing-navbar-h: var(--navbar-h);
+  --spacing-section-px: var(--section-px);
+  --spacing-section-px-sm: var(--section-px-sm);
+  --spacing-section-px-lg: var(--section-px-lg);
+  --spacing-section-py: var(--section-py);
+  --spacing-section-py-sm: var(--section-py-sm);
+  --spacing-section-py-lg: var(--section-py-lg);
 }
 
 @layer utilities {
@@ -29,33 +94,11 @@
     font-family: "Syne", sans-serif !important;
     font-optical-sizing: auto;
   }
-
-  .shadow-custom {
-    box-shadow: 0px 44px 24px -19px #0000001a;
-  }
-}
-
-@layer utilities {
-  .card-shadow-four {
-    box-shadow: 0 1px 1px 0 rgba(0, 1, 2, 0, 0.04);
-  }
-
-  .card-shadow-eight {
-    box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.08);
-  }
-
-  .card-shadow-twelve {
-    box-shadow: 0 0.5px 0.5px 0 rgba(0, 0, 0, 0.12);
-  }
 }
 
 @layer components {
   .default-max-width {
     @apply mx-auto w-full max-w-[700px];
-  }
-
-  .default-page-max-width {
-    @apply mx-auto w-full max-w-[500px];
   }
 
   .dashboard-max-width {
@@ -65,7 +108,8 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    box-sizing: border-box;
+    border-color: var(--border-gray);
   }
 
   html {
@@ -73,7 +117,13 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--white);
+    color: var(--text-colour);
+
+    @media (prefers-color-scheme: dark) {
+      @apply bg-gray-950;
+      color-scheme: dark;
+    }
   }
 
   h1,

@@ -10,26 +10,20 @@ export default function Footer() {
       className="relative overflow-hidden text-white"
       style={{ backgroundColor: "var(--color-primary)" }}
     >
-      <div className="mx-auto max-w-7xl px-6 pt-16 pb-10">
-        <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
+      <div className="px-section sm:px-section-px-sm lg:px-section-px-lg py-section-py-sm mx-auto w-full max-w-7xl">
+        <div className="gap-4xl lg:gap-2xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6">
           {/* Brand */}
-          <div className="flex flex-col gap-(--gap-base)">
-            <h2 className="text-4xl leading-tight font-bold">
-              Market Prices.
-              <br />
-              Zero{" "}
-              <span style={{ color: "var(--color-secondary)" }}>
-                Market Stress
-              </span>
-              .
-            </h2>
-            <p className="text-sm text-green-300">
-              Fresh foodstuff delivered straight to your door at market prices.
-            </p>
-          </div>
+          <h2 className="text-4xl leading-tight font-bold lg:col-span-2">
+            Market Prices.
+            <br />
+            Zero <span style={{ color: "var(--color-secondary)" }}>
+              Market
+            </span>{" "}
+            Stress.
+          </h2>
 
           {/* Support */}
-          <div className="flex flex-col gap-(--gap-lg)">
+          <div className="flex flex-col gap-(--gap-lg) lg:col-span-1">
             <p
               className="text-xs font-semibold tracking-widest uppercase"
               style={{ color: "var(--color-secondary)" }}
@@ -54,7 +48,7 @@ export default function Footer() {
           </div>
 
           {/* Need Help */}
-          <div className="flex flex-col gap-(--gap-lg)">
+          <div className="flex flex-col gap-(--gap-lg) lg:col-span-1">
             <p
               className="text-xs font-semibold tracking-widest uppercase"
               style={{ color: "var(--color-secondary)" }}
@@ -67,7 +61,7 @@ export default function Footer() {
               </p>
               <a
                 href="tel:+2348167042797"
-                className="flex cursor-pointer items-center gap-2 text-green-200 transition-all duration-300 ease-in-out hover:text-white"
+                className="gap-sm flex cursor-pointer items-center text-green-200 transition-all duration-300 ease-in-out hover:text-white"
               >
                 <Phone className="h-4 w-4 shrink-0" />
                 +234 816 704 2797
@@ -77,14 +71,14 @@ export default function Footer() {
               </p>
               <a
                 href="mailto:support@debridger.com"
-                className="flex cursor-pointer items-center gap-2 text-green-200 transition-all duration-300 ease-in-out hover:text-white"
+                className="gap-sm flex cursor-pointer items-center text-green-200 transition-all duration-300 ease-in-out hover:text-white"
               >
                 <Mail className="h-4 w-4 shrink-0" />
                 support@debridger.com
               </a>
               <a
                 href="mailto:partner@debridger.com"
-                className="flex cursor-pointer items-center gap-2 text-green-200 transition-all duration-300 ease-in-out hover:text-white"
+                className="gap-sm flex cursor-pointer items-center text-green-200 transition-all duration-300 ease-in-out hover:text-white"
               >
                 <Mail className="h-4 w-4 shrink-0" />
                 partner@debridger.com
@@ -93,7 +87,7 @@ export default function Footer() {
           </div>
 
           {/* Keep in Touch */}
-          <div className="flex flex-col gap-(--gap-lg) md:col-span-3">
+          <div className="flex flex-col gap-(--gap-lg) lg:col-span-2">
             <p
               className="text-xs font-semibold tracking-widest uppercase"
               style={{ color: "var(--color-secondary)" }}
@@ -122,9 +116,9 @@ export default function Footer() {
 
       {/* Bottom Bar */}
       <div className="border-t border-white/10 py-6">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 text-xs text-green-300 md:flex-row">
+        <div className="gap-base px-section sm:px-section-px-sm lg:px-section-px-lg mx-auto flex max-w-7xl flex-col items-center justify-between text-xs text-green-300 md:flex-row">
           <p>© 2026 Debridger. Delivering fresh to Kaduna South.</p>
-          <div className="flex gap-6">
+          <div className="gap-xl flex">
             {[
               { label: "Privacy", to: "/privacy" },
               { label: "Contact", to: "/contact" },

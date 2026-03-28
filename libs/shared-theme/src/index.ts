@@ -1,84 +1,133 @@
+/**
+ * shared-theme/index.ts
+ *
+ * Single source of truth for design tokens — values mirror tokens.css.
+ * Use these in JS/TS contexts (e.g. inline styles, tests, non-Tailwind code).
+ * For Tailwind usage, rely on the CSS variable classes defined via @theme in styles.css.
+ */
+
 export const colors = {
   // Brand
-  primary: "#1a4a2e",
-  secondary: "#f59e0b",
-  primaryLight: "#e8f0eb",
-  secondaryLight: "#fef3c7",
-
-  // Theme
-  themeOrange: "#ea4335",
-  themeOrangeDash: "#ea5228",
-  themeOrangeDark: "#67150e",
-  themeOrangeDark2: "#1d0202",
-  themeOrangeDark3: "#3c0a06",
+  primary: "var(--primary-color)",
+  primaryLight: "var(--primary-color-light)",
+  secondary: "var(--secondary-color)",
+  secondaryLight: "var(--secondary-color-light)",
 
   // Base
-  white: "#ffffff",
-  black: "#000000",
+  white: "var(--white)",
+  black: "var(--black)",
 
   // Headings
-  headingBlack: "#1e1e1e",
-  headingBlack2: "#010a12",
-  headingDash: "#010a12",
+  headingColour: "var(--heading-colour)",
+  headingColour2: "var(--heading-colour2)",
 
   // Text
-  textDash: "#181b19",
-  textColour: "#49454f",
-  textColour2: "#795d5a",
-  textColour3: "#1c1c1c",
-  textPlaceholder: "#969393",
+  textColour: "var(--text-colour)",
+  textColour2: "var(--text-colour2)",
+  textPlaceholder: "var(--text-placeholder)",
 
   // Status
-  redDash: "#ff0707",
-  greenDash: "#087060",
-  green2: "#27ae60",
-  errorRed: "#ff383c",
-  blue: "#136ce3",
-  blueLight: "#04b7fe",
+  goodGreen: "var(--good-green)",
+  errorRed: "var(--error-red)",
+  warningYellow: "var(--warning-yellow)",
 
   // Backgrounds
-  bgGray: "#f5f5f5",
-  bgPink: "#fff9f8",
-  bgBlue: "#f9fbff",
-  bgRed: "#fff5f5",
-  bgRedLight: "#faccc8",
-  bgDashCard: "#fbfbfb",
-  dashPinkBg: "#fff7f5",
+  bgGray: "var(--bg-gray)",
+  bgLight: "var(--bg-light)",
 
   // Borders
-  borderGray: "#d9d9d9",
-  borderPink: "#c2d9c0",
-  borderRed: "#edcac7",
-  borderInput: "#d9d9d9",
-  borderButton: "#e5d4d2",
-  borderBlue: "#cfe3ff",
-  borderDash: "#acacac",
-  borderDashed: "#585757",
+  borderGray: "var(--border-gray)",
 
   // Icons
-  iconPrimary: "#1e1e1e",
-  iconSecondary: "#757575",
-  iconTertiary: "#b3b3b3",
+  iconPrimary: "var(--icon-primary)",
+  iconSecondary: "var(--icon-secondary)",
+  iconTertiary: "var(--icon-tertiary)",
 } as const;
 
 export const spacing = {
-  gapSm: "0.5rem",
-  gapMd: "0.75rem",
-  gapBase: "1rem",
-  gapLg: "1.25rem",
-  gapXl: "1.5rem",
-  gap2xl: "2rem",
-  gap3xl: "2.5rem",
+  sm: "var(--space-sm)",
+  md: "var(--space-md)",
+  base: "var(--space-base)",
+  lg: "var(--space-lg)",
+  xl: "var(--space-xl)",
+  "2xl": "var(--space-2xl)",
+  "3xl": "var(--space-3xl)",
+  "4xl": "var(--space-4xl)",
+} as const;
 
-  spaceSm: "0.5rem",
-  spaceMd: "0.75rem",
-  spaceBase: "1rem",
-  spaceLg: "1.25rem",
-  spaceXl: "1.5rem",
-  space2xl: "1.75rem",
-  space3xl: "2rem",
-  space4xl: "2.5rem",
+export const shadows = {
+  yellow: "var(--shadow-yellow)",
 } as const;
 
 export type Colors = typeof colors;
 export type Spacing = typeof spacing;
+export type Shadows = typeof shadows;
+
+// Tailwind preset — consumed by apps/*/tailwind.config.ts
+const preset = {
+  theme: {
+    extend: {
+      colors: {
+        // Brand
+        primary: "var(--primary-color)",
+        "primary-light": "var(--primary-color-light)",
+        secondary: "var(--secondary-color)",
+        "secondary-light": "var(--secondary-color-light)",
+
+        // Base
+        white: "var(--white)",
+        black: "var(--black)",
+
+        // Headings
+        "heading-colour": "var(--heading-colour)",
+        "heading-colour2": "var(--heading-colour2)",
+
+        // Text
+        "text-colour": "var(--text-colour)",
+        "text-colour2": "var(--text-colour2)",
+        "text-placeholder": "var(--text-placeholder)",
+
+        // Status
+        "good-green": "var(--good-green)",
+        "error-red": "var(--error-red)",
+        "warning-yellow": "var(--warning-yellow)",
+
+        // Backgrounds
+        "bg-gray": "var(--bg-gray)",
+        "bg-light": "var(--bg-light)",
+
+        // Borders
+        "border-gray": "var(--border-gray)",
+
+        // Input
+        "input-border": "var(--input-border)",
+        "input-border-focus": "var(--input-border-focus)",
+        "input-error-red": "var(--input-error-red)",
+        "input-bg": "var(--input-bg)",
+
+        // Icons
+        "icon-primary": "var(--icon-primary)",
+        "icon-secondary": "var(--icon-secondary)",
+        "icon-tertiary": "var(--icon-tertiary)",
+      },
+      spacing: {
+        sm: "var(--space-sm)",
+        md: "var(--space-md)",
+        base: "var(--space-base)",
+        lg: "var(--space-lg)",
+        xl: "var(--space-xl)",
+        "2xl": "var(--space-2xl)",
+        "3xl": "var(--space-3xl)",
+        "4xl": "var(--space-4xl)",
+      },
+      boxShadow: {
+        yellow: "0 4px 50px 10px rgba(148, 97, 4, 0.5)",
+      },
+      borderRadius: {
+        input: "var(--input-radius)",
+      },
+    },
+  },
+};
+
+export default preset;

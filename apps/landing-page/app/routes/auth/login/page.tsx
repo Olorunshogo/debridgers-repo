@@ -13,7 +13,7 @@ import { Chrome } from "lucide-react";
 import { z } from "zod";
 
 const metadata = {
-  title: "Sign In to Your Account",
+  title: "Log In to Your Account",
   description:
     "Log in to Debridger to access verified Nigerian agricultural products and manage your orders.",
 
@@ -47,7 +47,7 @@ const signInSchema = z.object({
 
 type SignInForm = z.infer<typeof signInSchema>;
 
-export default function SignInPage() {
+export default function LogInPage() {
   const router = useRouter();
 
   const [form, setForm] = useState<SignInForm>({ email: "", password: "" });
