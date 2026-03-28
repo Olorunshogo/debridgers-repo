@@ -110,6 +110,9 @@ const preset = {
         "icon-secondary": "var(--icon-secondary)",
         "icon-tertiary": "var(--icon-tertiary)",
       },
+      height: {
+        "navbar-h": "var(--navbar-h)",
+      },
       spacing: {
         sm: "var(--space-sm)",
         md: "var(--space-md)",
@@ -119,6 +122,7 @@ const preset = {
         "2xl": "var(--space-2xl)",
         "3xl": "var(--space-3xl)",
         "4xl": "var(--space-4xl)",
+        "navbar-h": "var(--navbar-h)",
       },
       boxShadow: {
         yellow: "0 4px 50px 10px rgba(148, 97, 4, 0.5)",
