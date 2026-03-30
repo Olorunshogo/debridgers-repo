@@ -77,7 +77,7 @@ export function Header({
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "tween", duration: 0.3 }}
-              className="px-section-px fixed top-0 left-0 z-50 h-full w-full bg-white shadow-xl sm:w-1/2 md:w-1/3 lg:hidden"
+              className="px-section-px fixed top-0 left-0 z-50 h-full w-full bg-white shadow-xl sm:w-1/2 lg:hidden"
             >
               <div className="gap-base py-xl flex w-full flex-col">
                 {/* Logo */}

@@ -1,6 +1,7 @@
 import type { Route } from "../+types/home";
 import { useState, useEffect, useRef } from "react";
 import { Header } from "../../components/Header";
+import { HeroSection } from "@/components/HeroSection";
 import { Phone, Mail, Clock, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -204,50 +205,69 @@ export default function ContactPage() {
 
   return (
     <>
-      {/* Minimal header — no hero image on contact */}
-      <div
-        className="flex flex-col gap-0"
-        style={{ backgroundColor: "var(--color-primary)" }}
-      >
+      {/* Header */}
+      <div className="top-md sticky z-50">
         <Header
           navLinks={[
-            { label: "How it works", href: "/#how-it-works" },
-            { label: "Why Us", href: "/#why-us" },
-            { label: "Home", href: "/" },
+            { label: "How it works", href: "#how-it-works" },
+            { label: "Product", href: "#what-we-deliver" },
+            { label: "Why Us", href: "#why-debridgers" },
           ]}
-          signUpHref="https://wa.me/+2347012288798"
+          signUpHref="/signup"
         />
+      </div>
 
-        {/* Page title banner */}
-        <div className="px-lg flex flex-col items-center gap-(--gap-base) pt-36 pb-20 text-center text-white">
-          <p
-            className="text-xs font-semibold tracking-widest uppercase"
-            style={{ color: "var(--color-secondary)" }}
-          >
-            Get in touch
-          </p>
-          <h1 className="text-4xl leading-tight font-bold lg:text-5xl">
-            Contact Debridger
-          </h1>
-          <p className="max-w-md text-base text-green-200">
-            We&apos;re here to help with any question or partnership inquiry.
-          </p>
+      {/* Hero Section */}
+      <div className="relative flex w-full flex-col">
+        {/* Hero Section */}
+        <div className="-mt-navbar-h flex min-h-0 w-full flex-1">
+          <div className="from-primary -mt-navbar-h via-primary to-primary absolute inset-0 z-0 overflow-hidden bg-linear-to-b" />
+          <HeroSection
+            images={["/images/hero-contact-bg.png"]}
+            servingLocation="Now Serving in Kaduna"
+            headingParts={{
+              top: [{ text: "Market Prices." }],
+              bottom: [
+                { text: "Zero " },
+                { text: "Market", highlight: true },
+                { text: " Stress." },
+              ],
+            }}
+            subtext="Fresh foodstuff delivered straight to your door or shop — at the same price you'd pay at Central Market."
+            secondaryCta={{ label: "See how it works ", href: "#how-it-works" }}
+            trustItems={[
+              { icon: "lucide:check", label: "Guarantee fresh produce" },
+              {
+                icon: "lucide:map-pin",
+                label: "Sarbon Tasha • Narayi• Kakuri",
+              },
+              { icon: "lucide:tag", label: "Transparent, fixed pricing" },
+              { icon: "lucide:truck", label: "Fast Delivery" },
+            ]}
+          />
         </div>
       </div>
 
-      <main className="font-openSans bg-bg-light">
-        <section className="px-section sm:px-section-px-sm lg:px-section-px-lg py-section-py-sm lg:py-section-py-lg mx-auto max-w-7xl">
-          <div className="gap-4xl grid grid-cols-1 lg:grid-cols-2">
-            {/* ── Form ── */}
-            <div className="flex flex-col gap-(--gap-2xl) rounded-2xl bg-white p-8 shadow-sm">
-              <div className="flex flex-col gap-(--gap-sm)">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Send Us A Message
-                </h2>
-                <p className="text-sm text-gray-500">
-                  We typically respond within a few hours.
-                </p>
-              </div>
+      <section className="font-openSans h-full w-full bg-white">
+        <div className="px-section-px gap-4xl sm:px-section-px-sm lg:px-section-px-lg py-section-py sm:py-section-py-sm lg:py-section-py-lg default-max-width mx-auto flex flex-col">
+          {/* Contact Heading */}
+          <div className="gap-base flex flex-col items-center text-center">
+            <h2 className="font-open-sans text-2xl text-[14px] font-semibold sm:text-3xl sm:text-xl lg:text-4xl">
+              Contact Debridgers
+            </h2>
+            <p className="text-text text-xl text-[10px] lg:text-2xl">
+              We&apos;re here to help you reach out with any question or
+              partnership inquires{" "}
+            </p>
+          </div>
+
+          {/* Contact Form */}
+          <div className="gap-2xl lg:gap-4xl grid grid-cols-1 lg:grid-cols-2">
+            {/* Form */}
+            <div className="gap-2xl border-primary flex flex-col rounded-2xl border bg-white px-[18px] py-[20px] lg:border-0">
+              <h2 className="font-open-sans text-2xl font-semibold text-black">
+                Send Us A Message
+              </h2>
 
               <AnimatePresence mode="wait">
                 {submitted ? (
@@ -262,7 +282,7 @@ export default function ContactPage() {
                       className="h-14 w-14"
                       style={{ color: "var(--color-primary)" }}
                     />
-                    <h3 className="text-xl font-bold text-gray-900">
+                    <h3 className="text-xl font-bold text-black">
                       Message sent!
                     </h3>
                     <p className="max-w-xs text-sm text-gray-500">
@@ -285,7 +305,7 @@ export default function ContactPage() {
                     exit={{ opacity: 0 }}
                     onSubmit={handleSubmit}
                     noValidate
-                    className="flex flex-col gap-(--gap-xl)"
+                    className="gap-4xl flex flex-col pb-[120px] lg:pb-0"
                   >
                     <TextInput
                       label="Full Name"
@@ -299,9 +319,9 @@ export default function ContactPage() {
                     />
 
                     <EmailInput
-                      label="Email Address"
+                      label="Email"
                       name="email"
-                      placeholder="you@example.com"
+                      placeholder="Enter your email"
                       required
                       value={form.email}
                       onChange={handleChange("email")}
@@ -312,7 +332,7 @@ export default function ContactPage() {
                     <TextareaInput
                       label="Your Message"
                       name="message"
-                      placeholder="Tell us how we can help..."
+                      placeholder="Type your message here"
                       required
                       rows={5}
                       value={form.message}
@@ -321,7 +341,11 @@ export default function ContactPage() {
                       errorMessage={errors.message}
                     />
 
-                    <SubmitButton loading={loading} loadingText="Sending...">
+                    <SubmitButton
+                      loading={loading}
+                      loadingText="Sending..."
+                      className="mx-auto w-full max-w-[500px]"
+                    >
                       Send Message
                     </SubmitButton>
                   </motion.form>
@@ -329,30 +353,21 @@ export default function ContactPage() {
               </AnimatePresence>
             </div>
 
-            {/* ── Right column: info + map ── */}
-            <div className="flex flex-col gap-(--gap-2xl)">
+            {/* Right column: info + map */}
+            <div className="gap-4xl flex flex-col">
               {/* Contact info cards */}
-              <div className="flex flex-col gap-(--gap-base)">
+              <div className="gap-md flex flex-col">
                 {contactItems.map(({ icon: Icon, label, value, href }) => {
                   const inner = (
-                    <div className="flex items-center gap-(--gap-base)">
-                      <span
-                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
-                        style={{
-                          backgroundColor:
-                            "var(--color-secondary-light, #fef3c7)",
-                        }}
-                      >
-                        <Icon
-                          className="h-5 w-5"
-                          style={{ color: "var(--color-secondary)" }}
-                        />
+                    <div className="border-gray flex w-full items-center gap-[14px] rounded-2xl border p-5 lg:border-0">
+                      <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-[#A7E8BF]">
+                        <Icon className="text-primary h-8 w-8" />
                       </span>
-                      <div className="flex flex-col gap-(--gap-sm)">
-                        <span className="text-xs font-semibold tracking-widest text-gray-400 uppercase">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-text text-xl font-bold tracking-widest capitalize">
                           {label}
                         </span>
-                        <span className="text-base font-semibold text-gray-900">
+                        <span className="text-text text-base lg:text-lg">
                           {value}
                         </span>
                       </div>
@@ -360,18 +375,11 @@ export default function ContactPage() {
                   );
 
                   return href ? (
-                    <a
-                      key={label}
-                      href={href}
-                      className="rounded-2xl bg-white p-5 shadow-sm transition-shadow duration-200 hover:shadow-md"
-                    >
+                    <a key={label} href={href} className="flex items-center">
                       {inner}
                     </a>
                   ) : (
-                    <div
-                      key={label}
-                      className="rounded-2xl bg-white p-5 shadow-sm"
-                    >
+                    <div key={label} className="">
                       {inner}
                     </div>
                   );
@@ -379,7 +387,7 @@ export default function ContactPage() {
               </div>
 
               {/* Map */}
-              <div className="relative h-80 overflow-hidden rounded-2xl border border-gray-200 shadow-sm lg:h-auto lg:min-h-64 lg:flex-1">
+              <div className="border-gray relative h-96 overflow-hidden rounded-2xl border shadow-sm lg:h-auto lg:min-h-84 lg:flex-1">
                 <ContactMap lat={10.4831} lng={7.4324} zoom={15} />
                 <div className="absolute right-2 bottom-2 z-10 rounded bg-white/90 px-2 py-1 text-xs text-gray-500 shadow">
                   © OpenStreetMap
@@ -387,8 +395,8 @@ export default function ContactPage() {
               </div>
             </div>
           </div>
-        </section>
-      </main>
+        </div>
+      </section>
     </>
   );
 }

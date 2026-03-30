@@ -8,20 +8,25 @@
 
 @source "../../../packages/ui-web/src/**/*.{ts,tsx}";
 
-/* ── Landing-page-specific layout tokens ── */
+/* Landing-page-specific layout tokens */
 :root {
   --navbar-h: 4.75rem;
 
   --section-px: 1rem;
-  --section-px-sm: 1.5rem;
-  --section-px-lg: 2rem;
+  --section-px-sm: 2.5rem;
+  --section-px-lg: 6.25rem;
 
   --section-py: 2rem;
-  --section-py-sm: 3rem;
-  --section-py-lg: 4rem;
+  --section-py-sm: 4rem;
+  --section-py-lg: 6.25rem;
+
+  /* lg (100px) → 6.25rem
+md (80px) → 5rem
+sm (64px) → 4rem
+mobile (48–50px) */
 }
 
-/* ── @theme: bridges CSS vars → Tailwind utility classes ── */
+/* @theme: bridges CSS vars → Tailwind utility classes */
 @theme inline {
   /* Fonts */
   --font-syne: "Syne", sans-serif;
@@ -98,7 +103,7 @@
 
 @layer components {
   .default-max-width {
-    @apply mx-auto w-full max-w-[700px];
+    @apply mx-auto w-full max-w-[1400px];
   }
 
   .dashboard-max-width {

@@ -26,14 +26,13 @@ export function TextInput({
   const inputId = id ?? name ?? label.toLowerCase().replace(/\s+/g, "-");
 
   return (
-    <div className="flex flex-col gap-(--gap-sm)">
+    <div className="font-inter flex flex-col gap-(--gap-sm)">
       <label
         htmlFor={inputId}
-        className="text-sm font-medium"
-        style={{ color: "var(--heading-black)" }}
+        className="font-inter text-[14px] font-medium text-[#0F172A]"
       >
         {label}
-        {required && <span className="ml-0.5 text-red-500">*</span>}
+        {required && <span className="text-error-red ml-0.5">*</span>}
       </label>
       <input
         id={inputId}
@@ -43,7 +42,7 @@ export function TextInput({
         required={required}
         value={value}
         onChange={onChange}
-        className="w-full rounded-lg border px-4 py-3 text-sm transition-colors duration-200 outline-none placeholder:text-gray-400"
+        className="font-inter h-13 w-full rounded-3xl border p-6 text-base transition-all duration-300 ease-in-out outline-none placeholder:text-[#94A3B8]"
         style={{
           borderColor: error ? "var(--input-error-red)" : "var(--input-border)",
           backgroundColor: "var(--input-bg)",

@@ -63,5 +63,6 @@
   },
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
-  "typescript.autoClosingTags": false
+  "typescript.autoClosingTags": false,
+  "auto-close-tag.fullMode": false
 }
