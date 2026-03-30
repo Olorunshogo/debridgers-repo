@@ -33,7 +33,7 @@ export function WhatsAppButton({
       className={`shadow-yellow px-base lg:px-xl py-xl lg:py-2xl inline-flex h-[54px] w-full max-w-fit items-center gap-[10px] rounded-full text-lg font-semibold transition-opacity lg:h-[72px] lg:text-xl hover:opacity-90${className ? ` ${className}` : ""}`}
     >
       {/* <WhatsAppIcon /> */}
-      <Icon icon="logos:whatsapp-icon" className="h-5 w-5" />
+      <Icon icon="cib:whatsapp" className="h-5 w-5" />
       {label}
     </a>
   );

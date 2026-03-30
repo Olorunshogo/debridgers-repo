@@ -54,7 +54,7 @@ export function HeroSection({
   }, [trustItems.length]);
 
   return (
-    <section className="font-syne relative mx-auto flex h-full max-h-[1064px] w-full max-w-[1440px] flex-col overflow-hidden">
+    <section className="font-syne relative mx-auto flex h-full max-h-[1064px] w-full max-w-[1840px] flex-col overflow-hidden">
       {/* Background layer */}
       <div className="absolute inset-0 z-0">
         <AnimatePresence mode="wait">
@@ -74,40 +74,15 @@ export function HeroSection({
       </div>
 
       {/* Content Wrapper */}
-      <div className="gap-2xl px-section-px sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col justify-between">
+      <div className="gap-2xl px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-full w-full flex-col justify-between">
         <div className="relative flex flex-1 flex-col pt-[80px] sm:pt-[100px] lg:pt-[120px]">
           {/* Left Content */}
-          <div className="gap-xl lg:gap-4xl flex flex-1 flex-col justify-center py-24 sm:py-28 lg:py-32">
+          <div className="gap-2xl lg:gap-4xl flex flex-1 flex-col justify-center py-28 sm:py-32 lg:py-38">
             {/* Location badge */}
             <div className="px-base text-primary border-primary font-syne p-md inline-flex w-fit items-center gap-[10px] rounded-full border border-white/30 bg-[#A5BDA8] text-xl shadow-md backdrop-blur-lg">
               <span className="bg-primary h-1.5 w-1.5 rounded-full" />
               {servingLocation}
             </div>
-
-            {/* Heading */}
-            {/* <h1 className="flex flex-col text-5xl leading-tight font-bold text-white sm:text-6xl lg:text-7xl">
-              {/* Top line *
-              <span>
-                {headingParts.top.map((part: HeadingPart) => (
-                  <span key={part.text}>{part.text}</span>
-                ))}
-              </span>
-              {/* Bottom line *
-              <span>
-                {headingParts.bottom.map((part: HeadingPart) =>
-                  part.highlight ? (
-                    <span
-                      key={part.text}
-                      style={{ color: "var(--secondary-color)" }}
-                    >
-                      {part.text}
-                    </span>
-                  ) : (
-                    <span key={part.text}>{part.text}</span>
-                  ),
-                )}
-              </span>
-            </h1> */}
 
             {/* Heading */}
             <h1 className="flex flex-col text-5xl leading-tight font-bold text-white sm:text-6xl lg:text-7xl">
@@ -182,24 +157,26 @@ export function HeroSection({
 
         <div className="gap-4xl lg:gap-base relative flex w-full flex-col">
           {/* Progress bar + SCROLL label */}
-          <div className="gap-md flex items-center justify-center lg:justify-end">
-            <div className="h-px w-16 overflow-hidden bg-white/30">
-              <motion.div
-                key={currentIndex}
-                className="h-full"
-                style={{ backgroundColor: "var(--secondary-color)" }}
-                initial={{ width: "0%" }}
-                animate={{ width: "100%" }}
-                transition={{ duration: 6, ease: "linear" }}
-              />
+          {/* {images.length > 0 && (
+            <div className="gap-md flex items-center justify-center lg:justify-end">
+              <div className="h-px w-16 overflow-hidden bg-white/30">
+                <motion.div
+                  key={currentIndex}
+                  className="h-full"
+                  style={{ backgroundColor: "var(--secondary-color)" }}
+                  initial={{ width: "0%" }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 6, ease: "linear" }}
+                />
+              </div>
+              <span
+                className="text-[14px] font-semibold tracking-widest capitalize lg:text-xl"
+                style={{ color: "var(--white)" }}
+              >
+                SCROLL
+              </span>
             </div>
-            <span
-              className="text-[14px] font-semibold tracking-widest capitalize lg:text-xl"
-              style={{ color: "var(--white)" }}
-            >
-              SCROLL
-            </span>
-          </div>
+          )} */}
 
           {/* Trust bar */}
           <div className="bg-primary py-xl px-base mx-auto w-full shadow-md">

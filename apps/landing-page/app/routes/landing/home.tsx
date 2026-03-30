@@ -1,5 +1,4 @@
 import type { Route } from "./+types/home";
-import { Link } from "react-router";
 import { Header } from "../../components/Header";
 import { HeroSection } from "../../components/HeroSection";
 import { Icon } from "@iconify/react";
@@ -279,11 +278,14 @@ function WhatWeDeliver() {
   // };
 
   return (
-    <section className="font-syne py-section-py sm:py-section-py-sm lg:py-section-py-lg relative w-full overflow-hidden bg-white">
+    <section
+      id="what-we-deliver"
+      className="font-syne py-section-py sm:py-section-py-sm lg:py-section-py-lg relative w-full overflow-hidden bg-white"
+    >
       <div
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className="gap-3xl px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto flex w-full max-w-7xl flex-col"
+        className="gap-3xl px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto flex w-full flex-col"
       >
         {/* Header */}
         <div className="gap-md lg:gap-xl flex flex-col">
@@ -365,8 +367,8 @@ export default function Home() {
         <Header
           navLinks={[
             { label: "How it works", href: "#how-it-works" },
-            { label: "Product", href: "#product" },
-            { label: "Why Us", href: "#why-us" },
+            { label: "Product", href: "#what-we-deliver" },
+            { label: "Why Us", href: "#why-debridgers" },
           ]}
           signUpHref="/signup"
         />
@@ -378,11 +380,7 @@ export default function Home() {
         <div className="-mt-navbar-h flex min-h-0 w-full flex-1">
           <div className="from-primary -mt-navbar-h via-primary to-primary absolute inset-0 z-0 overflow-hidden bg-linear-to-b" />
           <HeroSection
-            images={[
-              "/images/hero-image-1.png",
-              "/images/hero-image-2.png",
-              "/images/hero-image-3.png",
-            ]}
+            images={["/images/hero-image-1.png"]}
             servingLocation="Now Serving in Kaduna"
             headingParts={{
               top: [{ text: "Market Prices." }],
@@ -412,7 +410,7 @@ export default function Home() {
         id="how-it-works"
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative bg-white"
       >
-        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto max-w-7xl">
+        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto">
           <div className="grid items-center gap-(--space-4xl) lg:grid-cols-2">
             {/* Left Content */}
             <motion.div
@@ -501,10 +499,10 @@ export default function Home() {
 
       {/* Why Debridgers */}
       <section
-        id="why-us"
+        id="why-debridgers"
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg font-syne relative bg-[#F6F3F3]"
       >
-        <div className="px-section-px sm:px-section-px-sm lg:px-section gap-3xl mx-auto flex w-full max-w-7xl flex-col">
+        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-3xl default-max-width mx-auto flex w-full flex-col">
           <div className="flex flex-col gap-(--space-md) lg:gap-(--space-xl)">
             <p className="text-primary-light text-xl tracking-widest">
               Why Debridger
@@ -531,11 +529,14 @@ export default function Home() {
       <WhatWeDeliver />
 
       {/* Stats Section */}
-      <section className="py-section-py sm:py-section-py-sm lg:py-section-py-lg font-syne bg-primary relative overflow-hidden text-white">
+      <section
+        id="stats"
+        className="py-section-py sm:py-section-py-sm lg:py-section-py-lg font-syne bg-primary relative overflow-hidden text-white"
+      >
         {/* <div className="pointer-events-none absolute top-8 right-8 h-56 w-56 rounded-full border border-white/10" />
         <div className="pointer-events-none absolute right-24 bottom-16 h-80 w-80 rounded-full border border-white/10" /> */}
 
-        <div className="px-section-px z-10-px sm:px-section-px-sm lg:px-section-px-lg lg:gap-4xl relative mx-auto flex max-w-7xl flex-col">
+        <div className="px-section-px z-10-px sm:px-section-px-sm lg:px-section-px-lg lg:gap-4xl default-max-width relative mx-auto flex flex-col">
           <div className="font-syne pb-2xl flex flex-col gap-(--space-md)">
             <p className="text-text2 text-xl tracking-[3px] uppercase">
               Early Numbers
@@ -583,7 +584,10 @@ export default function Home() {
       </section>
 
       {/* GetStarted Section */}
-      <section className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative overflow-hidden bg-white">
+      <section
+        id="get-started"
+        className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative overflow-hidden bg-white"
+      >
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute top-16 left-1/4 h-80 w-80 rounded-full bg-green-100 opacity-60 blur-3xl" />
           <div className="absolute right-1/4 bottom-8 h-72 w-72 rounded-full bg-amber-100 opacity-50 blur-3xl" />
@@ -610,8 +614,11 @@ export default function Home() {
       </section>
 
       {/* Partnership Section */}
-      <section className="relativepy-section-py sm:py-section-py-sm lg:py-section-py-lg bg-[#F6F3F3]">
-        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto w-full max-w-7xl">
+      <section
+        id="partnership"
+        className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative bg-[#F6F3F3]"
+      >
+        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto w-full">
           <div className="grid gap-(--space-4xl) lg:grid-cols-2">
             {/* Left Content */}
             <motion.div
@@ -662,12 +669,16 @@ export default function Home() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.15 }}
-              className="bg-primary-light flex h-full max-h-[352px] flex-col gap-[32px] rounded-3xl px-8 py-12 text-white"
+              className="bg-primary-light flex h-fit flex-col gap-[32px] rounded-3xl px-8 py-12 text-white"
             >
               <div className="flex items-center justify-between gap-(--space-base)">
-                <div className="flex flex-col gap-(--space-sm)">
-                  <div className="h-[23px] w-[123px]">
-                    <img src="/agroLinking-logo.png" alt="Agro-Linking Logo" />
+                <div className="flex flex-1 flex-col truncate">
+                  <div className="h-[30px] w-[130px]">
+                    <img
+                      src="/agroLinking-logo.png"
+                      alt="Agro-Linking Logo"
+                      className="block"
+                    />
                   </div>
 
                   <div className="font-open-sans text-base text-white">
@@ -677,7 +688,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="bg-primary flex shrink-0 items-center gap-(--space-md) rounded-full px-(--space-base) py-1 text-base lg:text-lg">
+                <div className="bg-primary flex shrink-0 items-center gap-(--space-sm) rounded-full px-(--space-md) py-1 text-base lg:text-lg">
                   <Icon
                     icon="lucide:check"
                     className="h-3.5 w-3.5 text-white"
@@ -699,10 +710,10 @@ export default function Home() {
                   ].map((item) => (
                     <li
                       key={item}
-                      className="font-open-sans flex items-center gap-(--space-md)"
+                      className="font-open-sans flex items-start gap-(--space-md)"
                     >
                       <span
-                        className="mt-0.5 shrink-0"
+                        className="shrink-0 text-xl font-bold"
                         style={{ color: "var(--secondary-color)" }}
                       >
                         •

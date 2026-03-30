@@ -28,14 +28,13 @@ export function TextareaInput({
   const inputId = id ?? name ?? label.toLowerCase().replace(/\s+/g, "-");
 
   return (
-    <div className="flex flex-col gap-(--gap-sm)">
+    <div className="font-inter flex flex-col gap-(--gap-sm)">
       <label
         htmlFor={inputId}
-        className="text-sm font-medium"
-        style={{ color: "var(--heading-black)" }}
+        className="font-inter text-[14px] font-medium text-[#0F172A]"
       >
         {label}
-        {required && <span className="ml-0.5 text-red-500">*</span>}
+        {required && <span className="text-error-red ml-0.5">*</span>}
       </label>
       <textarea
         id={inputId}
@@ -45,7 +44,7 @@ export function TextareaInput({
         value={value}
         onChange={onChange}
         rows={rows}
-        className="w-full resize-none rounded-lg border px-4 py-3 text-sm transition-colors duration-200 outline-none placeholder:text-gray-400"
+        className="w-full resize-none rounded-lg border p-6 text-base transition-all duration-300 ease-in-out outline-none placeholder:text-[#94A3B8]"
         style={{
           borderColor: error ? "var(--input-error-red)" : "var(--input-border)",
           backgroundColor: "var(--input-bg)",
