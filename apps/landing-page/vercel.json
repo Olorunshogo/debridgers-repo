@@ -3,8 +3,8 @@
   "outputDirectory": "build",
   "framework": null,
   "functions": {
-    "build/server/index.js": {
-      "runtime": "@vercel/node@18"
+    "entry.server.tsx": {
+      "runtime": "nodejs@24"
     }
   },
   "rewrites": [
