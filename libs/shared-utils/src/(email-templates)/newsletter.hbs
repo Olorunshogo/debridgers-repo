@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>New Subscriber</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    @media only screen and (max-width: 600px) {
+      .container { padding: 100% !important; padding: 16px !important; }
+      .card { padding: 24px !important; }
+      .highlight-box { padding: 16px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0; padding:0; font-family: Arial, Helvetica, sans-serif; background:#f4f4f4;">
+  <div class="container" style="max-width:600px; margin:20px auto; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.1);">
+    <!-- Header -->
+    <div style="background:#2B6036; padding:32px 20px; text-align:center;">
+      <h1 style="color:#ffffff; margin:0; font-size:28px; font-weight:bold;">New Subscriber!</h1>
+    </div>
+
+    <!-- Body -->
+    <div class="card" style="padding:40px 32px; text-align:center;">
+      <p style="font-size:18px; color:#333333; margin:0 0 16px 0;">Hello Admin,</p>
+      <p style="font-size:16px; color:#555555; line-height:1.6; margin:0 0 32px 0;">
+        A new user has subscribed to the <strong>Debridger Newsletter</strong>:
+      </p>
+
+      <div class="highlight-box" style="background:#f8f9fa; padding:24px; border-radius:8px; margin:32px auto; max-width:380px;">
+        <p style="margin:0; font-size:22px; color:#2B6036; font-weight:bold; word-break:break-all;">
+          {{email}}
+        </p>
+      </div>
+
+      <p style="color:#666666; font-size:15px; margin:32px 0 0 0;">
+        Keep growing the community!
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="background:#f0f0f0; padding:24px; text-align:center; font-size:12px; color:#999999;">
+      © {{year}} Debridger. All rights reserved.<br>
+      Made with love for agriculture &amp; trade
+    </div>
+  </div>
+</body>
+</html>
