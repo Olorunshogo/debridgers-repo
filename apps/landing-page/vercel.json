@@ -1,16 +1,8 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "build",
-  "framework": null,
+  "buildCommand": "pnpm run build",
   "functions": {
-    "entry.server.tsx": {
-      "runtime": "nodejs@24"
+    "api/index.ts": {
+      "runtime": "nodejs18.x"
     }
-  },
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ]
+  }
 }
