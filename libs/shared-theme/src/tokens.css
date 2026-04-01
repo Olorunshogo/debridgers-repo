@@ -1,0 +1,60 @@
+:root {
+  /* ── Brand colours ── */
+  --primary-color: #1e5925;
+  --primary-color-light: #4b7a51;
+  --secondary-color: #ef9e0b;
+  --secondary-color-light: #fef3c7;
+
+  /* ── Base ── */
+  --white: #ffffff;
+  --black: #000000;
+
+  /* ── Heading colours ── */
+  --heading-colour: #1e1e1e;
+  --heading-colour2: #010a12;
+
+  /* ── Text colours ── */
+  --text-colour: #414652;
+  --text-colour2: #a5bda8;
+  --text-placeholder: #969393;
+
+  /* ── Status colours ── */
+  --good-green: #07ff07;
+  --error-red: #ff0707;
+  --warning-yellow: #fffb01;
+
+  /* ── Background colours ── */
+  --bg-gray: #f5f5f5;
+  --bg-light: #f4f7f5;
+
+  /* ── Border colours ── */
+  --border-gray: #d9d9d9;
+
+  /* ── Shadows ── */
+  --shadow-yellow: 0 4px 50px 10px rgba(148, 97, 4, 0.5);
+
+  /* ── Input ── */
+  --input-border: #d1d5db;
+  --input-border-focus: #1a4a2e;
+  --input-error-red: #ef4444;
+  --input-bg: #ffffff;
+  --input-radius: 0.5rem;
+
+  /* ── Icon colours ── */
+  --icon-primary: #1e1e1e;
+  --icon-secondary: #757575;
+  --icon-tertiary: #b3b3b3;
+
+  /* ── Layout ── */
+  --navbar-h: 74px;
+
+  /* ── Spacing scale (gap + padding/margin — same values, one scale) ── */
+  --space-sm: 0.5rem; /* 8px  */
+  --space-md: 0.75rem; /* 12px */
+  --space-base: 1rem; /* 16px */
+  --space-lg: 1.25rem; /* 20px */
+  --space-xl: 1.5rem; /* 24px */
+  --space-2xl: 1.75rem; /* 28px */
+  --space-3xl: 2rem; /* 32px */
+  --space-4xl: 2.5rem; /* 40px */
+}

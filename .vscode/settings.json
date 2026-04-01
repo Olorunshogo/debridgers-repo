@@ -1,16 +1,68 @@
 {
+  // === Auto Save
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 300,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.formatOnSave": true,
+  // === Tab & indentation
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
+
+  // === Prettier config
+  "prettier.printWidth": 80,
+  "prettier.tabWidth": 2,
+  "prettier.useTabs": false,
+  "prettier.singleQuote": false,
+  "prettier.semi": true,
+  "prettier.trailingComma": "es5",
+  "prettier.bracketSpacing": true,
+
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  // === Prettier
+  "prettier.requireConfig": true,
+  "prettier.useEditorConfig": false,
+
+  // === Optional: trim whitespace
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "editor.wordWrap": "off",
+
   "eslint.validate": [
     "javascript",
     "javascriptreact",
     "typescript",
     "typescriptreact"
   ],
+  // === Exclusions
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/node_modules": true,
+    "**/cache": true,
+    "**/artifacts": true,
+    "**/out": true
+  },
+  // === Search
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/cache": true,
+    "**/artifacts": true,
+    "**/out": true
+  },
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
-  "typescript.autoClosingTags": false
+  "typescript.autoClosingTags": false,
+  "auto-close-tag.fullMode": false
 }

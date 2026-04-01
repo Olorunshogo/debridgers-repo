@@ -26,7 +26,7 @@ stayar-v2/
 
 ### @stayar/ui-app (Ionic Components)
 
-**Location:** `packages/stayer-ui/app`  
+**Location:** `packages/stayer-ui/app`
 **Purpose:** Ionic React components for mobile/hybrid apps
 
 **Key Features:**
@@ -63,7 +63,7 @@ pnpm nx run @stayar/ui-app:storybook
 
 ### @stayar/ui-web (Shadcn Components)
 
-**Location:** `packages/stayer-ui/web`  
+**Location:** `packages/stayer-ui/web`
 **Purpose:** Shadcn/ui components for web applications
 
 **Key Features:**
@@ -112,7 +112,7 @@ pnpm nx run @stayar/ui-web:storybook
 
 ### @stayar/shared/theme
 
-**Location:** `libs/shared/theme`  
+**Location:** `libs/shared/theme`
 **Purpose:** Centralized Tailwind CSS configuration
 
 **Key Features:**
@@ -138,7 +138,7 @@ export default {
 
 ### @stayar/shared/ui
 
-**Location:** `libs/shared/ui`  
+**Location:** `libs/shared/ui`
 **Purpose:** Shared UI utilities and base components
 
 **Usage:**

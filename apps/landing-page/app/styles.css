@@ -1,88 +1,94 @@
-@import "tailwindcss";
-
-/* Font Syne Import */
+/* Font imports must come FIRST — before @import "tailwindcss" */
 @import url("https://fonts.googleapis.com/css2?family=Syne:wght@400..800&display=swap");
-
-/* Font openSans Import */
 @import url("https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
 
 @import "tailwindcss";
+@import "@debridgers/shared-theme/tokens.css";
 
+@source "../../../packages/ui-web/src/**/*.{ts,tsx}";
+
+/* Landing-page-specific layout tokens */
 :root {
-  --navbar-h: 4.5rem;
-  --theme-orange: #ea4335;
-  --theme-orange-dash: #ea5228;
-  --theme-orange-dark: #67150e;
-  --theme-orange-dark-2: #1d0202;
-  --theme-orange-dark-3: #3c0a06;
+  --navbar-h: 4.75rem;
 
-  --white: #ffffff;
-  --black: #000000;
+  --section-px: 1rem;
+  --section-px-sm: 2.5rem;
+  --section-px-lg: 6.25rem;
 
-  --heading-black: #1e1e1e;
-  --heading-black2: #010a12;
+  --section-py: 2rem;
+  --section-py-sm: 4rem;
+  --section-py-lg: 6.25rem;
 
-  --heading-dash: #010a12;
-  --text-dash: #181b19;
-  --red-dash: #ff0707;
-  --green-dash: #087060;
+  /* lg (100px) → 6.25rem
+md (80px) → 5rem
+sm (64px) → 4rem
+mobile (48–50px) */
+}
 
-  --text-colour: #49454f;
-  --text-colour2: #795d5a;
-  --text-colour3: #1c1c1c;
-  --text-placeholder: #969393;
-  --blue: #136ce3;
-  --blue-light: #04b7fe;
+/* @theme: bridges CSS vars → Tailwind utility classes */
+@theme inline {
+  /* Fonts */
+  --font-syne: "Syne", sans-serif;
+  --font-open-sans: "Open Sans", sans-serif;
 
-  --bg-gray: #f5f5f5;
+  /* Brand colours → bg-primary, text-primary, border-primary … */
+  --color-primary: var(--primary-color);
+  --color-primary-light: var(--primary-color-light);
+  --color-secondary: var(--secondary-color);
+  --color-secondary-light: var(--secondary-color-light);
 
-  --bg-pink: #fff9f8;
-  --bg-blue: #f9fbff;
-  --bg-red: #fff5f5;
-  --bg-red-light: #faccc8;
-  --green-2: #27ae60;
-  --bg-dash-card: #fbfbfb;
+  /* Base */
+  --color-white: var(--white);
+  --color-black: var(--black);
 
-  --dash-pink-bg: #fff7f5;
-  --dash-pink-border: rgba(240, 224, 219, 0.38);
+  /* Headings */
+  --color-heading: var(--heading-colour);
+  --color-heading2: var(--heading-colour2);
 
-  --border-gray: #d9d9d9;
-  --border-pink: #c2d9c0;
-  --border-red: #edcac7;
-  --border-input: #d9d9d9;
-  --border-button: #e5d4d2;
-  --border-blue: #cfe3ff;
-  --border-dash: #acacac;
-  --border-dashed: #585757;
+  /* Text */
+  --color-text: var(--text-colour);
+  --color-text2: var(--text-colour2);
+  --color-text-placeholder: var(--text-placeholder);
 
-  --border-dash-card: #534f4f38;
-  --border-dash-table: rgba(132, 132, 132, 0.2);
+  /* Status */
+  --color-good-green: var(--good-green);
+  --color-error-red: var(--error-red);
+  --color-warning-yellow: var(--warning-yellow);
 
-  --border-dashed: #585757;
-  --error-red: #ff383c;
+  /* Backgrounds */
+  --color-bg-gray: var(--bg-gray);
+  --color-bg-light: var(--bg-light);
 
-  --icon-primary: #1e1e1e;
-  --icon-secondary: #757575;
-  --icon-tertiary: #b3b3b3;
+  /* Borders */
+  --color-border-gray: var(--border-gray);
 
-  --gap-sm: 0.5rem; /* 8px */
-  --gap-md: 0.75rem; /* 12px */
-  --gap-base: 1rem; /* 16px */
-  --gap-lg: 1.25rem; /* 20px */
-  --gap-xl: 1.5rem; /* 24px */
-  --gap-2xl: 2rem; /* 32px */
-  --gap-3xl: 2.5rem; /* 40px */
+  /* Icons */
+  --color-icon-primary: var(--icon-primary);
+  --color-icon-secondary: var(--icon-secondary);
+  --color-icon-tertiary: var(--icon-tertiary);
 
-  --space-sm: 0.5rem; /* 8px */
-  --space-md: 0.75rem; /* 12px */
-  --space-base: 1rem; /* 16px */
+  /* ── Spacing scale → mt-sm, p-base, gap-xl, top-3xl … ── */
+  --spacing-sm: var(--space-sm);
+  --spacing-md: var(--space-md);
+  --spacing-base: var(--space-base);
+  --spacing-lg: var(--space-lg);
+  --spacing-xl: var(--space-xl);
+  --spacing-2xl: var(--space-2xl);
+  --spacing-3xl: var(--space-3xl);
+  --spacing-4xl: var(--space-4xl);
+
+  /* Layout tokens → mt-navbar-h, px-section-px-lg, py-section-py … */
+  --spacing-navbar-h: var(--navbar-h);
+  --spacing-section-px: var(--section-px);
+  --spacing-section-px-sm: var(--section-px-sm);
+  --spacing-section-px-lg: var(--section-px-lg);
+  --spacing-section-py: var(--section-py);
+  --spacing-section-py-sm: var(--section-py-sm);
+  --spacing-section-py-lg: var(--section-py-lg);
 }
 
 @layer utilities {
-  .font-inter {
-    font-family: var(--font-inter), sans-serif !important;
-  }
-
   .font-openSans {
     font-family: "Open Sans", sans-serif !important;
     font-optical-sizing: auto;
@@ -95,28 +101,9 @@
   }
 }
 
-@layer utilities {
-  .card-shadow-four {
-    box-shadow: 0 1px 1px 0 rgba(0, 1, 2, 0, 0.04);
-  }
-
-  .card-shadow-eight {
-    box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.08);
-  }
-
-  .card-shadow-twelve {
-    box-shadow: 0 0.5px 0.5px 0 rgba(0, 0, 0, 0.12);
-  }
-}
-
-/* @apply mx-auto w-full max-w-[1440px]; */
 @layer components {
   .default-max-width {
-    @apply mx-auto w-full max-w-[700px];
-  }
-
-  .default-page-max-width {
-    @apply mx-auto w-full max-w-[500px];
+    @apply mx-auto w-full max-w-[1400px];
   }
 
   .dashboard-max-width {
@@ -126,14 +113,22 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    box-sizing: border-box;
+    border-color: var(--border-gray);
   }
 
   html {
     scroll-behavior: smooth;
   }
+
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--white);
+    color: var(--text-colour);
+
+    @media (prefers-color-scheme: dark) {
+      @apply bg-gray-950;
+      color-scheme: dark;
+    }
   }
 
   h1,
@@ -146,7 +141,7 @@
   }
 }
 
-/* Global styles to let the browser to match my theme for input fields */
+/* Autofill override */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
@@ -155,31 +150,14 @@ input:-webkit-autofill:focus {
   transition: background-color 9999s ease-in-out 0s;
 }
 
-/* Hide arrows in Chrome, Safari, Edge, Opera */
+/* Hide number input arrows — Chrome, Safari, Edge, Opera */
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-/* Hide arrows in Firefox */
+/* Hide number input arrows — Firefox */
 input[type="number"] {
   -moz-appearance: textfield;
 }
-
-/* Tailwindcss Size Guide */
-/* 
-text-xs    | 0.833rem   | 10px
-text-sm    | 0.0.857rem   | 12px
-text-md    | 0.875rem  | 14px
-text-base  | 1rem      | 16px
-text-lg    | 1.125rem  | 18px
-text-xl    | 1.25rem   | 20px
-text-2xl   | 1.5rem    | 24px
-text-3xl   | 1.875rem  | 30px
-text-4xl   | 2.25rem   | 36px
-text-5xl   | 3rem      | 48px
-text-6xl   | 3.75rem   | 60px
-text-7xl   | 4.5rem    | 72px
-text-8xl   | 6rem      | 96px
-text-9xl   | 8rem      | 128px */
