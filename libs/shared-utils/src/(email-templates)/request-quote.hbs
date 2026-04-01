@@ -1,0 +1,43 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>New Quote Request</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+</head>
+<body style="margin:0; padding:0; font-family: Arial, sans-serif; background:#f4f4f4;">
+  <div style="max-width:600px; margin:40px auto; background:white; border-radius:12px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.1);">
+    <div style="background:#2B6036; padding:32px; text-align:center;">
+      <h1 style="color:white; margin:0; font-size:28px;">New Quote Request!</h1>
+    </div>
+    <div style="padding:40px 32px;">
+      <p style="font-size:18px; color:#333; margin:0 0 24px;">Hello Admin,</p>
+      <p style="font-size:16px; color:#555; line-height:1.6;">
+        A new quote request has been submitted on Debridger:
+      </p>
+
+      <div style="background:#f8f9fa; padding:28px; border-radius:8px; margin:32px 0; border-left:6px solid #2B6036;">
+        <p><strong>Product:</strong> {{product}}</p>
+        <p><strong>Quantity:</strong> {{quantity}} tons</p>
+        <p><strong>Destination:</strong> {{destinationPort}}</p>
+        <p><strong>Company:</strong> {{companyName}}</p>
+        <p><strong>Contact Person:</strong> {{contactPerson}}</p>
+        <p><strong>Email:</strong> <a href="mailto:{{email}}" style="color:#2B6036;">{{email}}</a></p>
+        <p><strong>Phone:</strong> {{phone}}</p>
+        {{#if specialRequirements}}
+          <p><strong>Special Requirements:</strong></p>
+          <p style="background:#fff; padding:16px; border-radius:6px; margin-top:8px; white-space:pre-line;">
+            {{specialRequirements}}
+          </p>
+        {{/if}}
+      </div>
+
+      <p style="color:#666;">Reply to <strong>{{email}}</strong> or call <strong>{{phone}}</strong> to follow up.</p>
+    </div>
+    <div style="background:#f0f0f0; padding:24px; text-align:center; font-size:12px; color:#999;">
+      © {{year}} Debridger • New Quote Request
+    </div>
+  </div>
+</body>
+</html>

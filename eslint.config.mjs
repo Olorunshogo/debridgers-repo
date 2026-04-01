@@ -37,7 +37,7 @@ export default [
       "react/prop-types": "off",
       "react/jsx-no-target-blank": "error",
       "react/jsx-key": ["error", { checkFragmentShorthand: true }],
-      "react/no-array-index-key": "warn",
+      "react/no-array-index-key": "off",
       "react/no-unescaped-entities": "warn",
 
       // React Hooks
