@@ -424,7 +424,7 @@ export default function Home() {
                 <p className="text-text-colour text-[14px] font-semibold">
                   How it works
                 </p>
-                <h2 className="text-text text-xl leading-tight font-bold sm:text-3xl lg:text-5xl">
+                <h2 className="text-text text-3xl leading-tight font-bold sm:text-4xl lg:text-5xl">
                   From market to your door in two steps
                 </h2>
               </div>
@@ -669,7 +669,7 @@ export default function Home() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.15 }}
-              className="bg-primary-light flex h-fit flex-col gap-[32px] rounded-3xl px-8 py-12 text-white"
+              className="bg-primary-light/80 flex h-fit flex-col gap-[32px] rounded-3xl px-8 py-12 text-white"
             >
               <div className="flex items-center justify-between gap-(--space-base)">
                 <div className="flex flex-1 flex-col truncate">
