@@ -4,12 +4,8 @@
   "files": [],
   "references": [
     { "path": "./apps/landing-page" },
-    { "path": "./apps/backend" },
 
     { "path": "./packages/ui-web" },
-    { "path": "./packages/ui-app" },
-
-    { "path": "./libs/shared-theme" },
-    { "path": "./libs/shared-utils" }
+    { "path": "./packages/ui-app" }
   ]
 }

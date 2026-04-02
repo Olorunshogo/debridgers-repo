@@ -245,14 +245,6 @@ function WhatWeDeliver() {
   const step = cardWidth + gap;
   const totalCards = deliverCategories.length; // 6
 
-  // === Auto-slide every 4 seconds (one card at a time)
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     setOffset((prev) => (prev + 1) % totalCards);
-  //   }, 4000);
-
-  //   return () => clearInterval(interval);
-  // }, [totalCards]);
   useEffect(() => {
     if (!isHovered) {
       const interval = setInterval(() => {
@@ -262,20 +254,6 @@ function WhatWeDeliver() {
       return () => clearInterval(interval); // Clean up the interval when the component unmounts or when hover state changes
     }
   }, [isHovered, totalCards]);
-
-  // const ConcentricCircles = () => {
-  //   return (
-  //     <div className="absolute top-[-370px] right-[-200px] h-[723px] w-[723px] rotate-[119deg]">
-  //       {[0, 40, 80].map((offset, i) => (
-  //         <div
-  //           key={i}
-  //           className="absolute rounded-full border-[20px] border-[#A5BDA8]"
-  //           style={{ inset: `${offset}px` }}
-  //         />
-  //       ))}
-  //     </div>
-  //   );
-  // };
 
   return (
     <section
@@ -533,9 +511,6 @@ export default function Home() {
         id="stats"
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg font-syne bg-primary relative overflow-hidden text-white"
       >
-        {/* <div className="pointer-events-none absolute top-8 right-8 h-56 w-56 rounded-full border border-white/10" />
-        <div className="pointer-events-none absolute right-24 bottom-16 h-80 w-80 rounded-full border border-white/10" /> */}
-
         <div className="px-section-px z-10-px sm:px-section-px-sm lg:px-section-px-lg lg:gap-4xl default-max-width relative mx-auto flex flex-col">
           <div className="font-syne pb-2xl flex flex-col gap-(--space-md)">
             <p className="text-text2 text-xl tracking-[3px] uppercase">
@@ -593,7 +568,7 @@ export default function Home() {
           <div className="absolute right-1/4 bottom-8 h-72 w-72 rounded-full bg-amber-100 opacity-50 blur-3xl" />
         </div>
 
-        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-xl relative mx-auto flex w-full flex-col items-center justify-center text-center lg:gap-(--space-3xl)">
+        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-xl default-max-width relative mx-auto flex w-full flex-col items-center justify-center text-center lg:gap-(--space-3xl)">
           <div className="gap-md flex flex-col">
             <p className="text-primary-light font-open-sans text-center text-lg font-semibold tracking-widest lg:text-xl">
               Get started
@@ -629,7 +604,7 @@ export default function Home() {
               className="lg:gap-3xl gap-xl flex flex-col"
             >
               <div className="gap-xl flex flex-col">
-                <div className="bg-primary-light text-primary font-open-sans border-primary inline-flex w-fit items-center gap-(--space-sm) rounded-full border border-1 px-(--space-base) py-1.5 text-base tracking-widest uppercase lg:text-lg">
+                <div className="bg-primary-light/80 text-primary font-open-sans border-primary inline-flex w-fit items-center gap-(--space-sm) rounded-full border border-1 px-(--space-base) py-1.5 text-base tracking-widest uppercase lg:text-lg">
                   Official Partnership
                 </div>
 
