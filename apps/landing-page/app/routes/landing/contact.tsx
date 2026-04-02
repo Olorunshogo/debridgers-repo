@@ -389,7 +389,7 @@ export default function ContactPage() {
               {/* Map */}
               <div className="border-gray relative h-96 overflow-hidden rounded-2xl border shadow-sm lg:h-auto lg:min-h-84 lg:flex-1">
                 <ContactMap lat={10.4831} lng={7.4324} zoom={15} />
-                <div className="absolute right-2 bottom-2 z-10 rounded bg-white/90 px-2 py-1 text-xs text-gray-500 shadow">
+                <div className="absolute right-2 bottom-2 z-2 rounded bg-white/90 px-2 py-1 text-xs text-gray-500 shadow">
                   © OpenStreetMap
                 </div>
               </div>
