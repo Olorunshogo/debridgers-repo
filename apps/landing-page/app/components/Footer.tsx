@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 
 export default function Footer() {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState<string>("");
 
   return (
     <footer className="bg-primary relative overflow-hidden text-white">
@@ -47,7 +47,7 @@ export default function Footer() {
       {/* Main footer content */}
       <div className="gap-2xl px-section-px lg:gap-2xl sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex w-full flex-col">
         {/* Top section: tagline + columns */}
-        <div className="py-section-py sm:py-section-py-sm grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1fr_1fr] lg:items-center">
+        <div className="py-section-py lg:py-section-py-lg sm:py-section-py-sm grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1fr_1fr] lg:items-center">
           {/* Tagline */}
           <h2 className="font-syne text-4xl leading-tight font-medium">
             Market Prize
