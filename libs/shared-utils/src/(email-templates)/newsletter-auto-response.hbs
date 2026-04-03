@@ -1,41 +1,61 @@
-<!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8">
-  <title>Welcome to Debridger Newsletter</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-</head>
-<body style="margin:0; padding:0; font-family: Arial, Helvetica, sans-serif; background:#f4f4f4;">
-  <div style="max-width:600px; margin:20px auto; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.1);">
-    <!-- Green Header -->
-    <div style="background:#2B6036; padding:40px 20px; text-align:center;">
-      <h1 style="color:#ffffff; margin:0; font-size:30px; font-weight:bold;">Welcome aboard!</h1>
-    </div>
+  <head>
+    <meta charset="utf-8" />
+    <title>Welcome to Debridger Newsletter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body
+    style="margin:0; padding:0; font-family: Arial, Helvetica, sans-serif; background:#f4f4f4;"
+  >
+    <div
+      style="max-width:600px; margin:20px auto; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.1);"
+    >
+      <!-- Green Header -->
+      <div style="background:#2B6036; padding:40px 20px; text-align:center;">
+        <h1
+          style="color:#ffffff; margin:0; font-size:30px; font-weight:bold;"
+        >Welcome aboard!</h1>
+      </div>
 
-    <!-- Body -->
-    <div style="padding:40px 32px; text-align:center;">
-      <p style="font-size:18px; color:#333333; margin:0 0 16px 0;">You're in, {{email}}!</p>
-      <p style="font-size:16px; color:#555555; line-height:1.7; margin:0 0 32px 0;">
-        Thank you for subscribing to the <strong>Debridger Newsletter</strong>.<br>
-        You’ll now get the latest price trends, crop insights, and export-ready product alerts.
-      </p>
+      <!-- Body -->
+      <div style="padding:40px 32px; text-align:center;">
+        <p style="font-size:18px; color:#333333; margin:0 0 16px 0;">You're in,
+          {{email}}!</p>
+        <p
+          style="font-size:16px; color:#555555; line-height:1.7; margin:0 0 32px 0;"
+        >
+          Thank you for subscribing to the
+          <strong>Debridger Newsletter</strong>.<br />
+          You’ll now get the latest price trends, crop insights, and
+          export-ready product alerts.
+        </p>
 
-      <div style="background:#f0f8f0; padding:24px; border-radius:8px; margin:32px auto; max-width:420px; border-left:5px solid #2B6036;">
-        <p style="margin:0; font-size:15px; color:#1e4d2b;">
-          First update drops in your inbox within 48 hours
+        <div
+          style="background:#f0f8f0; padding:24px; border-radius:8px; margin:32px auto; max-width:420px; border-left:5px solid #2B6036;"
+        >
+          <p style="margin:0; font-size:15px; color:#1e4d2b;">
+            First update drops in your inbox within 48 hours
+          </p>
+        </div>
+
+        <p style="color:#666666; font-size:14px; margin:32px 0 0 0;">
+          Want to stop receiving emails?
+          <a
+            href="{{unsubscribe_url}}"
+            style="color:#2B6036; text-decoration:underline;"
+          >Click here to unsubscribe</a>.
         </p>
       </div>
 
-      <p style="color:#666666; font-size:14px; margin:32px 0 0 0;">
-        Want to stop receiving emails? <a href="{{unsubscribe_url}}" style="color:#2B6036; text-decoration:underline;">Click here to unsubscribe</a>.
-      </p>
+      <!-- Footer -->
+      <div
+        style="background:#f0f0f0; padding:24px; text-align:center; font-size:12px; color:#999999;"
+      >
+        ©
+        {{year}}
+        Debridger • Made for farmers, traders & exporters<br />
+        You are receiving this because you subscribed at debridger.com
+      </div>
     </div>
-
-    <!-- Footer -->
-    <div style="background:#f0f0f0; padding:24px; text-align:center; font-size:12px; color:#999999;">
-      © {{year}} Debridger • Made for farmers, traders & exporters<br>
-      You are receiving this because you subscribed at debridger.com
-    </div>
-  </div>
-</body>
+  </body>
 </html>

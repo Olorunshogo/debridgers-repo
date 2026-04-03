@@ -29,8 +29,12 @@
     "dev:landing": "pnpm --filter @debridgers/landing-page dev",
     "build:landing": "pnpm --filter @debridgers/landing-page build",
     "typecheck:landing": "pnpm --filter @debridgers/landing-page typecheck",
-    "dev:backend": "pnpm --filter @debridgers/backend dev",
-    "build:backend": "pnpm --filter @debridgers/backend build",
+    "dev:backend": "pnpm --filter @debridgers/debridgers-backend dev",
+    "build:backend": "pnpm --filter @debridgers/debridgers-backend build",
+    "db:migrate": "pnpm --filter @debridgers/debridgers-backend db:migrate",
+    "db:generate": "pnpm --filter @debridgers/debridgers-backend db:generate",
+    "db:seed": "pnpm --filter @debridgers/debridgers-backend db:seed",
+    "test:e2e": "pnpm --filter @debridgers/debridgers-backend-e2e test",
     "dev:ui-web": "pnpm --filter @debridgers/ui-web dev",
     "build:ui-web": "pnpm --filter @debridgers/ui-web build",
     "watch:ui-web": "pnpm --filter @debridgers/ui-web watch"
@@ -69,5 +73,10 @@
   },
   "author": "",
   "license": "MIT",
-  "packageManager": "pnpm@10.32.1"
+  "packageManager": "pnpm@10.32.1",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
 }

@@ -209,9 +209,9 @@ export default function ContactPage() {
       <div className="top-md sticky z-50">
         <Header
           navLinks={[
-            { label: "How it works", href: "#how-it-works" },
-            { label: "Product", href: "#what-we-deliver" },
-            { label: "Why Us", href: "#why-debridgers" },
+            { label: "Home", href: "/" },
+            { label: "Agents", href: "/agents" },
+            { label: "Contact Us", href: "/contact" },
           ]}
           signUpHref="/signup"
         />
@@ -234,7 +234,7 @@ export default function ContactPage() {
               ],
             }}
             subtext="Fresh foodstuff delivered straight to your door or shop — at the same price you'd pay at Central Market."
-            secondaryCta={{ label: "See how it works ", href: "#how-it-works" }}
+            secondaryCta={{ label: "Contact Us ", href: "#contact-us" }}
             trustItems={[
               { icon: "lucide:check", label: "Guarantee fresh produce" },
               {
@@ -262,7 +262,10 @@ export default function ContactPage() {
           </div>
 
           {/* Contact Form */}
-          <div className="gap-2xl lg:gap-4xl grid grid-cols-1 lg:grid-cols-2">
+          <div
+            id="contact-us"
+            className="gap-2xl lg:gap-4xl grid grid-cols-1 lg:grid-cols-2"
+          >
             {/* Form */}
             <div className="gap-2xl border-primary flex flex-col rounded-2xl border bg-white px-[18px] py-[20px] lg:border-0">
               <h2 className="font-open-sans text-2xl font-semibold text-black">

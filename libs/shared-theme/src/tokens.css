@@ -48,6 +48,24 @@
   /* ── Layout ── */
   --navbar-h: 74px;
 
+  /* ── Dashboard status badges ── */
+  --status-on-the-way-bg: #fef3c7;
+  --status-on-the-way-text: #b45309;
+  --status-delivered-bg: #dcfce7;
+  --status-delivered-text: #15803d;
+  --status-cancelled-bg: #fee2e2;
+  --status-cancelled-text: #dc2626;
+  --status-active-bg: #dcfce7;
+  --status-active-text: #15803d;
+  --status-pending-bg: #fef9c3;
+  --status-pending-text: #854d0e;
+
+  /* ── Dashboard UI ── */
+  --dash-quick-action-hover: #e8f5e9;
+  --dash-sidebar-bg: #1e5925;
+  --dash-topbar-bg: #ffffff;
+  --dash-page-bg: #f7f8f7;
+
   /* ── Spacing scale (gap + padding/margin — same values, one scale) ── */
   --space-sm: 0.5rem; /* 8px  */
   --space-md: 0.75rem; /* 12px */
