@@ -14,8 +14,8 @@ import type { JwtPayload } from "../../types/auth";
 
 export function meta() {
   return [
-    { title: "Sign In | Debridger" },
-    { name: "description", content: "Sign in to your Debridger account." },
+    { title: "Sign In | Debridgers" },
+    { name: "description", content: "Sign in to your Debridgers account." },
   ];
 }
 
@@ -103,7 +103,7 @@ export default function LoginPage() {
         <div className="flex flex-col gap-6">
           <h2 className="font-syne text-4xl leading-tight font-bold text-white xl:text-5xl">
             Welcome back to{" "}
-            <span style={{ color: "var(--secondary-color)" }}>Debridger.</span>
+            <span style={{ color: "var(--secondary-color)" }}>Debridgers.</span>
           </h2>
           <p className="max-w-sm text-lg leading-relaxed text-white/80">
             Fresh food at market prices, delivered to your door or shop.

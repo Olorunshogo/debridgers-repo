@@ -26,7 +26,7 @@ export function EmailInput({
   const inputId = id ?? name ?? label.toLowerCase().replace(/\s+/g, "-");
 
   return (
-    <div className="flex flex-col gap-(--gap-sm)">
+    <div className="gap-sm flex flex-col">
       <label
         htmlFor={inputId}
         className="font-inter text-[14px] font-medium text-[#0F172A]"

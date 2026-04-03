@@ -44,7 +44,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
       <div className="flex h-20 items-center px-6">
         <Link to="/agent-dashboard" onClick={onNavClick}>
           <span className="font-syne text-2xl font-bold text-white">
-            Debridger
+            Debridgers
           </span>
         </Link>
       </div>

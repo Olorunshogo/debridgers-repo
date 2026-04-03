@@ -13,7 +13,7 @@ import {
 import { BASE_BACKEND_URL } from "../../../utils/api";
 
 export function meta() {
-  return [{ title: "Settings | Debridger" }];
+  return [{ title: "Settings | Debridgers" }];
 }
 
 const schema = z

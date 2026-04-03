@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 
 export function meta() {
-  return [{ title: "My Orders | Debridger" }];
+  return [{ title: "My Orders | Debridgers" }];
 }
 
 type OrderStatus = "active" | "pending" | "cancelled" | "delivered";

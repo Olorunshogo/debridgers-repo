@@ -29,7 +29,7 @@ function UserCard() {
       </div>
       <div className="flex min-w-0 flex-col">
         <span className="truncate text-sm font-semibold text-white">Admin</span>
-        <span className="truncate text-xs text-white/60">Debridger HQ</span>
+        <span className="truncate text-xs text-white/60">Debridgers HQ</span>
       </div>
     </div>
   );
@@ -42,7 +42,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
       <div className="flex h-20 items-center px-6">
         <Link to="/admin-dashboard" onClick={onNavClick}>
           <span className="font-syne text-2xl font-bold text-white">
-            Debridger
+            Debridgers
           </span>
         </Link>
       </div>

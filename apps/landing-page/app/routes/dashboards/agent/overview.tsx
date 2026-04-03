@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { TrendingUp, FileText, Wallet, Target } from "lucide-react";
 
 export function meta() {
-  return [{ title: "Agent Overview | Debridger" }];
+  return [{ title: "Agent Overview | Debridgers" }];
 }
 
 interface RecentReport {

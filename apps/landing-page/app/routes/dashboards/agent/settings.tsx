@@ -1,5 +1,5 @@
 export function meta() {
-  return [{ title: "Settings | Debridger" }];
+  return [{ title: "Settings | Debridgers" }];
 }
 export default function AgentSettings() {
   return <div className="flex flex-col gap-4" />;

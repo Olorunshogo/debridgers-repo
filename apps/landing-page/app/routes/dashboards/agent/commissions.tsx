@@ -1,5 +1,5 @@
 export function meta() {
-  return [{ title: "Commissions | Debridger" }];
+  return [{ title: "Commissions | Debridgers" }];
 }
 export default function AgentCommissions() {
   return (

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, ShoppingCart, Minus, Plus, Trash2 } from "lucide-react";
 
 export function meta() {
-  return [{ title: "Shop / Catalog | Debridger" }];
+  return [{ title: "Shop / Catalog | Debridgers" }];
 }
 
 type Category = "all" | "grains" | "tuber" | "oil";

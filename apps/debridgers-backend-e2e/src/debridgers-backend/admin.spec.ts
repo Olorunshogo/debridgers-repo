@@ -8,7 +8,7 @@ describe("Admin", () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        email: process.env.ADMIN_EMAIL || "admin@debridger.com",
+        email: process.env.ADMIN_EMAIL || "admin@debridgers.com",
         password: process.env.ADMIN_PASSWORD || "Admin@2026!",
       }),
     });

@@ -8,10 +8,10 @@ import { BASE_BACKEND_URL } from "../../utils/api";
 
 export function meta() {
   return [
-    { title: "Reset Password | Debridger" },
+    { title: "Reset Password | Debridgers" },
     {
       name: "description",
-      content: "Set a new password for your Debridger account.",
+      content: "Set a new password for your Debridgers account.",
     },
   ];
 }

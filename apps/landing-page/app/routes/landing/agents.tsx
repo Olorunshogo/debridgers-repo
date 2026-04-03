@@ -8,11 +8,11 @@ import { HeroSection } from "../../components/HeroSection";
 
 export function meta() {
   return [
-    { title: "Become an Agent | Debridger" },
+    { title: "Become an Agent | Debridgers" },
     {
       name: "description",
       content:
-        "Join Debridger as a field agent. Earn 30% commission on every sale, work flexibly, and serve your community.",
+        "Join Debridgers as a field agent. Earn 30% commission on every sale, work flexibly, and serve your community.",
     },
   ];
 }
@@ -80,7 +80,7 @@ const benefits: BenefitItem[] = [
   {
     icon: "lucide:shield-check",
     title: "Verified & trusted",
-    description: "Work under the Debridger brand — buyers already trust us.",
+    description: "Work under the Debridgers brand — buyers already trust us.",
   },
   {
     icon: "lucide:trending-up",
@@ -158,7 +158,7 @@ export default function AgentsPage() {
                 { text: "." },
               ],
             }}
-            subtext="Become a Debridger field agent. Source fresh foodstuff, manage deliveries, and earn 30% commission on every sale — on your own schedule."
+            subtext="Become a Debridgers field agent. Source fresh foodstuff, manage deliveries, and earn 30% commission on every sale — on your own schedule."
             secondaryCta={{ label: "Apply Now", href: "#apply-now" }}
             trustItems={[
               { icon: "lucide:wallet", label: "30% commission per sale" },
