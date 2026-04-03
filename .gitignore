@@ -75,3 +75,4 @@ vitest.config.*.timestamp*
 test-output
 
 .nx/polygraph
+.vercel

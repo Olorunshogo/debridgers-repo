@@ -1,11 +1,21 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, NavLink } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { Icon } from "@iconify/react";
-import { PrimaryLink, SecondaryLink, WhatsAppButton } from "@debridgers/ui-web";
+import {
+  AppLogo,
+  PrimaryLink,
+  SecondaryLink,
+  WhatsAppButton,
+} from "@debridgers/ui-web";
+
+interface NavLinkItem {
+  label: string;
+  href: string;
+}
 
 interface HeaderProps {
-  navLinks: Array<{ label: string; href: string }>;
+  navLinks: NavLinkItem[];
   orderNowHref?: string;
   signUpHref: string;
 }
@@ -21,21 +31,41 @@ export function Header({
     <header className="p-base font-syne background-blur-sm h-navbar-h mx-auto flex w-9/10 max-w-[928px] rounded-full bg-white shadow-md">
       <div className="flex w-full items-center justify-between px-4">
         {/* Logo */}
-        <Link to="/" className="text-primary font-syne text-xl font-semibold">
-          Debridger
+        <Link to="/" className="flex items-center">
+          <AppLogo />
         </Link>
 
         {/* Desktop nav links */}
         <nav className="gap-sm hidden items-center lg:flex">
-          {navLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="hover:text-primary font-open-sans text-primary p-[10px] text-sm font-semibold transition-all duration-300 ease-in-out"
-            >
-              {link.label}
-            </a>
-          ))}
+          {navLinks.map((link) => {
+            const isHash = link.href.startsWith("#");
+            if (isHash) {
+              return (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="font-open-sans text-primary p-[10px] text-sm font-semibold transition-all duration-300 ease-in-out hover:opacity-70"
+                >
+                  {link.label}
+                </a>
+              );
+            }
+            return (
+              <NavLink
+                key={link.href}
+                to={link.href}
+                className={({ isActive }) =>
+                  `font-open-sans p-[10px] text-sm font-semibold transition-all duration-300 ease-in-out ${
+                    isActive
+                      ? "text-primary underline decoration-2 underline-offset-4"
+                      : "text-primary hover:opacity-70"
+                  }`
+                }
+              >
+                {link.label}
+              </NavLink>
+            );
+          })}
         </nav>
 
         {/* Desktop CTA buttons */}
@@ -58,11 +88,10 @@ export function Header({
         </button>
       </div>
 
-      {/* Slider */}
+      {/* Mobile drawer */}
       <AnimatePresence>
         {menuOpen && (
           <>
-            {/* Backdrop (right side) */}
             <motion.div
               className="fixed inset-0 z-40 cursor-pointer bg-black/40 lg:hidden"
               initial={{ opacity: 0 }}
@@ -71,7 +100,6 @@ export function Header({
               onClick={() => setMenuOpen(false)}
             />
 
-            {/* Mobile Drawer */}
             <motion.div
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
@@ -80,7 +108,6 @@ export function Header({
               className="px-section-px fixed top-0 left-0 z-50 h-full w-full bg-white shadow-xl sm:w-1/2 lg:hidden"
             >
               <div className="gap-base py-xl flex w-full flex-col">
-                {/* Logo */}
                 <Link
                   to="/"
                   className="text-primary font-syne text-xl font-semibold"
@@ -88,16 +115,37 @@ export function Header({
                   Debridger
                 </Link>
                 <div className="gap-2xl py-base flex flex-col">
-                  {navLinks.map((link) => (
-                    <a
-                      key={link.href}
-                      href={link.href}
-                      className="text-primary font-syne text-base font-semibold transition-all duration-300 ease-in-out hover:opacity-90"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      {link.label}
-                    </a>
-                  ))}
+                  {navLinks.map((link) => {
+                    const isHash = link.href.startsWith("#");
+                    if (isHash) {
+                      return (
+                        <a
+                          key={link.href}
+                          href={link.href}
+                          className="text-primary font-syne text-base font-semibold transition-all duration-300 ease-in-out hover:opacity-70"
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          {link.label}
+                        </a>
+                      );
+                    }
+                    return (
+                      <NavLink
+                        key={link.href}
+                        to={link.href}
+                        onClick={() => setMenuOpen(false)}
+                        className={({ isActive }) =>
+                          `font-syne text-base font-semibold transition-all duration-300 ease-in-out ${
+                            isActive
+                              ? "text-primary opacity-100"
+                              : "text-primary hover:opacity-70"
+                          }`
+                        }
+                      >
+                        {link.label}
+                      </NavLink>
+                    );
+                  })}
                 </div>
 
                 <WhatsAppButton className="mt-auto w-full" />
