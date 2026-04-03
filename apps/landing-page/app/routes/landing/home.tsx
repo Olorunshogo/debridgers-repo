@@ -1,8 +1,12 @@
 import type { Route } from "./+types/home";
 import { Header } from "../../components/Header";
-import { HeroSection } from "../../components/HeroSection";
+import {
+  renderIcon,
+  useImageCycle,
+  useTrustCycle,
+} from "../../components/HeroSection";
 import { Icon } from "@iconify/react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 import { PrimaryLink, WhatsAppButton } from "@debridgers/ui-web";
 
@@ -126,24 +130,6 @@ const deliverCategories: DeliverCategory[] = [
       "/images/deliver-tubers-1.jpg",
       "/images/deliver-tubers-2.jpg",
       "/images/deliver-tubers-3.jpg",
-    ],
-  },
-  {
-    title: "Vegetables",
-    subtitle: "Tomatoes, Pepper, Onion",
-    images: [
-      "/images/deliver-vegetables-1.jpg",
-      "/images/deliver-vegetables-2.jpg",
-      "/images/deliver-vegetables-3.jpg",
-    ],
-  },
-  {
-    title: "Proteins",
-    subtitle: "Fish, Chicken, Beef",
-    images: [
-      "/images/deliver-proteins-1.jpg",
-      "/images/deliver-proteins-2.jpg",
-      "/images/deliver-proteins-3.jpg",
     ],
   },
 ];
@@ -306,6 +292,24 @@ function WhatWeDeliver() {
   );
 }
 
+// === BlurDot: reusable yellow radial-gradient blur dot
+function BlurDot({ className = "" }: { className?: string }) {
+  return (
+    <div
+      aria-hidden
+      className={`pointer-events-none ${className}`}
+      style={{
+        background:
+          "radial-gradient(circle at 50% 50%, rgba(255,213,79,0.9) 40%, rgba(255,213,79,0) 100%)",
+        filter: "blur(40px)",
+        width: "112px",
+        height: "74px",
+        borderRadius: "50%",
+      }}
+    />
+  );
+}
+
 // === Stats
 interface Stat {
   value: number;
@@ -338,15 +342,24 @@ export function meta({}: Route.MetaArgs) {
 
 export default function Home() {
   const [activeWhyCardIndex, setActiveWhyCardIndex] = useState<number>(0);
+  const currentIndex = useImageCycle(1);
+  const activeTrustIndex = useTrustCycle(4);
+  const images = ["/images/hero-1.jpg"];
+  const trustItems = [
+    { icon: "lucide:check", label: "Guarantee fresh produce" },
+    { icon: "lucide:map-pin", label: "Sarbon Tasha • Narayi• Kakuri" },
+    { icon: "lucide:tag", label: "Transparent, fixed pricing" },
+    { icon: "lucide:truck", label: "Fast Delivery" },
+  ];
   return (
     <>
       {/* Header */}
       <div className="top-md sticky z-50">
         <Header
           navLinks={[
-            { label: "How it works", href: "#how-it-works" },
-            { label: "Product", href: "#what-we-deliver" },
-            { label: "Why Us", href: "#why-debridgers" },
+            { label: "Home", href: "/" },
+            { label: "Agents", href: "/agents" },
+            { label: "Contact Us", href: "/contact" },
           ]}
           signUpHref="/signup"
         />
@@ -354,32 +367,129 @@ export default function Home() {
 
       {/* Hero Section */}
       <div className="relative flex w-full flex-col">
-        {/* Hero Section */}
         <div className="-mt-navbar-h flex min-h-0 w-full flex-1">
           <div className="from-primary -mt-navbar-h via-primary to-primary absolute inset-0 z-0 overflow-hidden bg-linear-to-b" />
-          <HeroSection
-            images={["/images/hero-image-1.png"]}
-            servingLocation="Now Serving in Kaduna"
-            headingParts={{
-              top: [{ text: "Market Prices." }],
-              bottom: [
-                { text: "Zero " },
-                { text: "Market", highlight: true },
-                { text: " Stress." },
-              ],
-            }}
-            subtext="Fresh foodstuff delivered straight to your door or shop — at the same price you'd pay at Central Market."
-            secondaryCta={{ label: "See how it works ", href: "#how-it-works" }}
-            trustItems={[
-              { icon: "lucide:check", label: "Guarantee fresh produce" },
-              {
-                icon: "lucide:map-pin",
-                label: "Sarbon Tasha • Narayi• Kakuri",
-              },
-              { icon: "lucide:tag", label: "Transparent, fixed pricing" },
-              { icon: "lucide:truck", label: "Fast Delivery" },
-            ]}
-          />
+          <section className="font-syne relative mx-auto flex h-screen w-full max-w-[1840px] flex-col overflow-hidden">
+            {/* Background layer */}
+            <div className="absolute inset-0 z-0">
+              <AnimatePresence mode="wait">
+                {images.length > 0 && (
+                  <motion.img
+                    key={currentIndex}
+                    src={images[currentIndex]}
+                    alt=""
+                    initial={{ x: "100%" }}
+                    animate={{ x: "0%" }}
+                    exit={{ x: "-100%" }}
+                    transition={{ duration: 0.1, ease: "easeInOut" }}
+                    className="absolute inset-0 h-full w-full object-contain object-cover"
+                  />
+                )}
+                <div className="absolute inset-0 h-full w-full bg-linear-to-b from-[40BF4F]/20 from-0% via-[#23682B]/70 via-23% to-[#061107] to-100%"></div>
+                <div className="absolute inset-0 h-full w-full bg-linear-to-b from-[40BF4F]/20 from-0% to-[#061107] to-100%"></div>
+              </AnimatePresence>
+            </div>
+
+            {/* Content Wrapper */}
+            <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-full w-full flex-col justify-between gap-[48px]">
+              <div className="relative flex flex-1 flex-col">
+                <div className="gap-2xl lg:gap-4xl flex flex-1 flex-col justify-center py-28 sm:py-32 lg:py-38">
+                  {/* Location badge */}
+                  <div className="text-primary border-primary font-syne p-md inline-flex w-fit items-center gap-[10px] rounded-full border border-white/30 bg-[#A5BDA8] text-base font-semibold shadow-[50px] backdrop-blur-lg">
+                    <span className="bg-primary h-1.5 w-1.5 rounded-full" />
+                    Now Serving in Kaduna
+                  </div>
+
+                  {/* Heading */}
+                  <h1 className="flex flex-col text-5xl leading-tight font-bold text-white sm:text-6xl lg:text-7xl">
+                    <span>Market Prices.</span>
+                    <span className="flex flex-wrap items-baseline gap-x-3">
+                      <span>Zero </span>
+                      <div className="relative inline-block">
+                        <span style={{ color: "var(--secondary-color)" }}>
+                          Market
+                        </span>
+                      </div>
+                      <div className="relative inline-block">
+                        <span>Stress.</span>
+                        <img
+                          src="/images/curved-underline.png"
+                          className="absolute w-fit"
+                        />
+                      </div>
+                    </span>
+                  </h1>
+
+                  {/* Subtext */}
+                  <p className="w-full max-w-[360px] text-lg leading-relaxed font-semibold text-white lg:max-w-[574px] lg:text-xl">
+                    Fresh foodstuff delivered straight to your door step. At the
+                    same price you&apos;d pay at Central Market.
+                  </p>
+
+                  {/* CTAs */}
+                  <div className="gap-base flex flex-col items-center justify-center lg:flex-row lg:justify-baseline lg:justify-start lg:gap-[74px]">
+                    <WhatsAppButton className="w-auto" />
+                    <a
+                      href="#how-it-works"
+                      className="font-open-sans flex items-center gap-1 text-base text-white transition-all duration-300 ease-in-out hover:text-white lg:gap-[10px] lg:text-lg lg:text-xl"
+                    >
+                      See how it works
+                      <div className="h-4 w-4 shrink-0 lg:h-5 lg:w-5">
+                        <Icon
+                          icon="lucide:arrow-right"
+                          width={18}
+                          height={18}
+                        />
+                      </div>
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <div className="gap-4xl lg:gap-base relative flex w-full flex-col">
+                {/* Trust bar */}
+                <div className="bg-primary py-xl px-base mx-auto w-full shadow-md">
+                  {/* Mobile: slideshow */}
+                  <div className="relative flex h-6 items-center justify-center overflow-hidden lg:hidden">
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={activeTrustIndex}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.4 }}
+                        className="gap-sm absolute flex items-center text-white/80"
+                      >
+                        <span className="text-white/60">
+                          {renderIcon(trustItems[activeTrustIndex].icon)}
+                        </span>
+                        <span className="text-xs whitespace-nowrap">
+                          {trustItems[activeTrustIndex].label}
+                        </span>
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Desktop: all items in a row */}
+                  <div className="hidden lg:flex lg:items-center lg:justify-around">
+                    {trustItems.map((item, i) => (
+                      <div
+                        key={item.label}
+                        className={`gap-xl px-base flex shrink-0 items-center text-white ${i < trustItems.length - 1 ? "border-r border-[#FCFDFD]" : ""}`}
+                      >
+                        <span className="text-[#FCFDFD]">
+                          {renderIcon(item.icon)}
+                        </span>
+                        <span className="text-[14px] font-semibold whitespace-nowrap">
+                          {item.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
 
@@ -453,7 +563,7 @@ export default function Home() {
             >
               <div className="group relative overflow-hidden rounded-3xl shadow-2xl">
                 <img
-                  src="/images/market-woman.jpg"
+                  src="/images/market-lady.jpg"
                   alt="Smiling Nigerian woman at fresh produce market"
                   className="h-full max-h-[516px] w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-105 lg:max-h-[530px]"
                 />
@@ -481,7 +591,7 @@ export default function Home() {
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg font-syne relative bg-[#F6F3F3]"
       >
         <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-3xl default-max-width mx-auto flex w-full flex-col">
-          <div className="flex flex-col gap-(--space-md) lg:gap-(--space-xl)">
+          <div className="lg:gap-xl gap-md flex flex-col">
             <p className="text-primary-light text-xl tracking-widest">
               Why Debridger
             </p>
@@ -511,37 +621,47 @@ export default function Home() {
         id="stats"
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg font-syne bg-primary relative overflow-hidden text-white"
       >
-        <div className="px-section-px z-10-px sm:px-section-px-sm lg:px-section-px-lg lg:gap-4xl default-max-width relative mx-auto flex flex-col">
-          <div className="font-syne pb-2xl flex flex-col gap-(--space-md)">
-            <p className="text-text2 text-xl tracking-[3px] uppercase">
-              Early Numbers
-            </p>
-            <h2 className="w-full max-w-[831px] text-3xl leading-tight font-bold sm:text-4xl lg:text-5xl lg:font-extrabold">
-              People are already excited.
-            </h2>
+        <div className="default-max-width relative">
+          {/* Blur Dot */}
+          <div className="pointer-events-none absolute inset-0 z-1">
+            <BlurDot className="absolute bottom-[0%] left-[12%] h-[115px] w-[110px]" />
+            <BlurDot className="absolute bottom-[50%] left-[40%] h-[115px] w-[110px]" />
+            <BlurDot className="absolute bottom-[70%] left-[90%] h-[115px] w-[110px] lg:left-[70%]" />
           </div>
 
-          <div className="gap-base grid grid-cols-3 sm:gap-(--space-3xl)">
-            {stats.map((stat, i) => {
-              const displayValue = statsFormatters[i](stat.value);
-              return (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: i * 0.1 }}
-                  className="flex flex-col gap-(--space-sm) lg:w-[236px]"
-                >
-                  <div className="text-secondary font-syne text-2xl leading-none font-extrabold sm:text-4xl lg:text-5xl">
-                    {displayValue}
-                  </div>
-                  <p className="font-open-sans text-[14px] text-white sm:text-base lg:text-lg">
-                    {stat.label}
-                  </p>
-                </motion.div>
-              );
-            })}
+          {/* Stats */}
+          <div className="px-section-px px sm:px-section-px-sm lg:px-section-px-lg lg:gap-4xl default-max-width relative z-10 mx-auto flex flex-col">
+            <div className="font-syne pb-2xl gap-md flex flex-col">
+              <p className="text-text2 text-xl tracking-[3px] uppercase">
+                Early Numbers
+              </p>
+              <h2 className="w-full max-w-[831px] text-3xl leading-tight font-bold sm:text-4xl lg:text-5xl lg:font-extrabold">
+                People are already excited.
+              </h2>
+            </div>
+
+            <div className="gap-base sm:gap-3xl grid grid-cols-3">
+              {stats.map((stat, i) => {
+                const displayValue = statsFormatters[i](stat.value);
+                return (
+                  <motion.div
+                    key={stat.label}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: i * 0.1 }}
+                    className="flex flex-col gap-(--space-sm) lg:w-[236px]"
+                  >
+                    <div className="text-secondary font-syne text-2xl leading-none font-extrabold sm:text-4xl lg:text-5xl">
+                      {displayValue}
+                    </div>
+                    <p className="font-open-sans text-[14px] text-white sm:text-base lg:text-lg">
+                      {stat.label}
+                    </p>
+                  </motion.div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -563,9 +683,10 @@ export default function Home() {
         id="get-started"
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative overflow-hidden bg-white"
       >
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute top-16 left-1/4 h-80 w-80 rounded-full bg-green-100 opacity-60 blur-3xl" />
-          <div className="absolute right-1/4 bottom-8 h-72 w-72 rounded-full bg-amber-100 opacity-50 blur-3xl" />
+        <div className="pointer-events-none absolute inset-0 z-1">
+          <BlurDot className="absolute bottom-[40%] left-[12%] h-[115px] w-[110px]" />
+          <BlurDot className="absolute bottom-[50%] left-[50%] h-[115px] w-[110px]" />
+          <BlurDot className="absolute bottom-[70%] left-[90%] h-[115px] w-[110px] lg:left-[70%]" />
         </div>
 
         <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-xl default-max-width relative mx-auto flex w-full flex-col items-center justify-center text-center lg:gap-(--space-3xl)">
@@ -628,7 +749,7 @@ export default function Home() {
                 href="https://agrolinking.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group text-secondary inline-flex w-fit cursor-pointer items-center gap-(--space-sm) text-lg transition-all duration-300 ease-in-out hover:gap-(--space-base) sm:text-xl lg:text-2xl"
+                className="group text-secondary hover:gap-base inline-flex w-fit cursor-pointer items-center gap-(--space-sm) text-lg transition-all duration-300 ease-in-out sm:text-xl lg:text-2xl"
               >
                 See what Agrolinking does
                 <Icon
@@ -646,11 +767,11 @@ export default function Home() {
               transition={{ duration: 0.6, delay: 0.15 }}
               className="bg-primary-light/80 flex h-fit flex-col gap-[32px] rounded-3xl px-8 py-12 text-white"
             >
-              <div className="flex items-center justify-between gap-(--space-base)">
+              <div className="gap-base flex items-center justify-between">
                 <div className="flex flex-1 flex-col truncate">
                   <div className="h-[30px] w-[130px]">
                     <img
-                      src="/agroLinking-logo.png"
+                      src="/logos/agrolinking.png"
                       alt="Agro-Linking Logo"
                       className="block"
                     />
@@ -672,12 +793,12 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="font-open-sans flex flex-col gap-(--space-xl)">
+              <div className="font-open-sans gap-xl flex flex-col">
                 <p className="font-open-sans text-base tracking-widest text-white uppercase lg:text-lg">
                   What this means for you
                 </p>
 
-                <ul className="flex flex-col gap-(--space-base) text-sm text-green-100">
+                <ul className="gap-base flex flex-col text-sm text-green-100">
                   {[
                     "Access to a larger, verified network of food directly from farm",
                     "More consistent stock — even during off-season period",
@@ -685,7 +806,7 @@ export default function Home() {
                   ].map((item) => (
                     <li
                       key={item}
-                      className="font-open-sans flex items-start gap-(--space-md)"
+                      className="font-open-sans gap-md flex items-start"
                     >
                       <span
                         className="shrink-0 text-xl font-bold"

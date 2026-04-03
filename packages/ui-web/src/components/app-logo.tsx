@@ -1,11 +1,9 @@
-import { Link } from "react-router";
-
-const AppLogo = () => {
+export const AppLogo = () => {
   return (
-    <Link to="/" className="text-primary font-syne text-xl font-semibold">
-      Debridger
-    </Link>
+    <img
+      src="/logos/debridger.png"
+      alt="Debridger Logo"
+      className="h-8 w-auto"
+    />
   );
 };
-
-export default AppLogo;

@@ -19,11 +19,35 @@ export interface HeroSectionProps {
   trustItems: TrustItem[];
 }
 
-function renderIcon(icon: string | React.ReactNode): React.ReactNode {
+export function renderIcon(icon: string | React.ReactNode): React.ReactNode {
   if (typeof icon === "string") {
     return <Icon icon={icon} width={16} height={16} />;
   }
   return icon as React.ReactNode;
+}
+
+export function useImageCycle(count: number) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  useEffect(() => {
+    if (count === 0) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % count);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [count]);
+  return currentIndex;
+}
+
+export function useTrustCycle(count: number) {
+  const [activeTrustIndex, setActiveTrustIndex] = useState(0);
+  useEffect(() => {
+    if (count === 0) return;
+    const interval = setInterval(() => {
+      setActiveTrustIndex((prev) => (prev + 1) % count);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [count]);
+  return activeTrustIndex;
 }
 
 export function HeroSection({
@@ -34,27 +58,11 @@ export function HeroSection({
   secondaryCta,
   trustItems,
 }: HeroSectionProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [activeTrustIndex, setActiveTrustIndex] = useState(0);
-
-  useEffect(() => {
-    if (images.length === 0) return;
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % images.length);
-    }, 6000);
-    return () => clearInterval(interval);
-  }, [images.length]);
-
-  useEffect(() => {
-    if (trustItems.length === 0) return;
-    const interval = setInterval(() => {
-      setActiveTrustIndex((prev) => (prev + 1) % trustItems.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [trustItems.length]);
+  const currentIndex = useImageCycle(images.length);
+  const activeTrustIndex = useTrustCycle(trustItems.length);
 
   return (
-    <section className="font-syne relative mx-auto flex h-full max-h-[1064px] w-full max-w-[1840px] flex-col overflow-hidden">
+    <section className="font-syne relative mx-auto flex h-full min-h-[1064px] w-full max-w-[1840px] flex-col overflow-hidden">
       {/* Background layer */}
       <div className="absolute inset-0 z-0">
         <AnimatePresence mode="wait">
@@ -70,8 +78,13 @@ export function HeroSection({
               className="absolute inset-0 h-full w-full object-contain object-cover"
             />
           )}
+          <div className="absolute inset-0 h-full w-full bg-linear-to-b from-[40BF4F]/20 from-0% via-[#23682B]/70 via-23% to-[#061107] to-100%"></div>
+          <div className="absolute inset-0 h-full w-full bg-linear-to-b from-[40BF4F]/20 from-0% to-[#061107] to-100%"></div>
         </AnimatePresence>
       </div>
+
+      {/* Inset */}
+      {/* <div className="via-primary to-primary/20 absolute inset-0 bg-linear-to-t from-black/92 from-0% via-35% to-100%"></div> */}
 
       {/* Content Wrapper */}
       <div className="gap-2xl px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-full w-full flex-col justify-between">
@@ -97,25 +110,20 @@ export function HeroSection({
                     part.text.toLowerCase().includes("stress")
                   ) {
                     return (
-                      <span key={index} className="relative inline-block">
+                      <div key={index} className="relative inline-block">
                         <span style={{ color: "var(--secondary-color)" }}>
-                          {part.text}
+                          {part.text}sss
                         </span>
-                        <svg
-                          className="pointer-events-none absolute -bottom-2 left-0 h-5 w-full"
-                          viewBox="0 0 200 20"
-                          fill="none"
-                          preserveAspectRatio="none"
-                        >
-                          <path
-                            d="M0 15 Q50 8 100 12 Q150 16 200 10"
-                            stroke="#F9C23C"
-                            strokeWidth="6"
-                            strokeLinecap="round"
-                            fill="none"
-                          />
-                        </svg>
-                      </span>
+                        <img
+                          src="/images/curved-underline.jpg"
+                          alt="Curved Underline"
+                          className="absolute -bottom-3 left-1/2 w-[85%] -translate-x-1/2 md:w-[78%] lg:w-[82%]"
+                          style={{
+                            filter:
+                              "drop-shadow(0 4px 6px rgba(244, 162, 97, 0.3))",
+                          }}
+                        />
+                      </div>
                     );
                   }
                   return (

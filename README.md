@@ -40,6 +40,64 @@ debridgers-repo/
 └── pnpm-workspace.yaml      # pnpm workspace definition
 ```
 
+/debridgers-repo$ tree -L 2
+.
+├── api
+│ └── index.ts
+├── apps
+│ ├── backend
+│ ├── debridgers-backend
+│ ├── debridgers-backend-e2e
+│ └── landing-page
+├── CONTRIBUTING.md
+├── docker
+│ ├── backend.Dockerfile
+│ ├── docker-compose.yml
+│ └── landing.Dockerfile
+├── docs
+│ ├── admin.md
+│ ├── agent.md
+│ ├── auth.md
+│ └── backend.md
+├── eslint.config.mjs
+├── FOLDER*README.md
+├── libs
+│ ├── shared-theme
+│ └── shared-utils
+├── node_modules
+│ ├── concurrently -> .pnpm/concurrently@8.2.2/node_modules/concurrently
+│ ├── eslint -> .pnpm/eslint@9.39.4_jiti@2.6.1/node_modules/eslint
+│ ├── eslint-config-prettier -> .pnpm/eslint-config-prettier@10.1.8_eslint@9.39.4_jiti@2.6.1*/node*modules/eslint-config-prettier
+│ ├── eslint-plugin-import -> .pnpm/eslint-plugin-import@2.32.0*@typescript-eslint+parser@8.57.2_eslint@9.39.4_jiti@2.6.1___8d89b0808ebd343afc22e31708bf2958/node*modules/eslint-plugin-import
+│ ├── eslint-plugin-prettier -> .pnpm/eslint-plugin-prettier@5.5.5*@types+eslint@9.6.1_eslint-config-prettier@10.1.8*eslint@9_301f51fcc56ebabbd6430d59d9f660b6/node_modules/eslint-plugin-prettier
+│ ├── eslint-plugin-react -> .pnpm/eslint-plugin-react@7.37.5_eslint@9.39.4_jiti@2.6.1*/node*modules/eslint-plugin-react
+│ ├── eslint-plugin-react-hooks -> .pnpm/eslint-plugin-react-hooks@5.2.0_eslint@9.39.4_jiti@2.6.1*/node*modules/eslint-plugin-react-hooks
+│ ├── husky -> .pnpm/husky@9.1.7/node_modules/husky
+│ ├── lint-staged -> .pnpm/lint-staged@16.4.0/node_modules/lint-staged
+│ ├── prettier -> .pnpm/prettier@3.8.1/node_modules/prettier
+│ ├── prettier-plugin-tailwindcss -> .pnpm/prettier-plugin-tailwindcss@0.7.2_prettier@3.8.1/node_modules/prettier-plugin-tailwindcss
+│ ├── tsup -> .pnpm/tsup@8.5.1_jiti@2.6.1_postcss@8.5.8_tsx@4.21.0_typescript@5.9.3_yaml@2.8.3/node_modules/tsup
+│ ├── typescript -> .pnpm/typescript@5.9.3/node_modules/typescript
+│ ├── @typescript-eslint
+│ ├── vite -> .pnpm/vite@5.4.21*@types+node@22.19.15_lightningcss@1.32.0_terser@5.46.1/node*modules/vite
+│ └── vitest -> .pnpm/vitest@1.6.1*@types+node@22.19.15_lightningcss@1.32.0_terser@5.46.1/node_modules/vitest
+├── package.json
+├── packages
+│ ├── api-client
+│ ├── ui-app
+│ └── ui-web
+├── pnpm-lock.yaml
+├── pnpm-workspace.yaml
+├── prettier.config.cjs
+├── README.md
+├── scripts
+│ └── GENERATE_SCRIPTS.md
+├── TAILWIND_THEME.md
+├── TASKS.md
+├── tsconfig.base.json
+├── tsconfig.json
+└── vitest.workspace.ts
+
 ---
 
 ## Apps

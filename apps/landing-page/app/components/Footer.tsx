@@ -49,15 +49,22 @@ export default function Footer() {
         {/* Top section: tagline + columns */}
         <div className="py-section-py lg:py-section-py-lg sm:py-section-py-sm grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1fr_1fr] lg:items-center">
           {/* Tagline */}
-          <h2 className="font-syne text-4xl leading-tight font-medium">
-            Market Prize
-            <br />
-            Zero <span style={{ color: "var(--secondary-color)" }}>
-              Market
-            </span>{" "}
-            Stress
-            {/* <span className="bg-secondary mt-2 block h-[3px] w-16 rounded-full sm:w-20" /> */}
-          </h2>
+          <h1 className="font-syne flex flex-col text-4xl leading-tight font-medium text-white">
+            <span>Market Prices.</span>
+            <span className="flex flex-wrap items-baseline gap-x-3">
+              <span>Zero </span>
+              <div className="relative inline-block">
+                <span style={{ color: "var(--secondary-color)" }}>Market</span>
+              </div>
+              <div className="relative inline-block">
+                <span>Stress.</span>
+                <img
+                  src="/images/curved-underline.png"
+                  className="absolute w-fit"
+                />
+              </div>
+            </span>
+          </h1>
 
           {/* Support and Need help */}
           <div className="gap-2xl grid grid-cols-2 items-center">
@@ -69,7 +76,8 @@ export default function Footer() {
               <nav className="gap-md flex flex-col text-sm">
                 {[
                   { label: "Home", to: "/" },
-                  // { label: "About Us", to: "/about" },
+                  // { label: "Agents", to: "/agents" },
+                  { label: "Agents", to: "/agents" },
                   { label: "Contact Us", to: "/contact" },
                 ].map((link) => (
                   <Link

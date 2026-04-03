@@ -68,6 +68,27 @@ mobile (48–50px) */
   --color-icon-secondary: var(--icon-secondary);
   --color-icon-tertiary: var(--icon-tertiary);
 
+  /* Shadows */
+  --shadow-yellow: var(--shadow-yellow);
+
+  /* ── Dashboard status badges ── */
+  --color-status-on-the-way-bg: var(--status-on-the-way-bg);
+  --color-status-on-the-way-text: var(--status-on-the-way-text);
+  --color-status-delivered-bg: var(--status-delivered-bg);
+  --color-status-delivered-text: var(--status-delivered-text);
+  --color-status-cancelled-bg: var(--status-cancelled-bg);
+  --color-status-cancelled-text: var(--status-cancelled-text);
+  --color-status-active-bg: var(--status-active-bg);
+  --color-status-active-text: var(--status-active-text);
+  --color-status-pending-bg: var(--status-pending-bg);
+  --color-status-pending-text: var(--status-pending-text);
+
+  /* ── Dashboard UI ── */
+  --color-dash-quick-action-hover: var(--dash-quick-action-hover);
+  --color-dash-sidebar-bg: var(--dash-sidebar-bg);
+  --color-dash-topbar-bg: var(--dash-topbar-bg);
+  --color-dash-page-bg: var(--dash-page-bg);
+
   /* ── Spacing scale → mt-sm, p-base, gap-xl, top-3xl … ── */
   --spacing-sm: var(--space-sm);
   --spacing-md: var(--space-md);
@@ -138,6 +159,18 @@ mobile (48–50px) */
   h5,
   h6 {
     font-family: "Syne", sans-serif;
+  }
+}
+
+@keyframes loading {
+  0% {
+    transform: scaleX(0);
+  }
+  50% {
+    transform: scaleX(0.5);
+  }
+  100% {
+    transform: scaleX(1);
   }
 }
 
