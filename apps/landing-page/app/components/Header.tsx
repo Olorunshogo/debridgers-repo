@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, NavLink } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { Icon } from "@iconify/react";
@@ -18,18 +18,70 @@ interface HeaderProps {
   navLinks: NavLinkItem[];
   orderNowHref?: string;
   signUpHref: string;
+  /** id of the dark/green hero section — when it's in view, header stays white */
+  heroSectionId?: string;
 }
 
 export function Header({
   navLinks,
   orderNowHref = "https://wa.me/+2348167042797",
   signUpHref,
+  heroSectionId,
 }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [onGreenBg, setOnGreenBg] = useState(true);
+
+  useEffect(() => {
+    const updateBg = () => {
+      if (heroSectionId) {
+        const hero = document.getElementById(heroSectionId);
+        if (!hero) return;
+        const rect = hero.getBoundingClientRect();
+        // Hero is "behind" the header when its bottom edge is still below the header height
+        setOnGreenBg(rect.bottom > 80);
+      } else {
+        setOnGreenBg(window.scrollY < window.innerHeight * 0.8);
+      }
+    };
+
+    updateBg();
+    window.addEventListener("scroll", updateBg, { passive: true });
+    window.addEventListener("resize", updateBg, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", updateBg);
+      window.removeEventListener("resize", updateBg);
+    };
+  }, [heroSectionId]);
+
+  const pillBg = onGreenBg ? "rgba(255,255,255,1)" : "rgba(30,89,37,0.95)";
+  const pillBlur = onGreenBg ? "blur(0px)" : "blur(14px)";
+  const linkColor = onGreenBg ? "text-primary" : "text-white";
+
+  // === PrimaryLink: white header → primary bg + white text; green header → white bg + primary text
+  const primaryLinkStyle: React.CSSProperties = onGreenBg
+    ? { backgroundColor: "var(--color-primary)", color: "#fff" }
+    : { backgroundColor: "#fff", color: "var(--color-primary)" };
+
+  // === SecondaryLink: white header → primary border + primary text; green header → white border + white text
+  const secondaryLinkStyle: React.CSSProperties = onGreenBg
+    ? {
+        border: "1px solid var(--color-primary)",
+        color: "var(--color-primary)",
+        backgroundColor: "transparent",
+      }
+    : {
+        border: "1px solid #fff",
+        color: "#fff",
+        backgroundColor: "transparent",
+      };
 
   return (
-    <header className="p-base font-syne background-blur-sm h-navbar-h mx-auto flex w-9/10 max-w-[928px] rounded-full bg-white shadow-md">
-      <div className="flex w-full items-center justify-between px-4">
+    <motion.header
+      className="p-base font-syne h-navbar-h mx-auto flex w-9/10 max-w-[928px] rounded-full shadow-md"
+      animate={{ backgroundColor: pillBg, backdropFilter: pillBlur }}
+      transition={{ duration: 0.35, ease: "easeInOut" }}
+    >
+      <div className="flex w-full items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center">
           <AppLogo />
@@ -44,7 +96,7 @@ export function Header({
                 <a
                   key={link.href}
                   href={link.href}
-                  className="font-open-sans text-primary p-[10px] text-sm font-semibold transition-all duration-300 ease-in-out hover:opacity-70"
+                  className={`font-open-sans p-[10px] text-sm font-semibold transition-colors duration-300 ease-in-out hover:opacity-70 ${linkColor}`}
                 >
                   {link.label}
                 </a>
@@ -55,10 +107,10 @@ export function Header({
                 key={link.href}
                 to={link.href}
                 className={({ isActive }) =>
-                  `font-open-sans p-[10px] text-sm font-semibold transition-all duration-300 ease-in-out ${
+                  `font-open-sans p-[10px] text-sm font-semibold transition-colors duration-300 ease-in-out ${
                     isActive
-                      ? "text-primary underline decoration-2 underline-offset-4"
-                      : "text-primary hover:opacity-70"
+                      ? `${linkColor} underline decoration-2 underline-offset-4`
+                      : `${linkColor} hover:opacity-70`
                   }`
                 }
               >
@@ -70,13 +122,17 @@ export function Header({
 
         {/* Desktop CTA buttons */}
         <div className="gap-sm hidden lg:flex">
-          <PrimaryLink href={orderNowHref}>Order Now</PrimaryLink>
-          <SecondaryLink href={signUpHref}>Sign Up</SecondaryLink>
+          <PrimaryLink href={orderNowHref} style={primaryLinkStyle}>
+            Order Now
+          </PrimaryLink>
+          <SecondaryLink href={signUpHref} style={secondaryLinkStyle}>
+            Sign Up
+          </SecondaryLink>
         </div>
 
         {/* Mobile hamburger */}
         <button
-          className="cursor-pointer text-gray-700 lg:hidden"
+          className={`cursor-pointer transition-colors duration-300 lg:hidden ${onGreenBg ? "text-gray-700" : "text-white"}`}
           onClick={() => setMenuOpen((o) => !o)}
           aria-label={menuOpen ? "Close menu" : "Open menu"}
         >
@@ -99,7 +155,6 @@ export function Header({
               exit={{ opacity: 0 }}
               onClick={() => setMenuOpen(false)}
             />
-
             <motion.div
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
@@ -112,7 +167,7 @@ export function Header({
                   to="/"
                   className="text-primary font-syne text-xl font-semibold"
                 >
-                  Debridger
+                  Debridgers
                 </Link>
                 <div className="gap-2xl py-base flex flex-col">
                   {navLinks.map((link) => {
@@ -147,13 +202,12 @@ export function Header({
                     );
                   })}
                 </div>
-
                 <WhatsAppButton className="mt-auto w-full" />
               </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
-    </header>
+    </motion.header>
   );
 }

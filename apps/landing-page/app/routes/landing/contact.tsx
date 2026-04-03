@@ -14,11 +14,11 @@ import {
 // === Metadata
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Contact Us | Debridger" },
+    { title: "Contact Us | Debridgers" },
     {
       name: "description",
       content:
-        "Get in touch with Debridger for quotes, partnerships, or support.",
+        "Get in touch with Debridgers for quotes, partnerships, or support.",
     },
   ];
 }
@@ -66,8 +66,8 @@ const contactItems = [
   {
     icon: Mail,
     label: "Email",
-    value: "support@debridger.com",
-    href: "mailto:support@debridger.com",
+    value: "support@debridgers.com",
+    href: "mailto:support@debridgers.com",
   },
   {
     icon: Clock,
@@ -115,7 +115,7 @@ function ContactMap({
 
       L.marker([lat, lng])
         .addTo(map)
-        .bindPopup("Debridger — Barnawa Market Road, Kaduna")
+        .bindPopup("Debridgers — Barnawa Market Road, Kaduna")
         .openPopup();
 
       mapInstanceRef.current = map;
@@ -206,7 +206,7 @@ export default function ContactPage() {
   return (
     <>
       {/* Header */}
-      <div className="top-md sticky z-50">
+      <div className="top-md sticky z-500">
         <Header
           navLinks={[
             { label: "Home", href: "/" },
@@ -223,7 +223,7 @@ export default function ContactPage() {
         <div className="-mt-navbar-h flex min-h-0 w-full flex-1">
           <div className="from-primary -mt-navbar-h via-primary to-primary absolute inset-0 z-0 overflow-hidden bg-linear-to-b" />
           <HeroSection
-            images={["/images/hero-contact-bg.png"]}
+            images={["/images/hero-1.jpg"]}
             servingLocation="Now Serving in Kaduna"
             headingParts={{
               top: [{ text: "Market Prices." }],

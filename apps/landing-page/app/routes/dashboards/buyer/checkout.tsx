@@ -5,7 +5,7 @@ import { CheckCircle2 } from "lucide-react";
 import { BASE_BACKEND_URL } from "../../../utils/api";
 
 export function meta() {
-  return [{ title: "Checkout | Debridger" }];
+  return [{ title: "Checkout | Debridgers" }];
 }
 
 type Step = "cart" | "delivery" | "payment" | "confirmed";

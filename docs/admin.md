@@ -21,7 +21,7 @@ Admins use the shared auth endpoint. See [auth.md](./auth.md).
 
 ```json
 {
-  "email": "admin@debridger.com",
+  "email": "admin@debridgers.com",
   "password": "Admin@2026!"
 }
 ```

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function meta() {
-  return [{ title: "Notification | Debridger" }];
+  return [{ title: "Notification | Debridgers" }];
 }
 
 interface Notification {

@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 
 export function meta() {
-  return [{ title: "Overview | Debridger" }];
+  return [{ title: "Overview | Debridgers" }];
 }
 
 interface StatCard {

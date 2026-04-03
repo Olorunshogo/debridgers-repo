@@ -1,5 +1,5 @@
 export function meta() {
-  return [{ title: "Sales Reports | Debridger" }];
+  return [{ title: "Sales Reports | Debridgers" }];
 }
 export default function AgentReports() {
   return (
