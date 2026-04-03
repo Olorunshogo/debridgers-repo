@@ -48,9 +48,10 @@ function WhyCard({ card, isActive, onHover }: WhyCardProps) {
   return (
     <motion.div
       onHoverStart={onHover}
+      onClick={onHover}
       whileHover={{ y: -10 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`group font-syne gap-base lg:gap-xl py-base px-3xl flex h-full cursor-default flex-col rounded-3xl transition-all duration-300 ease-in-out ${
+      className={`group font-syne gap-base lg:gap-xl py-base px-3xl flex h-full flex-col rounded-3xl transition-all duration-300 ease-in-out ${
         isActive
           ? "bg-primary text-white"
           : "border-gray hover:border-primary border bg-white"
@@ -71,7 +72,7 @@ function WhyCard({ card, isActive, onHover }: WhyCardProps) {
       <div className="flex flex-col gap-4">
         <h3
           className={`text-xl font-bold transition-colors duration-300 lg:text-2xl ${
-            isActive ? "text-white" : "text-text group-hover:text-white"
+            isActive ? "text-white" : "text-heading group-hover:text-white"
           }`}
         >
           {card.title}
@@ -134,46 +135,55 @@ const deliverCategories: DeliverCategory[] = [
   },
 ];
 
-// === DeliverCard: 3 images per card, infinite auto-sliding carousel on hover
+// === WhatWeDeliver: 4 cards visible on lg, infinite marquee through all 6
+// === DeliverCard: images static on load, cycle right-to-left only on hover
 function DeliverCard({ category }: { category: DeliverCategory }) {
-  const [hovered, setHovered] = useState<boolean>(false);
   const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
+  const [isHovered, setIsHovered] = useState<boolean>(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    if (hovered && category.images.length > 1) {
-      intervalRef.current = setInterval(() => {
-        setActiveImageIndex((prev) => (prev + 1) % category.images.length);
-      }, 900);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      setActiveImageIndex(0);
-    }
+  const startCycling = () => {
+    if (category.images.length <= 1) return;
+    intervalRef.current = setInterval(() => {
+      setActiveImageIndex((prev) => (prev + 1) % category.images.length);
+    }, 900);
+  };
 
+  const stopCycling = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setActiveImageIndex(0);
+  };
+
+  useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [hovered, category.images.length]);
+  }, []);
 
   return (
     <motion.div
-      onHoverStart={() => setHovered(true)}
-      onHoverEnd={() => setHovered(false)}
+      onHoverStart={() => {
+        setIsHovered(true);
+        startCycling();
+      }}
+      onHoverEnd={() => {
+        setIsHovered(false);
+        stopCycling();
+      }}
       whileHover={{ scale: 1.04 }}
       transition={{ duration: 0.3 }}
-      className="group relative h-[320px] w-[260px] shrink-0 cursor-default overflow-hidden rounded-3xl shadow-lg"
+      className="group relative h-[380px] w-[260px] shrink-0 cursor-default overflow-hidden rounded-3xl shadow-lg"
     >
-      {/* Image carousel — slides left-to-right */}
+      {/* Images — static until hover, then swipe right-to-left */}
       {category.images.map((src, idx) => (
         <motion.img
           key={src}
           src={src}
-          alt={`${category.title} - ${idx}`}
+          alt={`${category.title} - image ${idx + 1}`}
           className="absolute inset-0 h-full w-full object-cover"
-          initial={{ x: idx === activeImageIndex ? "0%" : "100%" }}
           animate={{
             x:
               idx === activeImageIndex
@@ -182,7 +192,7 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
                   ? "-100%"
                   : "100%",
           }}
-          transition={{ duration: 0.45, ease: "easeInOut" }}
+          transition={{ duration: 0.6, ease: "easeInOut" }}
         />
       ))}
 
@@ -195,18 +205,8 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
         <p className="text-base">{category.subtitle}</p>
       </div>
 
-      {/* Hover "Order now" badge */}
-      <div className="absolute top-4 right-4 opacity-0 transition-all duration-300 group-hover:opacity-100">
-        <PrimaryLink
-          href="https://wa.me/+2348167042797"
-          className="h-10 text-sm"
-        >
-          Order Now
-        </PrimaryLink>
-      </div>
-
-      {/* Image dots (visible only on hover) */}
-      {hovered && category.images.length > 1 && (
+      {/* Image dots — visible on hover */}
+      {isHovered && category.images.length > 1 && (
         <div className="absolute bottom-20 left-1/2 flex -translate-x-1/2 gap-1.5">
           {category.images.map((_, i) => (
             <div
@@ -222,70 +222,98 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
   );
 }
 
-// === WhatWeDeliver: 4 cards visible on lg, infinite marquee through all 6
+// === WhatWeDeliver: infinite seamless loop, 4 cards visible on lg
 function WhatWeDeliver() {
   const [offset, setOffset] = useState<number>(0);
+  const [isAnimating, setIsAnimating] = useState<boolean>(true);
   const [isHovered, setIsHovered] = useState<boolean>(false);
+  const autoScrollRef = useRef<NodeJS.Timeout | null>(null);
+
   const cardWidth = 260; // w-[260px]
-  const gap = 32; // gap-8 = 32px
+  const gap = 24; // gap-6 = 24px
   const step = cardWidth + gap;
-  const totalCards = deliverCategories.length; // 6
+  const totalCards = deliverCategories.length;
+  // Render doubled list — when offset hits totalCards, silently snap back to 0
+  const doubled = [...deliverCategories, ...deliverCategories];
 
   useEffect(() => {
-    if (!isHovered) {
-      const interval = setInterval(() => {
-        setOffset((prev) => (prev + 1) % totalCards);
-      }, 4000);
-
-      return () => clearInterval(interval); // Clean up the interval when the component unmounts or when hover state changes
+    if (isHovered) {
+      if (autoScrollRef.current) clearInterval(autoScrollRef.current);
+      return;
     }
+    autoScrollRef.current = setInterval(() => {
+      setOffset((prev) => {
+        const next = prev + 1;
+        if (next >= totalCards) {
+          // Schedule a silent snap back to 0 after the spring animation completes
+          setTimeout(() => {
+            setIsAnimating(false);
+            setOffset(0);
+            // Re-enable animation on next tick
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => setIsAnimating(true));
+            });
+          }, 700); // matches spring duration
+        }
+        return next;
+      });
+    }, 2200);
+    return () => {
+      if (autoScrollRef.current) clearInterval(autoScrollRef.current);
+    };
   }, [isHovered, totalCards]);
 
   return (
     <section
       id="what-we-deliver"
-      className="font-syne py-section-py sm:py-section-py-sm lg:py-section-py-lg relative w-full overflow-hidden bg-white"
+      className="font-syne py-section-py sm:py-section-py-sm lg:py-section-py-lg relative w-full bg-white"
     >
-      <div
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        className="gap-3xl px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto flex w-full flex-col"
-      >
+      <div className="gap-3xl px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto flex w-full flex-col">
         {/* Header */}
         <div className="gap-md lg:gap-xl flex flex-col">
           <p className="text-primary-light text-xl tracking-widest">
             What we deliver
           </p>
-          <h2 className="text-primary font-syne max-w-[830px] text-3xl leading-tight font-extrabold sm:text-4xl lg:max-w-1/2 lg:text-[50px] lg:font-extrabold">
-            Everything you spend on at the market.
-          </h2>
+
+          <div className="gap-xl flex w-full flex-wrap items-start justify-between">
+            <h2 className="text-primary font-syne max-w-[751px] text-3xl leading-tight font-extrabold sm:text-4xl lg:text-[50px] lg:font-bold">
+              Everything you spend on at the market.
+            </h2>
+
+            <PrimaryLink
+              href="https://wa.me/+2348167042797"
+              className="font-syne py-md px-xl text-xl font-bold sm:text-2xl lg:text-3xl"
+            >
+              Send Order
+            </PrimaryLink>
+          </div>
         </div>
 
-        {/* Infinite Carousel Container */}
-        <div className="relative">
-          {/* Fade gradients */}
-          {/* <div className="pointer-events-none absolute top-0 left-0 z-10 h-full w-20 bg-linear-to-r from-[#666666]/30 to-transparent" />
-          <div className="pointer-events-none absolute top-0 right-0 z-10 h-full w-20 bg-linear-to-l from-[#666666]/0 to-transparent" /> */}
-          <div className="px-lg lg:px-xl overflow-hidden">
-            <motion.div
-              className="flex gap-8"
-              style={{
-                transform: `translateX(-${offset * step}px)`,
-              }}
-              transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
-              animate={{ x: `-${offset * step}px` }}
-            >
-              {/* Duplicate the array for seamless infinite loop */}
-              {[...deliverCategories, ...deliverCategories].map(
-                (category, index) => (
-                  <DeliverCard
-                    key={`${category.title}-${index}`}
-                    category={category}
-                  />
-                ),
-              )}
-            </motion.div>
-          </div>
+        {/* Carousel — overflow-hidden clips cards beyond 4 on lg */}
+        <div
+          className="overflow-hidden"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          <motion.div
+            className="flex gap-6"
+            animate={{ x: `-${offset * step}px` }}
+            transition={
+              isAnimating
+                ? { type: "spring", stiffness: 300, damping: 30 }
+                : { duration: 0 }
+            }
+            style={{
+              width: `${doubled.length * (cardWidth + gap) - gap}px`,
+            }}
+          >
+            {doubled.map((category, index) => (
+              <DeliverCard
+                key={`${category.title}-${index}`}
+                category={category}
+              />
+            ))}
+          </motion.div>
         </div>
       </div>
     </section>
@@ -331,7 +359,7 @@ const statsFormatters: Array<(v: number) => string> = [
 // === Metadata
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Debridger | Market Prices. Zero Market Stress." },
+    { title: "Debridgers | Market Prices. Zero Market Stress." },
     {
       name: "description",
       content:
@@ -362,16 +390,20 @@ export default function Home() {
             { label: "Contact Us", href: "/contact" },
           ]}
           signUpHref="/signup"
+          heroSectionId="hero-section"
         />
       </div>
 
       {/* Hero Section */}
       <div className="relative flex w-full flex-col">
-        <div className="-mt-navbar-h flex min-h-0 w-full flex-1">
-          <div className="from-primary -mt-navbar-h via-primary to-primary absolute inset-0 z-0 overflow-hidden bg-linear-to-b" />
-          <section className="font-syne relative mx-auto flex h-screen w-full max-w-[1840px] flex-col overflow-hidden">
+        <div className="-mt-navbar-h flex max-h-[800px] min-h-0 w-full flex-1">
+          <div className="font-syne -mt-navbar-h bg-primary absolute inset-0 z-0 overflow-hidden" />
+          <section
+            id="hero-section"
+            className="font-syne relative mx-auto flex h-full min-h-screen w-full max-w-[1840px] flex-col overflow-hidden"
+          >
             {/* Background layer */}
-            <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 z-0 h-full w-full">
               <AnimatePresence mode="wait">
                 {images.length > 0 && (
                   <motion.img
@@ -391,47 +423,53 @@ export default function Home() {
             </div>
 
             {/* Content Wrapper */}
-            <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-full w-full flex-col justify-between gap-[48px]">
-              <div className="relative flex flex-1 flex-col">
-                <div className="gap-2xl lg:gap-4xl flex flex-1 flex-col justify-center py-28 sm:py-32 lg:py-38">
+            <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-screen max-h-[800px] w-full flex-col justify-between gap-[48px]">
+              <div className="relative flex flex-1 flex-col pt-20 sm:pt-24 lg:pt-32">
+                <div className="gap-2xl lg:gap-4xl flex flex-1 flex-col justify-center">
                   {/* Location badge */}
-                  <div className="text-primary border-primary font-syne p-md inline-flex w-fit items-center gap-[10px] rounded-full border border-white/30 bg-[#A5BDA8] text-base font-semibold shadow-[50px] backdrop-blur-lg">
+                  <div className="text-primary border-primary font-open-sans p-sm inline-flex w-fit items-center gap-1 rounded-full border border-white/30 bg-[#A5BDA8] text-sm font-semibold shadow-[50px] backdrop-blur-lg">
                     <span className="bg-primary h-1.5 w-1.5 rounded-full" />
                     Now Serving in Kaduna
                   </div>
 
-                  {/* Heading */}
-                  <h1 className="flex flex-col text-5xl leading-tight font-bold text-white sm:text-6xl lg:text-7xl">
-                    <span>Market Prices.</span>
-                    <span className="flex flex-wrap items-baseline gap-x-3">
-                      <span>Zero </span>
-                      <div className="relative inline-block">
-                        <span style={{ color: "var(--secondary-color)" }}>
-                          Market
-                        </span>
-                      </div>
-                      <div className="relative inline-block">
+                  {/* Heading and Paragraph */}
+                  <div className="gap-lg flex flex-col">
+                    {/* Heading */}
+                    <h1 className="flex flex-col text-4xl leading-tight font-bold text-white sm:text-6xl lg:text-7xl">
+                      <span>Market Prices.</span>
+                      <span className="flex flex-wrap items-baseline gap-x-3">
+                        {/* Curved Underlined Zero */}
+                        <div className="relative inline-block">
+                          <span>Zero</span>
+                          <img
+                            src="/images/curved-underline.png"
+                            className="absolute -mt-2 w-fit"
+                          />
+                        </div>
+                        {/* Highlighted Market */}
+                        <div className="relative inline-block">
+                          <span style={{ color: "var(--secondary-color)" }}>
+                            Market
+                          </span>
+                        </div>
+                        {/* White Zero */}
                         <span>Stress.</span>
-                        <img
-                          src="/images/curved-underline.png"
-                          className="absolute w-fit"
-                        />
-                      </div>
-                    </span>
-                  </h1>
+                      </span>
+                    </h1>
 
-                  {/* Subtext */}
-                  <p className="w-full max-w-[360px] text-lg leading-relaxed font-semibold text-white lg:max-w-[574px] lg:text-xl">
-                    Fresh foodstuff delivered straight to your door step. At the
-                    same price you&apos;d pay at Central Market.
-                  </p>
+                    {/* Subtext */}
+                    <p className="w-full max-w-[360px] text-base leading-relaxed font-semibold text-white sm:text-lg lg:max-w-[574px] lg:text-xl">
+                      Fresh foodstuff delivered straight to your door step. At
+                      the same price you&apos;d pay at Central Market.
+                    </p>
+                  </div>
 
                   {/* CTAs */}
-                  <div className="gap-base flex flex-col items-center justify-center lg:flex-row lg:justify-baseline lg:justify-start lg:gap-[74px]">
+                  <div className="gap-base flex flex-col items-center justify-center lg:flex-row lg:justify-start lg:gap-[74px]">
                     <WhatsAppButton className="w-auto" />
                     <a
                       href="#how-it-works"
-                      className="font-open-sans flex items-center gap-1 text-base text-white transition-all duration-300 ease-in-out hover:text-white lg:gap-[10px] lg:text-lg lg:text-xl"
+                      className="font-open-sans flex items-center gap-1 text-base text-white transition-all duration-300 ease-in-out hover:text-white sm:text-lg lg:gap-[10px] lg:text-xl"
                     >
                       See how it works
                       <div className="h-4 w-4 shrink-0 lg:h-5 lg:w-5">
@@ -471,7 +509,7 @@ export default function Home() {
                   </div>
 
                   {/* Desktop: all items in a row */}
-                  <div className="hidden lg:flex lg:items-center lg:justify-around">
+                  <div className="hidden truncate lg:flex lg:items-center lg:justify-around">
                     {trustItems.map((item, i) => (
                       <div
                         key={item.label}
@@ -499,7 +537,7 @@ export default function Home() {
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative bg-white"
       >
         <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto">
-          <div className="grid items-center gap-(--space-4xl) lg:grid-cols-2">
+          <div className="gap-4xl grid items-center lg:grid-cols-2">
             {/* Left Content */}
             <motion.div
               initial={{ opacity: 0, x: -24 }}
@@ -509,21 +547,21 @@ export default function Home() {
               className="gap-3xl flex flex-col"
             >
               <div className="gap-md flex flex-col">
-                <p className="text-text-colour text-[14px] font-semibold">
+                <p className="text-text text-[14px] font-semibold">
                   How it works
                 </p>
-                <h2 className="text-text text-3xl leading-tight font-bold sm:text-4xl lg:text-5xl">
+                <h2 className="text-primary text-xl leading-tight font-bold sm:text-3xl lg:text-5xl">
                   From market to your door in two steps
                 </h2>
               </div>
 
               <div className="flex flex-col">
                 {/* Step 1 */}
-                <div className="py-base text-text flex gap-(--space-lg) border-b border-[#E5E7EB]">
+                <div className="py-base text-text gap-lg flex border-b border-[#E5E7EB]">
                   <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
                     01
                   </div>
-                  <div className="flex flex-col gap-(--space-sm)">
+                  <div className="gap-sm flex flex-col">
                     <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
                       Send us your order
                     </h3>
@@ -536,11 +574,11 @@ export default function Home() {
 
                 {/* Step 2 */}
 
-                <div className="py-base text-text flex gap-(--space-lg)">
+                <div className="py-base text-text gap-lg flex">
                   <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
                     02
                   </div>
-                  <div className="flex flex-col gap-(--space-sm)">
+                  <div className="gap-sm flex flex-col">
                     <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
                       Delivered to you
                     </h3>
@@ -593,9 +631,9 @@ export default function Home() {
         <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-3xl default-max-width mx-auto flex w-full flex-col">
           <div className="lg:gap-xl gap-md flex flex-col">
             <p className="text-primary-light text-xl tracking-widest">
-              Why Debridger
+              Why Debridgers
             </p>
-            <h2 className="text-primary w-full max-w-[730px] text-3xl font-bold sm:text-4xl lg:text-5xl lg:font-extrabold">
+            <h2 className="text-primary w-full max-w-[730px] text-3xl font-bold sm:text-4xl lg:text-5xl lg:font-bold">
               We solve what the market can&apos;t.
             </h2>
           </div>
@@ -650,7 +688,7 @@ export default function Home() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: i * 0.1 }}
-                    className="flex flex-col gap-(--space-sm) lg:w-[236px]"
+                    className="gap-sm flex flex-col lg:w-[236px]"
                   >
                     <div className="text-secondary font-syne text-2xl leading-none font-extrabold sm:text-4xl lg:text-5xl">
                       {displayValue}
@@ -666,15 +704,15 @@ export default function Home() {
         </div>
 
         {/* Concentric Circles */}
-        <div className="absolute top-[-320px] right-[-320px] z-2 h-[400px] w-[500px] rotate-[127deg] sm:top-[-180px] sm:right-[-120px] sm:h-[400px] sm:w-[400px] lg:top-[-270px] lg:right-[-380px] lg:h-[700px] lg:w-[700px]">
+        <div className="absolute top-[-320px] right-[-320px] z-2 h-[400px] w-[500px] rotate-127 sm:top-[-180px] sm:right-[-120px] sm:h-[400px] sm:w-[400px] lg:top-[-270px] lg:right-[-380px] lg:h-[700px] lg:w-[700px]">
           {/* Outer */}
-          <div className="pointer-events-none absolute inset-0 rounded-full border-[20px] border-[#A5BDA8]/40" />
+          <div className="pointer-events-none absolute inset-0 rounded-full border-20 border-[#A5BDA8]/40" />
 
           {/* Middle */}
-          <div className="pointer-events-none absolute inset-[40px] rounded-full border-[20px] border-[#A5BDA8]/40" />
+          <div className="pointer-events-none absolute inset-[40px] rounded-full border-20 border-[#A5BDA8]/40" />
 
           {/* Inner */}
-          <div className="pointer-events-none absolute inset-[80px] rounded-full border-[20px] border-[#A5BDA8]/40" />
+          <div className="pointer-events-none absolute inset-[80px] rounded-full border-20 border-[#A5BDA8]/40" />
         </div>
       </section>
 
@@ -689,7 +727,7 @@ export default function Home() {
           <BlurDot className="absolute bottom-[70%] left-[90%] h-[115px] w-[110px] lg:left-[70%]" />
         </div>
 
-        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-xl default-max-width relative mx-auto flex w-full flex-col items-center justify-center text-center lg:gap-(--space-3xl)">
+        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-xl default-max-width lg:gap-3xl relative mx-auto flex w-full flex-col items-center justify-center text-center">
           <div className="gap-md flex flex-col">
             <p className="text-primary-light font-open-sans text-center text-lg font-semibold tracking-widest lg:text-xl">
               Get started
@@ -715,7 +753,7 @@ export default function Home() {
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative bg-[#F6F3F3]"
       >
         <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto w-full">
-          <div className="grid gap-(--space-4xl) lg:grid-cols-2">
+          <div className="gap-4xl grid lg:grid-cols-2">
             {/* Left Content */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -725,7 +763,7 @@ export default function Home() {
               className="lg:gap-3xl gap-xl flex flex-col"
             >
               <div className="gap-xl flex flex-col">
-                <div className="bg-primary-light/80 text-primary font-open-sans border-primary inline-flex w-fit items-center gap-(--space-sm) rounded-full border border-1 px-(--space-base) py-1.5 text-base tracking-widest uppercase lg:text-lg">
+                <div className="bg-primary-light/80 text-primary font-open-sans border-primary gap-sm px-base inline-flex w-fit items-center rounded-full border py-1.5 text-base tracking-widest uppercase lg:text-lg">
                   Official Partnership
                 </div>
 
@@ -739,7 +777,7 @@ export default function Home() {
               </h2>
 
               <p className="text-text text-base leading-relaxed lg:max-w-[570px] lg:text-lg">
-                Debridger is proudly partnering with an established agro
+                Debridgers is proudly partnering with an established agro
                 marketplace that has been connecting Nigerian farmers directly
                 to buyers long before we launched. Together, we bring a wider
                 farmer network and deeper reach to your doorstep.
@@ -749,7 +787,7 @@ export default function Home() {
                 href="https://agrolinking.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group text-secondary hover:gap-base inline-flex w-fit cursor-pointer items-center gap-(--space-sm) text-lg transition-all duration-300 ease-in-out sm:text-xl lg:text-2xl"
+                className="group text-secondary hover:gap-base gap-sm inline-flex w-fit cursor-pointer items-center text-lg transition-all duration-300 ease-in-out sm:text-xl lg:text-2xl"
               >
                 See what Agrolinking does
                 <Icon
@@ -784,7 +822,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="bg-primary flex shrink-0 items-center gap-(--space-sm) rounded-full px-(--space-md) py-1 text-base lg:text-lg">
+                <div className="bg-primary gap-sm flex shrink-0 items-center rounded-full px-(--space-md) py-1 text-base lg:text-lg">
                   <Icon
                     icon="lucide:check"
                     className="h-3.5 w-3.5 text-white"

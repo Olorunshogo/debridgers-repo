@@ -1,5 +1,5 @@
 export function meta() {
-  return [{ title: "Buyers | Debridger Admin" }];
+  return [{ title: "Buyers | Debridgers Admin" }];
 }
 export default function AdminBuyers() {
   return (

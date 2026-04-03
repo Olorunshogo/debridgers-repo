@@ -14,8 +14,8 @@ import type { UserRole } from "../../types/auth";
 
 export function meta() {
   return [
-    { title: "Create Account | Debridger" },
-    { name: "description", content: "Join Debridger as a buyer or agent." },
+    { title: "Create Account | Debridgers" },
+    { name: "description", content: "Join Debridgers as a buyer or agent." },
   ];
 }
 
@@ -335,7 +335,7 @@ export default function SignupPage() {
                       className="text-sm"
                       style={{ color: "var(--text-colour)" }}
                     >
-                      How will you be using Debridger?
+                      How will you be using Debridgers?
                     </p>
                   </div>
 

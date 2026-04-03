@@ -5,7 +5,7 @@ import { Users, UserCheck, ShoppingBag, TrendingUp } from "lucide-react";
 import { BASE_BACKEND_URL } from "../../../utils/api";
 
 export function meta() {
-  return [{ title: "Admin Overview | Debridger" }];
+  return [{ title: "Admin Overview | Debridgers" }];
 }
 
 interface AdminStats {
