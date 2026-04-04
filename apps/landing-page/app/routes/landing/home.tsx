@@ -373,6 +373,7 @@ export default function Home() {
   const currentIndex = useImageCycle(1);
   const activeTrustIndex = useTrustCycle(4);
   const images = ["/images/hero-1.jpg"];
+
   const trustItems = [
     { icon: "lucide:check", label: "Guarantee fresh produce" },
     { icon: "lucide:map-pin", label: "Sarbon Tasha • Narayi• Kakuri" },

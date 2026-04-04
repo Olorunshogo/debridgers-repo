@@ -21,6 +21,7 @@ interface HeaderProps {
   orderNowHref?: string;
   signUpHref: string;
   heroSectionId?: string;
+  logoVariant?: "black" | "white";
 }
 
 export function Header({
@@ -28,6 +29,7 @@ export function Header({
   orderNowHref = "https://wa.me/+2348167042797",
   signUpHref,
   heroSectionId,
+  logoVariant = "black",
 }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
   const [onGreenBg, setOnGreenBg] = useState<boolean>(true);
@@ -85,7 +87,7 @@ export function Header({
       <div className="flex w-full items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center">
-          <AppLogo />
+          <AppLogo variant={onGreenBg ? "black" : "white"} />
         </Link>
 
         {/* Desktop nav links */}
@@ -145,7 +147,7 @@ export function Header({
         </button>
       </div>
 
-      {/* Mobile Menu — portalled to document.body so fixed positioning works correctly */}
+      {/* Mobile Menu -> portalled to document.body so fixed positioning works correctly */}
       {typeof document !== "undefined" &&
         createPortal(
           <AnimatePresence>
