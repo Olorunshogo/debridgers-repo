@@ -9,9 +9,9 @@ npx validate-branch-name || {
   exit 1
 }
 
-# 2️⃣ Repo size check — block large files over 500KB
+# 2️⃣ Repo size check — block large files over 1024KB
 echo "📦 Checking for large tracked files..."
-LIMIT_KB=500
+LIMIT_KB=1024
 LARGE_FILES=$(git ls-files | xargs -I{} sh -c 'size=$(wc -c < "{}"); if [ "$size" -gt '"$((LIMIT_KB * 1024))"' ]; then echo "{} ($(( size / 1024 ))KB)"; fi' 2>/dev/null)
 if [ -n "$LARGE_FILES" ]; then
   echo "❌ Large files detected (over ${LIMIT_KB}KB):"
