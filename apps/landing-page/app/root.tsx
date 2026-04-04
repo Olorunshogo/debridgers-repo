@@ -9,7 +9,7 @@ import {
 
 import type { Route } from "./+types/root";
 import "./styles.css";
-import { IntroAnimation } from "./components/IntroAnimation";
+import { IntroAnimation } from "./components/IntroAnim";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },

@@ -5,7 +5,7 @@ import { Menu, X, Bell, Plus } from "lucide-react";
 import { AppLogo, DashSearchInput } from "@debridgers/ui-web";
 import { useDashboardNav } from "../../../hooks/useDashboardNav";
 
-// ── Page title map ────────────────────────────────────────────────────────────
+// === Page title map
 const titleMap: Record<string, string> = {
   "/buyer-dashboard": "Overview",
   "/buyer-dashboard/shop": "Shop / Catalog",
@@ -16,7 +16,7 @@ const titleMap: Record<string, string> = {
   "/buyer-dashboard/checkout": "Checkout",
 };
 
-// ── User card (bottom of sidebar) ────────────────────────────────────────────
+// === User card (bottom of sidebar)
 function UserCard() {
   return (
     <div
@@ -42,7 +42,7 @@ function UserCard() {
   );
 }
 
-// ── Sidebar content ───────────────────────────────────────────────────────────
+// === Sidebar content
 interface SidebarContentProps {
   onNavClick?: () => void;
 }
@@ -125,7 +125,7 @@ function SidebarContent({ onNavClick }: SidebarContentProps) {
   );
 }
 
-// ── Layout ────────────────────────────────────────────────────────────────────
+// === Layout
 export default function BuyerDashboardLayout() {
   const { pathname } = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -138,7 +138,7 @@ export default function BuyerDashboardLayout() {
       className="flex min-h-screen w-full"
       style={{ backgroundColor: "var(--dash-page-bg)" }}
     >
-      {/* ── Desktop sidebar ── */}
+      {/* Desktop sidebar */}
       <aside
         className="hidden w-[280px] shrink-0 lg:flex lg:flex-col"
         style={{ backgroundColor: "var(--primary-color)" }}
@@ -146,7 +146,7 @@ export default function BuyerDashboardLayout() {
         <SidebarContent />
       </aside>
 
-      {/* ── Mobile drawer ── */}
+      {/* Mobile drawer */}
       <AnimatePresence>
         {mobileOpen && (
           <>
@@ -182,42 +182,43 @@ export default function BuyerDashboardLayout() {
         )}
       </AnimatePresence>
 
-      {/* ── Main area ── */}
+      {/* Main area */}
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Topbar */}
         <header
-          className="flex h-16 shrink-0 items-center gap-4 border-b px-4 lg:px-6"
+          className="flex h-16 shrink-0 items-center justify-between gap-4 border-b px-4 lg:px-6"
           style={{
             backgroundColor: "var(--dash-topbar-bg)",
             borderColor: "var(--border-gray)",
           }}
         >
-          {/* Mobile hamburger */}
-          <button
-            className="text-icon-secondary hover:text-icon-primary shrink-0 transition-colors lg:hidden"
-            onClick={() => setMobileOpen(true)}
-            aria-label="Open menu"
-          >
-            <Menu size={22} />
-          </button>
+          <div className="gap-base flex items-center">
+            {/* Mobile hamburger */}
+            <button
+              className="text-icon-secondary hover:text-icon-primary shrink-0 transition-colors lg:hidden"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open menu"
+            >
+              <Menu size={22} />
+            </button>
 
-          {/* Page title */}
-          <h1
-            className="font-syne shrink-0 text-lg font-bold lg:text-xl"
-            style={{ color: "var(--heading-colour)" }}
-          >
-            {pageTitle}
-          </h1>
-
-          {/* Search — grows to fill space */}
-          <div className="mx-4 flex-1">
-            <DashSearchInput
-              placeholder="Search products, orders"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="max-w-sm"
-            />
+            {/* Page title */}
+            <h1
+              className="font-syne shrink-0 text-lg font-bold lg:text-xl"
+              style={{ color: "var(--heading-colour)" }}
+            >
+              {pageTitle}
+            </h1>
           </div>
+
+          {/* Search: grows to fill space */}
+
+          <DashSearchInput
+            placeholder="Search products, orders"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full max-w-[500px]"
+          />
 
           {/* Right actions */}
           <div className="flex shrink-0 items-center gap-3">

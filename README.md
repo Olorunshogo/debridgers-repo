@@ -1,6 +1,6 @@
 # Debridgers Monorepo
 
-A pnpm monorepo for the Debridgers platform — housing the web app, backend, and shared component libraries.
+A pnpm monorepo for the Debridgers platform — a marketplace connecting farmers directly with buyers for fresh farm produce. Houses the web app, NestJS backend, shared component libraries, and tooling.
 
 ---
 
@@ -12,11 +12,16 @@ A pnpm monorepo for the Debridgers platform — housing the web app, backend, an
 - [Libs](#libs)
 - [Getting Started](#getting-started)
 - [Development Workflow](#development-workflow)
+- [Root Scripts Reference](#root-scripts-reference)
 - [Import Aliases](#import-aliases)
+- [Branch Naming](#branch-naming)
+- [Code Quality](#code-quality)
+- [Database](#database)
+- [Building for Production](#building-for-production)
+- [Docker](#docker)
+- [Bundle Analysis](#bundle-analysis)
 - [Adding a New App](#adding-a-new-app)
 - [Adding a New Package / Library](#adding-a-new-package--library)
-- [Code Quality](#code-quality)
-- [Building for Production](#building-for-production)
 - [Troubleshooting](#troubleshooting)
 
 ---
@@ -25,78 +30,29 @@ A pnpm monorepo for the Debridgers platform — housing the web app, backend, an
 
 ```
 debridgers-repo/
+├── api/                         # Vercel serverless API entry (index.ts)
 ├── apps/
-│   ├── landing-page/        # React Router v7 SSR web app (@debridgers/landing-page)
-│   └── backend/             # Node.js backend
+│   ├── landing-page/            # @debridgers/landing-page — React Router v7 SSR web app
+│   ├── debridgers-backend/      # @debridgers/debridgers-backend — NestJS REST API
+│   └── debridgers-backend-e2e/  # E2E test suite for the backend (Jest)
 ├── packages/
-│   ├── ui-web/              # @debridgers/ui-web — Shadcn-style web components
-│   └── ui-app/              # @debridgers/ui-app — Mobile/Ionic-style components
+│   ├── ui-web/                  # @debridgers/ui-web — Shadcn-style web components
+│   ├── ui-app/                  # @debridgers/ui-app — Mobile/Ionic-style components
+│   └── api-client/              # @debridgers/api-client — Shared API client (axios wrappers)
 ├── libs/
-│   ├── shared-theme/        # @debridgers/shared-theme — Tailwind CSS preset
-│   └── shared-utils/        # @debridgers/shared-utils — Shared utility functions
-├── docker/                  # Dockerfiles and docker-compose
-├── scripts/                 # Utility scripts
-├── package.json             # Root workspace config
-└── pnpm-workspace.yaml      # pnpm workspace definition
+│   ├── shared-theme/            # @debridgers/shared-theme — Tailwind CSS preset + design tokens
+│   └── shared-utils/            # @debridgers/shared-utils — Shared utility functions
+├── docker/                      # Dockerfiles and docker-compose
+├── docs/                        # API and feature documentation (auth, admin, agent, backend)
+├── scripts/                     # Utility/generator scripts
+├── package.json                 # Root workspace config + shared scripts
+├── pnpm-workspace.yaml          # pnpm workspace definition
+├── tsconfig.base.json           # Base TypeScript config extended by all packages
+├── tsconfig.json                # Root TypeScript config
+├── eslint.config.mjs            # Root ESLint config (flat config)
+├── prettier.config.cjs          # Prettier config
+└── vitest.workspace.ts          # Vitest workspace config
 ```
-
-/debridgers-repo$ tree -L 2
-.
-├── api
-│ └── index.ts
-├── apps
-│ ├── backend
-│ ├── debridgers-backend
-│ ├── debridgers-backend-e2e
-│ └── landing-page
-├── CONTRIBUTING.md
-├── docker
-│ ├── backend.Dockerfile
-│ ├── docker-compose.yml
-│ └── landing.Dockerfile
-├── docs
-│ ├── admin.md
-│ ├── agent.md
-│ ├── auth.md
-│ └── backend.md
-├── eslint.config.mjs
-├── FOLDER*README.md
-├── libs
-│ ├── shared-theme
-│ └── shared-utils
-├── node_modules
-│ ├── concurrently -> .pnpm/concurrently@8.2.2/node_modules/concurrently
-│ ├── eslint -> .pnpm/eslint@9.39.4_jiti@2.6.1/node_modules/eslint
-│ ├── eslint-config-prettier -> .pnpm/eslint-config-prettier@10.1.8_eslint@9.39.4_jiti@2.6.1*/node*modules/eslint-config-prettier
-│ ├── eslint-plugin-import -> .pnpm/eslint-plugin-import@2.32.0*@typescript-eslint+parser@8.57.2_eslint@9.39.4_jiti@2.6.1___8d89b0808ebd343afc22e31708bf2958/node*modules/eslint-plugin-import
-│ ├── eslint-plugin-prettier -> .pnpm/eslint-plugin-prettier@5.5.5*@types+eslint@9.6.1_eslint-config-prettier@10.1.8*eslint@9_301f51fcc56ebabbd6430d59d9f660b6/node_modules/eslint-plugin-prettier
-│ ├── eslint-plugin-react -> .pnpm/eslint-plugin-react@7.37.5_eslint@9.39.4_jiti@2.6.1*/node*modules/eslint-plugin-react
-│ ├── eslint-plugin-react-hooks -> .pnpm/eslint-plugin-react-hooks@5.2.0_eslint@9.39.4_jiti@2.6.1*/node*modules/eslint-plugin-react-hooks
-│ ├── husky -> .pnpm/husky@9.1.7/node_modules/husky
-│ ├── lint-staged -> .pnpm/lint-staged@16.4.0/node_modules/lint-staged
-│ ├── prettier -> .pnpm/prettier@3.8.1/node_modules/prettier
-│ ├── prettier-plugin-tailwindcss -> .pnpm/prettier-plugin-tailwindcss@0.7.2_prettier@3.8.1/node_modules/prettier-plugin-tailwindcss
-│ ├── tsup -> .pnpm/tsup@8.5.1_jiti@2.6.1_postcss@8.5.8_tsx@4.21.0_typescript@5.9.3_yaml@2.8.3/node_modules/tsup
-│ ├── typescript -> .pnpm/typescript@5.9.3/node_modules/typescript
-│ ├── @typescript-eslint
-│ ├── vite -> .pnpm/vite@5.4.21*@types+node@22.19.15_lightningcss@1.32.0_terser@5.46.1/node*modules/vite
-│ └── vitest -> .pnpm/vitest@1.6.1*@types+node@22.19.15_lightningcss@1.32.0_terser@5.46.1/node_modules/vitest
-├── package.json
-├── packages
-│ ├── api-client
-│ ├── ui-app
-│ └── ui-web
-├── pnpm-lock.yaml
-├── pnpm-workspace.yaml
-├── prettier.config.cjs
-├── README.md
-├── scripts
-│ └── GENERATE_SCRIPTS.md
-├── TAILWIND_THEME.md
-├── TASKS.md
-├── tsconfig.base.json
-├── tsconfig.json
-└── vitest.workspace.ts
 
 ---
 
@@ -104,38 +60,113 @@ debridgers-repo/
 
 ### `apps/landing-page` — `@debridgers/landing-page`
 
-The main web application. Built with React Router v7 (SSR), Tailwind CSS v4, and TypeScript.
+The main web application. Built with React Router v7 (SSR), Tailwind CSS v4, and TypeScript. Deployed on Vercel.
 
-- Entry: `app/routes.ts`
-- Root layout: `app/root.tsx`
-- SSR handler: `entry.server.tsx`
-- Client hydration: `app/entry.client.tsx`
-
-```bash
-# Dev server (port 3000)
-pnpm dev-landing-page
-
-# Build
-pnpm build-landing-page
-
-# Start production server
-pnpm --filter @debridgers/landing-page start
+```
+apps/landing-page/
+├── app/
+│   ├── components/      # App-level shared components
+│   ├── contexts/        # React context providers
+│   ├── hooks/           # Custom React hooks
+│   ├── models/          # Data models / types
+│   ├── routes/          # File-based routes (React Router v7)
+│   ├── types/           # TypeScript type definitions
+│   ├── utils/           # App-level utility functions
+│   ├── entry.client.tsx # Client hydration entry
+│   ├── root.tsx         # Root layout
+│   ├── routes.ts        # Route manifest
+│   └── styles.css       # Global styles
+├── public/              # Static assets (images, logos, favicon)
+├── entry.server.tsx     # SSR server entry
+├── react-router.config.ts
+├── vite.config.ts
+├── tailwind.config.ts
+└── tsconfig.json
 ```
 
-### `apps/backend`
+```bash
+# From root
+pnpm dev:landing          # Dev server (http://localhost:3000)
+pnpm build:landing        # Production build
+pnpm typecheck:landing    # Type check
 
-Node.js backend service.
+# From apps/landing-page directly
+pnpm dev
+pnpm build
+pnpm start                # Serve production build
+pnpm typecheck
+pnpm lint
+pnpm lint:fix
+pnpm analyze              # Bundle size visualizer (opens in browser)
+```
+
+---
+
+### `apps/debridgers-backend` — `@debridgers/debridgers-backend`
+
+The REST API. Built with NestJS, Drizzle ORM, PostgreSQL (Neon), and Mailtrap for email.
+
+```
+apps/debridgers-backend/
+├── src/
+│   ├── app/
+│   │   ├── admin/       # Admin module (manage agents, users)
+│   │   ├── agent/       # Agent application + report submission
+│   │   ├── auth/        # Auth module (JWT, guards, decorators)
+│   │   ├── contact/     # Contact form module
+│   │   ├── payment/     # Paystack payment integration
+│   │   ├── app.module.ts
+│   │   └── app.controller.ts
+│   ├── events/          # Event emitters and listeners
+│   ├── infrastructure/
+│   │   ├── config/      # App configs (DB, JWT, Cloudinary, Mailtrap, Paystack)
+│   │   ├── database/    # Drizzle DB module + provider
+│   │   ├── helper/      # Column helpers
+│   │   ├── logger/      # Pino logger module
+│   │   ├── schema/      # Drizzle schema definitions
+│   │   └── seeders/     # DB seed scripts
+│   ├── interceptors/    # NestJS interceptors
+│   ├── interfaces/      # Shared TypeScript interfaces
+│   ├── notification/    # Notification service (email)
+│   └── main.ts          # App bootstrap
+├── drizzle.config.ts    # Drizzle Kit config
+└── nest-cli.json
+```
 
 ```bash
-pnpm dev-backend
-pnpm build-backend
+# From root
+pnpm dev:backend          # Start backend in watch mode
+pnpm build:backend        # Production build
+
+# From apps/debridgers-backend directly
+pnpm dev                  # Watch mode (nest start --watch)
+pnpm build                # Compile to dist/
+pnpm start                # Run compiled dist/main.js
+pnpm typecheck
+pnpm lint
+pnpm lint:fix
+pnpm test                 # Run unit tests (vitest --run)
+```
+
+---
+
+### `apps/debridgers-backend-e2e`
+
+End-to-end test suite for the backend. Uses Jest.
+
+```bash
+# From root
+pnpm test:e2e
+
+# From apps/debridgers-backend-e2e directly
+pnpm test
 ```
 
 ---
 
 ## Packages
 
-Packages are buildable with `tsup` and consumed via workspace aliases.
+Packages are buildable with `tsup` and consumed via workspace aliases (`workspace:*`).
 
 ### `packages/ui-web` — `@debridgers/ui-web`
 
@@ -146,8 +177,14 @@ import { Button } from "@debridgers/ui-web";
 ```
 
 ```bash
-pnpm dev-ui-web     # watch mode
-pnpm build-ui-web   # build dist/
+# From root
+pnpm dev:ui-web            # Watch mode
+pnpm build:ui-web          # Build dist/
+pnpm watch:ui-web          # Alias for watch mode
+
+# From packages/ui-web directly
+pnpm dev
+pnpm build
 ```
 
 ### `packages/ui-app` — `@debridgers/ui-app`
@@ -159,11 +196,20 @@ import { MobileButton } from "@debridgers/ui-app";
 ```
 
 ```bash
-pnpm --filter @debridgers/ui-app dev    # watch mode
-pnpm --filter @debridgers/ui-app build  # build dist/
+# From packages/ui-app directly
+pnpm dev
+pnpm build
 ```
 
-> Note: In `apps/landing-page`, both packages are aliased directly to their `src/` in Vite — so you don't need to build them during development. See [Import Aliases](#import-aliases).
+### `packages/api-client` — `@debridgers/api-client`
+
+Shared API client with typed axios wrappers for consuming the backend.
+
+```ts
+import { apiClient } from "@debridgers/api-client";
+```
+
+> In `apps/landing-page`, `ui-web` and `ui-app` are aliased directly to their `src/` in Vite — no need to build them during development. See [Import Aliases](#import-aliases).
 
 ---
 
@@ -171,7 +217,7 @@ pnpm --filter @debridgers/ui-app build  # build dist/
 
 ### `libs/shared-theme` — `@debridgers/shared-theme`
 
-Centralized Tailwind CSS preset with shared design tokens (colors, etc.).
+Centralized Tailwind CSS preset with shared design tokens (colors, spacing, etc.).
 
 ```ts
 // tailwind.config.ts
@@ -185,7 +231,7 @@ export default {
 
 ### `libs/shared-utils` — `@debridgers/shared-utils`
 
-Shared utility functions.
+Shared utility functions used across apps and packages.
 
 ```ts
 import { cn } from "@debridgers/shared-utils";
@@ -197,11 +243,10 @@ import { cn } from "@debridgers/shared-utils";
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 24.x
 - pnpm 10+
 
 ```bash
-# Install pnpm if needed
 npm install -g pnpm
 ```
 
@@ -211,13 +256,27 @@ npm install -g pnpm
 pnpm install
 ```
 
-### Run the landing page in dev
+### Environment variables
+
+Each app has its own `.env`. Copy and fill in:
 
 ```bash
-pnpm dev-landing-page
+cp apps/debridgers-backend/.env.example apps/debridgers-backend/.env
+cp .env.example .env
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+### Run everything in dev
+
+```bash
+pnpm dev          # Runs all apps in parallel
+```
+
+Or individually:
+
+```bash
+pnpm dev:landing
+pnpm dev:backend
+```
 
 ---
 
@@ -225,16 +284,43 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ### Working on UI packages without rebuilding
 
-The `landing-page` Vite config aliases `@debridgers/ui-web` and `@debridgers/ui-app` directly to their `src/` directories. This means changes to components are picked up instantly via HMR — no need to run `tsup --watch` separately.
+`apps/landing-page` aliases `@debridgers/ui-web` and `@debridgers/ui-app` directly to their `src/` in Vite. Changes to components are picked up instantly via HMR — no `tsup --watch` needed.
 
-### Working on packages for other consumers
+### Working on packages consumed via dist/
 
-If you're building a new app that consumes packages via their built `dist/`, run watch mode:
+If another app consumes a package via its built `dist/`, run watch mode:
 
 ```bash
 pnpm --filter @debridgers/ui-web dev
 pnpm --filter @debridgers/ui-app dev
 ```
+
+---
+
+## Root Scripts Reference
+
+| Script                   | What it does                      |
+| ------------------------ | --------------------------------- |
+| `pnpm dev`               | Run all apps in parallel dev mode |
+| `pnpm build`             | Build all apps and packages       |
+| `pnpm lint`              | Lint all workspaces               |
+| `pnpm lint:fix`          | Lint + autofix all workspaces     |
+| `pnpm format`            | Prettier format everything        |
+| `pnpm format:check`      | Check formatting without writing  |
+| `pnpm typecheck`         | Type check all workspaces         |
+| `pnpm test`              | Run all tests                     |
+| `pnpm dev:landing`       | Dev server for landing page       |
+| `pnpm build:landing`     | Build landing page                |
+| `pnpm typecheck:landing` | Type check landing page           |
+| `pnpm dev:backend`       | Dev server for backend            |
+| `pnpm build:backend`     | Build backend                     |
+| `pnpm db:generate`       | Generate Drizzle migrations       |
+| `pnpm db:migrate`        | Run Drizzle migrations            |
+| `pnpm db:seed`           | Seed the database                 |
+| `pnpm test:e2e`          | Run backend E2E tests             |
+| `pnpm dev:ui-web`        | Watch mode for ui-web package     |
+| `pnpm build:ui-web`      | Build ui-web package              |
+| `pnpm watch:ui-web`      | Watch mode alias for ui-web       |
 
 ---
 
@@ -248,13 +334,126 @@ Configured in `apps/landing-page/vite.config.ts` and `tsconfig.json`:
 | `@debridgers/ui-web` | `packages/ui-web/src`     |
 | `@debridgers/ui-app` | `packages/ui-app/src`     |
 
-Usage:
-
 ```tsx
 import { Button } from "@debridgers/ui-web";
 import { MobileButton } from "@debridgers/ui-app";
 import { MyComponent } from "@/components/my-component";
 ```
+
+---
+
+## Branch Naming
+
+Enforced via `validate-branch-name` in the pre-push hook.
+
+**Allowed patterns:**
+
+```
+main
+develop
+live
+feature/short-description
+fix/short-description
+refactor/short-description
+hotfix/short-description
+release/short-description
+conflict/short-description
+chore/short-description
+```
+
+Pushes with non-conforming branch names will be blocked.
+
+---
+
+## Code Quality
+
+```bash
+pnpm lint           # Lint all
+pnpm lint:fix       # Lint + autofix all
+pnpm format         # Prettier format all
+pnpm format:check   # Check formatting
+```
+
+Pre-commit hooks (Husky + lint-staged) run Prettier and ESLint on staged files automatically.
+
+Pre-push hooks enforce:
+
+- Branch name validation
+- Large file check (blocks files over 500KB)
+- Protected branch rules for `main`
+
+---
+
+## Database
+
+The backend uses Drizzle ORM with PostgreSQL (Neon serverless).
+
+```bash
+# Generate migration files from schema changes
+pnpm db:generate
+
+# Apply migrations to the database
+pnpm db:migrate
+
+# Seed the database with initial data
+pnpm db:seed
+
+# Open Drizzle Studio (visual DB browser)
+pnpm --filter @debridgers/debridgers-backend db:studio
+```
+
+Schema files live in `apps/debridgers-backend/src/infrastructure/schema/`.
+
+---
+
+## Building for Production
+
+```bash
+# Build everything
+pnpm build
+
+# Build specific app
+pnpm build:landing
+pnpm build:backend
+```
+
+---
+
+## Docker
+
+```bash
+# Start all services
+docker compose -f docker/docker-compose.yml up
+
+# Build and start
+docker compose -f docker/docker-compose.yml up --build
+
+# Stop
+docker compose -f docker/docker-compose.yml down
+```
+
+Individual Dockerfiles:
+
+- `docker/landing.Dockerfile` — landing page
+- `docker/backend.Dockerfile` — backend
+
+---
+
+## Bundle Analysis
+
+Inspect what's bloating the landing page bundle:
+
+```bash
+pnpm --filter @debridgers/landing-page run analyze
+```
+
+Or from inside `apps/landing-page`:
+
+```bash
+pnpm analyze
+```
+
+Opens a treemap in your browser showing every package and asset by size. Run after `pnpm build:landing` for accurate results.
 
 ---
 
@@ -277,42 +476,6 @@ import { MyComponent } from "@/components/my-component";
 
 ---
 
-## Code Quality
-
-```bash
-# Lint all
-pnpm lint
-
-# Lint + autofix all
-pnpm lint:fix
-
-# Format all
-pnpm format
-```
-
-Pre-commit hooks (Husky + lint-staged) run Prettier and ESLint on staged files automatically.
-
----
-
-## Building for Production
-
-```bash
-# Build everything
-pnpm build
-
-# Build specific app
-pnpm build-landing-page
-pnpm build-backend
-```
-
-Docker support is available in `docker/`:
-
-```bash
-docker compose -f docker/docker-compose.yml up
-```
-
----
-
 ## Troubleshooting
 
 **Clean the pnpm store (remove unreferenced/cached packages)**
@@ -321,31 +484,60 @@ docker compose -f docker/docker-compose.yml up
 pnpm store prune
 ```
 
-**Hard reset the pnpm store entirely**
+**Hard reset — nuke node_modules and reinstall**
 
 ```bash
-pnpm store clear
-```
-
-**Module not found for a workspace package**d lockfile, then reinstall)\*\*
-
-```bash
-find . -name "node_modules" -type d -prune -exec rm -rf '{}' +
 find . -name "node_modules" -type d -not -path "*/.git/*" | xargs rm -rf
-
 find . -name "pnpm-lock.yaml" -type f -delete
 pnpm install
 ```
 
 **Module not found for a workspace package**
-Make sure the package has been built if it's consumed via `dist/`:
+
+Make sure the package has been built if consumed via `dist/`:
 
 ```bash
 pnpm --filter @debridgers/ui-web build
+pnpm --filter @debridgers/ui-app build
 ```
 
 **Type errors on `@debridgers/ui-web` or `@debridgers/ui-app`**
+
 Check that `tsconfig.json` paths are set correctly in the consuming app. See `apps/landing-page/tsconfig.json` for reference.
 
 **Port already in use**
+
 The landing page dev server runs on port 3000. Kill the existing process or change `server.port` in `vite.config.ts`.
+
+**Backend not connecting to DB**
+
+Ensure `apps/debridgers-backend/.env` has the correct `DATABASE_URL` pointing to your Neon instance.
+
+**Drizzle migration errors**
+
+Run generate before migrate — never edit migration files manually:
+
+```bash
+pnpm db:generate
+pnpm db:migrate
+```
+
+**Pre-push hook blocking large files**
+
+Find what's large:
+
+```bash
+git ls-files | xargs -I{} sh -c 'size=$(wc -c < "{}"); echo "$size {}"' | sort -rn | head -20
+```
+
+Add the file to `.gitignore` or remove it from tracking:
+
+```bash
+git rm --cached path/to/large-file
+```
+
+**Husky hooks not running**
+
+```bash
+pnpm prepare
+```

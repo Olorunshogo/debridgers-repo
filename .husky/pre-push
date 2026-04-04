@@ -9,7 +9,19 @@ npx validate-branch-name || {
   exit 1
 }
 
-# 2️⃣ Run tests before push
+# 2️⃣ Repo size check — block large files over 500KB
+echo "📦 Checking for large tracked files..."
+LIMIT_KB=500
+LARGE_FILES=$(git ls-files | xargs -I{} sh -c 'size=$(wc -c < "{}"); if [ "$size" -gt '"$((LIMIT_KB * 1024))"' ]; then echo "{} ($(( size / 1024 ))KB)"; fi' 2>/dev/null)
+if [ -n "$LARGE_FILES" ]; then
+  echo "❌ Large files detected (over ${LIMIT_KB}KB):"
+  echo "$LARGE_FILES"
+  echo "Remove or gitignore them before pushing."
+  exit 1
+fi
+echo "✅ No large files found."
+
+# 3️⃣ Run tests before push
 echo "🧪 Running all tests before push..."
 # pnpm test || {
 #   echo "❌ Tests failed. Push aborted."

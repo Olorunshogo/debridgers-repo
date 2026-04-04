@@ -158,32 +158,34 @@ export default function AdminDashboardLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header
-          className="flex h-16 shrink-0 items-center gap-4 border-b px-4 lg:px-6"
+          className="flex h-16 shrink-0 items-center justify-between gap-4 border-b px-4 lg:px-6"
           style={{
             backgroundColor: "var(--dash-topbar-bg)",
             borderColor: "var(--border-gray)",
           }}
         >
-          <button
-            className="text-icon-secondary hover:text-icon-primary shrink-0 transition-colors lg:hidden"
-            onClick={() => setMobileOpen(true)}
-          >
-            <Menu size={22} />
-          </button>
-          <h1
-            className="font-syne shrink-0 text-lg font-bold lg:text-xl"
-            style={{ color: "var(--heading-colour)" }}
-          >
-            {pageTitle}
-          </h1>
-          <div className="mx-4 flex-1">
-            <DashSearchInput
-              placeholder="Search agents, buyers"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="max-w-sm"
-            />
+          <div className="gap-base flex items-center">
+            <button
+              className="text-icon-secondary hover:text-icon-primary shrink-0 transition-colors lg:hidden"
+              onClick={() => setMobileOpen(true)}
+            >
+              <Menu size={22} />
+            </button>
+            <h1
+              className="font-syne shrink-0 text-lg font-bold lg:text-xl"
+              style={{ color: "var(--heading-colour)" }}
+            >
+              {pageTitle}
+            </h1>
           </div>
+
+          <DashSearchInput
+            placeholder="Search agents, buyers"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full max-w-[500px]"
+          />
+
           <button className="hover:bg-bg-light relative rounded-full p-2 transition-colors">
             <Bell size={20} style={{ color: "var(--icon-secondary)" }} />
             <span

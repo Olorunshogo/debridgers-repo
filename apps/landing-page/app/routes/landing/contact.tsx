@@ -218,9 +218,9 @@ export default function ContactPage() {
       </div>
 
       {/* Hero Section */}
-      <div className="relative flex w-full flex-col">
+      <div className="relative flex max-h-[800px] w-full flex-col xl:max-h-[900px]">
         {/* Hero Section */}
-        <div className="-mt-navbar-h flex min-h-0 w-full flex-1">
+        <div className="-mt-navbar-h flex min-h-0 w-full">
           <div className="from-primary -mt-navbar-h via-primary to-primary absolute inset-0 z-0 overflow-hidden bg-linear-to-b" />
           <HeroSection
             images={["/images/hero-1.jpg"]}
@@ -272,7 +272,7 @@ export default function ContactPage() {
                 Send Us A Message
               </h2>
 
-              <AnimatePresence mode="wait">
+              <AnimatePresence mode="sync">
                 {submitted ? (
                   <motion.div
                     key="success"

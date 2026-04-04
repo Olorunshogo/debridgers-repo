@@ -3,7 +3,7 @@ export const AppLogo = () => {
     <img
       src="/logos/debridgers.png"
       alt="Debridgers Logo"
-      className="h-8 w-auto"
+      className="h-8 w-auto max-w-50"
     />
   );
 };

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Link, NavLink } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { Icon } from "@iconify/react";
@@ -8,6 +9,7 @@ import {
   SecondaryLink,
   WhatsAppButton,
 } from "@debridgers/ui-web";
+import { X } from "lucide-react";
 
 interface NavLinkItem {
   label: string;
@@ -18,7 +20,6 @@ interface HeaderProps {
   navLinks: NavLinkItem[];
   orderNowHref?: string;
   signUpHref: string;
-  /** id of the dark/green hero section — when it's in view, header stays white */
   heroSectionId?: string;
 }
 
@@ -28,8 +29,8 @@ export function Header({
   signUpHref,
   heroSectionId,
 }: HeaderProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [onGreenBg, setOnGreenBg] = useState(true);
+  const [menuOpen, setMenuOpen] = useState<boolean>(false);
+  const [onGreenBg, setOnGreenBg] = useState<boolean>(true);
 
   useEffect(() => {
     const updateBg = () => {
@@ -144,70 +145,78 @@ export function Header({
         </button>
       </div>
 
-      {/* Mobile drawer */}
-      <AnimatePresence>
-        {menuOpen && (
-          <>
-            <motion.div
-              className="fixed inset-0 z-40 cursor-pointer bg-black/40 lg:hidden"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setMenuOpen(false)}
-            />
-            <motion.div
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "tween", duration: 0.3 }}
-              className="px-section-px fixed top-0 left-0 z-50 h-full w-full bg-white shadow-xl sm:w-1/2 lg:hidden"
-            >
-              <div className="gap-base py-xl flex w-full flex-col">
-                <Link
-                  to="/"
-                  className="text-primary font-syne text-xl font-semibold"
+      {/* Mobile Menu — portalled to document.body so fixed positioning works correctly */}
+      {typeof document !== "undefined" &&
+        createPortal(
+          <AnimatePresence>
+            {menuOpen && (
+              <>
+                <motion.div
+                  className="fixed inset-0 z-40 h-full cursor-pointer bg-black/60 lg:hidden"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setMenuOpen(false)}
+                />
+                <motion.div
+                  initial={{ x: "-100%" }}
+                  animate={{ x: 0 }}
+                  exit={{ x: "-100%" }}
+                  transition={{ type: "tween", duration: 0.3 }}
+                  className="px-section-px fixed top-0 left-0 z-50 h-full w-[85%] max-w-[380px] overflow-hidden bg-white shadow-xl lg:hidden"
                 >
-                  Debridgers
-                </Link>
-                <div className="gap-2xl py-base flex flex-col">
-                  {navLinks.map((link) => {
-                    const isHash = link.href.startsWith("#");
-                    if (isHash) {
-                      return (
-                        <a
-                          key={link.href}
-                          href={link.href}
-                          className="text-primary font-syne text-base font-semibold transition-all duration-300 ease-in-out hover:opacity-70"
-                          onClick={() => setMenuOpen(false)}
-                        >
-                          {link.label}
-                        </a>
-                      );
-                    }
-                    return (
-                      <NavLink
-                        key={link.href}
-                        to={link.href}
-                        onClick={() => setMenuOpen(false)}
-                        className={({ isActive }) =>
-                          `font-syne text-base font-semibold transition-all duration-300 ease-in-out ${
-                            isActive
-                              ? "text-primary opacity-100"
-                              : "text-primary hover:opacity-70"
-                          }`
-                        }
+                  <div className="gap-base py-xl flex h-full w-full flex-col">
+                    <div className="flex w-full items-center justify-between">
+                      <Link
+                        to="/"
+                        className="text-primary font-syne flex-1 text-xl font-semibold"
                       >
-                        {link.label}
-                      </NavLink>
-                    );
-                  })}
-                </div>
-                <WhatsAppButton className="mt-auto w-full" />
-              </div>
-            </motion.div>
-          </>
+                        Debridgers
+                      </Link>
+
+                      <X size={16} strokeWidth={2} className="cursor-pointer" />
+                    </div>
+                    <div className="gap-2xl py-base flex flex-col">
+                      {navLinks.map((link) => {
+                        const isHash = link.href.startsWith("#");
+                        if (isHash) {
+                          return (
+                            <a
+                              key={link.href}
+                              href={link.href}
+                              className="text-primary font-syne text-base font-semibold transition-all duration-300 ease-in-out hover:opacity-70"
+                              onClick={() => setMenuOpen(false)}
+                            >
+                              {link.label}
+                            </a>
+                          );
+                        }
+                        return (
+                          <NavLink
+                            key={link.href}
+                            to={link.href}
+                            onClick={() => setMenuOpen(false)}
+                            className={({ isActive }) =>
+                              `font-syne text-base font-semibold transition-all duration-300 ease-in-out ${
+                                isActive
+                                  ? "text-primary opacity-100"
+                                  : "text-primary hover:opacity-70"
+                              }`
+                            }
+                          >
+                            {link.label}
+                          </NavLink>
+                        );
+                      })}
+                    </div>
+                    <WhatsAppButton className="w-full" />
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>,
+          document.body,
         )}
-      </AnimatePresence>
     </motion.header>
   );
 }
