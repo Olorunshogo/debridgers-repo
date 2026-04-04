@@ -24,7 +24,7 @@ export const DashSelectInput = forwardRef<
     const inputId = id ?? name ?? label.toLowerCase().replace(/\s+/g, "-");
 
     return (
-      <div className={`flex flex-col gap-1.5 ${className}`}>
+      <div className={`font-syne flex flex-col gap-1.5 ${className}`}>
         <label
           htmlFor={inputId}
           className="text-sm font-medium"

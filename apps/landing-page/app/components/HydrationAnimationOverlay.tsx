@@ -34,54 +34,54 @@ function LetterByLetterAnimation({
     return () => clearInterval(interval);
   }, [duration, onComplete]);
 
-  return (
-    <div className="font-syne text-primary flex items-center justify-center text-4xl font-semibold">
-      {FULL_TEXT.split("").map((letter, index) => (
-        <motion.span
-          key={index}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{
-            opacity:
-              visibleLetters.includes(letter) &&
-              visibleLetters.indexOf(letter) === index
-                ? 1
-                : 0,
-            y:
-              visibleLetters.includes(letter) &&
-              visibleLetters.indexOf(letter) === index
-                ? 0
-                : 20,
-          }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-          className={letter === "i" ? "relative" : ""}
-        >
-          {letter === "i" ? (
-            <motion.img
-              src="/logos/debridgers.png"
-              alt="i in Debridgers"
-              className="mx-1 h-8 w-8 object-contain"
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{
-                scale:
-                  visibleLetters.includes(letter) &&
-                  visibleLetters.indexOf(letter) === index
-                    ? 1
-                    : 0,
-                rotate:
-                  visibleLetters.includes(letter) &&
-                  visibleLetters.indexOf(letter) === index
-                    ? 0
-                    : -180,
-              }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-            />
-          ) : (
-            letter
-          )}
-        </motion.span>
-      ))}
-    </div>
-  );
+  // return (
+  //   <div className="font-syne text-primary flex items-center justify-center text-4xl font-semibold">
+  //     {FULL_TEXT.split("").map((letter, index) => (
+  //       <motion.span
+  //         key={index}
+  //         initial={{ opacity: 0, y: 20 }}
+  //         animate={{
+  //           opacity:
+  //             visibleLetters.includes(letter) &&
+  //             visibleLetters.indexOf(letter) === index
+  //               ? 1
+  //               : 0,
+  //           y:
+  //             visibleLetters.includes(letter) &&
+  //             visibleLetters.indexOf(letter) === index
+  //               ? 0
+  //               : 20,
+  //         }}
+  //         transition={{ duration: 0.3, ease: "easeOut" }}
+  //         className={letter === "i" ? "relative" : ""}
+  //       >
+  //         {letter === "i" ? (
+  //           <motion.img
+  //             src="/logos/debridgers.png"
+  //             alt="i in Debridgers"
+  //             className="mx-1 h-8 w-8 object-contain"
+  //             initial={{ scale: 0, rotate: -180 }}
+  //             animate={{
+  //               scale:
+  //                 visibleLetters.includes(letter) &&
+  //                 visibleLetters.indexOf(letter) === index
+  //                   ? 1
+  //                   : 0,
+  //               rotate:
+  //                 visibleLetters.includes(letter) &&
+  //                 visibleLetters.indexOf(letter) === index
+  //                   ? 0
+  //                   : -180,
+  //             }}
+  //             transition={{ duration: 0.5, ease: "easeOut" }}
+  //           />
+  //         ) : (
+  //           letter
+  //         )}
+  //       </motion.span>
+  //     ))}
+  //   </div>
+  // );
 }
 
 interface DisappearAnimationProps {
@@ -190,7 +190,7 @@ function HydrationProgressBar({ duration }: HydrationProgressBarProps) {
           duration: duration / 1000,
           ease: "linear",
         }}
-        className="to-primary h-full w-full origin-left rounded-full bg-gradient-to-r from-gray-200"
+        className="to-primary h-full w-full origin-left rounded-full bg-linear-to-r from-gray-200"
         style={{
           background:
             "linear-gradient(to right, #e5e7eb 0%, var(--color-primary) 100%)",
@@ -238,7 +238,7 @@ export function HydrationAnimationOverlay() {
       }}
     >
       {/* Animation Container */}
-      <div className="relative flex h-32 w-full items-center justify-center">
+      <div className="relative flex w-full items-center justify-center">
         <AnimatePresence mode="sync">
           {stage === "letterByLetter" && (
             <motion.div key="letterByLetter">
@@ -279,7 +279,7 @@ export function HydrationAnimationOverlay() {
       </div>
 
       {/* Progress Bar */}
-      <div className="relative mt-12 h-2 w-48 overflow-hidden rounded-full bg-gray-200">
+      <div className="relative mt-4 h-2 w-48 overflow-hidden rounded-full bg-gray-200">
         <HydrationProgressBar duration={animationDuration} />
       </div>
     </motion.div>

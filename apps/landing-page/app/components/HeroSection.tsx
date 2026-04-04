@@ -62,7 +62,7 @@ export function HeroSection({
   const activeTrustIndex = useTrustCycle(trustItems.length);
 
   return (
-    <section className="font-syne relative mx-auto flex h-full min-h-screen w-full max-w-[1840px] flex-col overflow-hidden">
+    <section className="font-syne relative mx-auto flex h-full h-screen max-h-[800px] w-full flex-col overflow-hidden xl:max-h-[900px]">
       {/* Background layer */}
       <div className="absolute inset-0 z-0">
         <AnimatePresence mode="sync">
@@ -75,7 +75,7 @@ export function HeroSection({
               animate={{ x: "0%" }}
               exit={{ x: "-100%" }}
               transition={{ duration: 0.1, ease: "easeInOut" }}
-              className="absolute inset-0 h-full w-full object-contain object-cover"
+              className="absolute inset-0 h-full w-full bg-red-900 object-contain object-cover"
             />
           )}
 
@@ -86,7 +86,7 @@ export function HeroSection({
       </div>
 
       {/* Content Wrapper */}
-      <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-screen w-full flex-col justify-between gap-[48px]">
+      <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-screen max-h-[800px] w-full flex-col justify-between gap-[48px] xl:max-h-[900px]">
         <div className="relative flex flex-1 flex-col pt-20 sm:pt-24 lg:pt-32">
           <div className="gap-2xl lg:gap-4xl flex flex-1 flex-col justify-center">
             {/* Location badge */}
@@ -214,7 +214,7 @@ export function HeroSection({
           <div className="bg-primary py-xl px-base mx-auto w-full shadow-md">
             {/* Mobile: slideshow, one item at a time */}
             <div className="relative flex h-6 items-center justify-center truncate overflow-hidden lg:hidden">
-              <AnimatePresence mode="wait">
+              <AnimatePresence mode="sync">
                 <motion.div
                   key={activeTrustIndex}
                   initial={{ opacity: 0, y: 10 }}

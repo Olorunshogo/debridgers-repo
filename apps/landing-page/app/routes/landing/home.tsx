@@ -200,7 +200,7 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
       <div className="absolute inset-0 bg-linear-to-t from-black/60 via-[#666666]/30 to-transparent" />
 
       {/* Label */}
-      <div className="font-open-sans absolute right-0 bottom-0 left-0 flex flex-col gap-1 px-(--space-base) pb-(--space-base) text-white">
+      <div className="font-open-sans px-base absolute right-0 bottom-0 left-0 flex flex-col gap-1 pb-(--space-base) text-white">
         <p className="text-lg font-semibold">{category.title}</p>
         <p className="text-base">{category.subtitle}</p>
       </div>
@@ -233,7 +233,7 @@ function WhatWeDeliver() {
   const gap = 24; // gap-6 = 24px
   const step = cardWidth + gap;
   const totalCards = deliverCategories.length;
-  // Render doubled list — when offset hits totalCards, silently snap back to 0
+  // === Render doubled list - when offset hits totalCards, silently snap back to 0
   const doubled = [...deliverCategories, ...deliverCategories];
 
   useEffect(() => {
@@ -396,7 +396,7 @@ export default function Home() {
 
       {/* Hero Section */}
       <div className="relative flex w-full flex-col">
-        <div className="-mt-navbar-h flex max-h-[800px] min-h-0 w-full flex-1">
+        <div className="-mt-navbar-h flex max-h-[800px] min-h-0 w-full flex-1 xl:max-h-[900px]">
           <div className="font-syne -mt-navbar-h bg-primary absolute inset-0 z-0 overflow-hidden" />
           <section
             id="hero-section"
@@ -404,7 +404,7 @@ export default function Home() {
           >
             {/* Background layer */}
             <div className="absolute inset-0 z-0 h-full w-full">
-              <AnimatePresence mode="wait">
+              <AnimatePresence mode="sync">
                 {images.length > 0 && (
                   <motion.img
                     key={currentIndex}
@@ -423,7 +423,7 @@ export default function Home() {
             </div>
 
             {/* Content Wrapper */}
-            <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-screen max-h-[800px] w-full flex-col justify-between gap-[48px]">
+            <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-screen max-h-[800px] w-full flex-col justify-between gap-[48px] xl:max-h-[900px]">
               <div className="relative flex flex-1 flex-col pt-20 sm:pt-24 lg:pt-32">
                 <div className="gap-2xl lg:gap-4xl flex flex-1 flex-col justify-center">
                   {/* Location badge */}
@@ -489,7 +489,7 @@ export default function Home() {
                 <div className="bg-primary py-xl px-base mx-auto w-full shadow-md">
                   {/* Mobile: slideshow */}
                   <div className="relative flex h-6 items-center justify-center overflow-hidden lg:hidden">
-                    <AnimatePresence mode="wait">
+                    <AnimatePresence mode="sync">
                       <motion.div
                         key={activeTrustIndex}
                         initial={{ opacity: 0, y: 10 }}

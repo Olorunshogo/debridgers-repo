@@ -18,11 +18,6 @@
   --section-py: 2rem;
   --section-py-sm: 4rem;
   --section-py-lg: 6.25rem;
-
-  /* lg (100px) → 6.25rem
-md (80px) → 5rem
-sm (64px) → 4rem
-mobile (48–50px) */
 }
 
 /* @theme: bridges CSS vars → Tailwind utility classes */
@@ -124,6 +119,10 @@ mobile (48–50px) */
 @layer components {
   .default-max-width {
     @apply mx-auto w-full max-w-[1400px];
+  }
+
+  .layout-max-width {
+    @apply mx-auto w-full max-w-[1600px];
   }
 
   .dashboard-max-width {

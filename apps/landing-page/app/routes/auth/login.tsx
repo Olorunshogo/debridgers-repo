@@ -10,6 +10,7 @@ import {
 } from "@debridgers/ui-web";
 import { BASE_BACKEND_URL } from "../../utils/api";
 import { decodeJwtPayload } from "../../utils/auth-cookies";
+import { redirectAfterAuth } from "../../utils/auth-redirect";
 import type { JwtPayload } from "../../types/auth";
 
 export function meta() {
@@ -26,12 +27,6 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 type FormErrors = Partial<Record<keyof LoginForm, string>>;
-
-function redirectPathForRole(role: string): string {
-  if (role === "agent") return "/agent-dashboard";
-  if (role === "admin") return "/admin-dashboard";
-  return "/buyer-dashboard";
-}
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -75,7 +70,7 @@ export default function LoginPage() {
       // if (!res.ok) { setApiError(json.message ?? "Invalid email or password"); return; }
       // const { accessToken } = json.data;
       // const decoded = decodeJwtPayload<JwtPayload>(accessToken);
-      // navigate(redirectPathForRole(decoded?.role ?? "buyer"));
+      // redirectAfterAuth(navigate, decoded?.role ?? "buyer");
 
       // -- MOCK --
       await new Promise<void>((r) => setTimeout(r, 900));
@@ -84,7 +79,7 @@ export default function LoginPage() {
         : form.email.startsWith("admin")
           ? "admin"
           : "buyer";
-      navigate(redirectPathForRole(role));
+      redirectAfterAuth(navigate, role);
     } catch {
       setApiError("Network error. Please try again.");
     } finally {
@@ -95,46 +90,41 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen w-full">
       {/* Brand panel */}
-      <div
-        className="hidden flex-col justify-between p-12 lg:flex lg:w-[45%]"
-        style={{ backgroundColor: "var(--primary-color)" }}
-      >
-        <AppLogo />
-        <div className="flex flex-col gap-6">
-          <h2 className="font-syne text-4xl leading-tight font-bold text-white xl:text-5xl">
-            Welcome back to{" "}
-            <span style={{ color: "var(--secondary-color)" }}>Debridgers.</span>
-          </h2>
-          <p className="max-w-sm text-lg leading-relaxed text-white/80">
-            Fresh food at market prices, delivered to your door or shop.
-          </p>
-        </div>
-        <div className="relative h-40 w-full overflow-hidden opacity-20">
-          <div className="absolute -bottom-16 -left-16 h-64 w-64 rounded-full border-24 border-white" />
-          <div className="absolute -bottom-8 left-24 h-40 w-40 rounded-full border-16 border-white" />
+      <div className="bg-primary hidden flex-col justify-center p-12 lg:flex lg:w-[45%]">
+        <div className="flex w-full flex-col gap-12">
+          <Link to="/" className="flex items-center gap-2">
+            <span className="font-syne text-xl font-bold text-white">
+              Debridgers
+            </span>
+          </Link>
+          <div className="flex flex-1 flex-col justify-center gap-6">
+            <h2 className="font-syne text-4xl leading-tight font-bold text-white xl:text-5xl">
+              Welcome back to{" "}
+              <span className="text-secondary">Debridgers.</span>
+            </h2>
+            <p className="max-w-[80%] text-lg leading-relaxed text-white">
+              Fresh food at market prices, delivered to your door step.
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Form panel */}
-      <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 lg:px-16">
-        <div className="w-full max-w-md">
-          <div className="mb-8 flex justify-center lg:hidden">
+      <div className="flex flex-1 flex-col items-center justify-center bg-white px-6 py-12 lg:px-16">
+        <div className="flex w-full max-w-[500px] flex-col gap-6">
+          <div className="flex justify-center lg:hidden">
             <AppLogo />
           </div>
 
-          <div className="mb-8 flex flex-col gap-1">
-            <h1
-              className="font-syne text-2xl font-bold"
-              style={{ color: "var(--heading-colour)" }}
-            >
+          <div className="flex flex-col gap-1">
+            <h1 className="font-syne text-heading text-2xl font-bold">
               Sign in to your account
             </h1>
-            <p className="text-sm" style={{ color: "var(--text-colour)" }}>
+            <p className="text-text text-sm">
               No account?{" "}
               <Link
                 to="/signup"
-                className="font-semibold underline underline-offset-2"
-                style={{ color: "var(--primary-color)" }}
+                className="text-primary font-semibold underline underline-offset-2"
               >
                 Sign up
               </Link>
@@ -173,7 +163,7 @@ export default function LoginPage() {
               autoComplete="email"
             />
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-2">
               <DashPasswordInput
                 label="Password"
                 placeholder="Your password"
@@ -195,7 +185,7 @@ export default function LoginPage() {
             <SubmitButton
               loading={loading}
               loadingText="Signing in..."
-              className="mt-1 rounded-full"
+              className="mt-4 rounded-full"
             >
               Sign in
             </SubmitButton>
