@@ -64,7 +64,7 @@ export default function BuyerCheckout() {
   async function handleContinue() {
     setLoading(true);
     try {
-      // ── PRODUCTION ──────────────────────────────────────────────────────────
+      // === PRODUCTION
       // const res = await fetch(`${BASE_BACKEND_URL}/buyer/orders`, {
       //   method: "POST",
       //   credentials: "include",
@@ -73,7 +73,7 @@ export default function BuyerCheckout() {
       // });
       // if (!res.ok) throw new Error("Order failed");
 
-      // ── MOCK ────────────────────────────────────────────────────────────────
+      // === MOCK
       await new Promise<void>((r) => setTimeout(r, 1000));
       setStep("confirmed");
     } catch {
@@ -91,13 +91,10 @@ export default function BuyerCheckout() {
         className="flex flex-col items-center gap-6 py-16 text-center"
       >
         <CheckCircle2 size={64} style={{ color: "var(--primary-color)" }} />
-        <h2
-          className="font-syne text-2xl font-bold"
-          style={{ color: "var(--heading-colour)" }}
-        >
+        <h2 className="font-syne text-heading text-2xl font-bold">
           Order Confirmed!
         </h2>
-        <p className="max-w-sm text-sm" style={{ color: "var(--text-colour)" }}>
+        <p className="text-text max-w-[350px] text-sm">
           Your order has been placed. We&apos;ll notify you when it&apos;s
           picked up.
         </p>

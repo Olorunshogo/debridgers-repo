@@ -20,7 +20,7 @@ export function DashSwitchInput({
   const switchId = id ?? label?.toLowerCase().replace(/\s+/g, "-") ?? "switch";
 
   return (
-    <div className="flex items-center justify-between gap-4">
+    <div className="font-syne flex items-center justify-between gap-4">
       {(label || description) && (
         <div className="flex flex-col gap-0.5">
           {label && (

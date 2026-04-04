@@ -11,7 +11,7 @@ export const DashSearchInput = forwardRef<
 >(({ className = "", onFilterClick, ...props }, ref) => {
   return (
     <div
-      className={`flex items-center gap-2 rounded-full border px-4 py-2 transition-all duration-200 focus-within:ring-1 ${className}`}
+      className={`font-syne flex items-center gap-2 rounded-full border px-4 py-2 transition-all duration-200 focus-within:ring-1 ${className}`}
       style={{
         borderColor: "var(--border-gray)",
         backgroundColor: "var(--input-bg)",

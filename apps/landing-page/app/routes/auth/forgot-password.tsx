@@ -64,7 +64,7 @@ export default function ForgotPasswordPage() {
           <AppLogo />
         </div>
 
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="sync">
           {sent ? (
             <motion.div
               key="success"

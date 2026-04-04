@@ -104,7 +104,7 @@ export default function ResetPasswordPage() {
           <AppLogo />
         </div>
 
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="sync">
           {done ? (
             <motion.div
               key="success"

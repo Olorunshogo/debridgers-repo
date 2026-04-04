@@ -219,7 +219,7 @@ export default function BuyerShop() {
           ))}
         </div>
       ) : (
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="sync">
           <motion.div
             key={activeCategory}
             initial={{ opacity: 0 }}
@@ -403,7 +403,7 @@ export default function BuyerShop() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "tween", duration: 0.28 }}
-              className="fixed top-0 right-0 z-50 flex h-full w-full max-w-sm flex-col shadow-2xl"
+              className="fixed top-0 right-0 z-50 flex h-full w-full max-w-[700px] flex-col shadow-2xl"
               style={{ backgroundColor: "var(--white)" }}
             >
               <div
