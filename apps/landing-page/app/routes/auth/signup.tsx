@@ -247,10 +247,10 @@ function BuyerFormBlock({
 
       <SubmitButton
         loading={loading}
-        loadingText="Creating account..."
+        loadingText="Applying..."
         className="mt-1 rounded-full"
       >
-        Create account
+        Apply
       </SubmitButton>
 
       <p
