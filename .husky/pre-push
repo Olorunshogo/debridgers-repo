@@ -9,50 +9,15 @@ npx validate-branch-name || {
   exit 1
 }
 
-# 2️⃣ Repo size check
-echo "📦 Checking for heavy files..."
-
-# Block any tracked media file (images/video/audio/fonts) — use a CDN instead
-MEDIA_FILES=""
-while IFS= read -r file; do
-  case "$file" in
-    *.jpg|*.jpeg|*.png|*.gif|*.webp|*.ico|*.svg|*.mp4|*.mp3|*.wav|*.pdf|*.zip|*.woff|*.woff2|*.ttf|*.otf)
-      size=$(wc -c < "$file" 2>/dev/null || echo 0)
-      if [ "$size" -gt $((100 * 1024)) ]; then
-        MEDIA_FILES="$MEDIA_FILES\n  $file ($(( size / 1024 ))KB)"
-      fi
-      ;;
-  esac
-done < <(git ls-files)
-if [ -n "$MEDIA_FILES" ]; then
-  echo "❌ Heavy media files detected (over 100KB). Host them on a CDN — do not commit binaries to git:$MEDIA_FILES"
-  exit 1
-fi
-
-# Block any non-media file over 500KB (e.g. accidentally committed dumps/builds)
-LARGE_FILES=""
-while IFS= read -r file; do
-  size=$(wc -c < "$file" 2>/dev/null || echo 0)
-  if [ "$size" -gt $((500 * 1024)) ]; then
-    LARGE_FILES="$LARGE_FILES\n  $file ($(( size / 1024 ))KB)"
-  fi
-done < <(git ls-files)
-if [ -n "$LARGE_FILES" ]; then
-  echo "❌ Large files detected (over 500KB). Remove or gitignore them before pushing:$LARGE_FILES"
-  exit 1
-fi
-
-echo "✅ No heavy files found."
-
-# 3️⃣ Run e2e tests before push
-echo "🧪 Running e2e tests before push..."
+# 2️⃣ Run backend e2e tests before every push
+echo "🧪 Running e2e tests..."
 pnpm --filter @debridgers/debridgers-backend-e2e test || {
   echo "❌ E2E tests failed. Push aborted."
   exit 1
 }
 echo "✅ E2E tests passed."
 
-# 3️⃣ Protected branch checks for main
+# 3️⃣ Main branch checks — runs only when pushing to main
 protected_branch='refs/heads/main'
 current_user=$(git config user.email)
 allowed_user='shownzy001@gmail.com'
@@ -61,20 +26,57 @@ z40=0000000000000000000000000000000000000000
 while read local_ref local_sha remote_ref remote_sha
 do
   if [ "$remote_ref" = "$protected_branch" ]; then
+
+    # Only the allowed user can push to main
     if [ "$current_user" != "$allowed_user" ]; then
       echo "❌ Only $allowed_user can push to main."
       exit 1
     fi
 
+    # No deleting main
     if [ "$local_sha" = "$z40" ]; then
       echo "❌ Deleting main is restricted."
       exit 1
     fi
 
+    # No force pushes to main
     if ! git merge-base --is-ancestor "$remote_sha" "$local_sha"; then
       echo "❌ Force push to main is restricted."
       exit 1
     fi
+
+    # Heavy file check — production must be lightweight
+    echo "📦 Checking for heavy files before merging to main..."
+
+    MEDIA_FILES=""
+    while IFS= read -r file; do
+      case "$file" in
+        *.jpg|*.jpeg|*.png|*.gif|*.webp|*.ico|*.mp4|*.mp3|*.wav|*.pdf|*.zip|*.woff|*.woff2|*.ttf|*.otf)
+          size=$(wc -c < "$file" 2>/dev/null || echo 0)
+          if [ "$size" -gt $((100 * 1024)) ]; then
+            MEDIA_FILES="$MEDIA_FILES\n  $file ($(( size / 1024 ))KB)"
+          fi
+          ;;
+      esac
+    done < <(git ls-files)
+    if [ -n "$MEDIA_FILES" ]; then
+      echo "❌ Heavy media files detected (over 100KB). Host them on a CDN — do not commit binaries to git:$MEDIA_FILES"
+      exit 1
+    fi
+
+    LARGE_FILES=""
+    while IFS= read -r file; do
+      size=$(wc -c < "$file" 2>/dev/null || echo 0)
+      if [ "$size" -gt $((500 * 1024)) ]; then
+        LARGE_FILES="$LARGE_FILES\n  $file ($(( size / 1024 ))KB)"
+      fi
+    done < <(git ls-files)
+    if [ -n "$LARGE_FILES" ]; then
+      echo "❌ Large files detected (over 500KB). Remove or gitignore them before pushing to main:$LARGE_FILES"
+      exit 1
+    fi
+
+    echo "✅ No heavy files found."
   fi
 done
 
