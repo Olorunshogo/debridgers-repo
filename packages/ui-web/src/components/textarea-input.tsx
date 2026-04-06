@@ -28,10 +28,10 @@ export function TextareaInput({
   const inputId = id ?? name ?? label.toLowerCase().replace(/\s+/g, "-");
 
   return (
-    <div className="font-inter flex flex-col gap-(--gap-sm)">
+    <div className="font-syne gap-sm flex flex-col">
       <label
         htmlFor={inputId}
-        className="font-inter text-[14px] font-medium text-[#0F172A]"
+        className="font-syne text-heading text-[14px] font-medium"
       >
         {label}
         {required && <span className="text-error-red ml-0.5">*</span>}

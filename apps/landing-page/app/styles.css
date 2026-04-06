@@ -1,7 +1,6 @@
 /* Font imports must come FIRST — before @import "tailwindcss" */
 @import url("https://fonts.googleapis.com/css2?family=Syne:wght@400..800&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
 
 @import "tailwindcss";
 @import "@debridgers/shared-theme/tokens.css";
@@ -19,11 +18,6 @@
   --section-py: 2rem;
   --section-py-sm: 4rem;
   --section-py-lg: 6.25rem;
-
-  /* lg (100px) → 6.25rem
-md (80px) → 5rem
-sm (64px) → 4rem
-mobile (48–50px) */
 }
 
 /* @theme: bridges CSS vars → Tailwind utility classes */
@@ -68,6 +62,27 @@ mobile (48–50px) */
   --color-icon-secondary: var(--icon-secondary);
   --color-icon-tertiary: var(--icon-tertiary);
 
+  /* Shadows */
+  --shadow-yellow: var(--shadow-yellow);
+
+  /* ── Dashboard status badges ── */
+  --color-status-on-the-way-bg: var(--status-on-the-way-bg);
+  --color-status-on-the-way-text: var(--status-on-the-way-text);
+  --color-status-delivered-bg: var(--status-delivered-bg);
+  --color-status-delivered-text: var(--status-delivered-text);
+  --color-status-cancelled-bg: var(--status-cancelled-bg);
+  --color-status-cancelled-text: var(--status-cancelled-text);
+  --color-status-active-bg: var(--status-active-bg);
+  --color-status-active-text: var(--status-active-text);
+  --color-status-pending-bg: var(--status-pending-bg);
+  --color-status-pending-text: var(--status-pending-text);
+
+  /* ── Dashboard UI ── */
+  --color-dash-quick-action-hover: var(--dash-quick-action-hover);
+  --color-dash-sidebar-bg: var(--dash-sidebar-bg);
+  --color-dash-topbar-bg: var(--dash-topbar-bg);
+  --color-dash-page-bg: var(--dash-page-bg);
+
   /* ── Spacing scale → mt-sm, p-base, gap-xl, top-3xl … ── */
   --spacing-sm: var(--space-sm);
   --spacing-md: var(--space-md);
@@ -106,6 +121,10 @@ mobile (48–50px) */
     @apply mx-auto w-full max-w-[1400px];
   }
 
+  .layout-max-width {
+    @apply mx-auto w-full max-w-[1600px];
+  }
+
   .dashboard-max-width {
     @apply mx-auto w-full max-w-[1420px];
   }
@@ -138,6 +157,18 @@ mobile (48–50px) */
   h5,
   h6 {
     font-family: "Syne", sans-serif;
+  }
+}
+
+@keyframes loading {
+  0% {
+    transform: scaleX(0);
+  }
+  50% {
+    transform: scaleX(0.5);
+  }
+  100% {
+    transform: scaleX(1);
   }
 }
 

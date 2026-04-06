@@ -26,10 +26,10 @@ export function TextInput({
   const inputId = id ?? name ?? label.toLowerCase().replace(/\s+/g, "-");
 
   return (
-    <div className="font-inter flex flex-col gap-(--gap-sm)">
+    <div className="font-syne gap-sm flex flex-col">
       <label
         htmlFor={inputId}
-        className="font-inter text-[14px] font-medium text-[#0F172A]"
+        className="font-syne text-heading text-[14px] font-medium"
       >
         {label}
         {required && <span className="text-error-red ml-0.5">*</span>}
@@ -42,7 +42,7 @@ export function TextInput({
         required={required}
         value={value}
         onChange={onChange}
-        className="font-inter h-13 w-full rounded-3xl border p-6 text-base transition-all duration-300 ease-in-out outline-none placeholder:text-[#94A3B8]"
+        className="font-syne h-13 w-full rounded-3xl border p-6 text-base transition-all duration-300 ease-in-out outline-none placeholder:text-[#94A3B8]"
         style={{
           borderColor: error ? "var(--input-error-red)" : "var(--input-border)",
           backgroundColor: "var(--input-bg)",

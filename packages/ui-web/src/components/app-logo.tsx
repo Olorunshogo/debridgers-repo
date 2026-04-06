@@ -1,11 +1,14 @@
-import { Link } from "react-router";
+interface AppLogoProps {
+  variant?: "black" | "white";
+}
 
-const AppLogo = () => {
+export const AppLogo = ({ variant = "black" }: AppLogoProps) => {
+  const src =
+    variant === "white"
+      ? "/logos/debridgers-white.png"
+      : "/logos/debridgers-black.png";
+
   return (
-    <Link to="/" className="text-primary font-syne text-xl font-semibold">
-      Debridger
-    </Link>
+    <img src={src} alt="Debridgers Logo" className="h-8 w-auto max-w-50" />
   );
 };
-
-export default AppLogo;

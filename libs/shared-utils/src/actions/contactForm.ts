@@ -20,7 +20,7 @@
 // });
 
 // const sender = {
-//   name: "Debridger Newsletter",
+//   name: "Debridgers Newsletter",
 //   email: MAILTRAP_SENDER_EMAIL,
 // };
 
@@ -80,7 +80,7 @@
 //       to: [{ email }],
 //       subject: `We've received your message - Debrigger`,
 //       html: userHtml,
-//       text: `Hi ${fullName},\n\nThanks for contacting us! We’ll reply within 24 hours.\n\n— Debridger Team`,
+//       text: `Hi ${fullName},\n\nThanks for contacting us! We’ll reply within 24 hours.\n\n— Debridgers Team`,
 //     })
 //     .then(console.log)
 //     .catch(console.error);
