@@ -135,17 +135,25 @@ apps/debridgers-backend/
 
 ```bash
 # From root
-pnpm dev:backend          # Start backend in watch mode
+pnpm dev                  # Start backend + frontend together
+pnpm dev:backend          # Backend only (http://localhost:4000)
 pnpm build:backend        # Production build
+pnpm db:migrate           # Run DB migrations
+pnpm db:generate          # Generate migration files
+pnpm db:seed              # Seed admin user
+pnpm test:e2e             # Run backend e2e tests (requires backend running)
 
 # From apps/debridgers-backend directly
 pnpm dev                  # Watch mode (nest start --watch)
 pnpm build                # Compile to dist/
-pnpm start                # Run compiled dist/main.js
+pnpm start                # Serve production build
 pnpm typecheck
 pnpm lint
 pnpm lint:fix
 pnpm test                 # Run unit tests (vitest --run)
+pnpm db:migrate
+pnpm db:generate
+pnpm db:seed
 ```
 
 ---

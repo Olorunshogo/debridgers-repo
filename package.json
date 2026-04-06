@@ -17,7 +17,7 @@
     "monorepo"
   ],
   "scripts": {
-    "dev": "pnpm -r --parallel dev",
+    "dev": "concurrently -n backend,frontend -c blue,green \"pnpm dev:backend\" \"pnpm dev:landing\"",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "lint:fix": "pnpm -r lint:fix",
