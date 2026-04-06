@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, sql, desc, sum } from "drizzle-orm";
+import { eq, sql, desc, sum, and } from "drizzle-orm";
 import * as bcrypt from "bcryptjs";
 import * as schema from "../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../infrastructure/database/database.provider";
@@ -34,27 +34,58 @@ export class AgentService {
       throw new ConflictException("Email already registered");
     }
 
-    const tempPassword = Math.random().toString(36).slice(-8);
-    const hashed = await bcrypt.hash(tempPassword, 12);
+    // Auto-assign zone from LGA
+    const [zone] = await this.db
+      .select()
+      .from(schema.zones)
+      .where(
+        and(
+          sql`${dto.lga} = ANY(${schema.zones.areas})`,
+          eq(schema.zones.is_active, true),
+        ),
+      )
+      .limit(1);
+
+    // Resolve recruiter from referral agent code if provided
+    let referredByAgentId: number | null = null;
+    if (dto.referred_by_agent_code) {
+      const [recruiterProfile] = await this.db
+        .select({ user_id: schema.agent_profiles.user_id })
+        .from(schema.agent_profiles)
+        .where(
+          eq(
+            schema.agent_profiles.referral_agent_code,
+            dto.referred_by_agent_code,
+          ),
+        )
+        .limit(1);
+      if (recruiterProfile) {
+        referredByAgentId = recruiterProfile.user_id;
+      }
+    }
+
+    const hashed = await bcrypt.hash(dto.password, 12);
 
     const [user] = await this.db
       .insert(schema.users)
       .values({
         first_name: dto.first_name,
-        last_name: dto.last_name,
+        last_name: dto.last_name ?? "",
         email: dto.email.toLowerCase(),
         phone: dto.phone,
         password: hashed,
         role: "agent",
+        zone_id: zone?.id ?? null,
       })
       .returning();
 
     await this.db.insert(schema.agent_profiles).values({
       user_id: user.id,
       address: dto.address,
-      nin: dto.nin,
+      lga: dto.lga,
       cv_url: cvUrl ?? null,
       status: "pending",
+      referred_by_agent_id: referredByAgentId,
     });
 
     this.eventEmitter.emit(USER_EVENTS.AGENT_APPLIED, {
@@ -119,9 +150,8 @@ export class AgentService {
 
     await this.db.insert(schema.commissions).values({
       agent_id: user.sub,
-      report_id: report.id,
+      type: "direct",
       amount: String(commissionAmount),
-      rate: "0.30",
       status: "pending",
     });
 

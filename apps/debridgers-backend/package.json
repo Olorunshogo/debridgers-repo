@@ -28,6 +28,7 @@
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/mapped-types": "*",
     "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/schedule": "^6.1.1",
     "bcryptjs": "^3.0.3",
     "cacheable": "^2.3.2",
     "cloudinary": "^2.9.0",
