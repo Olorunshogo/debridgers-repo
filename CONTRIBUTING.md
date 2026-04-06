@@ -33,7 +33,7 @@ npm install -g pnpm
 
 ```bash
 # Clone the repo
-git clone git@github.com:debridger/debridgers-repo.git
+git clone git@github.com:debridgers/debridgers-repo.git
 cd debridgers-repo
 
 # Install all workspace dependencies

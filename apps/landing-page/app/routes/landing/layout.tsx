@@ -7,11 +7,13 @@ export type LandingLayoutContext = {
 
 export default function LandingLayout() {
   return (
-    <div className="flex min-h-screen flex-col bg-(--layout-bg)">
-      <main className="relative flex-1">
-        <Outlet />
-      </main>
-      <Footer />
+    <div className="flex min-h-screen flex-col bg-black">
+      <div className="relative mx-auto w-full max-w-[1800px] bg-(--layout-bg)">
+        <main className="relative mx-auto w-full flex-1">
+          <Outlet />
+        </main>
+        <Footer />
+      </div>
     </div>
   );
 }

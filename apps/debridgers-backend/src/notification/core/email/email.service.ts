@@ -23,7 +23,7 @@ export class CoreEmailService {
     });
     this.fromEmail =
       this.config.get<string>("MailtrapConfig.fromEmail") ??
-      "noreply@debridger.com";
+      "noreply@debridgers.com";
     this.fromName =
       this.config.get<string>("MailtrapConfig.fromName") ?? "Debridgers";
   }

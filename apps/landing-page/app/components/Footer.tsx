@@ -6,7 +6,7 @@ export default function Footer() {
 
   return (
     <footer className="bg-primary relative overflow-hidden text-white">
-      {/* Background "Debridger" wordmark — top */}
+      {/* Background "Debridgers" wordmark — top */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 flex justify-center overflow-hidden select-none"
@@ -21,11 +21,11 @@ export default function Footer() {
             backgroundClip: "text",
           }}
         >
-          Debridger
+          Debridgers
         </span>
       </div>
 
-      {/* Background "Debridger" wordmark — bottom */}
+      {/* Background "Debridgers" wordmark — bottom */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-center overflow-hidden select-none"
@@ -40,24 +40,31 @@ export default function Footer() {
             backgroundClip: "text",
           }}
         >
-          Debridger
+          Debridgers
         </span>
       </div>
 
       {/* Main footer content */}
       <div className="gap-2xl px-section-px lg:gap-2xl sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex w-full flex-col">
         {/* Top section: tagline + columns */}
-        <div className="py-section-py lg:py-section-py-lg sm:py-section-py-sm grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1fr_1fr] lg:items-center">
+        <div className="py-section-py lg:py-section-py-lg sm:py-section-py-sm grid grid-cols-1 gap-6 lg:grid-cols-[repeat(auto-fit,minmax(280px,1fr))] lg:items-start">
           {/* Tagline */}
-          <h2 className="font-syne text-4xl leading-tight font-medium">
-            Market Prize
-            <br />
-            Zero <span style={{ color: "var(--secondary-color)" }}>
-              Market
-            </span>{" "}
-            Stress
-            {/* <span className="bg-secondary mt-2 block h-[3px] w-16 rounded-full sm:w-20" /> */}
-          </h2>
+          <h1 className="font-syne flex flex-col text-4xl leading-tight font-medium text-white">
+            <span>Market Prices.</span>
+            <div className="flex flex-wrap items-baseline gap-x-3">
+              <div className="relative inline-block">
+                <span>Zero</span>
+                <img
+                  src="/images/curved-underline.png"
+                  className="absolute -mt-2 w-fit"
+                />
+              </div>
+              <div className="relative inline-block">
+                <span style={{ color: "var(--secondary-color)" }}>Market</span>
+              </div>
+              <span>Stress.</span>
+            </div>
+          </h1>
 
           {/* Support and Need help */}
           <div className="gap-2xl grid grid-cols-2 items-center">
@@ -69,7 +76,7 @@ export default function Footer() {
               <nav className="gap-md flex flex-col text-sm">
                 {[
                   { label: "Home", to: "/" },
-                  // { label: "About Us", to: "/about" },
+                  { label: "Agents", to: "/agents" },
                   { label: "Contact Us", to: "/contact" },
                 ].map((link) => (
                   <Link
@@ -88,9 +95,7 @@ export default function Footer() {
               <h3 className="font-open-sans text-[14px] font-semibold tracking-widest text-white uppercase">
                 Need Help?
               </h3>
-
               <div className="gap-md flex flex-col">
-                {/* Phone Number */}
                 <div className="flex flex-col gap-1 text-sm text-white">
                   <p className="text-sm tracking-widest text-white uppercase">
                     Call us directly
@@ -102,31 +107,29 @@ export default function Footer() {
                     +2348167042797
                   </a>
                 </div>
-
-                {/* Emails */}
                 <div className="font-open-sans flex flex-col gap-1 text-white">
                   <h3 className="text-sm tracking-widest text-white uppercase">
                     Email us at
                   </h3>
                   <a
-                    href="mailto:support@debridger.com"
+                    href="mailto:support@debridgers.com"
                     className="text-[14px] text-white underline decoration-white decoration-1 underline-offset-4 transition-colors duration-300 ease-in-out hover:text-white"
                   >
-                    support@debridger.com
+                    support@debridgers.com
                   </a>
                   <a
-                    href="mailto:partner@debridger.com"
+                    href="mailto:partner@debridgers.com"
                     className="text-[14px] text-white underline decoration-white decoration-1 underline-offset-4 transition-colors duration-300 ease-in-out hover:text-white"
                   >
-                    partner@debridger.com
+                    partner@debridgers.com
                   </a>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Keep in Touch */}
-          <div className="font-open-sans flex flex-col gap-5">
+          {/* Keep in Touch — always full width */}
+          <div className="font-open-sans flex w-full flex-col gap-5">
             <h3 className="font-open-sans text-[14px] font-semibold tracking-widest text-white uppercase">
               Keep in Touch
             </h3>
@@ -151,7 +154,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="font-open-sans relative z-10 flex flex-col items-center justify-between gap-4 border-t border-white/10 py-6 text-sm text-white md:flex-row">
           <p className="font-open-sans mx-auto text-sm text-white md:mx-0">
-            &copy; 2026 Debridger. Delivering fresh to Kaduna.
+            &copy; 2026 Debridgers. Delivering fresh to Kaduna.
           </p>
           <div className="hidden items-center gap-6 md:flex">
             {[

@@ -4,7 +4,9 @@
     <title>Verify Your Email</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   </head>
-  <body style="margin:0; padding:0; font-family: Arial, Helvetica, sans-serif; background:#f4f4f4;">
+  <body
+    style="margin:0; padding:0; font-family: Arial, Helvetica, sans-serif; background:#f4f4f4;"
+  >
     <div
       style="max-width:600px; margin:20px auto; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.1);"
     >
@@ -15,28 +17,33 @@
       <div style="padding:40px 32px; text-align:center;">
         <p style="font-size:18px; color:#333;">Hello {{emailToUse}}!</p>
         <p style="font-size:16px; color:#555; line-height:1.7; margin:24px 0;">
-          Thank you for signing up with Debridger. To complete your registration, please use the
-          verification code below.
+          Thank you for signing up with Debridgers. To complete your
+          registration, please use the verification code below.
         </p>
 
         <div
           style="background:#f0f8f0; padding:32px; border-radius:8px; margin:40px auto; max-width:300px; border:2px solid #2B6036;"
         >
-          <p style="margin:0; font-size:32px; font-weight:bold; color:#1e4d2b; letter-spacing:8px;">
+          <p
+            style="margin:0; font-size:32px; font-weight:bold; color:#1e4d2b; letter-spacing:8px;"
+          >
             {{otp}}
           </p>
         </div>
 
         <p style="font-size:15px; color:#666; line-height:1.6;">
           This code expires in
-          <strong>10 minutes</strong>. If you didn't request this, please ignore this email.
+          <strong>10 minutes</strong>. If you didn't request this, please ignore
+          this email.
         </p>
       </div>
 
-      <div style="background:#f0f0f0; padding:24px; text-align:center; font-size:12px; color:#999;">
+      <div
+        style="background:#f0f0f0; padding:24px; text-align:center; font-size:12px; color:#999;"
+      >
         © 2024 -
         {{year}}
-        Debridger • You’re receiving this because you signed up.
+        Debridgers • You’re receiving this because you signed up.
       </div>
     </div>
   </body>

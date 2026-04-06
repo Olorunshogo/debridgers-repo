@@ -19,11 +19,35 @@ export interface HeroSectionProps {
   trustItems: TrustItem[];
 }
 
-function renderIcon(icon: string | React.ReactNode): React.ReactNode {
+export function renderIcon(icon: string | React.ReactNode): React.ReactNode {
   if (typeof icon === "string") {
     return <Icon icon={icon} width={16} height={16} />;
   }
   return icon as React.ReactNode;
+}
+
+export function useImageCycle(count: number) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  useEffect(() => {
+    if (count === 0) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % count);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [count]);
+  return currentIndex;
+}
+
+export function useTrustCycle(count: number) {
+  const [activeTrustIndex, setActiveTrustIndex] = useState(0);
+  useEffect(() => {
+    if (count === 0) return;
+    const interval = setInterval(() => {
+      setActiveTrustIndex((prev) => (prev + 1) % count);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [count]);
+  return activeTrustIndex;
 }
 
 export function HeroSection({
@@ -34,30 +58,14 @@ export function HeroSection({
   secondaryCta,
   trustItems,
 }: HeroSectionProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [activeTrustIndex, setActiveTrustIndex] = useState(0);
-
-  useEffect(() => {
-    if (images.length === 0) return;
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % images.length);
-    }, 6000);
-    return () => clearInterval(interval);
-  }, [images.length]);
-
-  useEffect(() => {
-    if (trustItems.length === 0) return;
-    const interval = setInterval(() => {
-      setActiveTrustIndex((prev) => (prev + 1) % trustItems.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [trustItems.length]);
+  const currentIndex = useImageCycle(images.length);
+  const activeTrustIndex = useTrustCycle(trustItems.length);
 
   return (
-    <section className="font-syne relative mx-auto flex h-full max-h-[1064px] w-full max-w-[1840px] flex-col overflow-hidden">
+    <section className="font-syne relative mx-auto flex h-full h-screen max-h-[800px] w-full flex-col overflow-hidden xl:max-h-[900px]">
       {/* Background layer */}
       <div className="absolute inset-0 z-0">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="sync">
           {images.length > 0 && (
             <motion.img
               key={currentIndex}
@@ -67,77 +75,101 @@ export function HeroSection({
               animate={{ x: "0%" }}
               exit={{ x: "-100%" }}
               transition={{ duration: 0.1, ease: "easeInOut" }}
-              className="absolute inset-0 h-full w-full object-contain object-cover"
+              className="absolute inset-0 h-full w-full bg-red-900 object-contain object-cover"
             />
           )}
+
+          {/* Inset */}
+          <div className="absolute inset-0 h-full w-full bg-linear-to-b from-[40BF4F]/20 from-0% via-[#23682B]/70 via-23% to-[#061107] to-100%"></div>
+          <div className="absolute inset-0 h-full w-full bg-linear-to-b from-[40BF4F]/20 from-0% to-[#061107] to-100%"></div>
         </AnimatePresence>
       </div>
 
       {/* Content Wrapper */}
-      <div className="gap-2xl px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-full w-full flex-col justify-between">
-        <div className="relative flex flex-1 flex-col pt-[80px] sm:pt-[100px] lg:pt-[120px]">
-          {/* Left Content */}
-          <div className="gap-2xl lg:gap-4xl flex flex-1 flex-col justify-center py-28 sm:py-32 lg:py-38">
+      <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-screen max-h-[800px] w-full flex-col justify-between gap-[48px] xl:max-h-[900px]">
+        <div className="relative flex flex-1 flex-col pt-20 sm:pt-24 lg:pt-32">
+          <div className="gap-2xl lg:gap-4xl flex flex-1 flex-col justify-center">
             {/* Location badge */}
-            <div className="px-base text-primary border-primary font-syne p-md inline-flex w-fit items-center gap-[10px] rounded-full border border-white/30 bg-[#A5BDA8] text-xl shadow-md backdrop-blur-lg">
+            <div className="text-primary border-primary font-open-sans p-sm inline-flex w-fit items-center gap-1 rounded-full border border-white/30 bg-[#A5BDA8] text-sm font-semibold shadow-[50px] backdrop-blur-lg">
               <span className="bg-primary h-1.5 w-1.5 rounded-full" />
               {servingLocation}
             </div>
 
-            {/* Heading */}
-            <h1 className="flex flex-col text-5xl leading-tight font-bold text-white sm:text-6xl lg:text-7xl">
-              {/* Top line */}
-              <span>{headingParts.top.map((part) => part.text).join("")}</span>
+            {/* Heading and Paragraph */}
+            <div className="gap-lg flex flex-col">
+              {/* Heading */}
+              {/* <h1 className="flex flex-col text-4xl leading-tight font-bold text-white sm:text-6xl lg:text-7xl">
+                <span>Market Prices.</span>
+                <span className="flex flex-wrap items-baseline gap-x-3">
+                  {/* Curved Underlined Zero *
+              <div className="relative inline-block">
+                <span>Zero</span>
+                <img
+                  src="/images/curved-underline.png"
+                  className="absolute -mt-2 w-fit"
+                />
+              </div>
+              {/* Highlighted Market *
+              <div className="relative inline-block">
+                <span style={{ color: "var(--secondary-color)" }}>Market</span>
+              </div>
+              {/* White Zero *
+                  <span>Stress.</span>
+                </span>
+              </h1> */}
 
-              {/* Bottom line */}
-              <span className="flex flex-wrap items-baseline gap-x-3">
-                {headingParts.bottom.map((part: HeadingPart, index) => {
-                  if (
-                    part.highlight &&
-                    part.text.toLowerCase().includes("stress")
-                  ) {
-                    return (
-                      <span key={index} className="relative inline-block">
-                        <span style={{ color: "var(--secondary-color)" }}>
-                          {part.text}
-                        </span>
-                        <svg
-                          className="pointer-events-none absolute -bottom-2 left-0 h-5 w-full"
-                          viewBox="0 0 200 20"
-                          fill="none"
-                          preserveAspectRatio="none"
-                        >
-                          <path
-                            d="M0 15 Q50 8 100 12 Q150 16 200 10"
-                            stroke="#F9C23C"
-                            strokeWidth="6"
-                            strokeLinecap="round"
-                            fill="none"
+              {/* Heading */}
+              <h1 className="flex flex-col text-5xl leading-tight font-bold text-white sm:text-6xl lg:text-7xl">
+                {/* Top line */}
+                <span>
+                  {headingParts.top.map((part) => part.text).join("")}
+                </span>
+
+                {/* Bottom line */}
+                <span className="flex flex-wrap items-baseline gap-x-3">
+                  {headingParts.bottom.map((part: HeadingPart, index) => {
+                    if (
+                      part.highlight &&
+                      part.text.toLowerCase().includes("zero")
+                    ) {
+                      return (
+                        <div key={index} className="relative inline-block">
+                          <span style={{ color: "var(--secondary-color)" }}>
+                            {part.text}sss
+                          </span>
+                          <img
+                            src="/images/curved-underline.jpg"
+                            alt="Curved Underline"
+                            className="absolute -bottom-3 left-1/2 w-[85%] -translate-x-1/2 md:w-[78%] lg:w-[82%]"
+                            style={{
+                              filter:
+                                "drop-shadow(0 4px 6px rgba(244, 162, 97, 0.3))",
+                            }}
                           />
-                        </svg>
+                        </div>
+                      );
+                    }
+                    return (
+                      <span
+                        key={index}
+                        style={{
+                          color: part.highlight
+                            ? "var(--secondary-color)"
+                            : "inherit",
+                        }}
+                      >
+                        {part.text}
                       </span>
                     );
-                  }
-                  return (
-                    <span
-                      key={index}
-                      style={{
-                        color: part.highlight
-                          ? "var(--secondary-color)"
-                          : "inherit",
-                      }}
-                    >
-                      {part.text}
-                    </span>
-                  );
-                })}
-              </span>
-            </h1>
+                  })}
+                </span>
+              </h1>
 
-            {/* Subtext */}
-            <p className="w-full max-w-[360px] text-lg leading-relaxed font-semibold text-white lg:max-w-[574px] lg:text-xl">
-              {subtext}
-            </p>
+              {/* Subtext */}
+              <p className="w-full max-w-[360px] text-lg leading-relaxed font-semibold text-white lg:max-w-[574px] lg:text-xl">
+                {subtext}
+              </p>
+            </div>
 
             {/* CTAs */}
             <div className="gap-base flex flex-col items-center justify-center lg:flex-row lg:justify-baseline lg:justify-start lg:gap-[74px]">
@@ -181,8 +213,8 @@ export function HeroSection({
           {/* Trust bar */}
           <div className="bg-primary py-xl px-base mx-auto w-full shadow-md">
             {/* Mobile: slideshow, one item at a time */}
-            <div className="relative flex h-6 items-center justify-center overflow-hidden lg:hidden">
-              <AnimatePresence mode="wait">
+            <div className="relative flex h-6 items-center justify-center truncate overflow-hidden lg:hidden">
+              <AnimatePresence mode="sync">
                 <motion.div
                   key={activeTrustIndex}
                   initial={{ opacity: 0, y: 10 }}
@@ -202,7 +234,7 @@ export function HeroSection({
             </div>
 
             {/* Desktop: all items in a row */}
-            <div className="hidden lg:flex lg:items-center lg:justify-around">
+            <div className="hidden truncate lg:flex lg:items-center lg:justify-around">
               {trustItems.map((item, i) => (
                 <div
                   key={item.label}

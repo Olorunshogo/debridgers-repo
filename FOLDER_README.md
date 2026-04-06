@@ -585,3 +585,8 @@ ISC
 ---
 
 **Questions?** Check individual package READMEs or Nx documentation at https://nx.dev
+
+<!-- Typecheck in all the repository -->
+
+pnpm --filter @debridgers/landing-page typecheck 2>&1 | tail -40
+pnpm --filter @debridgers/landing-page typecheck 2>&1 | grep -E "error TS|ERR\_" | head -20
