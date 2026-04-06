@@ -25,31 +25,31 @@ z40=0000000000000000000000000000000000000000
 check_heavy_files() {
   echo "📦 Checking for heavy files..."
 
-  MEDIA_FILES=""
-  while IFS= read -r file; do
+  MEDIA_FILES=$(git ls-files | while IFS= read -r file; do
     case "$file" in
       *.jpg|*.jpeg|*.png|*.gif|*.webp|*.ico|*.mp4|*.mp3|*.wav|*.pdf|*.zip|*.woff|*.woff2|*.ttf|*.otf)
         size=$(wc -c < "$file" 2>/dev/null || echo 0)
         if [ "$size" -gt $((100 * 1024)) ]; then
-          MEDIA_FILES="$MEDIA_FILES\n  $file ($(( size / 1024 ))KB)"
+          echo "  $file ($(( size / 1024 ))KB)"
         fi
         ;;
     esac
-  done < <(git ls-files)
+  done)
   if [ -n "$MEDIA_FILES" ]; then
-    echo "❌ Heavy media files detected (over 100KB). Host them on a CDN — do not commit binaries to git:$MEDIA_FILES"
+    echo "❌ Heavy media files detected (over 100KB). Host them on a CDN — do not commit binaries to git:"
+    echo "$MEDIA_FILES"
     exit 1
   fi
 
-  LARGE_FILES=""
-  while IFS= read -r file; do
+  LARGE_FILES=$(git ls-files | while IFS= read -r file; do
     size=$(wc -c < "$file" 2>/dev/null || echo 0)
     if [ "$size" -gt $((500 * 1024)) ]; then
-      LARGE_FILES="$LARGE_FILES\n  $file ($(( size / 1024 ))KB)"
+      echo "  $file ($(( size / 1024 ))KB)"
     fi
-  done < <(git ls-files)
+  done)
   if [ -n "$LARGE_FILES" ]; then
-    echo "❌ Large files detected (over 500KB). Remove or gitignore them:$LARGE_FILES"
+    echo "❌ Large files detected (over 500KB). Remove or gitignore them:"
+    echo "$LARGE_FILES"
     exit 1
   fi
 
