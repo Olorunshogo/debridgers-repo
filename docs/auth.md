@@ -41,7 +41,7 @@ All responses follow the global format:
   "first_name": "Fatima",
   "last_name": "Bello",
   "email": "fatima@example.com",
-  "phone": 08098765432,
+  "phone": "08098765432",
   "password": "SecurePass@123",
   "role": "agent"
 }
