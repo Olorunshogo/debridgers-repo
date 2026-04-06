@@ -7,6 +7,7 @@ import {
   Param,
   ParseIntPipe,
   Patch,
+  Post,
   Query,
   UseGuards,
   UsePipes,
@@ -15,11 +16,21 @@ import { AdminService } from "./admin.service";
 import { AuthGuard } from "../auth/guards/auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
+import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import { JwtPayload } from "../../interfaces/users/jwt.type";
 import { ZodValidationPipe } from "../../infrastructure/pipeline/validation.pipeline";
 import {
   updateAgentStatusSchema,
   UpdateAgentStatusDto,
 } from "./dto/update-agent-status.dto";
+import {
+  promoteManagerSchema,
+  PromoteManagerDto,
+} from "./dto/promote-manager.dto";
+import {
+  recordInventorySchema,
+  RecordInventoryDto,
+} from "./dto/record-inventory.dto";
 
 @Controller("admin")
 @UseGuards(AuthGuard, RolesGuard)
@@ -27,14 +38,26 @@ import {
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
+  // ─── Dashboard ──────────────────────────────────────────────────────────────
+
   @Get("dashboard")
   getDashboardStats() {
     return this.adminService.getDashboardStats();
   }
 
+  // ─── Agents ─────────────────────────────────────────────────────────────────
+
   @Get("agents")
-  getAgents(@Query("status") status?: "pending" | "approved" | "rejected") {
+  getAgents(
+    @Query("status")
+    status?: "pending" | "approved" | "rejected" | "suspended",
+  ) {
     return this.adminService.getAgents(status);
+  }
+
+  @Get("agents/:id")
+  getAgentById(@Param("id", ParseIntPipe) id: number) {
+    return this.adminService.getAgentById(id);
   }
 
   @Patch("agents/:id/status")
@@ -47,6 +70,28 @@ export class AdminController {
     return this.adminService.updateAgentStatus(id, dto);
   }
 
+  @Patch("agents/:id/suspend")
+  @HttpCode(HttpStatus.OK)
+  suspendAgent(@Param("id", ParseIntPipe) id: number) {
+    return this.adminService.suspendAgent(id);
+  }
+
+  @Patch("agents/:id/unsuspend")
+  @HttpCode(HttpStatus.OK)
+  unsuspendAgent(@Param("id", ParseIntPipe) id: number) {
+    return this.adminService.unsuspendAgent(id);
+  }
+
+  @Patch("agents/:id/promote-manager")
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ZodValidationPipe(promoteManagerSchema))
+  promoteToStateManager(
+    @Param("id", ParseIntPipe) id: number,
+    @Body() dto: PromoteManagerDto,
+  ) {
+    return this.adminService.promoteToStateManager(id, dto);
+  }
+
   @Patch("agents/:id/target")
   @HttpCode(HttpStatus.OK)
   setAgentTarget(
@@ -56,10 +101,76 @@ export class AdminController {
     return this.adminService.setAgentTarget(id, target);
   }
 
+  // ─── Buyers ─────────────────────────────────────────────────────────────────
+
+  @Get("buyers")
+  getBuyers() {
+    return this.adminService.getBuyers();
+  }
+
+  @Get("buyers/:id")
+  getBuyerById(@Param("id", ParseIntPipe) id: number) {
+    return this.adminService.getBuyerById(id);
+  }
+
+  @Patch("buyers/:id/block")
+  @HttpCode(HttpStatus.OK)
+  blockBuyer(@Param("id", ParseIntPipe) id: number) {
+    return this.adminService.toggleBlockBuyer(id, true);
+  }
+
+  @Patch("buyers/:id/unblock")
+  @HttpCode(HttpStatus.OK)
+  unblockBuyer(@Param("id", ParseIntPipe) id: number) {
+    return this.adminService.toggleBlockBuyer(id, false);
+  }
+
+  // ─── Stock & Inventory ───────────────────────────────────────────────────────
+
+  @Get("stock/requests")
+  getStockRequests(
+    @Query("status") status?: "pending" | "fulfilled" | "cancelled",
+  ) {
+    return this.adminService.getStockRequests(status);
+  }
+
+  @Patch("stock/requests/:id/fulfil")
+  @HttpCode(HttpStatus.OK)
+  fulfilStockRequest(
+    @Param("id", ParseIntPipe) id: number,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.adminService.fulfilStockRequest(id, user.sub);
+  }
+
+  @Get("stock/inventory")
+  getInventoryStats() {
+    return this.adminService.getInventoryStats();
+  }
+
+  @Post("stock/inventory")
+  @HttpCode(HttpStatus.CREATED)
+  @UsePipes(new ZodValidationPipe(recordInventorySchema))
+  recordInventory(
+    @Body() dto: RecordInventoryDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.adminService.recordInventoryReceived(
+      dto.quantity,
+      dto.source,
+      dto.notes,
+      user.sub,
+    );
+  }
+
+  // ─── Leads ──────────────────────────────────────────────────────────────────
+
   @Get("leads")
   getLeads() {
     return this.adminService.getLeads();
   }
+
+  // ─── Commissions ────────────────────────────────────────────────────────────
 
   @Patch("commissions/:id/paid")
   @HttpCode(HttpStatus.OK)

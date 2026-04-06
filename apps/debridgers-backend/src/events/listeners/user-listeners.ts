@@ -32,11 +32,7 @@ export class UserListeners {
 
   @OnEvent(USER_EVENTS.AGENT_APPROVED)
   async onAgentApproved(payload: AgentApprovedPayload): Promise<void> {
-    await this.emailService.sendAgentApproved(
-      payload.email,
-      payload.name,
-      payload.tempPassword,
-    );
+    await this.emailService.sendAgentApproved(payload.email, payload.name);
   }
 
   @OnEvent(USER_EVENTS.AGENT_REJECTED)

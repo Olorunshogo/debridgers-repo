@@ -19,7 +19,6 @@ export interface AgentAppliedPayload {
 export interface AgentApprovedPayload {
   name: string;
   email: string;
-  tempPassword: string;
 }
 
 export interface AgentRejectedPayload {

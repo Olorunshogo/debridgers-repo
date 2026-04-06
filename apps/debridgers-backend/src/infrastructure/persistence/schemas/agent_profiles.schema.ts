@@ -5,7 +5,7 @@ import {
   integer,
   text,
   varchar,
-  numeric,
+  boolean,
   unique,
 } from "drizzle-orm/pg-core";
 import { timestamps } from "../../helper/column.helper";
@@ -16,6 +16,13 @@ export const agentStatusEnum = pgEnum("agent_status", [
   "pending",
   "approved",
   "rejected",
+  "suspended",
+]);
+
+export const agentIdTypeEnum = pgEnum("agent_id_type", [
+  "NIN",
+  "Passport",
+  "Drivers License",
 ]);
 
 export const agent_profiles = pgTable(
@@ -25,18 +32,43 @@ export const agent_profiles = pgTable(
     user_id: integer()
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    cv_url: text(),
     address: text(),
-    nin: varchar("nin", { length: 20 }),
+    state: text(),
+    lga: text(),
     status: agentStatusEnum().notNull().default("pending"),
+    admin_notes: text(),
+    // referral
+    referred_by_agent_id: integer().references(() => users.id, {
+      onDelete: "set null",
+    }),
+    referral_buyer_code: varchar("referral_buyer_code", { length: 20 }),
+    referral_agent_code: varchar("referral_agent_code", { length: 20 }),
+    // state manager
+    is_state_manager: boolean().notNull().default(false),
+    managed_state: text(),
+    // bank details
+    bank_name: text(),
+    bank_account_number: varchar("bank_account_number", { length: 20 }),
+    bank_account_name: text(),
+    // identity verification
+    id_type: agentIdTypeEnum(),
+    id_front_url: text(),
+    id_selfie_url: text(),
+    // legacy / payment
+    nin: varchar("nin", { length: 20 }),
+    cv_url: text(),
     target: integer().notNull().default(0),
     paystack_subaccount_code: varchar("paystack_subaccount_code", {
       length: 100,
     }),
-    admin_notes: text(),
+    mailtrap_contact_id: text(),
     ...timestamps,
   },
-  (table) => [unique("uq_agent_user_id").on(table.user_id)],
+  (table) => [
+    unique("uq_agent_user_id").on(table.user_id),
+    unique("uq_referral_buyer_code").on(table.referral_buyer_code),
+    unique("uq_referral_agent_code").on(table.referral_agent_code),
+  ],
 );
 
 export const agentProfileInsertSchema = createInsertSchema(agent_profiles);
