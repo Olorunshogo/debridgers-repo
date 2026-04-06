@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 set -e
 
@@ -9,49 +9,90 @@ npx validate-branch-name || {
   exit 1
 }
 
-# 2️⃣ Repo size check — block large files over 1024KB
-echo "📦 Checking for large tracked files..."
-LIMIT_KB=1024
-LARGE_FILES=$(git ls-files | xargs -I{} sh -c 'size=$(wc -c < "{}"); if [ "$size" -gt '"$((LIMIT_KB * 1024))"' ]; then echo "{} ($(( size / 1024 ))KB)"; fi' 2>/dev/null)
-if [ -n "$LARGE_FILES" ]; then
-  echo "❌ Large files detected (over ${LIMIT_KB}KB):"
-  echo "$LARGE_FILES"
-  echo "Remove or gitignore them before pushing."
+# 2️⃣ Run backend e2e tests before every push
+echo "🧪 Running e2e tests..."
+pnpm --filter @debridgers/debridgers-backend-e2e test || {
+  echo "❌ E2E tests failed. Push aborted."
   exit 1
-fi
-echo "✅ No large files found."
+}
+echo "✅ E2E tests passed."
 
-# 3️⃣ Run tests before push
-echo "🧪 Running all tests before push..."
-# pnpm test || {
-#   echo "❌ Tests failed. Push aborted."
-#   exit 1
-# }
-
-# 3️⃣ Protected branch checks for main
-protected_branch='refs/heads/main'
+# 3️⃣ Protected branch checks — runs when pushing to develop or main
 current_user=$(git config user.email)
 allowed_user='shownzy001@gmail.com'
 z40=0000000000000000000000000000000000000000
 
+check_heavy_files() {
+  echo "📦 Checking for heavy files..."
+
+  _tmp=$(mktemp)
+
+  git ls-files | grep -E '\.(jpg|jpeg|png|gif|webp|ico|mp4|mp3|wav|pdf|zip|woff|woff2|ttf|otf)$' | while IFS= read -r file; do
+    size=$(wc -c < "$file" 2>/dev/null || echo 0)
+    if [ "$size" -gt $((100 * 1024)) ]; then
+      printf "  %s (%sKB)\n" "$file" "$(( size / 1024 ))" >> "$_tmp"
+    fi
+  done
+  if [ -s "$_tmp" ]; then
+    echo "❌ Heavy media files detected (over 100KB). Host them on a CDN — do not commit binaries to git:"
+    cat "$_tmp"
+    rm -f "$_tmp"
+    exit 1
+  fi
+  rm -f "$_tmp"
+
+  _tmp2=$(mktemp)
+
+  git ls-files | while IFS= read -r file; do
+    size=$(wc -c < "$file" 2>/dev/null || echo 0)
+    if [ "$size" -gt $((500 * 1024)) ]; then
+      printf "  %s (%sKB)\n" "$file" "$(( size / 1024 ))" >> "$_tmp2"
+    fi
+  done
+  if [ -s "$_tmp2" ]; then
+    echo "❌ Large files detected (over 500KB). Remove or gitignore them:"
+    cat "$_tmp2"
+    rm -f "$_tmp2"
+    exit 1
+  fi
+  rm -f "$_tmp2"
+
+  echo "✅ No heavy files found."
+}
+
 while read local_ref local_sha remote_ref remote_sha
 do
-  if [ "$remote_ref" = "$protected_branch" ]; then
-    if [ "$current_user" != "$allowed_user" ]; then
-      echo "❌ Only $allowed_user can push to main."
-      exit 1
-    fi
+  case "$remote_ref" in
+    refs/heads/develop)
+      # No deleting or force-pushing develop
+      if [ "$local_sha" = "$z40" ]; then
+        echo "❌ Deleting develop is restricted."
+        exit 1
+      fi
+      if ! git merge-base --is-ancestor "$remote_sha" "$local_sha"; then
+        echo "❌ Force push to develop is restricted."
+        exit 1
+      fi
+      check_heavy_files
+      ;;
 
-    if [ "$local_sha" = "$z40" ]; then
-      echo "❌ Deleting main is restricted."
-      exit 1
-    fi
-
-    if ! git merge-base --is-ancestor "$remote_sha" "$local_sha"; then
-      echo "❌ Force push to main is restricted."
-      exit 1
-    fi
-  fi
+    refs/heads/main)
+      # Only the allowed user can push to main
+      if [ "$current_user" != "$allowed_user" ]; then
+        echo "❌ Only $allowed_user can push to main."
+        exit 1
+      fi
+      if [ "$local_sha" = "$z40" ]; then
+        echo "❌ Deleting main is restricted."
+        exit 1
+      fi
+      if ! git merge-base --is-ancestor "$remote_sha" "$local_sha"; then
+        echo "❌ Force push to main is restricted."
+        exit 1
+      fi
+      check_heavy_files
+      ;;
+  esac
 done
 
 echo "✅ Pre-push checks passed."

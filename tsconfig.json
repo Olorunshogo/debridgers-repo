@@ -4,7 +4,6 @@
   "files": [],
   "references": [
     { "path": "./apps/landing-page" },
-    { "path": "./apps/backend" },
     { "path": "./apps/debridgers-backend" },
     { "path": "./apps/debridgers-backend-e2e" },
     { "path": "./packages/ui-web" },

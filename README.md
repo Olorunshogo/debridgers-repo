@@ -85,19 +85,23 @@ apps/landing-page/
 ```
 
 ```bash
-# From root
+# From root — targets frontend only
 pnpm dev:landing          # Dev server (http://localhost:3000)
 pnpm build:landing        # Production build
+pnpm start:landing        # Serve production build
 pnpm typecheck:landing    # Type check
+pnpm lint:landing         # Lint
+pnpm lint:fix:landing     # Lint + auto-fix
+pnpm analyze              # Bundle size visualizer (opens in browser)
 
 # From apps/landing-page directly
 pnpm dev
 pnpm build
-pnpm start                # Serve production build
+pnpm start
 pnpm typecheck
 pnpm lint
 pnpm lint:fix
-pnpm analyze              # Bundle size visualizer (opens in browser)
+pnpm analyze
 ```
 
 ---
@@ -134,18 +138,29 @@ apps/debridgers-backend/
 ```
 
 ```bash
-# From root
-pnpm dev:backend          # Start backend in watch mode
+# From root — targets backend only
+pnpm dev:backend          # Watch mode (http://localhost:4000)
 pnpm build:backend        # Production build
+pnpm start:backend        # Serve production build
+pnpm typecheck:backend    # Type check
+pnpm lint:backend         # Lint
+pnpm lint:fix:backend     # Lint + auto-fix
+pnpm db:migrate           # Run DB migrations
+pnpm db:generate          # Generate migration files
+pnpm db:seed              # Seed admin user
+pnpm test:e2e             # Run e2e tests (requires backend running)
 
 # From apps/debridgers-backend directly
-pnpm dev                  # Watch mode (nest start --watch)
-pnpm build                # Compile to dist/
-pnpm start                # Run compiled dist/main.js
+pnpm dev
+pnpm build
+pnpm start
 pnpm typecheck
 pnpm lint
 pnpm lint:fix
-pnpm test                 # Run unit tests (vitest --run)
+pnpm test                 # Unit tests (vitest --run)
+pnpm db:migrate
+pnpm db:generate
+pnpm db:seed
 ```
 
 ---
@@ -299,28 +314,54 @@ pnpm --filter @debridgers/ui-app dev
 
 ## Root Scripts Reference
 
-| Script                   | What it does                      |
-| ------------------------ | --------------------------------- |
-| `pnpm dev`               | Run all apps in parallel dev mode |
-| `pnpm build`             | Build all apps and packages       |
-| `pnpm lint`              | Lint all workspaces               |
-| `pnpm lint:fix`          | Lint + autofix all workspaces     |
-| `pnpm format`            | Prettier format everything        |
-| `pnpm format:check`      | Check formatting without writing  |
-| `pnpm typecheck`         | Type check all workspaces         |
-| `pnpm test`              | Run all tests                     |
-| `pnpm dev:landing`       | Dev server for landing page       |
-| `pnpm build:landing`     | Build landing page                |
-| `pnpm typecheck:landing` | Type check landing page           |
-| `pnpm dev:backend`       | Dev server for backend            |
-| `pnpm build:backend`     | Build backend                     |
-| `pnpm db:generate`       | Generate Drizzle migrations       |
-| `pnpm db:migrate`        | Run Drizzle migrations            |
-| `pnpm db:seed`           | Seed the database                 |
-| `pnpm test:e2e`          | Run backend E2E tests             |
-| `pnpm dev:ui-web`        | Watch mode for ui-web package     |
-| `pnpm build:ui-web`      | Build ui-web package              |
-| `pnpm watch:ui-web`      | Watch mode alias for ui-web       |
+**Both apps (backend + frontend)**
+
+| Script              | What it does                                  |
+| ------------------- | --------------------------------------------- |
+| `pnpm dev`          | Start backend + frontend in parallel          |
+| `pnpm build`        | Build backend + frontend in parallel          |
+| `pnpm start`        | Serve production builds of backend + frontend |
+| `pnpm typecheck`    | Type check backend + frontend in parallel     |
+| `pnpm lint`         | Lint backend + frontend in parallel           |
+| `pnpm lint:fix`     | Lint + autofix backend + frontend in parallel |
+| `pnpm format`       | Prettier format everything                    |
+| `pnpm format:check` | Check formatting without writing              |
+| `pnpm test`         | Run all tests across workspaces               |
+
+**Frontend only**
+
+| Script                   | What it does                           |
+| ------------------------ | -------------------------------------- |
+| `pnpm dev:landing`       | Dev server (http://localhost:3000)     |
+| `pnpm build:landing`     | Production build                       |
+| `pnpm start:landing`     | Serve production build                 |
+| `pnpm typecheck:landing` | Type check                             |
+| `pnpm lint:landing`      | Lint                                   |
+| `pnpm lint:fix:landing`  | Lint + auto-fix                        |
+| `pnpm analyze`           | Bundle size visualizer (opens browser) |
+
+**Backend only**
+
+| Script                   | What it does                             |
+| ------------------------ | ---------------------------------------- |
+| `pnpm dev:backend`       | Watch mode (http://localhost:4000)       |
+| `pnpm build:backend`     | Production build                         |
+| `pnpm start:backend`     | Serve production build                   |
+| `pnpm typecheck:backend` | Type check                               |
+| `pnpm lint:backend`      | Lint                                     |
+| `pnpm lint:fix:backend`  | Lint + auto-fix                          |
+| `pnpm db:generate`       | Generate Drizzle migrations              |
+| `pnpm db:migrate`        | Run Drizzle migrations                   |
+| `pnpm db:seed`           | Seed the database                        |
+| `pnpm test:e2e`          | Run e2e tests (requires backend running) |
+
+**UI packages**
+
+| Script              | What it does          |
+| ------------------- | --------------------- |
+| `pnpm dev:ui-web`   | Watch mode for ui-web |
+| `pnpm build:ui-web` | Build ui-web          |
+| `pnpm watch:ui-web` | Alias for watch mode  |
 
 ---
 
