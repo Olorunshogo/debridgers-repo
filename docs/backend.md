@@ -2,9 +2,9 @@
 
 ## Overview
 
-The Debridgers backend is a **NestJS** application following a modular architecture inspired by enterprise-grade patterns. It uses **Drizzle ORM** for type-safe database access against a **Neon (PostgreSQL)** database, **Upstash Redis** for caching, **Mailtrap** for email, and **Paystack** for payment splitting.
+The Debridgers backend is a **NestJS** application following a modular architecture. It uses **Drizzle ORM** for type-safe database access against a **Neon (PostgreSQL)** database, **Mailtrap** for transactional email, and **Paystack** for payment splitting.
 
-All responses are wrapped by a global interceptor in the standard format:
+All responses are wrapped by a global interceptor:
 
 ```json
 {
@@ -17,6 +17,8 @@ All responses are wrapped by a global interceptor in the standard format:
 }
 ```
 
+**Swagger UI:** `http://localhost:4000/api/docs`
+
 ---
 
 ## Folder Structure
@@ -24,181 +26,121 @@ All responses are wrapped by a global interceptor in the standard format:
 ```
 apps/debridgers-backend/
 ├── src/
-│   ├── main.ts                          # Entry point — CORS, versioning, global interceptor
-│   ├── app/                             # Feature modules (business logic)
-│   │   ├── app.module.ts                # Root module — registers everything
+│   ├── main.ts                          # Entry point — CORS, versioning, Swagger, global interceptor
+│   ├── app/                             # Feature modules
+│   │   ├── app.module.ts                # Root module
 │   │   ├── app.controller.ts            # GET /health
-│   │   ├── app.service.ts
-│   │   ├── auth/                        # Auth for ALL user types (agent, buyer, company, admin)
-│   │   │   ├── auth.module.ts
+│   │   ├── auth/                        # Auth for all user types
 │   │   │   ├── auth.controller.ts       # POST /auth/register|login|refresh|logout|forgot|reset
-│   │   │   ├── auth.service.ts
-│   │   │   ├── config/
-│   │   │   │   ├── access-jwt.ts        # ACCESS_TOKEN_SECRET + expiry config
-│   │   │   │   └── refresh-jwt.ts       # REFRESH_TOKEN_SECRET + expiry config
-│   │   │   ├── decorators/
-│   │   │   │   ├── current-user.decorator.ts   # @CurrentUser() param decorator
-│   │   │   │   └── roles.decorator.ts          # @Roles('admin', 'agent') metadata decorator
 │   │   │   ├── guards/
-│   │   │   │   ├── auth.guard.ts        # Validates Bearer JWT on protected routes
-│   │   │   │   ├── roles.guard.ts       # Checks user role against @Roles() metadata
-│   │   │   │   └── refresh.guard.ts     # Validates Refresh token for token rotation
-│   │   │   └── dto/
-│   │   │       ├── register.dto.ts      # Zod schema + type for registration
-│   │   │       ├── login.dto.ts
-│   │   │       ├── forgot-password.dto.ts
-│   │   │       └── reset-password.dto.ts
-│   │   ├── contact/                     # Lead capture from landing page contact form
-│   │   │   ├── contact.module.ts
-│   │   │   ├── contact.controller.ts    # POST /contact
-│   │   │   ├── contact.service.ts
-│   │   │   └── dto/create-contact.dto.ts
-│   │   ├── agent/                       # Agent application, dashboard, reports
-│   │   │   ├── agent.module.ts
-│   │   │   ├── agent.controller.ts      # POST /agent/apply | GET /agent/me | reports
-│   │   │   ├── agent.service.ts
+│   │   │   │   ├── auth.guard.ts        # Validates Bearer JWT
+│   │   │   │   ├── roles.guard.ts       # Checks @Roles() metadata
+│   │   │   │   └── refresh.guard.ts     # Validates Refresh token
+│   │   │   └── decorators/
+│   │   │       ├── current-user.decorator.ts
+│   │   │       └── roles.decorator.ts
+│   │   ├── agent/                       # Agent lifecycle
+│   │   │   ├── agent.controller.ts      # /agent/* routes
+│   │   │   ├── agent.service.ts         # apply, profile, reports, commissions
+│   │   │   ├── wallet.service.ts        # credit, debit, getWallet
+│   │   │   ├── stock.service.ts         # requestStock, remitStock (KYC-gated)
+│   │   │   ├── kyc.service.ts           # submitKyc, getKycStatus
 │   │   │   └── dto/
 │   │   │       ├── apply-agent.dto.ts
-│   │   │       └── submit-report.dto.ts
-│   │   ├── admin/                       # Admin management dashboard
-│   │   │   ├── admin.module.ts
-│   │   │   ├── admin.controller.ts      # All /admin/* routes (role-guarded)
+│   │   │       ├── submit-report.dto.ts
+│   │   │       ├── stock-request.dto.ts
+│   │   │       ├── remit-stock.dto.ts
+│   │   │       └── submit-kyc.dto.ts
+│   │   ├── admin/                       # Admin dashboard
+│   │   │   ├── admin.controller.ts      # /admin/* routes (role-guarded)
 │   │   │   ├── admin.service.ts
-│   │   │   └── dto/update-agent-status.dto.ts
+│   │   │   └── dto/
+│   │   │       ├── update-agent-status.dto.ts
+│   │   │       ├── promote-manager.dto.ts
+│   │   │       ├── record-inventory.dto.ts
+│   │   │       └── review-kyc.dto.ts
+│   │   ├── commission/                  # Monthly cron commission calculation
+│   │   │   ├── commission.module.ts
+│   │   │   └── commission.service.ts    # @Cron — runs 1st of each month
+│   │   ├── contact/                     # Landing page lead capture
+│   │   │   └── contact.controller.ts    # POST /contact
 │   │   └── payment/                     # Paystack split payment
-│   │       ├── payment.module.ts
-│   │       ├── payment.controller.ts    # POST /payment/initialize|webhook|subaccount
-│   │       ├── payment.service.ts
-│   │       └── dto/initialize-payment.dto.ts
+│   │       └── payment.controller.ts    # POST /payment/initialize|webhook|subaccount
 │   │
-│   ├── infrastructure/                  # Technical plumbing (not business logic)
-│   │   ├── config/                      # registerAs() config factories
-│   │   │   ├── database.config.ts       # DATABASE_URL
-│   │   │   ├── jwt.config.ts            # JWT secrets + expiry
-│   │   │   ├── cloudinary.config.ts     # CV file uploads
-│   │   │   ├── paystack.config.ts       # Paystack keys + commission rate
-│   │   │   └── mailtrap.config.ts       # Email service config
+│   ├── infrastructure/
 │   │   ├── database/
-│   │   │   ├── database.module.ts
-│   │   │   └── database.provider.ts     # Drizzle + pg Pool → Neon connection
+│   │   │   └── database.provider.ts     # Drizzle + pg → Neon connection
 │   │   ├── persistence/
 │   │   │   ├── index.ts                 # Barrel export of all schemas
-│   │   │   ├── schemas/
-│   │   │   │   ├── users.schema.ts          # All users: admin | agent | buyer | company
-│   │   │   │   ├── agent_profiles.schema.ts # CV, target, status, subaccount code
-│   │   │   │   ├── leads.schema.ts          # Contact form submissions
-│   │   │   │   ├── sales_reports.schema.ts  # Agent sales submissions
-│   │   │   │   ├── commissions.schema.ts    # Per-sale commission records (30%)
-│   │   │   │   ├── email_verification.schema.ts
-│   │   │   │   └── password_resets.schema.ts
-│   │   │   └── migrations/              # Auto-generated SQL (drizzle-kit generate)
-│   │   ├── redis/
-│   │   │   ├── core/
-│   │   │   │   ├── redis.module.ts      # Global module — available everywhere
-│   │   │   │   └── redis.provider.ts    # Upstash connection with in-memory fallback
-│   │   │   └── features/
-│   │   │       └── redis.service.ts     # get / set / del / has
-│   │   ├── logger/
-│   │   │   └── logger.module.ts         # Pino logger — dev: pretty print, prod: file rotation
-│   │   ├── helper/
-│   │   │   └── column.helper.ts         # Shared created_at / updated_at / deleted_at columns
+│   │   │   ├── schemas/                 # 16 Drizzle table definitions
+│   │   │   └── migrations/              # Auto-generated SQL
 │   │   ├── pipeline/
-│   │   │   └── validation.pipeline.ts   # ZodValidationPipe — rejects invalid request bodies
+│   │   │   └── validation.pipeline.ts   # ZodValidationPipe
 │   │   └── seeders/
-│   │       └── seeder.ts                # Seeds default admin account (run once)
+│   │       └── seeder.ts                # Seeds default admin account
 │   │
 │   ├── notification/
-│   │   ├── core/email/email.service.ts  # Raw Mailtrap sender (CoreEmailService)
-│   │   └── features/email/
-│   │       ├── email.module.ts
-│   │       └── email.service.ts         # Business emails: welcome, approval, rejection, reset
+│   │   └── features/email/email.service.ts  # Mailtrap transactional emails
 │   │
 │   ├── events/
-│   │   ├── event-types/user.event.types.ts  # Event name constants + payload types
-│   │   └── listeners/user-listeners.ts      # @OnEvent handlers → trigger emails async
+│   │   ├── event-types/user.event.types.ts
+│   │   └── listeners/user-listeners.ts  # @OnEvent handlers → async emails
 │   │
-│   ├── interceptors/
-│   │   └── api-response.interceptor.ts  # Wraps all responses in standard format
-│   │
-│   └── interfaces/users/
-│       ├── jwt.type.ts                  # JwtPayload interface
-│       └── roles.type.ts                # UserRole type: admin | agent | buyer | company
+│   └── interceptors/
+│       └── api-response.interceptor.ts  # Wraps all responses in standard format
 │
-├── drizzle.config.ts                    # Drizzle CLI — schema path + migration output
-├── nest-cli.json                        # NestJS CLI config
-├── tsconfig.json                        # CommonJS, emitDecoratorMetadata: true
-├── .env                                 # Environment variables (never commit)
+├── drizzle.config.ts
 └── package.json
 ```
 
 ---
 
-## How a Request Flows
+## Database Schema (16 Tables)
 
-```
-Client → POST /api/v1/agent/apply
-  ↓
-NestJS Router (AgentController)
-  ↓
-ZodValidationPipe — validates request body against applyAgentSchema
-  ↓
-AgentService.apply() — business logic
-  ↓
-Drizzle ORM → Neon PostgreSQL (inserts users + agent_profiles)
-  ↓
-EventEmitter2.emit('agent.applied', payload)       ← async, non-blocking
-  ↓ (background)
-UserListeners.onAgentApplied() → EmailService.sendAgentApplicationReceived()
-  ↓
-ApiResponseInterceptor — wraps result in standard JSON envelope
-  ↓
-Client ← 201 Created { statusCode, message, data, timestamp, path }
-```
-
----
-
-## Database Schema
-
-| Table                | Purpose                                                                            |
-| -------------------- | ---------------------------------------------------------------------------------- |
-| `users`              | Single table for all user types. `role` enum: `admin \| agent \| buyer \| company` |
-| `agent_profiles`     | Agent-specific data: CV URL, address, NIN, status, target, Paystack subaccount     |
-| `leads`              | Contact form submissions (name + email + message)                                  |
-| `sales_reports`      | Agent sales submissions (pages sold + amount)                                      |
-| `commissions`        | Per-report commission record (30% of sale amount)                                  |
-| `email_verification` | OTP tokens for email verification                                                  |
-| `password_resets`    | Tokens for password reset flow                                                     |
+| Table                | Purpose                                                                    |
+| -------------------- | -------------------------------------------------------------------------- |
+| `users`              | All user types: `admin \| agent \| buyer \| company`                       |
+| `agent_profiles`     | Agent data: KYC status, referral codes, bank details, state manager flag   |
+| `wallets`            | Agent wallet — available + pending balance (in kobo)                       |
+| `stock_requests`     | Agent stock requests + remittance tracking                                 |
+| `inventory_records`  | Admin records of stock received from supplier                              |
+| `commissions`        | Per-order commissions: direct, buyer_referral, agent_override, sm_override |
+| `orders`             | Buyer orders placed through agents                                         |
+| `leads`              | Contact form submissions                                                   |
+| `sales_reports`      | Legacy agent sales submissions                                             |
+| `zones`              | Delivery zones mapped to LGAs                                              |
+| `riders`             | Delivery riders attached to zones                                          |
+| `withdrawals`        | Agent withdrawal requests from wallet                                      |
+| `campaigns`          | Mailtrap email campaigns                                                   |
+| `audit_log`          | Admin action log                                                           |
+| `email_verification` | OTP tokens                                                                 |
+| `password_resets`    | Password reset tokens                                                      |
 
 ---
 
 ## Environment Variables
 
-| Variable                | Description                                   |
-| ----------------------- | --------------------------------------------- |
-| `DATABASE_URL`          | Neon PostgreSQL connection string             |
-| `ACCESS_TOKEN_SECRET`   | JWT access token signing key                  |
-| `ACCESS_TOKEN_EXPIRY`   | Access token TTL (default: `15m`)             |
-| `REFRESH_TOKEN_SECRET`  | JWT refresh token signing key                 |
-| `REFRESH_TOKEN_EXPIRY`  | Refresh token TTL (default: `7d`)             |
-| `CLOUDINARY_CLOUD_NAME` | Cloudinary account name                       |
-| `CLOUDINARY_API_KEY`    | Cloudinary API key                            |
-| `CLOUDINARY_API_SECRET` | Cloudinary API secret                         |
-| `UPSTASH_REDIS_URL`     | Upstash Redis connection URL (`rediss://...`) |
-| `MAILTRAP_TOKEN`        | Mailtrap API token                            |
-| `MAILTRAP_FROM_EMAIL`   | From email address                            |
-| `PAYSTACK_SECRET_KEY`   | Paystack secret key                           |
-| `PAYSTACK_PUBLIC_KEY`   | Paystack public key                           |
-| `AGENT_COMMISSION_RATE` | Agent commission rate (default: `0.30` = 30%) |
-| `ADMIN_EMAIL`           | Seed admin email                              |
-| `ADMIN_PASSWORD`        | Seed admin password                           |
-| `APP_URL`               | Frontend URL (used in email links)            |
+| Variable               | Description                        |
+| ---------------------- | ---------------------------------- |
+| `DATABASE_URL`         | Neon PostgreSQL connection string  |
+| `ACCESS_TOKEN_SECRET`  | JWT access token signing key       |
+| `ACCESS_TOKEN_EXPIRY`  | Access token TTL (default: `15m`)  |
+| `REFRESH_TOKEN_SECRET` | JWT refresh token signing key      |
+| `REFRESH_TOKEN_EXPIRY` | Refresh token TTL (default: `7d`)  |
+| `MAILTRAP_TOKEN`       | Mailtrap API token                 |
+| `MAILTRAP_FROM_EMAIL`  | From email address                 |
+| `PAYSTACK_SECRET_KEY`  | Paystack secret key                |
+| `PAYSTACK_PUBLIC_KEY`  | Paystack public key                |
+| `ADMIN_EMAIL`          | Seed admin email                   |
+| `ADMIN_PASSWORD`       | Seed admin password                |
+| `APP_URL`              | Frontend URL (used in email links) |
 
 ---
 
 ## Scripts
 
 ```bash
-pnpm dev           # Start with hot reload (nest start --watch)
+pnpm dev           # Start backend with hot reload
 pnpm build         # Compile to dist/
 pnpm start         # Run compiled dist/main.js
 pnpm db:generate   # Generate migration SQL from schema changes
@@ -207,56 +149,85 @@ pnpm db:studio     # Open Drizzle Studio (visual DB browser)
 pnpm db:seed       # Seed admin account (run once on new DB)
 ```
 
----
-
-## E2E Test Structure (`apps/debridgers-backend-e2e/`)
-
-```
-apps/debridgers-backend-e2e/
-├── src/
-│   ├── support/
-│   │   └── global-setup.ts              # Sets NODE_ENV=test before all tests
-│   └── debridgers-backend/
-│       ├── health.spec.ts               # GET /health → 200 ok
-│       ├── contact.spec.ts              # POST /contact → save lead, validate input
-│       ├── auth.spec.ts                 # register → login → wrong password = 401
-│       ├── admin.spec.ts                # Admin login → dashboard → agents → leads
-│       └── agent.spec.ts                # POST /agent/apply with form data
-├── jest.config.ts
-├── tsconfig.json
-└── package.json
-```
-
-### Running E2E Tests
+From repo root:
 
 ```bash
-# Start the backend first
-pnpm --filter @debridgers/debridgers-backend dev
+pnpm dev           # Start backend + frontend together (concurrently)
+pnpm test:e2e      # Run backend e2e tests
+```
 
-# In a second terminal
-pnpm test:e2e
-# OR directly
+---
+
+## How a Request Flows
+
+```
+Client → PATCH /api/v1/admin/agents/5/status
+  ↓
+AuthGuard — verifies Bearer JWT
+  ↓
+RolesGuard — checks role === 'admin'
+  ↓
+ZodValidationPipe (on @Body) — validates { status: "approved" }
+  ↓
+AdminService.updateAgentStatus() — generates referral codes, creates wallet
+  ↓
+EventEmitter2.emit('agent.approved', payload)   ← async, non-blocking
+  ↓ (background)
+UserListeners.onAgentApproved() → EmailService.sendAgentApproved()
+  ↓
+ApiResponseInterceptor — wraps result in standard JSON envelope
+  ↓
+Client ← 200 OK { statusCode, message, data, timestamp, path }
+```
+
+---
+
+## Agent Lifecycle
+
+```
+1. Agent applies          → POST /agent/apply (public, multipart)
+2. Login denied           → POST /auth/login returns 401 "not yet approved"
+3. Admin approves         → PATCH /admin/agents/:id/status { status: "approved" }
+                             ↳ referral codes generated (BUYER-XXXX, AGENT-XXXX)
+                             ↳ wallet created
+                             ↳ approval email sent
+4. Agent logs in          → POST /auth/login ✓
+5. Agent submits KYC      → POST /agent/kyc (multipart: id_front + id_selfie)
+6. Admin reviews KYC      → PATCH /admin/agents/:id/kyc { action: "approved" }
+7. Agent requests stock   → POST /agent/stock/request (KYC-gated)
+8. Admin fulfils stock    → PATCH /admin/stock/requests/:id/fulfil
+9. Agent remits payment   → POST /agent/stock/remit
+10. Commissions calculated → @Cron runs 1st of each month
+11. Admin marks paid      → PATCH /admin/commissions/:id/paid
+```
+
+---
+
+## E2E Tests
+
+```
+apps/debridgers-backend-e2e/src/debridgers-backend/
+├── health.spec.ts    # GET /health
+├── contact.spec.ts   # POST /contact
+├── auth.spec.ts      # register → login → wrong password
+├── admin.spec.ts     # dashboard, agents, buyers, stock, inventory, leads
+└── agent.spec.ts     # full flow: apply → approve → KYC → stock request
+```
+
+Run against live server (default `http://localhost:4000`):
+
+```bash
 cd apps/debridgers-backend-e2e && pnpm test
 ```
 
-E2E tests run against a live server (default: `http://localhost:4000`). Set `API_URL` env var to point at a deployed instance.
-
 ---
 
-## Adding New Features
+## Swagger
 
-Follow the module pattern. For a new `buyer` feature:
+Swagger UI auto-generates interactive API documentation from the controllers.
 
-```bash
-# 1. Create the folder
-mkdir -p apps/debridgers-backend/src/app/buyer/dto
+**URL:** `http://localhost:4000/api/docs`
 
-# 2. Create module, controller, service, dto (follow agent/ as template)
-
-# 3. Register in app.module.ts
-import { BuyerModule } from './buyer/buyer.module';
-// add BuyerModule to imports: []
-
-# 4. Add 'buyer' to userRoleEnum in users.schema.ts (already there)
-# 5. Generate + run migration: pnpm db:generate && pnpm db:migrate
-```
+- Click **Authorize** (top right) and paste your Bearer token to test protected routes
+- All endpoints, request bodies, and response shapes are visible
+- The `persistAuthorization` option keeps your token across page refreshes
