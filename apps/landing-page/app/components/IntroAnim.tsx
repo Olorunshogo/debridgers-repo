@@ -184,15 +184,19 @@ export function IntroAnimation() {
   const [visible, setVisible] = useState(true);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  const prefersReducedMotion =
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
   useEffect(() => {
-    if (prefersReducedMotion) {
+    const alreadyVisited = !!localStorage.getItem("debridgers_intro_seen");
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    if (alreadyVisited || prefersReducedMotion) {
       setVisible(false);
       return;
     }
+
+    // Mark as seen immediately so navigating away and back skips it
+    localStorage.setItem("debridgers_intro_seen", "true");
 
     const t1 = setTimeout(() => setPhase(2), PHASE_DURATIONS[1]);
     const t2 = setTimeout(
@@ -217,7 +221,7 @@ export function IntroAnimation() {
 
     timersRef.current = [t1, t2, t3, t4, t5];
     return () => timersRef.current.forEach(clearTimeout);
-  }, [prefersReducedMotion]);
+  }, []);
 
   useEffect(() => {
     if (!visible) return;

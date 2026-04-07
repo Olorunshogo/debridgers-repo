@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { motion } from "framer-motion";
 import { TrendingUp, FileText, Wallet, Target } from "lucide-react";
+import { PrimaryButton } from "@debridgers/ui-web";
 
 export function meta() {
   return [{ title: "Agent Overview | Debridgers" }];
@@ -86,18 +87,18 @@ function statCards(d: AgentDashData) {
   ];
 }
 
-export default function AgentOverview() {
+export default function AgentOverviewPage() {
   const [data, setData] = useState<AgentDashData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // ── PRODUCTION ────────────────────────────────────────────────────────────
+    // === PRODUCTION
     // fetch(`${BASE_BACKEND_URL}/agent/me`, { credentials: "include" })
     //   .then((r) => r.json())
     //   .then((json) => setData(json.data))
     //   .finally(() => setLoading(false));
 
-    // ── MOCK ──────────────────────────────────────────────────────────────────
+    // === MOCK
     const t = setTimeout(() => {
       setData(MOCK);
       setLoading(false);
