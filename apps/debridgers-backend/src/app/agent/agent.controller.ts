@@ -6,19 +6,25 @@ import {
   HttpStatus,
   Post,
   UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
   UsePipes,
 } from "@nestjs/common";
-import { FileInterceptor } from "@nestjs/platform-express";
+import {
+  FileInterceptor,
+  FileFieldsInterceptor,
+} from "@nestjs/platform-express";
 import { AgentService } from "./agent.service";
 import { WalletService } from "./wallet.service";
 import { StockService } from "./stock.service";
+import { KycService } from "./kyc.service";
 import { ZodValidationPipe } from "../../infrastructure/pipeline/validation.pipeline";
 import { applyAgentSchema, ApplyAgentDto } from "./dto/apply-agent.dto";
 import { submitReportSchema, SubmitReportDto } from "./dto/submit-report.dto";
 import { stockRequestSchema, StockRequestDto } from "./dto/stock-request.dto";
 import { remitStockSchema, RemitStockDto } from "./dto/remit-stock.dto";
+import { submitKycSchema, SubmitKycDto } from "./dto/submit-kyc.dto";
 import { AuthGuard } from "../auth/guards/auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -31,6 +37,7 @@ export class AgentController {
     private readonly agentService: AgentService,
     private readonly walletService: WalletService,
     private readonly stockService: StockService,
+    private readonly kycService: KycService,
   ) {}
 
   // ─── Public ─────────────────────────────────────────────────────────────────
@@ -113,5 +120,50 @@ export class AgentController {
   @Roles("agent")
   getStockRequests(@CurrentUser() user: JwtPayload) {
     return this.stockService.getMyStockRequests(user);
+  }
+
+  // ─── KYC ─────────────────────────────────────────────────────────────────────
+
+  @Post("kyc")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("agent")
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: "id_front", maxCount: 1 },
+      { name: "id_selfie", maxCount: 1 },
+    ]),
+  )
+  async submitKyc(
+    @Body() body: unknown,
+    @UploadedFiles()
+    files: {
+      id_front?: Express.Multer.File[];
+      id_selfie?: Express.Multer.File[];
+    },
+    @CurrentUser() user: JwtPayload,
+  ) {
+    const dto = new ZodValidationPipe(submitKycSchema).transform(
+      body,
+    ) as SubmitKycDto;
+    return this.kycService.submitKyc(dto, user, {
+      id_front: (
+        files.id_front?.[0] as
+          | (Express.Multer.File & { path?: string })
+          | undefined
+      )?.path,
+      id_selfie: (
+        files.id_selfie?.[0] as
+          | (Express.Multer.File & { path?: string })
+          | undefined
+      )?.path,
+    });
+  }
+
+  @Get("kyc")
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("agent")
+  getKycStatus(@CurrentUser() user: JwtPayload) {
+    return this.kycService.getKycStatus(user);
   }
 }

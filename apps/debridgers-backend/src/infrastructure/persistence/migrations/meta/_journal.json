@@ -15,6 +15,13 @@
       "when": 1775483850569,
       "tag": "0001_same_kree",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775551528588,
+      "tag": "0002_simple_elektra",
+      "breakpoints": true
     }
   ]
 }

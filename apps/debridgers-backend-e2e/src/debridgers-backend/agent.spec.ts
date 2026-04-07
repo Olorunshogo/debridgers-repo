@@ -5,6 +5,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Admin@2026!";
 const testEmail = `agent+${Date.now()}@test.com`;
 let agentId: number;
 let adminToken: string;
+let agentToken: string;
 
 describe("Agent", () => {
   beforeAll(async () => {
@@ -86,18 +87,10 @@ describe("Agent", () => {
     const data = (await res.json()) as any;
     expect(res.status).toBe(200);
     expect(data.data.accessToken).toBeDefined();
+    agentToken = data.data.accessToken;
   });
 
   it("GET /agent/wallet should return wallet after approval", async () => {
-    const loginRes = await fetch(`${BASE}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: testEmail, password: "Password@123" }),
-    });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const loginData = (await loginRes.json()) as any;
-    const agentToken = loginData.data?.accessToken;
-
     const res = await fetch(`${BASE}/agent/wallet`, {
       headers: { Authorization: `Bearer ${agentToken}` },
     });
@@ -106,6 +99,106 @@ describe("Agent", () => {
     expect(res.status).toBe(200);
     expect(data.data.available_balance).toBeDefined();
     expect(data.data.pending_balance).toBeDefined();
+  });
+
+  it("POST /agent/stock/request should deny agent without KYC", async () => {
+    const res = await fetch(`${BASE}/agent/stock/request`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${agentToken}`,
+      },
+      body: JSON.stringify({ quantity: 5 }),
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = (await res.json()) as any;
+    expect(res.status).toBe(400);
+    expect(data.message).toMatch(/KYC verification required/i);
+  });
+
+  it("POST /agent/kyc should submit KYC documents", async () => {
+    const formData = new FormData();
+    formData.append("id_type", "NIN");
+    formData.append("bank_name", "GTBank");
+    formData.append("bank_account_number", "0123456789");
+    formData.append("bank_account_name", "Amina Yusuf");
+    // Attach minimal fake file blobs
+    formData.append(
+      "id_front",
+      new Blob(["id_front"], { type: "image/jpeg" }),
+      "id_front.jpg",
+    );
+    formData.append(
+      "id_selfie",
+      new Blob(["id_selfie"], { type: "image/jpeg" }),
+      "id_selfie.jpg",
+    );
+
+    const res = await fetch(`${BASE}/agent/kyc`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${agentToken}` },
+      body: formData,
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it("GET /agent/kyc should show kyc_status as submitted", async () => {
+    const res = await fetch(`${BASE}/agent/kyc`, {
+      headers: { Authorization: `Bearer ${agentToken}` },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = (await res.json()) as any;
+    expect(res.status).toBe(200);
+    expect(data.data.kyc_status).toBe("submitted");
+  });
+
+  it("GET /admin/kyc should list pending KYC submissions", async () => {
+    const res = await fetch(`${BASE}/admin/kyc`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = (await res.json()) as any;
+    expect(res.status).toBe(200);
+    expect(Array.isArray(data.data)).toBe(true);
+    expect(data.data.some((a: { id: number }) => a.id === agentId)).toBe(true);
+  });
+
+  it("PATCH /admin/agents/:id/kyc should approve KYC", async () => {
+    const res = await fetch(`${BASE}/admin/agents/${agentId}/kyc`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify({ action: "approved" }),
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it("GET /agent/kyc should show kyc_status as approved after admin review", async () => {
+    const res = await fetch(`${BASE}/agent/kyc`, {
+      headers: { Authorization: `Bearer ${agentToken}` },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = (await res.json()) as any;
+    expect(res.status).toBe(200);
+    expect(data.data.kyc_status).toBe("approved");
+  });
+
+  it("POST /agent/stock/request should succeed after KYC approval", async () => {
+    const res = await fetch(`${BASE}/agent/stock/request`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${agentToken}`,
+      },
+      body: JSON.stringify({ quantity: 2 }),
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = (await res.json()) as any;
+    expect(res.status).toBe(201);
+    expect(data.data.quantity).toBe(2);
+    expect(data.data.status).toBe("pending");
   });
 });
 
