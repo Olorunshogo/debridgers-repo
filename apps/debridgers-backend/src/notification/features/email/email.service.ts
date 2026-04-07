@@ -35,11 +35,7 @@ export class EmailService {
     });
   }
 
-  async sendAgentApproved(
-    to: string,
-    name: string,
-    tempPassword: string,
-  ): Promise<void> {
+  async sendAgentApproved(to: string, name: string): Promise<void> {
     await this.core.send({
       to,
       toName: name,
@@ -47,13 +43,8 @@ export class EmailService {
       html: `
         <h2>Congratulations, ${name}!</h2>
         <p>Your application to become a Debridgers agent has been <strong>approved</strong>.</p>
-        <p>Here are your login details:</p>
-        <ul>
-          <li><strong>Email:</strong> ${to}</li>
-          <li><strong>Temporary Password:</strong> <code>${tempPassword}</code></li>
-        </ul>
-        <p>Please log in and change your password immediately.</p>
-        <a href="${process.env.APP_URL}/agent/login" style="background:#16a34a;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;">Login to Dashboard</a>
+        <p>You can now log in to your dashboard using the email and password you registered with.</p>
+        <a href="${process.env.APP_URL}/agent/login" style="background:#1A4D2E;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;">Login to Dashboard</a>
         <br/><br/>
         <p>— The Debridgers Team</p>
       `,

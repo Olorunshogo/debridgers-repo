@@ -2,277 +2,264 @@
 
 ## Overview
 
-The Agent module handles the full agent lifecycle: applying to become an agent, logging in after approval, viewing the personal dashboard (profile, targets, earnings), submitting sales reports, and checking commission history.
+The Agent module handles the full agent lifecycle: applying, onboarding (KYC), stock management, wallet, sales reports, and commissions.
 
-Agents apply publicly (no token required). After admin approval, they receive login credentials via email and can access protected routes using a Bearer JWT.
+**Agent login is blocked until admin approves the application.** After approval, a wallet and referral codes are auto-created. KYC must be completed before requesting stock.
 
-All responses follow the global format:
-
-```json
-{
-  "statusCode": 201,
-  "message": "...",
-  "data": {},
-  "timestamp": "2026-04-02T10:00:00.000Z",
-  "version": "v1",
-  "path": "/api/v1/agent/apply"
-}
-```
-
----
-
-## Endpoints
-
-### 1. Apply as Agent
-
-**Endpoint:** `POST /api/v1/agent/apply`
-
-**Auth required:** No
-
-**Description:** Submits an agent application. The agent is created with `status: pending` and the admin is notified. A confirmation email is sent to the applicant. Optionally accepts a CV file upload (`multipart/form-data`).
-
-**Request (multipart/form-data):**
-
-| Field        | Type   | Required | Notes                        |
-| ------------ | ------ | -------- | ---------------------------- |
-| `first_name` | string | Yes      | Min 2 characters             |
-| `last_name`  | string | Yes      | Min 2 characters             |
-| `email`      | string | Yes      | Valid email                  |
-| `phone`      | string | Yes      | Min 10 digits                |
-| `address`    | string | Yes      | Min 5 characters             |
-| `nin`        | string | No       | 11-digit National ID         |
-| `cv`         | file   | No       | PDF — uploaded to Cloudinary |
-
-**Successful Response (201 Created):**
-
-```json
-{
-  "statusCode": 201,
-  "message": "Application submitted. We'll review and get back to you within 48 hours.",
-  "data": {
-    "id": 5
-  }
-}
-```
-
-**Error Responses:**
-
-```json
-// 400 — Validation failed
-{
-  "statusCode": 400,
-  "message": "Validation failed",
-  "errors": [
-    { "field": "email", "message": "Invalid email address" }
-  ]
-}
-
-// 409 — Email already registered
-{
-  "statusCode": 409,
-  "message": "Email already registered"
-}
-```
-
----
-
-### 2. Agent Login
-
-Agents use the shared auth endpoint. See [auth.md](./auth.md).
-
-**Endpoint:** `POST /api/v1/auth/login`
-
-```json
-{
-  "email": "agent@example.com",
-  "password": "TemporaryPassword123"
-}
-```
-
-Returns `accessToken` and `refreshToken`. Use `Authorization: Bearer <accessToken>` on all protected agent routes.
-
----
-
-### 3. Get My Profile & Dashboard
-
-**Endpoint:** `GET /api/v1/agent/me`
-
-**Auth required:** Yes — role: `agent`
-
-**Description:** Returns the agent's profile, current sales target, status, CV URL, and total earnings to date.
-
-**Headers:**
-
-```
-Authorization: Bearer <accessToken>
-```
-
-**Successful Response (200 OK):**
+All responses follow the standard format:
 
 ```json
 {
   "statusCode": 200,
-  "message": "Profile retrieved",
-  "data": {
-    "id": 5,
-    "first_name": "Amina",
-    "last_name": "Yusuf",
-    "email": "amina@example.com",
-    "phone": "08012345678",
-    "role": "agent",
-    "status": "approved",
-    "target": 20,
-    "cv_url": "https://res.cloudinary.com/drk3myhz2/...",
-    "address": "12 Barnawa Road, Kaduna",
-    "total_earnings": "45000.00"
-  }
+  "message": "...",
+  "data": {},
+  "timestamp": "2026-04-07T10:00:00.000Z",
+  "version": "v1",
+  "path": "/api/v1/agent/..."
 }
-```
-
-**Error Responses:**
-
-```json
-// 401 — No or invalid token
-{ "statusCode": 401, "message": "Invalid or expired token" }
-
-// 403 — Wrong role
-{ "statusCode": 403, "message": "Insufficient permissions" }
 ```
 
 ---
 
-### 4. Submit Sales Report
+## Public Endpoints
 
-**Endpoint:** `POST /api/v1/agent/report`
+### POST /api/v1/agent/apply
 
-**Auth required:** Yes — role: `agent`
+Submit an agent application. No auth required. Accepts `multipart/form-data`.
 
-**Description:** Agent submits a sales report for the day/period. The system automatically calculates and records a 30% commission entry linked to this report.
+| Field                    | Type   | Required | Notes                            |
+| ------------------------ | ------ | -------- | -------------------------------- |
+| `first_name`             | string | Yes      | Min 2 chars                      |
+| `last_name`              | string | No       | Min 2 chars                      |
+| `email`                  | string | Yes      | Valid email                      |
+| `phone`                  | string | Yes      | Min 10 digits                    |
+| `lga`                    | string | Yes      | Local Government Area            |
+| `address`                | string | Yes      | Min 5 chars                      |
+| `password`               | string | Yes      | Min 8 chars, mixed case + number |
+| `confirm_password`       | string | Yes      | Must match `password`            |
+| `referred_by_agent_code` | string | No       | An agent's `AGENT-XXXX` code     |
+| `cv`                     | file   | No       | PDF — uploaded to `/tmp`         |
 
-**Request Body (JSON):**
+**Response (201):**
+
+```json
+{ "data": { "id": 5 } }
+```
+
+**Errors:** `400` validation | `409` email already registered
+
+---
+
+## Protected Endpoints (require `Authorization: Bearer <accessToken>`)
+
+All routes below require `role: agent`.
+
+---
+
+### GET /api/v1/agent/me
+
+Returns the agent's profile, status, target, referral codes, and LGA.
+
+---
+
+## Wallet
+
+### GET /api/v1/agent/wallet
+
+Returns the agent's wallet balances (amounts in **kobo**).
+
+```json
+{
+  "data": {
+    "id": 1,
+    "agent_id": 5,
+    "available_balance": 250000,
+    "pending_balance": 50000,
+    "updated_at": "2026-04-07T10:00:00.000Z"
+  }
+}
+```
+
+> ₦2,500 available = `250000` kobo
+
+---
+
+## KYC
+
+KYC is required before an agent can request stock or process orders.
+
+### POST /api/v1/agent/kyc
+
+Submit KYC documents. Accepts `multipart/form-data`. Agent must be `status: approved` first.
+
+| Field                 | Type   | Required | Notes                                    |
+| --------------------- | ------ | -------- | ---------------------------------------- |
+| `id_type`             | string | Yes      | `NIN` \| `Passport` \| `Drivers License` |
+| `bank_name`           | string | Yes      | Min 2 chars                              |
+| `bank_account_number` | string | Yes      | Exactly 10 digits                        |
+| `bank_account_name`   | string | Yes      | Min 2 chars                              |
+| `id_front`            | file   | Yes      | Photo of ID document                     |
+| `id_selfie`           | file   | Yes      | Selfie holding the ID                    |
+
+**Response (200):**
+
+```json
+{ "message": "KYC submitted successfully. We will review and get back to you." }
+```
+
+**Errors:**
+
+- `400` — application not yet approved
+- `400` — KYC already submitted or approved
+- `400` — both files required
+
+---
+
+### GET /api/v1/agent/kyc
+
+Returns current KYC status.
+
+```json
+{
+  "data": {
+    "kyc_status": "submitted",
+    "kyc_rejection_reason": null,
+    "id_type": "NIN",
+    "bank_name": "GTBank",
+    "bank_account_name": "Amina Yusuf"
+  }
+}
+```
+
+`kyc_status` values: `not_submitted` | `submitted` | `approved` | `rejected`
+
+---
+
+## Stock
+
+Agents operate in **Mode 2** (stock-based): they request stock from Debridgers, sell it, then remit the proceeds.
+
+Cost per modu pack: **₦1,300** (remitted back to Debridgers after sale).
+
+### POST /api/v1/agent/stock/request
+
+Request stock packs. **Requires `kyc_status: approved`.**
+
+**Body:**
+
+```json
+{ "quantity": 10 }
+```
+
+**Response (201):**
+
+```json
+{
+  "data": {
+    "id": 1,
+    "quantity": 10,
+    "amount_to_remit": 1300000,
+    "status": "pending"
+  }
+}
+```
+
+**Errors:**
+
+- `400` — KYC not approved
+- `400` — agent not approved
+
+---
+
+### POST /api/v1/agent/stock/remit
+
+Record a remittance payment against a fulfilled stock request.
+
+**Body:**
+
+```json
+{
+  "stock_request_id": 1,
+  "amount_remitted": 650000
+}
+```
+
+- `amount_remitted` is in **kobo**
+- Multiple partial remittances are allowed (cumulative)
+- Returns error if total exceeds `amount_to_remit`
+
+---
+
+### GET /api/v1/agent/stock
+
+Returns all the agent's stock requests with remittance status.
+
+---
+
+## Reports & Commissions
+
+### POST /api/v1/agent/report
+
+Submit a sales report. Commission is recorded automatically as `type: direct`.
+
+**Body:**
 
 ```json
 {
   "pages_sold": 5,
   "amount": 75000,
-  "notes": "Sold 5 packages to caterers at Barnawa Market"
-}
-```
-
-| Field        | Type    | Required | Notes                      |
-| ------------ | ------- | -------- | -------------------------- |
-| `pages_sold` | integer | Yes      | Min 1                      |
-| `amount`     | number  | Yes      | Total sale amount in Naira |
-| `notes`      | string  | No       | Max 500 characters         |
-
-**Successful Response (201 Created):**
-
-```json
-{
-  "statusCode": 201,
-  "message": "Report submitted successfully",
-  "data": {
-    "report_id": 12,
-    "commission_earned": 22500
-  }
+  "notes": "Sold to caterers at Barnawa Market"
 }
 ```
 
 ---
 
-### 5. Get All My Reports
+### GET /api/v1/agent/reports
 
-**Endpoint:** `GET /api/v1/agent/reports`
-
-**Auth required:** Yes — role: `agent`
-
-**Description:** Returns all sales reports submitted by the logged-in agent, ordered by newest first.
-
-**Successful Response (200 OK):**
-
-```json
-{
-  "statusCode": 200,
-  "message": "Reports retrieved",
-  "data": [
-    {
-      "id": 12,
-      "agent_id": 5,
-      "pages_sold": 5,
-      "amount": "75000.00",
-      "notes": "Sold 5 packages to caterers at Barnawa Market",
-      "created_at": "2026-04-02T09:00:00.000Z"
-    }
-  ]
-}
-```
+Returns all submitted sales reports for the agent.
 
 ---
 
-### 6. Get Commission History
+### GET /api/v1/agent/commissions
 
-**Endpoint:** `GET /api/v1/agent/commissions`
+Returns all commission records for the agent.
 
-**Auth required:** Yes — role: `agent`
+Commission types:
+| Type | Description |
+| ---- | ----------- |
+| `direct` | Agent's own sales (direct commission) |
+| `buyer_referral` | ₦20 per order from a buyer who used the agent's `BUYER-XXXX` code |
+| `agent_override` | 5% monthly override on sales by agents the agent recruited |
+| `state_manager_override` | 2% monthly override for State Managers on all orders in their state |
 
-**Description:** Returns all commission records for the agent. Each commission is linked to a sales report. Status is `pending` until admin marks it as paid.
+Commission statuses: `pending` → `confirmed` → `paid`
 
-**Successful Response (200 OK):**
+---
 
-```json
-{
-  "statusCode": 200,
-  "message": "Commissions retrieved",
-  "data": [
-    {
-      "id": 8,
-      "agent_id": 5,
-      "report_id": 12,
-      "amount": "22500.00",
-      "rate": "0.30",
-      "status": "pending",
-      "paid_at": null,
-      "created_at": "2026-04-02T09:00:00.000Z"
-    }
-  ]
-}
-```
+## Referral System
+
+Each approved agent gets two codes:
+
+| Code         | Used by              | Effect                                                        |
+| ------------ | -------------------- | ------------------------------------------------------------- |
+| `BUYER-XXXX` | Buyers at checkout   | Agent earns ₦20 per order placed with this code               |
+| `AGENT-XXXX` | New agent applicants | Recruiting agent earns 5% monthly override on recruit's sales |
+
+Maximum referral depth: **2 layers** (direct recruit + their recruits). State managers earn an additional 2% on their entire state.
 
 ---
 
 ## Agent Lifecycle
 
 ```
-1. Agent submits application → POST /agent/apply
-         ↓
-2. Admin reviews in dashboard
-         ↓
-3. Admin approves → PATCH /admin/agents/:id/status { status: "approved" }
-         ↓
-4. Agent receives email with temporary password
-         ↓
-5. Agent logs in → POST /auth/login
-         ↓
-6. Agent views dashboard → GET /agent/me
-         ↓
-7. Agent submits report → POST /agent/report
-         ↓
-8. Commission auto-calculated (30%) → stored as pending
-         ↓
-9. Admin marks commission paid → PATCH /admin/commissions/:id/paid
+1. Apply               → POST /agent/apply (public)
+2. Login denied        → 401 "Your account is not yet approved"
+3. Admin approves      → wallet + referral codes created, email sent
+4. Agent logs in       → POST /auth/login ✓
+5. Submit KYC          → POST /agent/kyc (upload id_front + id_selfie)
+6. Admin approves KYC  → kyc_status: approved
+7. Request stock       → POST /agent/stock/request
+8. Admin fulfils       → stock dispatched
+9. Agent sells + remits → POST /agent/stock/remit
+10. Commissions paid   → wallet credited, PATCH /admin/commissions/:id/paid
 ```
-
----
-
-## Commission Calculation
-
-Commission is always **30%** of the sale amount reported.
-
-```
-pages_sold: 5
-amount: ₦75,000
-commission: 75,000 × 0.30 = ₦22,500 → agent
-company keeps:             ₦52,500
-```
-
-The commission rate is configurable via `AGENT_COMMISSION_RATE` in `.env` without code changes.
