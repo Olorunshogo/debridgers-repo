@@ -36,6 +36,12 @@ export class StockService {
     if (!profile)
       throw new BadRequestException("Only approved agents can request stock");
 
+    if (profile.kyc_status !== "approved") {
+      throw new BadRequestException(
+        "KYC verification required before requesting stock",
+      );
+    }
+
     const amountToRemit = dto.quantity * COST_PER_MODU_KOBO;
 
     const [request] = await this.db

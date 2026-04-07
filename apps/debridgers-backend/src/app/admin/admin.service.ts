@@ -13,6 +13,7 @@ import { DATABASE_CONNECTION } from "../../infrastructure/database/database.prov
 import { USER_EVENTS } from "../../events/event-types/user.event.types";
 import { UpdateAgentStatusDto } from "./dto/update-agent-status.dto";
 import { PromoteManagerDto } from "./dto/promote-manager.dto";
+import { ReviewKycDto } from "./dto/review-kyc.dto";
 
 @Injectable()
 export class AdminService {
@@ -290,6 +291,62 @@ export class AdminService {
       .where(eq(schema.agent_profiles.user_id, agentId));
 
     return { message: "Agent promoted to State Manager", data: null };
+  }
+
+  async getPendingKyc() {
+    const agents = await this.db
+      .select({
+        id: schema.users.id,
+        first_name: schema.users.first_name,
+        last_name: schema.users.last_name,
+        email: schema.users.email,
+        kyc_status: schema.agent_profiles.kyc_status,
+        id_type: schema.agent_profiles.id_type,
+        id_front_url: schema.agent_profiles.id_front_url,
+        id_selfie_url: schema.agent_profiles.id_selfie_url,
+        bank_name: schema.agent_profiles.bank_name,
+        bank_account_number: schema.agent_profiles.bank_account_number,
+        bank_account_name: schema.agent_profiles.bank_account_name,
+      })
+      .from(schema.users)
+      .innerJoin(
+        schema.agent_profiles,
+        eq(schema.agent_profiles.user_id, schema.users.id),
+      )
+      .where(eq(schema.agent_profiles.kyc_status, "submitted"))
+      .orderBy(desc(schema.users.created_at));
+
+    return { message: "Pending KYC list retrieved", data: agents };
+  }
+
+  async reviewKyc(agentId: number, dto: ReviewKycDto) {
+    const { action, reason } = dto;
+    const [profile] = await this.db
+      .select()
+      .from(schema.agent_profiles)
+      .where(
+        and(
+          eq(schema.agent_profiles.user_id, agentId),
+          eq(schema.agent_profiles.kyc_status, "submitted"),
+        ),
+      )
+      .limit(1);
+
+    if (!profile)
+      throw new NotFoundException("No submitted KYC found for this agent");
+
+    await this.db
+      .update(schema.agent_profiles)
+      .set({
+        kyc_status: action,
+        kyc_rejection_reason: action === "rejected" ? (reason ?? null) : null,
+      })
+      .where(eq(schema.agent_profiles.user_id, agentId));
+
+    return {
+      message: `KYC ${action} successfully`,
+      data: null,
+    };
   }
 
   async setAgentTarget(agentId: number, target: number) {

@@ -31,6 +31,7 @@ import {
   recordInventorySchema,
   RecordInventoryDto,
 } from "./dto/record-inventory.dto";
+import { reviewKycSchema, ReviewKycDto } from "./dto/review-kyc.dto";
 
 @Controller("admin")
 @UseGuards(AuthGuard, RolesGuard)
@@ -168,6 +169,20 @@ export class AdminController {
   @Get("leads")
   getLeads() {
     return this.adminService.getLeads();
+  }
+
+  // ─── KYC ────────────────────────────────────────────────────────────────────
+
+  @Get("kyc")
+  getPendingKyc() {
+    return this.adminService.getPendingKyc();
+  }
+
+  @Patch("agents/:id/kyc")
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ZodValidationPipe(reviewKycSchema))
+  reviewKyc(@Param("id", ParseIntPipe) id: number, @Body() dto: ReviewKycDto) {
+    return this.adminService.reviewKyc(id, dto);
   }
 
   // ─── Commissions ────────────────────────────────────────────────────────────

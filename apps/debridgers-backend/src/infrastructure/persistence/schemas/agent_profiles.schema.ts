@@ -19,6 +19,13 @@ export const agentStatusEnum = pgEnum("agent_status", [
   "suspended",
 ]);
 
+export const kycStatusEnum = pgEnum("kyc_status", [
+  "not_submitted",
+  "submitted",
+  "approved",
+  "rejected",
+]);
+
 export const agentIdTypeEnum = pgEnum("agent_id_type", [
   "NIN",
   "Passport",
@@ -50,6 +57,9 @@ export const agent_profiles = pgTable(
     bank_name: text(),
     bank_account_number: varchar("bank_account_number", { length: 20 }),
     bank_account_name: text(),
+    // KYC
+    kyc_status: kycStatusEnum().notNull().default("not_submitted"),
+    kyc_rejection_reason: text(),
     // identity verification
     id_type: agentIdTypeEnum(),
     id_front_url: text(),
