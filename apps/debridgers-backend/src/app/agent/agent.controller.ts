@@ -9,7 +9,6 @@ import {
   UploadedFiles,
   UseGuards,
   UseInterceptors,
-  UsePipes,
 } from "@nestjs/common";
 import {
   FileInterceptor,
@@ -67,8 +66,10 @@ export class AgentController {
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(AuthGuard, RolesGuard)
   @Roles("agent")
-  @UsePipes(new ZodValidationPipe(submitReportSchema))
-  submitReport(@Body() dto: SubmitReportDto, @CurrentUser() user: JwtPayload) {
+  submitReport(
+    @Body(new ZodValidationPipe(submitReportSchema)) dto: SubmitReportDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
     return this.agentService.submitReport(dto, user);
   }
 
@@ -101,8 +102,10 @@ export class AgentController {
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(AuthGuard, RolesGuard)
   @Roles("agent")
-  @UsePipes(new ZodValidationPipe(stockRequestSchema))
-  requestStock(@Body() dto: StockRequestDto, @CurrentUser() user: JwtPayload) {
+  requestStock(
+    @Body(new ZodValidationPipe(stockRequestSchema)) dto: StockRequestDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
     return this.stockService.requestStock(dto, user);
   }
 
@@ -110,8 +113,10 @@ export class AgentController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(AuthGuard, RolesGuard)
   @Roles("agent")
-  @UsePipes(new ZodValidationPipe(remitStockSchema))
-  remitStock(@Body() dto: RemitStockDto, @CurrentUser() user: JwtPayload) {
+  remitStock(
+    @Body(new ZodValidationPipe(remitStockSchema)) dto: RemitStockDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
     return this.stockService.remitStock(dto, user);
   }
 
