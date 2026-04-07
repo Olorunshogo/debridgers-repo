@@ -2,39 +2,24 @@
 
 ## Overview
 
-The Auth module handles registration, login, token refresh, logout, and password reset for **all user types** — `admin`, `agent`, `buyer`, and `company`. There is one unified auth system; the `role` field on the user record determines what they can access after login.
+The Auth module handles registration, login, token refresh, logout, and password reset for **all user types** — `admin`, `agent`, `buyer`, and `company`.
 
 The system uses two JWTs:
 
-- **Access Token** — short-lived (`15m`), sent in `Authorization: Bearer <token>` header
-- **Refresh Token** — long-lived (`7d`), sent in `Authorization: Refresh <token>` header for token rotation
+- **Access Token** — short-lived (`15m`), sent as `Authorization: Bearer <token>`
+- **Refresh Token** — long-lived (`7d`), sent as `Authorization: Refresh <token>` for rotation
 
-All responses follow the global format:
-
-```json
-{
-  "statusCode": 200,
-  "message": "...",
-  "data": {},
-  "timestamp": "2026-04-02T10:00:00.000Z",
-  "version": "v1",
-  "path": "/api/v1/auth/login"
-}
-```
+> **Note for agents:** Login is blocked until an admin approves the application. Attempting to log in with a `pending` agent account returns `401` with message `"Your account is not yet approved. Please contact customer care."`
 
 ---
 
 ## Endpoints
 
-### 1. Register
+### POST /api/v1/auth/register
 
-**Endpoint:** `POST /api/v1/auth/register`
+Creates a new user account directly. For agents, prefer `POST /agent/apply` which also creates the agent profile.
 
-**Auth required:** No
-
-**Description:** Creates a new user account. For agents, registration via this endpoint creates a `pending` agent — the preferred agent flow is `POST /agent/apply` (which also creates a profile and uploads CV). This endpoint is used for direct admin-created accounts or future buyer/company self-registration.
-
-**Request Body (JSON):**
+**Body:**
 
 ```json
 {
@@ -43,285 +28,141 @@ All responses follow the global format:
   "email": "fatima@example.com",
   "phone": "08098765432",
   "password": "SecurePass@123",
-  "role": "agent"
+  "role": "buyer"
 }
 ```
 
-| Field        | Type   | Required | Notes                                                         |
-| ------------ | ------ | -------- | ------------------------------------------------------------- |
-| `first_name` | string | Yes      | Min 2 characters                                              |
-| `last_name`  | string | Yes      | Min 2 characters                                              |
-| `email`      | string | Yes      | Valid email, case-insensitive                                 |
-| `phone`      | string | No       | Min 10 digits                                                 |
-| `password`   | string | Yes      | Min 8 characters                                              |
-| `role`       | string | No       | `admin` \| `agent` \| `buyer` \| `company` (default: `agent`) |
+| Field        | Required | Notes                                                   |
+| ------------ | -------- | ------------------------------------------------------- |
+| `first_name` | Yes      | Min 2 chars                                             |
+| `last_name`  | Yes      | Min 2 chars                                             |
+| `email`      | Yes      | Valid email, case-insensitive                           |
+| `phone`      | No       | Min 10 digits                                           |
+| `password`   | Yes      | Min 8 chars                                             |
+| `role`       | No       | `admin \| agent \| buyer \| company` (default: `agent`) |
 
-**Successful Response (201 Created):**
+**Response (201):**
 
 ```json
 {
-  "statusCode": 201,
-  "message": "Registration successful",
   "data": {
-    "user": {
-      "id": 7,
-      "first_name": "Fatima",
-      "last_name": "Bello",
-      "email": "fatima@example.com",
-      "phone": "08098765432",
-      "role": "agent",
-      "is_email_verified": false,
-      "created_at": "2026-04-02T10:00:00.000Z"
-    },
-    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-    "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
+    "user": { "id": 7, "email": "fatima@example.com", "role": "buyer" },
+    "accessToken": "eyJhbGci...",
+    "refreshToken": "eyJhbGci..."
   }
 }
 ```
 
-**Error Responses:**
-
-```json
-// 400 — Validation failed
-{
-  "statusCode": 400,
-  "message": "Validation failed",
-  "errors": [
-    { "field": "email", "message": "Invalid email address" },
-    { "field": "password", "message": "Password must be at least 8 characters" }
-  ]
-}
-
-// 409 — Email already registered
-{
-  "statusCode": 409,
-  "message": "Email already registered"
-}
-```
+**Errors:** `400` validation | `409` email already registered
 
 ---
 
-### 2. Login
+### POST /api/v1/auth/login
 
-**Endpoint:** `POST /api/v1/auth/login`
-
-**Auth required:** No
-
-**Description:** Authenticates a user with email and password. Returns both access and refresh tokens. The refresh token is hashed and stored in the database for token rotation.
-
-**Request Body (JSON):**
+**Body:**
 
 ```json
-{
-  "email": "fatima@example.com",
-  "password": "SecurePass@123"
-}
+{ "email": "fatima@example.com", "password": "SecurePass@123" }
 ```
 
-**Successful Response (200 OK):**
+**Response (200):**
 
 ```json
 {
-  "statusCode": 200,
-  "message": "Login successful",
   "data": {
-    "user": {
-      "id": 7,
-      "first_name": "Fatima",
-      "last_name": "Bello",
-      "email": "fatima@example.com",
-      "role": "agent",
-      "is_email_verified": false
-    },
-    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-    "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
+    "user": { "id": 7, "first_name": "Fatima", "role": "buyer" },
+    "accessToken": "eyJhbGci...",
+    "refreshToken": "eyJhbGci..."
   }
 }
 ```
 
-**Error Responses:**
+**Errors:**
 
-```json
-// 401 — Wrong credentials
-{
-  "statusCode": 401,
-  "message": "Invalid credentials"
-}
-```
+- `401` — wrong credentials: `"Invalid credentials"`
+- `401` — agent not approved: `"Your account is not yet approved. Please contact customer care."`
 
 ---
 
-### 3. Refresh Tokens
+### POST /api/v1/auth/refresh
 
-**Endpoint:** `POST /api/v1/auth/refresh`
+Rotates tokens. Old refresh token is invalidated.
 
-**Auth required:** Yes — send Refresh token
+**Header:** `Authorization: Refresh <refreshToken>`
 
-**Description:** Issues a new pair of access + refresh tokens. The old refresh token is invalidated (rotation). Send the refresh token in the `Authorization` header with the `Refresh` prefix (not `Bearer`).
-
-**Headers:**
-
-```
-Authorization: Refresh <refreshToken>
-```
-
-**Successful Response (200 OK):**
+**Response (200):**
 
 ```json
 {
-  "statusCode": 200,
-  "message": "Tokens refreshed",
   "data": {
-    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-    "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
+    "accessToken": "eyJhbGci...",
+    "refreshToken": "eyJhbGci..."
   }
 }
 ```
 
-**Error Responses:**
-
-```json
-// 401 — Invalid or expired refresh token
-{
-  "statusCode": 401,
-  "message": "Invalid or expired refresh token"
-}
-
-// 401 — Token already used (rotation violation)
-{
-  "statusCode": 401,
-  "message": "Access denied"
-}
-```
+**Errors:** `401` invalid/expired | `401` rotation violation (`"Access denied"`)
 
 ---
 
-### 4. Logout
+### POST /api/v1/auth/logout
 
-**Endpoint:** `POST /api/v1/auth/logout`
+Invalidates the stored refresh token. Access token naturally expires after 15 minutes.
 
-**Auth required:** Yes — Bearer access token
+**Header:** `Authorization: Bearer <accessToken>`
 
-**Description:** Invalidates the user's refresh token in the database. The access token remains valid until it expires naturally (15 minutes). After logout, calls using the old refresh token will return 401.
-
-**Headers:**
-
-```
-Authorization: Bearer <accessToken>
-```
-
-**Successful Response (200 OK):**
-
-```json
-{
-  "statusCode": 200,
-  "message": "Logged out successfully",
-  "data": null
-}
-```
+**Response (200):** `{ "data": null, "message": "Logged out successfully" }`
 
 ---
 
-### 5. Forgot Password
+### POST /api/v1/auth/forgot-password
 
-**Endpoint:** `POST /api/v1/auth/forgot-password`
+Sends a password reset email. Always returns success (prevents email enumeration).
 
-**Auth required:** No
-
-**Description:** Initiates password reset. If the email exists, a reset token is generated and emailed to the user with a link. The token expires in **1 hour**. Returns the same response whether the email exists or not (prevents email enumeration).
-
-**Request Body (JSON):**
-
-```json
-{
-  "email": "fatima@example.com"
-}
-```
-
-**Successful Response (200 OK):**
-
-```json
-{
-  "statusCode": 200,
-  "message": "Password reset email sent",
-  "data": null
-}
-```
+**Body:** `{ "email": "fatima@example.com" }`
 
 ---
 
-### 6. Reset Password
+### POST /api/v1/auth/reset-password
 
-**Endpoint:** `POST /api/v1/auth/reset-password`
+Consumes a single-use reset token and sets a new password.
 
-**Auth required:** No
-
-**Description:** Consumes the password reset token (from the email link) and sets a new password. The token is single-use and deleted after success.
-
-**Request Body (JSON):**
+**Body:**
 
 ```json
-{
-  "token": "a3f8c2d1e9b7...",
-  "password": "NewSecurePass@456"
-}
+{ "token": "a3f8c2d1e9b7...", "password": "NewSecurePass@456" }
 ```
 
-| Field      | Type   | Required | Notes                     |
-| ---------- | ------ | -------- | ------------------------- |
-| `token`    | string | Yes      | From the reset email link |
-| `password` | string | Yes      | Min 8 characters          |
-
-**Successful Response (200 OK):**
-
-```json
-{
-  "statusCode": 200,
-  "message": "Password reset successful",
-  "data": null
-}
-```
-
-**Error Responses:**
-
-```json
-// 401 — Token invalid or expired
-{
-  "statusCode": 401,
-  "message": "Invalid or expired token"
-}
-```
+**Errors:** `401` invalid or expired token
 
 ---
 
-## Using Tokens in Requests
+## Using Tokens
 
 ```
 # Access protected routes
-Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+Authorization: Bearer eyJhbGci...
 
-# Refresh tokens (token rotation)
-Authorization: Refresh eyJhbGciOiJIUzI1NiIs...
+# Refresh token rotation
+Authorization: Refresh eyJhbGci...
 ```
 
-The `role` field inside the JWT payload determines what routes the user can access:
-
-| Role      | Access                                 |
-| --------- | -------------------------------------- |
-| `admin`   | All `/admin/*` routes                  |
-| `agent`   | All `/agent/*` routes (after approval) |
-| `buyer`   | `/buyer/*` routes (when built)         |
-| `company` | `/company/*` routes (when built)       |
+| Role      | Access                                       |
+| --------- | -------------------------------------------- |
+| `admin`   | All `/admin/*` routes                        |
+| `agent`   | All `/agent/*` routes (after approval + KYC) |
+| `buyer`   | `/buyer/*` routes                            |
+| `company` | `/company/*` routes                          |
 
 ---
 
-## JWT Payload Structure
+## JWT Payload
 
 ```json
 {
   "sub": 7,
   "email": "fatima@example.com",
-  "role": "agent",
+  "role": "buyer",
   "iat": 1743588000,
   "exp": 1743588900
 }
@@ -329,10 +170,10 @@ The `role` field inside the JWT payload determines what routes the user can acce
 
 ---
 
-## Token Expiry Reference
+## Token Reference
 
-| Token                | Default TTL | Configurable via                 |
-| -------------------- | ----------- | -------------------------------- |
-| Access Token         | 15 minutes  | `ACCESS_TOKEN_EXPIRY` in `.env`  |
-| Refresh Token        | 7 days      | `REFRESH_TOKEN_EXPIRY` in `.env` |
-| Password Reset Token | 1 hour      | Hardcoded in `auth.service.ts`   |
+| Token                | Default TTL | Env variable           |
+| -------------------- | ----------- | ---------------------- |
+| Access Token         | 15 minutes  | `ACCESS_TOKEN_EXPIRY`  |
+| Refresh Token        | 7 days      | `REFRESH_TOKEN_EXPIRY` |
+| Password Reset Token | 1 hour      | hardcoded              |

@@ -2,54 +2,44 @@
 
 ## Overview
 
-The Admin module provides full platform oversight: viewing the dashboard stats, managing agent applications (approve/reject), setting agent targets, viewing all contact leads, and marking commissions as paid.
+The Admin module provides full platform oversight: dashboard stats, agent management (approve/reject/suspend/KYC), buyer management, stock & inventory management, leads, and commission payouts.
 
 **All admin routes require:**
 
-- A valid `Authorization: Bearer <accessToken>` header
-- The authenticated user must have `role: admin`
+- `Authorization: Bearer <accessToken>` header
+- Authenticated user must have `role: admin`
 
-Any request without a valid admin token returns `401 Unauthorized` or `403 Forbidden`.
+Returns `401 Unauthorized` without a valid token, `403 Forbidden` for wrong role.
 
 ---
 
 ## Admin Login
 
-Admins use the shared auth endpoint. See [auth.md](./auth.md).
-
-**Endpoint:** `POST /api/v1/auth/login`
+Use the shared auth endpoint. See [auth.md](./auth.md).
 
 ```json
-{
-  "email": "admin@debridgers.com",
-  "password": "Admin@2026!"
-}
+POST /api/v1/auth/login
+{ "email": "admin@debridgers.com", "password": "Admin@2026!" }
 ```
 
-Default admin credentials are set via `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env` and seeded with `pnpm db:seed`.
+Default credentials set via `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env`, seeded with `pnpm db:seed`.
 
 ---
 
-## Endpoints
+## Dashboard
 
-### 1. Dashboard Stats
+### GET /api/v1/admin/dashboard
 
-**Endpoint:** `GET /api/v1/admin/dashboard`
-
-**Auth required:** Yes — role: `admin`
-
-**Description:** Returns a high-level summary of platform activity — agent counts, pending items, total sales, and lead volume.
-
-**Successful Response (200 OK):**
+Returns platform-wide summary stats.
 
 ```json
 {
-  "statusCode": 200,
-  "message": "Dashboard stats retrieved",
   "data": {
     "total_agents": 12,
     "pending_agents": 3,
-    "total_sales": "1250000.00",
+    "total_buyers": 87,
+    "total_orders": 204,
+    "total_revenue": "15600000.00",
     "pending_commissions": "87500.00",
     "total_leads": 45
   }
@@ -58,32 +48,14 @@ Default admin credentials are set via `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.en
 
 ---
 
-### 2. List All Agents
+## Agents
 
-**Endpoint:** `GET /api/v1/admin/agents`
+### GET /api/v1/admin/agents
 
-**Auth required:** Yes — role: `admin`
-
-**Description:** Returns all agents with their profile details, ordered by newest application first. Optionally filter by status.
-
-**Query Parameters:**
-
-| Param    | Type   | Required | Options                               |
-| -------- | ------ | -------- | ------------------------------------- |
-| `status` | string | No       | `pending` \| `approved` \| `rejected` |
-
-**Example:**
-
-```
-GET /api/v1/admin/agents?status=pending
-```
-
-**Successful Response (200 OK):**
+Returns all agents. Filter by status with `?status=pending|approved|rejected|suspended`.
 
 ```json
 {
-  "statusCode": 200,
-  "message": "Agents retrieved",
   "data": [
     {
       "id": 5,
@@ -92,10 +64,11 @@ GET /api/v1/admin/agents?status=pending
       "email": "amina@example.com",
       "phone": "08012345678",
       "status": "pending",
-      "target": 0,
-      "cv_url": "https://res.cloudinary.com/drk3myhz2/...",
-      "address": "12 Barnawa Road, Kaduna",
-      "admin_notes": null,
+      "state": "Kaduna",
+      "lga": "Kaduna North",
+      "is_state_manager": false,
+      "referral_buyer_code": null,
+      "referral_agent_code": null,
       "applied_at": "2026-04-02T08:30:00.000Z"
     }
   ]
@@ -104,122 +77,116 @@ GET /api/v1/admin/agents?status=pending
 
 ---
 
-### 3. Approve or Reject an Agent
+### GET /api/v1/admin/agents/:id
 
-**Endpoint:** `PATCH /api/v1/admin/agents/:id/status`
-
-**Auth required:** Yes — role: `admin`
-
-**Description:** Updates an agent's application status. On **approval**, a new temporary password is generated and emailed to the agent. On **rejection**, a rejection email is sent with the optional reason.
-
-**URL Parameter:**
-
-- `:id` — the agent's user ID (integer)
-
-**Request Body (JSON):**
+Returns a single agent's full profile including wallet and total confirmed commissions.
 
 ```json
 {
-  "status": "approved",
-  "admin_notes": "Great profile, approved for Kaduna North zone"
-}
-```
-
-| Field         | Type   | Required | Options                                        |
-| ------------- | ------ | -------- | ---------------------------------------------- |
-| `status`      | string | Yes      | `approved` \| `rejected`                       |
-| `admin_notes` | string | No       | Max 500 characters. Sent to agent on rejection |
-
-**Successful Response — Approved (200 OK):**
-
-```json
-{
-  "statusCode": 200,
-  "message": "Agent approved successfully",
-  "data": null
-}
-```
-
-The agent receives an email containing their temporary password.
-
-**Successful Response — Rejected (200 OK):**
-
-```json
-{
-  "statusCode": 200,
-  "message": "Agent rejected successfully",
-  "data": null
-}
-```
-
-**Error Responses:**
-
-```json
-// 404 — Agent not found
-{ "statusCode": 404, "message": "Agent not found" }
-
-// 400 — Invalid status value
-{ "statusCode": 400, "message": "Validation failed", "errors": [...] }
-```
-
----
-
-### 4. Set Agent Sales Target
-
-**Endpoint:** `PATCH /api/v1/admin/agents/:id/target`
-
-**Auth required:** Yes — role: `admin`
-
-**Description:** Sets or updates the monthly sales target (number of pages) for a specific agent.
-
-**URL Parameter:**
-
-- `:id` — the agent's user ID
-
-**Request Body (JSON):**
-
-```json
-{
-  "target": 20
-}
-```
-
-**Successful Response (200 OK):**
-
-```json
-{
-  "statusCode": 200,
-  "message": "Target updated",
   "data": {
-    "agentId": 5,
-    "target": 20
+    "id": 5,
+    "first_name": "Amina",
+    "status": "approved",
+    "kyc_status": "approved",
+    "id_type": "NIN",
+    "id_front_url": "/tmp/uploads/id_front.jpg",
+    "id_selfie_url": "/tmp/uploads/id_selfie.jpg",
+    "bank_name": "GTBank",
+    "bank_account_number": "0123456789",
+    "bank_account_name": "Amina Yusuf",
+    "referral_buyer_code": "BUYER-A3F2B1C9",
+    "referral_agent_code": "AGENT-A3F2B1C9",
+    "is_state_manager": false,
+    "wallet": {
+      "available_balance": 500000,
+      "pending_balance": 0
+    },
+    "total_confirmed_commissions": "150000.00"
   }
 }
 ```
 
 ---
 
-### 5. View All Contact Leads
+### PATCH /api/v1/admin/agents/:id/status
 
-**Endpoint:** `GET /api/v1/admin/leads`
+Approve or reject an agent application.
 
-**Auth required:** Yes — role: `admin`
+**Body:**
 
-**Description:** Returns all submissions from the landing page contact form, ordered by newest first. Use this to follow up with potential customers or partners.
+```json
+{ "status": "approved", "admin_notes": "Great profile" }
+```
 
-**Successful Response (200 OK):**
+| Field         | Type   | Required | Values                   |
+| ------------- | ------ | -------- | ------------------------ |
+| `status`      | string | Yes      | `approved` \| `rejected` |
+| `admin_notes` | string | No       | Max 500 chars            |
+
+On **approval**:
+
+- Unique referral codes generated (`BUYER-XXXX`, `AGENT-XXXX`)
+- Wallet created for the agent
+- Approval email sent
+
+On **rejection**: rejection email sent with `admin_notes` as reason.
+
+---
+
+### PATCH /api/v1/admin/agents/:id/suspend
+
+Suspends an approved agent (sets status to `suspended`). Suspended agents cannot log in.
+
+---
+
+### PATCH /api/v1/admin/agents/:id/unsuspend
+
+Restores a suspended agent back to `approved`.
+
+---
+
+### PATCH /api/v1/admin/agents/:id/promote-manager
+
+Promotes an approved agent to State Manager for a given state.
+
+**Body:**
+
+```json
+{ "managed_state": "Kaduna" }
+```
+
+State managers receive a 2% monthly override commission on all orders in their managed state.
+
+---
+
+### PATCH /api/v1/admin/agents/:id/target
+
+Sets the agent's monthly sales target (number of modu packs).
+
+**Body:** `{ "target": 50 }` (sent as JSON integer)
+
+---
+
+## KYC
+
+### GET /api/v1/admin/kyc
+
+Returns all agents with `kyc_status: submitted`, awaiting review.
 
 ```json
 {
-  "statusCode": 200,
-  "message": "Leads retrieved",
   "data": [
     {
-      "id": 1,
-      "full_name": "Chukwudi Obi",
-      "email": "chukwudi@example.com",
-      "message": "I'd like to order weekly for my restaurant.",
-      "created_at": "2026-04-01T15:00:00.000Z"
+      "id": 5,
+      "first_name": "Amina",
+      "email": "amina@example.com",
+      "kyc_status": "submitted",
+      "id_type": "NIN",
+      "id_front_url": "/tmp/uploads/...",
+      "id_selfie_url": "/tmp/uploads/...",
+      "bank_name": "GTBank",
+      "bank_account_number": "0123456789",
+      "bank_account_name": "Amina Yusuf"
     }
   ]
 }
@@ -227,83 +194,150 @@ The agent receives an email containing their temporary password.
 
 ---
 
-### 6. Mark Commission as Paid
+### PATCH /api/v1/admin/agents/:id/kyc
 
-**Endpoint:** `PATCH /api/v1/admin/commissions/:id/paid`
+Approve or reject an agent's KYC submission. Only works when `kyc_status` is `submitted`.
 
-**Auth required:** Yes — role: `admin`
-
-**Description:** Marks a commission record as paid and records the payment timestamp. Use this after manually transferring the agent's share.
-
-**URL Parameter:**
-
-- `:id` — commission ID (integer)
-
-**Successful Response (200 OK):**
+**Body:**
 
 ```json
-{
-  "statusCode": 200,
-  "message": "Commission marked as paid",
-  "data": null
-}
+{ "action": "approved" }
 ```
+
+```json
+{ "action": "rejected", "reason": "Selfie photo unclear, please resubmit" }
+```
+
+| Field    | Type   | Required | Values                   |
+| -------- | ------ | -------- | ------------------------ |
+| `action` | string | Yes      | `approved` \| `rejected` |
+| `reason` | string | No       | Max 500 chars            |
+
+After KYC approval, the agent can request stock and process orders.
 
 ---
 
-### 7. Create Paystack Subaccount for Agent
+## Buyers
 
-**Endpoint:** `POST /api/v1/payment/subaccount/:agentId`
+### GET /api/v1/admin/buyers
 
-**Auth required:** Yes — role: `admin`
+Returns all registered buyers.
 
-**Description:** Creates a Paystack subaccount for an approved agent. Once created, future payments to that agent will be split automatically via Paystack — 30% to agent, 70% to Debridgers. Run this once per agent after approval.
+### GET /api/v1/admin/buyers/:id
 
-**URL Parameter:**
+Returns a single buyer with their full order history.
 
-- `:agentId` — the agent's user ID
+### PATCH /api/v1/admin/buyers/:id/block
 
-**Successful Response (201 Created):**
+Blocks a buyer — prevents them from placing orders.
+
+### PATCH /api/v1/admin/buyers/:id/unblock
+
+Unblocks a buyer.
+
+---
+
+## Stock & Inventory
+
+### GET /api/v1/admin/stock/requests
+
+Returns all agent stock requests. Filter with `?status=pending|fulfilled|cancelled`.
 
 ```json
 {
-  "statusCode": 201,
-  "message": "Subaccount created",
+  "data": [
+    {
+      "id": 1,
+      "agent_id": 5,
+      "agent_name": "Amina",
+      "agent_last_name": "Yusuf",
+      "quantity": 10,
+      "status": "pending",
+      "amount_to_remit": 1300000,
+      "amount_remitted": 0,
+      "fulfilled_at": null,
+      "created_at": "2026-04-07T09:00:00.000Z"
+    }
+  ]
+}
+```
+
+### PATCH /api/v1/admin/stock/requests/:id/fulfil
+
+Marks a pending stock request as fulfilled (stock dispatched to agent).
+
+### GET /api/v1/admin/stock/inventory
+
+Returns warehouse inventory stats.
+
+```json
+{
   "data": {
-    "subaccount_code": "ACCT_8f4s1eq7ml6rlzj"
+    "total_received": 500,
+    "total_dispatched": 120,
+    "current_stock": 380
   }
 }
 ```
 
-**Note:** Agent's bank account details must be collected separately and passed to Paystack manually or via an extended onboarding flow.
+### POST /api/v1/admin/stock/inventory
+
+Records stock received from supplier.
+
+**Body:**
+
+```json
+{
+  "quantity": 200,
+  "source": "Farm Direct Ltd",
+  "notes": "April batch delivery"
+}
+```
+
+| Field      | Type   | Required |
+| ---------- | ------ | -------- |
+| `quantity` | number | Yes      |
+| `source`   | string | Yes      |
+| `notes`    | string | No       |
 
 ---
 
-## Admin Workflow Summary
+## Leads
+
+### GET /api/v1/admin/leads
+
+Returns all contact form submissions from the landing page.
+
+---
+
+## Commissions
+
+### PATCH /api/v1/admin/commissions/:id/paid
+
+Marks a commission as paid after manual bank transfer to the agent.
+
+---
+
+## Admin Workflow
 
 ```
-1. New agent applies → POST /agent/apply (public)
-         ↓
-2. Admin reviews: GET /admin/agents?status=pending
-         ↓
-3. Admin approves/rejects: PATCH /admin/agents/:id/status
-         ↓ (if approved)
-4. Admin creates Paystack subaccount: POST /payment/subaccount/:agentId
-         ↓
-5. Admin sets sales target: PATCH /admin/agents/:id/target
-         ↓
-6. Agent sells, submits report: POST /agent/report
-         ↓
-7. Admin reviews commissions: GET /admin/dashboard (pending_commissions)
-         ↓
-8. Admin pays agent + marks paid: PATCH /admin/commissions/:id/paid
+1. Agent applies          → POST /agent/apply (public)
+2. Admin reviews          → GET /admin/agents?status=pending
+3. Admin approves         → PATCH /admin/agents/:id/status { status: "approved" }
+4. Agent submits KYC      → POST /agent/kyc (agent-side)
+5. Admin reviews KYC      → GET /admin/kyc → PATCH /admin/agents/:id/kyc { action: "approved" }
+6. Stock requested        → GET /admin/stock/requests?status=pending
+7. Admin fulfils          → PATCH /admin/stock/requests/:id/fulfil
+8. Agent remits payment   → POST /agent/stock/remit (agent-side)
+9. Monthly commissions    → Auto-calculated by cron on 1st of month
+10. Admin pays out        → PATCH /admin/commissions/:id/paid
 ```
 
 ---
 
 ## Security Notes
 
-- Admin routes are double-guarded: `AuthGuard` (valid JWT) + `RolesGuard` (`role === 'admin'`)
+- Admin routes are double-guarded: `AuthGuard` + `RolesGuard` (`role === 'admin'`)
+- There is no public admin registration — admins are created via seeder or database
+- Admin JWTs expire in 15 minutes — refresh using `POST /auth/refresh`
 - The seeded admin password should be changed immediately after first login in production
-- Admin JWTs expire in `15m` — refresh using `POST /auth/refresh` with the Refresh token
-- There is no public admin registration endpoint — admins are created via the seeder or directly in the database

@@ -101,27 +101,16 @@ export class PaymentService {
       if (agentId) {
         const commissionAmount = amount * this.commissionRate;
 
-        // Find last report for this agent to link commission
-        const [lastReport] = await this.db
-          .select()
-          .from(schema.sales_reports)
-          .where(eq(schema.sales_reports.agent_id, agentId))
-          .orderBy(schema.sales_reports.created_at)
-          .limit(1);
-
-        if (lastReport) {
-          await this.db.insert(schema.commissions).values({
-            agent_id: agentId,
-            report_id: lastReport.id,
-            amount: String(commissionAmount),
-            rate: String(this.commissionRate),
-            status: "paid",
-            paid_at: new Date(),
-          });
-          this.logger.log(
-            `Commission ₦${commissionAmount} recorded for agent ${agentId}`,
-          );
-        }
+        await this.db.insert(schema.commissions).values({
+          agent_id: agentId,
+          type: "direct",
+          amount: String(commissionAmount),
+          status: "paid",
+          paid_at: new Date(),
+        });
+        this.logger.log(
+          `Commission ₦${commissionAmount} recorded for agent ${agentId}`,
+        );
       }
     }
 

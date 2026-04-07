@@ -82,6 +82,21 @@ export class AuthService {
     const valid = await bcrypt.compare(dto.password, user.password);
     if (!valid) throw new UnauthorizedException("Invalid credentials");
 
+    // Block unapproved agents from logging in
+    if (user.role === "agent") {
+      const [profile] = await this.db
+        .select({ status: schema.agent_profiles.status })
+        .from(schema.agent_profiles)
+        .where(eq(schema.agent_profiles.user_id, user.id))
+        .limit(1);
+
+      if (profile && profile.status !== "approved") {
+        throw new UnauthorizedException(
+          "Your account is not yet approved. Please contact customer care.",
+        );
+      }
+    }
+
     const tokens = await this.generateTokens(user);
     await this.saveRefreshToken(user.id, tokens.refreshToken);
 

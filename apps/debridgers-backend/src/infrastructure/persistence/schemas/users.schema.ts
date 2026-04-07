@@ -3,6 +3,7 @@ import {
   pgTable,
   pgEnum,
   serial,
+  integer,
   boolean,
   uniqueIndex,
   text,
@@ -30,6 +31,13 @@ export const users = pgTable(
     password: varchar("password", { length: 256 }),
     role: userRoleEnum().notNull().default("agent"),
     is_email_verified: boolean().notNull().default(false),
+    is_phone_verified: boolean().notNull().default(false),
+    is_blocked: boolean().notNull().default(false),
+    // zone assigned from delivery address (buyers) or LGA (agents)
+    zone_id: integer(),
+    // agent who referred this buyer (permanent link)
+    referred_by_agent_id: integer(),
+    mailtrap_contact_id: text(),
     refresh_token: text(),
     ...timestamps,
   },
