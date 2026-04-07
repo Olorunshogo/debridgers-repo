@@ -15,7 +15,9 @@ export * from "./components/textarea-input";
 export * from "./components/dash-select";
 
 // === Other components
+export * from "./components/app-logo";
 export * from "./components/button";
 export * from "./components/whatsapp-button";
 export * from "./components/submit-button";
-export * from "./components/app-logo";
+export * from "./components/button-primary";
+export * from "./components/button-secondary";

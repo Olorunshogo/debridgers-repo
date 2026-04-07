@@ -9,6 +9,8 @@ import {
   MessageCircle,
   HelpCircle,
   type LucideIcon,
+  ClipboardPenLine,
+  Trophy,
 } from "lucide-react";
 
 export interface NavItem {
@@ -78,14 +80,19 @@ const agentNavGroups: NavGroup[] = [
     items: [
       { label: "Overview", icon: LayoutDashboard, href: "/agent-dashboard" },
       {
-        label: "Sales Reports",
-        icon: ClipboardList,
-        href: "/agent-dashboard/reports",
+        label: "Request Stock",
+        icon: ShoppingCart,
+        href: "/agent-dashboard/request-stock",
       },
       {
-        label: "Commissions",
-        icon: Wallet,
-        href: "/agent-dashboard/commissions",
+        label: "Daily Report",
+        icon: ClipboardPenLine,
+        href: "/agent-dashboard/daily-report",
+      },
+      {
+        label: "Leader board",
+        icon: Trophy,
+        href: "/agent-dashboard/leaderboard",
       },
     ],
   },
@@ -93,12 +100,17 @@ const agentNavGroups: NavGroup[] = [
     label: "ACCOUNT",
     items: [
       {
+        label: "Wallet & Payment",
+        icon: Wallet,
+        href: "/agent-dashboard/wallet",
+      },
+      {
         label: "Notification",
         icon: Bell,
         href: "/agent-dashboard/notification",
       },
       {
-        label: "Profile & Settings",
+        label: "Profile & Address",
         icon: User,
         href: "/agent-dashboard/settings",
       },
