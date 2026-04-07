@@ -10,7 +10,6 @@ import {
   Post,
   Query,
   UseGuards,
-  UsePipes,
 } from "@nestjs/common";
 import { AdminService } from "./admin.service";
 import { AuthGuard } from "../auth/guards/auth.guard";
@@ -63,10 +62,10 @@ export class AdminController {
 
   @Patch("agents/:id/status")
   @HttpCode(HttpStatus.OK)
-  @UsePipes(new ZodValidationPipe(updateAgentStatusSchema))
   updateAgentStatus(
     @Param("id", ParseIntPipe) id: number,
-    @Body() dto: UpdateAgentStatusDto,
+    @Body(new ZodValidationPipe(updateAgentStatusSchema))
+    dto: UpdateAgentStatusDto,
   ) {
     return this.adminService.updateAgentStatus(id, dto);
   }
@@ -85,10 +84,9 @@ export class AdminController {
 
   @Patch("agents/:id/promote-manager")
   @HttpCode(HttpStatus.OK)
-  @UsePipes(new ZodValidationPipe(promoteManagerSchema))
   promoteToStateManager(
     @Param("id", ParseIntPipe) id: number,
-    @Body() dto: PromoteManagerDto,
+    @Body(new ZodValidationPipe(promoteManagerSchema)) dto: PromoteManagerDto,
   ) {
     return this.adminService.promoteToStateManager(id, dto);
   }
@@ -151,9 +149,8 @@ export class AdminController {
 
   @Post("stock/inventory")
   @HttpCode(HttpStatus.CREATED)
-  @UsePipes(new ZodValidationPipe(recordInventorySchema))
   recordInventory(
-    @Body() dto: RecordInventoryDto,
+    @Body(new ZodValidationPipe(recordInventorySchema)) dto: RecordInventoryDto,
     @CurrentUser() user: JwtPayload,
   ) {
     return this.adminService.recordInventoryReceived(
@@ -180,8 +177,10 @@ export class AdminController {
 
   @Patch("agents/:id/kyc")
   @HttpCode(HttpStatus.OK)
-  @UsePipes(new ZodValidationPipe(reviewKycSchema))
-  reviewKyc(@Param("id", ParseIntPipe) id: number, @Body() dto: ReviewKycDto) {
+  reviewKyc(
+    @Param("id", ParseIntPipe) id: number,
+    @Body(new ZodValidationPipe(reviewKycSchema)) dto: ReviewKycDto,
+  ) {
     return this.adminService.reviewKyc(id, dto);
   }
 
