@@ -60,10 +60,40 @@ const countryOptions = [
   { value: "GB", label: "United Kingdom" },
 ];
 
+// === Section
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="flex flex-col gap-5 rounded-2xl border p-6"
+      style={{
+        borderColor: "var(--border-gray)",
+        backgroundColor: "var(--white)",
+      }}
+    >
+      <h3
+        className="font-syne border-b pb-3 text-lg font-semibold"
+        style={{
+          borderColor: "var(--border-gray)",
+          color: "var(--heading-colour)",
+        }}
+      >
+        {title}
+      </h3>
+      {children}
+    </div>
+  );
+}
+
 export default function BuyerSettings() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [avatarPreview, setAvatarPreview] = useState(
-    "/images/avatar-placeholder.jpg",
+    "/images/settings-avatar.jpg",
   );
   const [form, setForm] = useState<SettingsForm>({
     userName: "Abdul-Malik",
@@ -126,7 +156,7 @@ export default function BuyerSettings() {
 
     setLoading(true);
     try {
-      // ── PRODUCTION ──────────────────────────────────────────────────────────
+      // === PRODUCTION
       // const fd = new FormData();
       // Object.entries(form).forEach(([k, v]) => fd.append(k, String(v)));
       // const res = await fetch(`${BASE_BACKEND_URL}/buyer/settings`, {
@@ -136,7 +166,7 @@ export default function BuyerSettings() {
       // });
       // if (!res.ok) throw new Error("Save failed");
 
-      // ── MOCK ────────────────────────────────────────────────────────────────
+      // === MOCK
       await new Promise<void>((r) => setTimeout(r, 900));
       setForm((p) => ({ ...p, oldPassword: "", newPassword: "" }));
       setSaved(true);
@@ -152,7 +182,7 @@ export default function BuyerSettings() {
     <form
       onSubmit={handleSubmit}
       noValidate
-      className="flex max-w-3xl flex-col gap-6"
+      className="mx-auto flex w-full max-w-[800px] flex-col gap-6"
     >
       {/* Success toast */}
       <AnimatePresence>
@@ -228,7 +258,7 @@ export default function BuyerSettings() {
 
       {/* Preference */}
       <Section title="Preference">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
           <DashSelectInput
             label="Currency"
             options={currencyOptions}
@@ -311,34 +341,5 @@ export default function BuyerSettings() {
         </SubmitButton>
       </div>
     </form>
-  );
-}
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      className="flex flex-col gap-5 rounded-2xl border p-6"
-      style={{
-        borderColor: "var(--border-gray)",
-        backgroundColor: "var(--white)",
-      }}
-    >
-      <h3
-        className="font-syne border-b pb-3 text-lg font-semibold"
-        style={{
-          borderColor: "var(--border-gray)",
-          color: "var(--heading-colour)",
-        }}
-      >
-        {title}
-      </h3>
-      {children}
-    </div>
   );
 }

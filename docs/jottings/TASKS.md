@@ -16,3 +16,38 @@
   - **logistics**
   - **farmers**
   - **employees**
+
+## Agents Onboarding System
+
+1. 🎯 Objective
+   Create a controlled onboarding system where:
+   Agents can register accounts
+   Accounts are reviewed by admin
+   Only approved agents gain access (login later)
+
+2. 🧩 System Overview
+   Registration → Pending → Admin Review → Approved → (Future: Login Access)
+
+3. 👤 Agent Registration (Frontend)
+
+Endpoint:
+POST /api/register-agent
+
+Request Payload:
+
+```json
+{
+  "firstName": "Amina",
+  "lastName": "Yusuf",
+  "email": "amina@gmail.com",
+  "phone": "08012345678",
+  "lga": "Kaduna North",
+  "address": "12 Barnawa Road, Kaduna",
+  "password": "securepassword"
+}
+```
+
+Agent Modal 10. 📩 User Feedback (Frontend UX)
+After Registration:
+Display:
+“Your application has been received and is under review. You will be notified once approved.”
