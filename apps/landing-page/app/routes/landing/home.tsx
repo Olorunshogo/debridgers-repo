@@ -408,7 +408,7 @@ export default function Home() {
               <AnimatePresence mode="sync">
                 {images.length > 0 && (
                   <motion.img
-                    key={currentIndex}
+                    key={`hero-img-${currentIndex}`}
                     src={images[currentIndex]}
                     alt=""
                     initial={{ x: "100%" }}
@@ -418,9 +418,9 @@ export default function Home() {
                     className="absolute inset-0 h-full w-full object-contain object-cover"
                   />
                 )}
-                <div className="absolute inset-0 h-full w-full bg-linear-to-b from-[40BF4F]/20 from-0% via-[#23682B]/70 via-23% to-[#061107] to-100%"></div>
-                <div className="absolute inset-0 h-full w-full bg-linear-to-b from-[40BF4F]/20 from-0% to-[#061107] to-100%"></div>
               </AnimatePresence>
+              <div className="absolute inset-0 h-full w-full bg-linear-to-b from-[40BF4F]/20 from-0% via-[#23682B]/70 via-23% to-[#061107] to-100%"></div>
+              <div className="absolute inset-0 h-full w-full bg-linear-to-b from-[40BF4F]/20 from-0% to-[#061107] to-100%"></div>
             </div>
 
             {/* Content Wrapper */}
@@ -749,13 +749,13 @@ export default function Home() {
       </section>
 
       {/* Partnership Section */}
-      <section
+      {/* <section
         id="partnership"
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative bg-[#F6F3F3]"
       >
         <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto w-full">
           <div className="gap-4xl grid lg:grid-cols-2">
-            {/* Left Content */}
+            {/* Left Content *
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -798,7 +798,7 @@ export default function Home() {
               </a>
             </motion.div>
 
-            {/* Right: Partner Card */}
+            {/* Right: Partner Card *
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -861,7 +861,7 @@ export default function Home() {
             </motion.div>
           </div>
         </div>
-      </section>
+      </section> */}
     </>
   );
 }
