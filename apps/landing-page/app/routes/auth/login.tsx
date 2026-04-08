@@ -11,6 +11,7 @@ import {
 import { BASE_BACKEND_URL } from "../../utils/api";
 import { decodeJwtPayload } from "../../utils/auth-cookies";
 import { redirectAfterAuth } from "../../utils/auth-redirect";
+import { storeTokens } from "../../lib/auth";
 import type { JwtPayload } from "../../types/auth";
 
 export function meta() {
@@ -33,7 +34,7 @@ export default function LoginPage() {
   const [form, setForm] = useState<LoginForm>({ email: "", password: "" });
   const [errors, setErrors] = useState<FormErrors>({});
   const [apiError, setApiError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   function handleChange(field: keyof LoginForm) {
     return (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,27 +60,24 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      // -- PRODUCTION --
-      // const res = await fetch(`${BASE_BACKEND_URL}/auth/login`, {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   credentials: "include",
-      //   body: JSON.stringify({ email: form.email, password: form.password }),
-      // });
-      // const json = await res.json();
-      // if (!res.ok) { setApiError(json.message ?? "Invalid email or password"); return; }
-      // const { accessToken } = json.data;
-      // const decoded = decodeJwtPayload<JwtPayload>(accessToken);
-      // redirectAfterAuth(navigate, decoded?.role ?? "buyer");
-
-      // -- MOCK --
-      await new Promise<void>((r) => setTimeout(r, 900));
-      const role = form.email.startsWith("agent")
-        ? "agent"
-        : form.email.startsWith("admin")
-          ? "admin"
-          : "buyer";
-      redirectAfterAuth(navigate, role);
+      const res = await fetch(`${BASE_BACKEND_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: form.email, password: form.password }),
+      });
+      const json = await res.json();
+      if (res.status === 401) {
+        setApiError("Invalid email or password.");
+        return;
+      }
+      if (!res.ok) {
+        setApiError(json.message ?? "Something went wrong. Please try again.");
+        return;
+      }
+      storeTokens(json.data.accessToken, json.data.refreshToken);
+      const decoded = decodeJwtPayload<JwtPayload>(json.data.accessToken);
+      redirectAfterAuth(navigate, decoded?.role ?? "buyer");
     } catch {
       setApiError("Network error. Please try again.");
     } finally {

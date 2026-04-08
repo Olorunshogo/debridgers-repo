@@ -19,6 +19,7 @@ export default [
     route("signup", "routes/auth/signup.tsx"),
     route("forgot-password", "routes/auth/forgot-password.tsx"),
     route("reset-password", "routes/auth/reset-password.tsx"),
+    route("verify-email", "routes/auth/verify-email.tsx"),
   ]),
 
   // === Buyer Dashboard
@@ -26,6 +27,7 @@ export default [
     route("buyer-dashboard", "routes/dashboards/buyer/overview.tsx"),
     route("buyer-dashboard/orders", "routes/dashboards/buyer/orders.tsx"),
     route("buyer-dashboard/shop", "routes/dashboards/buyer/shop.tsx"),
+    route("buyer-dashboard/wallet", "routes/dashboards/buyer/wallet.tsx"),
     route("buyer-dashboard/checkout", "routes/dashboards/buyer/checkout.tsx"),
     route(
       "buyer-dashboard/notification",
@@ -37,11 +39,19 @@ export default [
   // === Agent Dashboard
   layout("routes/dashboards/agent/layout.tsx", [
     route("agent-dashboard", "routes/dashboards/agent/overview.tsx"),
-    route("agent-dashboard/reports", "routes/dashboards/agent/reports.tsx"),
     route(
-      "agent-dashboard/commissions",
-      "routes/dashboards/agent/commissions.tsx",
+      "agent-dashboard/request-stock",
+      "routes/dashboards/agent/request-stock.tsx",
     ),
+    route(
+      "agent-dashboard/daily-report",
+      "routes/dashboards/agent/daily-report.tsx",
+    ),
+    route(
+      "agent-dashboard/leaderboard",
+      "routes/dashboards/agent/leaderboard.tsx",
+    ),
+    route("agent-dashboard/wallet", "routes/dashboards/agent/wallet.tsx"),
     route(
       "agent-dashboard/notification",
       "routes/dashboards/agent/notification.tsx",

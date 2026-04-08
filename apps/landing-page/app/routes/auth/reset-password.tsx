@@ -40,8 +40,8 @@ export default function ResetPasswordPage() {
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [apiError, setApiError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [done, setDone] = useState<boolean>(false);
 
   function handleChange(field: keyof ResetForm) {
     return (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,7 +74,7 @@ export default function ResetPasswordPage() {
 
     setLoading(true);
     try {
-      // ── PRODUCTION ──────────────────────────────────────────────────────────
+      // === PRODUCTION
       // const res = await fetch(`${BASE_BACKEND_URL}/auth/reset-password`, {
       //   method: "POST",
       //   headers: { "Content-Type": "application/json" },
@@ -87,7 +87,7 @@ export default function ResetPasswordPage() {
       // }
       // setDone(true);
 
-      // ── MOCK ────────────────────────────────────────────────────────────────
+      // === MOCK
       await new Promise<void>((r) => setTimeout(r, 900));
       setDone(true);
     } catch {
@@ -98,11 +98,11 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center px-6 py-12">
-      <div className="w-full max-w-md">
-        <div className="mb-8 flex justify-center">
+    <div className="flex min-h-screen w-full items-center justify-center bg-white px-6 py-12">
+      <div className="flex w-full max-w-[600px] flex-col gap-8">
+        <Link to="/" className="flex justify-center">
           <AppLogo />
-        </div>
+        </Link>
 
         <AnimatePresence mode="sync">
           {done ? (
