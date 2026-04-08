@@ -1,208 +1,373 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { ShoppingCart, CheckCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Minus, Plus, CheckCircle2 } from "lucide-react";
 
 export function meta() {
   return [{ title: "Request Stock | Debridgers" }];
 }
 
-interface StockRequest {
+// ── Types ─────────────────────────────────────────────────────────────────────
+type FulfilledStatus = "fulfilled" | "pending";
+
+interface PastRequest {
   id: string;
-  item: string;
-  quantity: number;
+  description: string;
   date: string;
-  status: "approved" | "pending" | "rejected";
+  status: FulfilledStatus;
 }
 
-const MOCK_REQUESTS: StockRequest[] = [
+// ── Mock data ─────────────────────────────────────────────────────────────────
+const MOCK_PAST_REQUESTS: PastRequest[] = [
   {
-    id: "s1",
-    item: "Debridgers Pages (Pack of 10)",
-    quantity: 5,
-    date: "Apr 4, 2026",
-    status: "approved",
+    id: "r1",
+    description: "10 bags of beans",
+    date: "Mar 26",
+    status: "fulfilled",
   },
   {
-    id: "s2",
-    item: "Debridgers Pages (Pack of 10)",
-    quantity: 3,
-    date: "Apr 2, 2026",
+    id: "r2",
+    description: "10 bags of beans",
+    date: "Mar 26",
+    status: "fulfilled",
+  },
+  {
+    id: "r3",
+    description: "10 bags of beans",
+    date: "Mar 26",
     status: "pending",
-  },
-  {
-    id: "s3",
-    item: "Debridgers Pages (Pack of 10)",
-    quantity: 8,
-    date: "Mar 30, 2026",
-    status: "approved",
   },
 ];
 
+const PRICE_PER_BAG = 10000;
+const COMMISSION_PER_BAG = 2000;
+
 const statusStyles: Record<
-  string,
+  FulfilledStatus,
   { bg: string; text: string; label: string }
 > = {
-  approved: {
-    bg: "var(--status-active-bg)",
-    text: "var(--status-active-text)",
-    label: "Approved",
+  fulfilled: {
+    bg: "var(--status-delivered-bg)",
+    text: "var(--status-delivered-text)",
+    label: "Fulfilled",
   },
-  pending: { bg: "#FEF3C7", text: "#92400E", label: "Pending" },
-  rejected: { bg: "#FEE2E2", text: "#991B1B", label: "Rejected" },
+  pending: {
+    bg: "var(--status-pending-bg)",
+    text: "var(--status-pending-text)",
+    label: "Pending",
+  },
 };
 
-export default function AgentRequestStockPage() {
-  const [submitted, setSubmitted] = useState(false);
-  const [quantity, setQuantity] = useState("");
+function fmt(n: number) {
+  return "₦" + n.toLocaleString();
+}
 
-  function handleSubmit(e: React.FormEvent) {
+// ── Page ──────────────────────────────────────────────────────────────────────
+export default function AgentRequestStockPage() {
+  const [bags, setBags] = useState(5);
+  const [deliveryAddress, setDeliveryAddress] = useState(
+    "12 Barnawa Close, off Rabah Road, Barnawa",
+  );
+  const [deliveryTime, setDeliveryTime] = useState("Morning (8am - 12pm)");
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  function decrement() {
+    setBags((b) => Math.max(1, b - 1));
+  }
+
+  function increment() {
+    setBags((b) => b + 1);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setLoading(true);
+
+    // ── PRODUCTION ────────────────────────────────────────────────────────────
+    // await fetch(`${BASE_BACKEND_URL}/agent/stock-request`, {
+    //   method: "POST",
+    //   credentials: "include",
+    //   headers: { "Content-Type": "application/json" },
+    //   body: JSON.stringify({ bags, deliveryAddress, deliveryTime }),
+    // });
+
+    // ── MOCK ──────────────────────────────────────────────────────────────────
+    await new Promise<void>((r) => setTimeout(r, 800));
+    setLoading(false);
     setSubmitted(true);
     setTimeout(() => setSubmitted(false), 3000);
-    setQuantity("");
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <ShoppingCart size={24} style={{ color: "var(--primary-color)" }} />
-        <div>
-          <h2
-            className="font-syne text-xl font-bold"
-            style={{ color: "var(--heading-colour)" }}
-          >
-            Request Stock
-          </h2>
-          <p className="text-sm" style={{ color: "var(--text-colour)" }}>
-            Request new stock from the admin
-          </p>
-        </div>
-      </div>
-
-      {/* Request form */}
+    <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+      {/* Left: form */}
       <div
-        className="rounded-2xl border p-5"
+        className="flex flex-col gap-6 rounded-2xl border p-6"
         style={{
           borderColor: "var(--border-gray)",
           backgroundColor: "var(--white)",
         }}
       >
         <h3
-          className="font-syne mb-4 font-semibold"
+          className="font-syne text-lg font-semibold"
           style={{ color: "var(--heading-colour)" }}
         >
-          New Stock Request
+          Request new stock
         </h3>
-        {submitted ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center gap-2 text-sm font-medium"
-            style={{ color: "var(--status-active-text)" }}
-          >
-            <CheckCircle size={18} />
-            Request submitted! Admin will review shortly.
-          </motion.div>
-        ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1">
-              <label
-                className="text-sm font-medium"
-                style={{ color: "var(--heading-colour)" }}
-              >
-                Item
-              </label>
-              <input
-                type="text"
-                value="Debridgers Pages (Pack of 10)"
-                readOnly
-                className="rounded-xl border px-4 py-2.5 text-sm"
-                style={{
-                  borderColor: "var(--border-gray)",
-                  color: "var(--text-colour)",
-                  backgroundColor: "var(--bg-light)",
-                }}
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label
-                className="text-sm font-medium"
-                style={{ color: "var(--heading-colour)" }}
-              >
-                Quantity (packs)
-              </label>
-              <input
-                type="number"
-                min="1"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                placeholder="e.g. 3"
-                required
-                className="rounded-xl border px-4 py-2.5 text-sm outline-none focus:ring-2"
-                style={{
-                  borderColor: "var(--border-gray)",
-                  color: "var(--heading-colour)",
-                  backgroundColor: "var(--bg-light)",
-                }}
-              />
-            </div>
-            <button
-              type="submit"
-              className="self-start rounded-full px-6 py-2.5 text-sm font-semibold transition-opacity hover:opacity-90"
-              style={{ backgroundColor: "var(--primary-color)", color: "#fff" }}
+
+        <AnimatePresence mode="wait">
+          {submitted ? (
+            <motion.div
+              key="success"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium"
+              style={{
+                backgroundColor: "var(--status-delivered-bg)",
+                color: "var(--status-delivered-text)",
+              }}
             >
-              Submit Request
-            </button>
-          </form>
-        )}
+              <CheckCircle2 size={18} />
+              Stock request submitted! Admin will review shortly.
+            </motion.div>
+          ) : (
+            <motion.form
+              key="form"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              onSubmit={handleSubmit}
+              className="flex flex-col gap-6"
+            >
+              {/* Bag stepper */}
+              <div className="flex flex-col items-center gap-3">
+                <p
+                  className="font-syne text-base font-semibold"
+                  style={{ color: "var(--heading-colour)" }}
+                >
+                  How many bags do you need?
+                </p>
+                <p className="text-sm" style={{ color: "var(--text-colour)" }}>
+                  Choose how many bags of beans to sell this week
+                </p>
+
+                <div
+                  className="flex w-full max-w-[280px] items-center justify-between rounded-2xl px-6 py-4"
+                  style={{ backgroundColor: "var(--bg-light)" }}
+                >
+                  <button
+                    type="button"
+                    onClick={decrement}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border transition-colors"
+                    style={{
+                      borderColor: "var(--border-gray)",
+                      backgroundColor: "var(--white)",
+                      color: "var(--heading-colour)",
+                    }}
+                  >
+                    <Minus size={16} />
+                  </button>
+
+                  <div className="flex flex-col items-center gap-0.5">
+                    <span
+                      className="font-syne text-3xl font-bold"
+                      style={{ color: "var(--heading-colour)" }}
+                    >
+                      {bags}
+                    </span>
+                    <span
+                      className="text-xs"
+                      style={{ color: "var(--text-colour)" }}
+                    >
+                      bags of beans
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={increment}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border transition-colors"
+                    style={{
+                      borderColor: "var(--border-gray)",
+                      backgroundColor: "var(--white)",
+                      color: "var(--heading-colour)",
+                    }}
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Summary row */}
+              <div
+                className="grid grid-cols-3 gap-4 rounded-xl p-4"
+                style={{ backgroundColor: "var(--bg-light)" }}
+              >
+                <div className="flex flex-col gap-0.5">
+                  <p
+                    className="text-xs"
+                    style={{ color: "var(--text-colour)" }}
+                  >
+                    Bags
+                  </p>
+                  <p
+                    className="font-syne text-lg font-bold"
+                    style={{ color: "var(--heading-colour)" }}
+                  >
+                    {bags}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <p
+                    className="text-xs"
+                    style={{ color: "var(--text-colour)" }}
+                  >
+                    Est. value
+                  </p>
+                  <p
+                    className="font-syne text-lg font-bold"
+                    style={{ color: "var(--heading-colour)" }}
+                  >
+                    {fmt(bags * PRICE_PER_BAG)}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <p
+                    className="text-xs"
+                    style={{ color: "var(--text-colour)" }}
+                  >
+                    Commission
+                  </p>
+                  <p
+                    className="font-syne text-lg font-bold"
+                    style={{ color: "var(--heading-colour)" }}
+                  >
+                    {fmt(bags * COMMISSION_PER_BAG)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Delivery address */}
+              <div className="flex flex-col gap-1.5">
+                <label
+                  className="text-xs font-semibold tracking-wider uppercase"
+                  style={{ color: "var(--text-colour)" }}
+                >
+                  Delivery Address
+                </label>
+                <input
+                  type="text"
+                  value={deliveryAddress}
+                  onChange={(e) => setDeliveryAddress(e.target.value)}
+                  className="w-full rounded-xl border px-4 py-3 text-sm transition-all outline-none"
+                  style={{
+                    borderColor: "var(--border-gray)",
+                    backgroundColor: "var(--bg-light)",
+                    color: "var(--heading-colour)",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "var(--primary-color)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "var(--border-gray)";
+                  }}
+                />
+              </div>
+
+              {/* Preferred delivery time */}
+              <div className="flex flex-col gap-1.5">
+                <label
+                  className="text-xs font-semibold tracking-wider uppercase"
+                  style={{ color: "var(--text-colour)" }}
+                >
+                  Preferred Delivery Time
+                </label>
+                <input
+                  type="text"
+                  value={deliveryTime}
+                  onChange={(e) => setDeliveryTime(e.target.value)}
+                  className="w-full rounded-xl border px-4 py-3 text-sm transition-all outline-none"
+                  style={{
+                    borderColor: "var(--border-gray)",
+                    backgroundColor: "var(--bg-light)",
+                    color: "var(--heading-colour)",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "var(--primary-color)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "var(--border-gray)";
+                  }}
+                />
+              </div>
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-full py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                style={{ backgroundColor: "var(--primary-color)" }}
+              >
+                {loading ? "Submitting..." : "Submit Stock Request"}
+              </button>
+            </motion.form>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* History */}
+      {/* Right: past requests */}
       <div
-        className="overflow-hidden rounded-2xl border"
+        className="flex flex-col gap-3 rounded-2xl border p-5"
         style={{
           borderColor: "var(--border-gray)",
           backgroundColor: "var(--white)",
         }}
       >
-        <div
-          className="grid grid-cols-4 gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase"
-          style={{
-            borderColor: "var(--border-gray)",
-            color: "var(--text-colour)",
-          }}
+        <h3
+          className="font-syne font-semibold"
+          style={{ color: "var(--heading-colour)" }}
         >
-          <span>Date</span>
-          <span>Item</span>
-          <span>Qty</span>
-          <span>Status</span>
-        </div>
-        {MOCK_REQUESTS.map((r, i) => {
-          const s = statusStyles[r.status];
-          return (
-            <motion.div
-              key={r.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: i * 0.06 }}
-              className="grid grid-cols-4 gap-4 border-b px-5 py-4 text-sm last:border-0"
-              style={{ borderColor: "var(--border-gray)" }}
-            >
-              <span style={{ color: "var(--text-colour)" }}>{r.date}</span>
-              <span style={{ color: "var(--heading-colour)" }}>{r.item}</span>
-              <span style={{ color: "var(--heading-colour)" }}>
-                {r.quantity}
-              </span>
-              <span
-                className="w-fit rounded-full px-2 py-0.5 text-xs font-semibold"
-                style={{ backgroundColor: s.bg, color: s.text }}
+          Request new stock
+        </h3>
+        <div className="flex flex-col gap-2">
+          {MOCK_PAST_REQUESTS.map((req, i) => {
+            const s = statusStyles[req.status];
+            return (
+              <motion.div
+                key={req.id}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.06 }}
+                className="flex items-center justify-between rounded-xl border px-4 py-3"
+                style={{
+                  borderColor: "var(--border-gray)",
+                  backgroundColor: "var(--bg-light)",
+                }}
               >
-                {s.label}
-              </span>
-            </motion.div>
-          );
-        })}
+                <div className="flex flex-col gap-0.5">
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--heading-colour)" }}
+                  >
+                    {req.description}
+                  </p>
+                  <p
+                    className="text-xs"
+                    style={{ color: "var(--text-colour)" }}
+                  >
+                    {req.date}
+                  </p>
+                </div>
+                <span
+                  className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                  style={{ backgroundColor: s.bg, color: s.text }}
+                >
+                  {s.label}
+                </span>
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

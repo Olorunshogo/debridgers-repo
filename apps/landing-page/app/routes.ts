@@ -27,6 +27,7 @@ export default [
     route("buyer-dashboard", "routes/dashboards/buyer/overview.tsx"),
     route("buyer-dashboard/orders", "routes/dashboards/buyer/orders.tsx"),
     route("buyer-dashboard/shop", "routes/dashboards/buyer/shop.tsx"),
+    route("buyer-dashboard/wallet", "routes/dashboards/buyer/wallet.tsx"),
     route("buyer-dashboard/checkout", "routes/dashboards/buyer/checkout.tsx"),
     route(
       "buyer-dashboard/notification",

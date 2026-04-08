@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Bell, LogOut } from "lucide-react";
-import { AppLogo, DashSearchInput } from "@debridgers/ui-web";
+import { AppLogo, DashSearchInput, PrimaryButton } from "@debridgers/ui-web";
 import { useDashboardNav } from "../../../hooks/useDashboardNav";
 import { logout } from "../../../lib/auth";
 
@@ -50,7 +50,7 @@ const userInfo = {
 export default function DashboardLayout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { groups, isActive, basePath } = useDashboardNav();
+  const { groups, isActive, basePath, isAgent, isBuyer } = useDashboardNav();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -269,6 +269,21 @@ export default function DashboardLayout() {
               />
 
               <div className="flex shrink-0 items-center gap-3">
+                {/* Topbar CTA */}
+                {isAgent ? (
+                  <Link to="/agent-dashboard/request-stock">
+                    <PrimaryButton className="rounded-full px-4 py-2 text-sm">
+                      + Request order
+                    </PrimaryButton>
+                  </Link>
+                ) : isBuyer ? (
+                  <Link to="/buyer-dashboard/shop">
+                    <PrimaryButton className="rounded-full px-4 py-2 text-sm">
+                      + New Order
+                    </PrimaryButton>
+                  </Link>
+                ) : null}
+
                 <button
                   className="relative rounded-full p-2 transition-colors"
                   aria-label="Notifications"
