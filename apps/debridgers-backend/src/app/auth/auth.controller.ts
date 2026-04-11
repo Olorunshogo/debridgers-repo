@@ -145,7 +145,7 @@ export class AuthController {
 
   @Post("refresh")
   @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth("access-token")
+  @ApiBearerAuth("refresh-token")
   @ApiOperation({
     summary: "Rotate tokens",
     description:

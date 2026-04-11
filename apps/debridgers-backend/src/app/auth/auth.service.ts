@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
+  BadRequestException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { EventEmitter2 } from "@nestjs/event-emitter";
@@ -141,26 +142,26 @@ export class AuthService {
       .where(eq(sql`lower(${schema.users.email})`, email.toLowerCase()))
       .limit(1);
 
-    if (!user) throw new NotFoundException("No account with that email");
+    if (user) {
+      const token = crypto.randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 3600 * 1000);
 
-    const token = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + 3600 * 1000);
+      await this.db
+        .delete(schema.password_resets)
+        .where(eq(schema.password_resets.user_id, user.id));
 
-    await this.db
-      .delete(schema.password_resets)
-      .where(eq(schema.password_resets.user_id, user.id));
+      await this.db.insert(schema.password_resets).values({
+        user_id: user.id,
+        token,
+        expires_at: expiresAt,
+      });
 
-    await this.db.insert(schema.password_resets).values({
-      user_id: user.id,
-      token,
-      expires_at: expiresAt,
-    });
-
-    this.eventEmitter.emit(USER_EVENTS.PASSWORD_RESET_REQUESTED, {
-      name: `${user.first_name} ${user.last_name}`,
-      email: user.email,
-      token,
-    });
+      this.eventEmitter.emit(USER_EVENTS.PASSWORD_RESET_REQUESTED, {
+        name: `${user.first_name} ${user.last_name}`,
+        email: user.email,
+        token,
+      });
+    }
 
     return { message: "Password reset email sent", data: null };
   }
@@ -173,7 +174,7 @@ export class AuthService {
       .limit(1);
 
     if (!reset || reset.expires_at < new Date()) {
-      throw new UnauthorizedException("Invalid or expired token");
+      throw new BadRequestException("Invalid or expired reset token");
     }
 
     const hashed = await bcrypt.hash(newPassword, 12);
