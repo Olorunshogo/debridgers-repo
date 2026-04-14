@@ -61,13 +61,12 @@ export default function AgentNotificationPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // ── PRODUCTION ────────────────────────────────────────────────────────────
-    // fetch(`${BASE_BACKEND_URL}/agent/notifications`, { credentials: "include" })
+    // === PRODUCTION
     //   .then((r) => r.json())
     //   .then((json) => setNotifications(json.data))
     //   .finally(() => setLoading(false));
 
-    // ── MOCK ──────────────────────────────────────────────────────────────────
+    // === MOCK
     const t = setTimeout(() => {
       setNotifications(MOCK_NOTIFICATIONS);
       setLoading(false);
@@ -82,7 +81,7 @@ export default function AgentNotificationPage() {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="py-section-px flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

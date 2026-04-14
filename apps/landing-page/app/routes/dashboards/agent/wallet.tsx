@@ -121,7 +121,6 @@ const STATUS_BADGE: Record<
 };
 
 // === In-page: Week Breakdown Card
-
 function WeekBreakdownCard({ week }: { week: WeekBreakdown }) {
   const badge = STATUS_BADGE[week.status];
   const progress = Math.min(week.bags / week.agentTarget, 1);
@@ -195,7 +194,7 @@ export default function AgentWalletPage() {
   const nextPayoutDate = getNextPayoutDate();
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="py-section-px flex flex-col gap-6">
       {/* Hero */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}

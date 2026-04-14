@@ -45,7 +45,7 @@ const badgeColors: Record<string, string> = {
 
 export default function AgentLeaderboard() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="py-section-px flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Trophy size={24} style={{ color: "var(--primary-color)" }} />
