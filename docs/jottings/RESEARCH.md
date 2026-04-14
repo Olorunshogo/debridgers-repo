@@ -29,6 +29,8 @@ Users: admins, agents, buyers, companies. Nigerian focus (Paystack, kobo, LGAs).
 4. **Scalability**: Referral systems, state managers to grow network exponentially while maintaining control.
 5. **Impact**: Bridge rural farmers to urban markets, boost food security, create rural jobs.
 
+6. Honesty, reliability,
+
 **Stakeholder-Specific Values**
 
 - **Investors**:
@@ -60,3 +62,5 @@ Users: admins, agents, buyers, companies. Nigerian focus (Paystack, kobo, LGAs).
   2. **Authority**: Full control over approvals/payouts.
   3. **Insight**: Stats on agents/orders/revenue.
   4. **Simplicity**: Minimal clicks for high-impact tasks (KYC/stock).
+
+B

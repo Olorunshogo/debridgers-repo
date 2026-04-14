@@ -93,7 +93,7 @@ function Section({
 export default function BuyerSettings() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [avatarPreview, setAvatarPreview] = useState(
-    "/images/settings-avatar.jpg",
+    "/images/settings-avatar.png",
   );
   const [form, setForm] = useState<SettingsForm>({
     userName: "Abdul-Malik",
@@ -182,7 +182,7 @@ export default function BuyerSettings() {
     <form
       onSubmit={handleSubmit}
       noValidate
-      className="mx-auto flex w-full max-w-[800px] flex-col gap-6"
+      className="mx-auto flex w-full flex-col gap-6"
     >
       {/* Success toast */}
       <AnimatePresence>
