@@ -23,7 +23,7 @@ export default function AgentSettingsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="py-section-px flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center gap-3">
         <User size={24} style={{ color: "var(--primary-color)" }} />

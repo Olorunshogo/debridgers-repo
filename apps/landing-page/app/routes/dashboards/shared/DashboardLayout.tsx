@@ -12,7 +12,7 @@ const titleMaps: Record<string, Record<string, string>> = {
     "/agent-dashboard/request-stock": "Request Stock",
     "/agent-dashboard/daily-report": "Daily Report",
     "/agent-dashboard/leaderboard": "Leaderboard",
-    "/agent-dashboard/wallet": "Wallet",
+    "/agent-dashboard/wallet": "Weekly Payout",
     "/agent-dashboard/notification": "Notification",
     "/agent-dashboard/settings": "Settings",
   },
@@ -196,7 +196,7 @@ export default function DashboardLayout() {
   return (
     <div className="relative min-h-screen bg-black">
       <div className="layout-max-width relative flex min-h-screen flex-col">
-        <div className="bg-dash-page-bg flex min-h-screen w-full p-6">
+        <div className="bg-dash-page-bg px-section-px flex min-h-screen w-full gap-6">
           {/* Desktop sidebar */}
           <aside className="border-gray hidden w-[280px] shrink-0 rounded-[16px] border bg-[#FCFDFD] lg:flex lg:flex-col">
             <Sidebar />
@@ -224,7 +224,7 @@ export default function DashboardLayout() {
                 >
                   <button
                     onClick={() => setMobileOpen(false)}
-                    className="absolute top-4 right-4 rounded-full p-1.5 hover:bg-black/10"
+                    className="absolute top-4 right-4 cursor-pointer rounded-full p-1.5 hover:bg-black/10"
                     aria-label="Close menu"
                   >
                     <X size={20} style={{ color: "var(--text-colour)" }} />
@@ -265,7 +265,7 @@ export default function DashboardLayout() {
                 placeholder="Search..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full max-w-[500px]"
+                className="hidden w-full max-w-[500px] md:inline-flex"
               />
 
               <div className="flex shrink-0 items-center gap-3">
@@ -298,7 +298,7 @@ export default function DashboardLayout() {
             </header>
 
             {/* Page content */}
-            <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+            <main className="flex-1 overflow-y-auto">
               <Outlet />
             </main>
           </div>
