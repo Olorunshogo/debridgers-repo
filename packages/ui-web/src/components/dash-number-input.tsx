@@ -6,14 +6,20 @@ import {
   getInputFocusHandlers,
 } from "./base-input-field";
 
-interface DashEmailInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface DashNumberInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   error?: string;
   required?: boolean;
 }
 
-export const DashEmailInput = forwardRef<HTMLInputElement, DashEmailInputProps>(
-  ({ label, error, id, name, required, className = "", ...props }, ref) => {
+export const DashNumberInput = forwardRef<
+  HTMLInputElement,
+  DashNumberInputProps
+>(
+  (
+    { label, error, id, name, required = false, className = "", ...props },
+    ref,
+  ) => {
     const inputId = id ?? name ?? label.toLowerCase().replace(/\s+/g, "-");
     return (
       <BaseInputField
@@ -27,7 +33,7 @@ export const DashEmailInput = forwardRef<HTMLInputElement, DashEmailInputProps>(
           ref={ref}
           id={inputId}
           name={name ?? inputId}
-          type="email"
+          type="number"
           className={BASE_INPUT_CLASS}
           style={getInputStyles(error)}
           {...getInputFocusHandlers(error)}
@@ -38,4 +44,4 @@ export const DashEmailInput = forwardRef<HTMLInputElement, DashEmailInputProps>(
   },
 );
 
-DashEmailInput.displayName = "DashEmailInput";
+DashNumberInput.displayName = "DashNumberInput";

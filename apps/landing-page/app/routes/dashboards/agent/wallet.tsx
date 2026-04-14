@@ -1,170 +1,317 @@
 import { motion } from "framer-motion";
-import { Wallet, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { Wallet } from "lucide-react";
+import { YellowPrimaryLink } from "@debridgers/ui-web";
 
 export function meta() {
-  return [{ title: "Wallet | Debridgers" }];
+  return [{ title: "Weekly Payout | Debridgers" }];
 }
 
-interface Transaction {
+// === Config
+
+/** Change to 6 for Saturday, 5 for Friday, etc. (0=Sun … 6=Sat) */
+const PAYOUT_DAY_OF_WEEK = 5; // Friday
+
+function getNextPayoutDate(): string {
+  const today = new Date();
+  const daysUntil = (PAYOUT_DAY_OF_WEEK - today.getDay() + 7) % 7 || 7;
+  const next = new Date(today);
+  next.setDate(today.getDate() + daysUntil);
+  return next.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function getCurrentWeekLabel(): string {
+  const today = new Date();
+  const sunday = new Date(today);
+  sunday.setDate(today.getDate() - today.getDay());
+  const saturday = new Date(sunday);
+  saturday.setDate(sunday.getDate() + 6);
+  const fmt = (d: Date) =>
+    d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return `${fmt(sunday)} – ${fmt(saturday)}`;
+}
+
+// === Types
+type PayoutStatus = "pending" | "paid";
+
+interface WeekBreakdown {
   id: string;
-  type: "credit" | "debit";
-  description: string;
-  amount: string;
-  date: string;
+  weekLabel: string;
+  bags: number;
+  agentTarget: number;
+  commission: string;
+  bonus: string;
+  total: string;
+  status: PayoutStatus;
+  isCurrent: boolean;
 }
 
-const MOCK_TRANSACTIONS: Transaction[] = [
+// === Mock data
+const MOCK_BREAKDOWNS: WeekBreakdown[] = [
   {
-    id: "t1",
-    type: "credit",
-    description: "Commission payout",
-    amount: "+₦27,000",
-    date: "Apr 5, 2026",
+    id: "w1",
+    weekLabel: getCurrentWeekLabel(),
+    bags: 7,
+    agentTarget: 10,
+    commission: "₦14,000",
+    bonus: "₦4,400",
+    total: "₦18,400",
+    status: "pending",
+    isCurrent: true,
   },
   {
-    id: "t2",
-    type: "credit",
-    description: "Commission payout",
-    amount: "+₦18,000",
-    date: "Apr 3, 2026",
+    id: "w2",
+    weekLabel: "Mar 21 – Mar 27",
+    bags: 10,
+    agentTarget: 10,
+    commission: "₦14,000",
+    bonus: "₦4,400",
+    total: "₦18,400",
+    status: "paid",
+    isCurrent: false,
   },
   {
-    id: "t3",
-    type: "debit",
-    description: "Withdrawal to bank",
-    amount: "-₦20,000",
-    date: "Apr 1, 2026",
+    id: "w3",
+    weekLabel: "Mar 14 – Mar 20",
+    bags: 8,
+    agentTarget: 10,
+    commission: "₦14,000",
+    bonus: "₦4,400",
+    total: "₦18,400",
+    status: "paid",
+    isCurrent: false,
   },
   {
-    id: "t4",
-    type: "credit",
-    description: "Commission payout",
-    amount: "+₦22,500",
-    date: "Mar 31, 2026",
+    id: "w4",
+    weekLabel: "Mar 7 – Mar 13",
+    bags: 13,
+    agentTarget: 10,
+    commission: "₦14,000",
+    bonus: "₦4,400",
+    total: "₦18,400",
+    status: "paid",
+    isCurrent: false,
+  },
+  {
+    id: "w5",
+    weekLabel: "Feb 28 – Mar 6",
+    bags: 9,
+    agentTarget: 10,
+    commission: "₦14,000",
+    bonus: "₦4,400",
+    total: "₦18,400",
+    status: "paid",
+    isCurrent: false,
   },
 ];
 
-export default function AgentWalletPage() {
+const STATUS_BADGE: Record<
+  PayoutStatus,
+  { bg: string; text: string; label: string }
+> = {
+  pending: { bg: "#FEF3C7", text: "#92400E", label: "Pending" },
+  paid: {
+    bg: "var(--status-active-bg)",
+    text: "var(--status-active-text)",
+    label: "Paid",
+  },
+};
+
+// === In-page: Week Breakdown Card
+
+function WeekBreakdownCard({ week }: { week: WeekBreakdown }) {
+  const badge = STATUS_BADGE[week.status];
+  const progress = Math.min(week.bags / week.agentTarget, 1);
+
+  const statCols = [
+    { label: "Bags", value: String(week.bags), color: "var(--heading-colour)" },
+    {
+      label: "Commission",
+      value: week.commission,
+      color: "var(--heading-colour)",
+    },
+    { label: "Bonus", value: week.bonus, color: "var(--secondary-color)" },
+    { label: "Total", value: week.total, color: "var(--heading-colour)" },
+  ];
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="border-border-gray flex flex-col gap-3 rounded-2xl border bg-white p-5">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Wallet size={24} style={{ color: "var(--primary-color)" }} />
-        <div>
-          <h2
-            className="font-syne text-xl font-bold"
-            style={{ color: "var(--heading-colour)" }}
-          >
-            Wallet
-          </h2>
-          <p className="text-sm" style={{ color: "var(--text-colour)" }}>
-            Your earnings and transaction history
-          </p>
-        </div>
+      <div className="flex items-center justify-between">
+        <p className="font-syne text-heading text-sm font-semibold">
+          This week ({week.weekLabel})
+        </p>
+        <span
+          className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
+          style={{ backgroundColor: badge.bg, color: badge.text }}
+        >
+          {badge.label}
+        </span>
       </div>
 
-      {/* Balance cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col gap-2 rounded-2xl p-6"
-          style={{ backgroundColor: "var(--primary-color)" }}
-        >
-          <p className="text-sm text-white/70">Available Balance</p>
-          <p className="font-syne text-3xl font-bold text-white">₦47,500</p>
-          <button
-            className="mt-2 self-start rounded-full px-5 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
-            style={{
-              backgroundColor: "var(--secondary-color)",
-              color: "var(--heading-colour)",
-            }}
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-2">
+        {statCols.map((col) => (
+          <div key={col.label} className="flex flex-col gap-0.5">
+            <p className="text-xs" style={{ color: "var(--text-colour)" }}>
+              {col.label}
+            </p>
+            <p
+              className="font-syne text-base font-bold"
+              style={{ color: col.color }}
+            >
+              {col.value}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Progress bar — current week only */}
+      {week.isCurrent && (
+        <div className="flex flex-col gap-1">
+          <div className="border-border-gray relative h-1.5 w-full overflow-hidden rounded-full">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${progress * 100}%` }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="absolute top-0 left-0 h-full rounded-full"
+              style={{ backgroundColor: "var(--primary-color)" }}
+            />
+          </div>
+          <p className="text-xs" style={{ color: "var(--text-colour)" }}>
+            {week.bags}/{week.agentTarget} bags sold this week
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// === Page
+export default function AgentWalletPage() {
+  const nextPayoutDate = getNextPayoutDate();
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Hero */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="bg-primary flex flex-col gap-4 rounded-2xl p-6 sm:flex-row sm:items-center sm:justify-between"
+      >
+        {/* Left */}
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-white/70">Total earning this week</p>
+          <p className="font-syne text-4xl font-extrabold text-white">
+            ₦18,400
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <YellowPrimaryLink
+              to="/agent-dashboard/wallet"
+              icon="lucide:wallet"
+            >
+              Request payout
+            </YellowPrimaryLink>
+            <button className="inline-flex items-center gap-2 rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-white/80 transition-all hover:border-white/60 hover:text-white">
+              <Wallet size={14} />
+              Update bank details
+            </button>
+          </div>
+        </div>
+
+        {/* Right: payout date */}
+        <div className="flex flex-col gap-1 sm:items-end">
+          <p className="text-xs text-white/60">Automatic payout at</p>
+          <p
+            className="font-syne text-xl font-bold"
+            style={{ color: "var(--secondary-color)" }}
           >
-            Withdraw
-          </button>
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.08 }}
-          className="flex flex-col gap-2 rounded-2xl border p-6"
+            {nextPayoutDate}
+          </p>
+          <p className="text-xs text-white/60">Every Friday 9am disbursement</p>
+        </div>
+      </motion.div>
+
+      {/* Body */}
+      <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+        {/* Weekly breakdown */}
+        <div
+          className="flex flex-col gap-4 rounded-2xl border p-5"
           style={{
             borderColor: "var(--border-gray)",
             backgroundColor: "var(--white)",
           }}
         >
-          <p className="text-sm" style={{ color: "var(--text-colour)" }}>
-            Total Earned (All Time)
-          </p>
-          <p
-            className="font-syne text-3xl font-bold"
-            style={{ color: "var(--heading-colour)" }}
-          >
-            ₦67,500
-          </p>
-          <p className="text-xs" style={{ color: "var(--text-colour)" }}>
-            Across all commissions
-          </p>
-        </motion.div>
-      </div>
-
-      {/* Transactions */}
-      <div
-        className="overflow-hidden rounded-2xl border"
-        style={{
-          borderColor: "var(--border-gray)",
-          backgroundColor: "var(--white)",
-        }}
-      >
-        <div
-          className="border-b px-5 py-4"
-          style={{ borderColor: "var(--border-gray)" }}
-        >
           <h3
             className="font-syne font-semibold"
             style={{ color: "var(--heading-colour)" }}
           >
-            Recent Transactions
+            Weekly breakdown
           </h3>
+          <div className="flex flex-col gap-3">
+            {MOCK_BREAKDOWNS.map((week, i) => (
+              <motion.div
+                key={week.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.07 }}
+              >
+                <WeekBreakdownCard week={week} />
+              </motion.div>
+            ))}
+          </div>
         </div>
-        {MOCK_TRANSACTIONS.map((t, i) => (
-          <motion.div
-            key={t.id}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: i * 0.06 }}
-            className="flex items-center justify-between border-b px-5 py-4 last:border-0"
-            style={{ borderColor: "var(--border-gray)" }}
+
+        {/* Bank details */}
+        <div className="flex flex-col gap-4">
+          <h3
+            className="font-syne font-semibold"
+            style={{ color: "var(--heading-colour)" }}
           >
-            <div className="flex items-center gap-3">
-              {t.type === "credit" ? (
-                <ArrowDownCircle size={20} className="text-green-500" />
-              ) : (
-                <ArrowUpCircle size={20} className="text-red-400" />
-              )}
-              <div>
-                <p
-                  className="text-sm font-medium"
-                  style={{ color: "var(--heading-colour)" }}
-                >
-                  {t.description}
-                </p>
-                <p className="text-xs" style={{ color: "var(--text-colour)" }}>
-                  {t.date}
-                </p>
-              </div>
+            Bank details
+          </h3>
+          <div
+            className="flex flex-col gap-3 rounded-2xl p-5"
+            style={{ backgroundColor: "var(--bg-light)" }}
+          >
+            <p
+              className="text-xs font-semibold tracking-wider uppercase"
+              style={{ color: "var(--text-colour)" }}
+            >
+              Bank Account
+            </p>
+            <div className="flex flex-col gap-0.5">
+              <p
+                className="text-sm font-semibold"
+                style={{ color: "var(--heading-colour)" }}
+              >
+                First Bank Nigeria
+              </p>
+              <p
+                className="font-syne text-2xl font-bold"
+                style={{ color: "var(--heading-colour)" }}
+              >
+                3047882109
+              </p>
+              <p className="text-sm" style={{ color: "var(--text-colour)" }}>
+                Abdulkadir Musa Yusuf
+              </p>
             </div>
-            <span
-              className="font-syne text-sm font-bold"
+            <div
+              className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold"
               style={{
-                color:
-                  t.type === "credit" ? "var(--status-active-text)" : "#DC2626",
+                backgroundColor: "var(--status-active-bg)",
+                color: "var(--status-active-text)",
               }}
             >
-              {t.amount}
-            </span>
-          </motion.div>
-        ))}
+              ✓ Account verified · Payout goes here every Friday
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

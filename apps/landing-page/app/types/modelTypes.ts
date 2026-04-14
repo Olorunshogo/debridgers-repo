@@ -1,4 +1,4 @@
-export interface KadunaStateLga {
+export interface Object {
   value: string;
   label: string;
 }

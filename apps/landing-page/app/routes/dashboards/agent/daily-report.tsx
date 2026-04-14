@@ -1,209 +1,370 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { ClipboardPenLine, CheckCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Check, CheckCircle2 } from "lucide-react";
+import {
+  DashDateInput,
+  DashNumberInput,
+  DashTextInput,
+  DashSelectInput,
+  DashTextareaInput,
+  SubmitButton,
+  getTodayDateString,
+} from "@debridgers/ui-web";
+import { kadunaStateLgas, unsoldReasons } from "@/models/models";
 
 export function meta() {
   return [{ title: "Daily Report | Debridgers" }];
 }
 
-interface ReportEntry {
+// === Types
+type ReportStatus = "approved" | "pending" | "rejected" | "missed";
+
+interface ReportHistoryEntry {
   id: string;
-  date: string;
-  pagesSold: number;
+  dayLabel: string;
+  bagsSold: number;
+  area: string;
   amount: string;
-  commission: string;
-  status: "approved" | "pending" | "rejected";
+  status: ReportStatus;
 }
 
-const MOCK_REPORTS: ReportEntry[] = [
+// === Mock history
+const MOCK_HISTORY: ReportHistoryEntry[] = [
   {
-    id: "r1",
-    date: "Apr 5, 2026",
-    pagesSold: 6,
-    amount: "₦90,000",
-    commission: "₦27,000",
+    id: "h1",
+    dayLabel: "Apr 5, Sat",
+    bagsSold: 3,
+    area: "Barnawa",
+    amount: "₦200",
     status: "approved",
   },
   {
-    id: "r2",
-    date: "Apr 4, 2026",
-    pagesSold: 4,
-    amount: "₦60,000",
-    commission: "₦18,000",
+    id: "h2",
+    dayLabel: "Apr 4, Fri",
+    bagsSold: 3,
+    area: "Barnawa",
+    amount: "₦200",
+    status: "approved",
+  },
+  {
+    id: "h3",
+    dayLabel: "Apr 3, Thu",
+    bagsSold: 0,
+    area: "Day off",
+    amount: "—",
+    status: "missed",
+  },
+  {
+    id: "h4",
+    dayLabel: "Apr 2, Wed",
+    bagsSold: 3,
+    area: "Barnawa",
+    amount: "₦200",
+    status: "approved",
+  },
+  {
+    id: "h5",
+    dayLabel: "Apr 1, Tue",
+    bagsSold: 5,
+    area: "Narayi",
+    amount: "₦350",
+    status: "approved",
+  },
+  {
+    id: "h6",
+    dayLabel: "Mar 31, Mon",
+    bagsSold: 2,
+    area: "Kakuri",
+    amount: "₦140",
     status: "pending",
   },
   {
-    id: "r3",
-    date: "Apr 3, 2026",
-    pagesSold: 5,
-    amount: "₦75,000",
-    commission: "₦22,500",
+    id: "h7",
+    dayLabel: "Mar 30, Sun",
+    bagsSold: 4,
+    area: "Barnawa",
+    amount: "₦280",
     status: "approved",
   },
   {
-    id: "r4",
-    date: "Apr 2, 2026",
-    pagesSold: 2,
-    amount: "₦30,000",
-    commission: "₦9,000",
+    id: "h8",
+    dayLabel: "Mar 29, Sat",
+    bagsSold: 1,
+    area: "Narayi",
+    amount: "₦70",
     status: "rejected",
+  },
+  {
+    id: "h9",
+    dayLabel: "Mar 28, Fri",
+    bagsSold: 6,
+    area: "Zaria",
+    amount: "₦420",
+    status: "approved",
+  },
+  {
+    id: "h10",
+    dayLabel: "Mar 27, Thu",
+    bagsSold: 3,
+    area: "Barnawa",
+    amount: "₦210",
+    status: "approved",
   },
 ];
 
-const statusStyles: Record<
-  string,
-  { bg: string; text: string; label: string }
-> = {
-  approved: {
-    bg: "var(--status-active-bg)",
-    text: "var(--status-active-text)",
-    label: "Approved",
-  },
-  pending: { bg: "#FEF3C7", text: "#92400E", label: "Pending" },
-  rejected: { bg: "#FEE2E2", text: "#991B1B", label: "Rejected" },
+// === Status styles
+const STATUS_STYLES: Record<ReportStatus, { color: string; icon: string }> = {
+  approved: { color: "var(--status-active-text)", icon: "✓" },
+  pending: { color: "var(--status-pending-text)", icon: "…" },
+  rejected: { color: "#DC2626", icon: "✗" },
+  missed: { color: "#DC2626", icon: "–" },
 };
 
-export default function AgentDailyReportPage() {
-  const [submitted, setSubmitted] = useState(false);
-  const [pages, setPages] = useState("");
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
-    setPages("");
-  }
-
+// === Report History Card
+function ReportHistoryCard({ entries }: { entries: ReportHistoryEntry[] }) {
+  const latest = entries.slice(0, 10);
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <ClipboardPenLine size={24} style={{ color: "var(--primary-color)" }} />
-        <div>
-          <h2
-            className="font-syne text-xl font-bold"
-            style={{ color: "var(--heading-colour)" }}
-          >
-            Daily Report
-          </h2>
-          <p className="text-sm" style={{ color: "var(--text-colour)" }}>
-            Submit your daily sales activity
-          </p>
-        </div>
+    <div className="border-border-gray flex flex-col overflow-hidden rounded-2xl border bg-white">
+      <div className="border-border-gray border-b px-5 py-4">
+        <h3 className="font-syne text-heading font-semibold">Report History</h3>
       </div>
-
-      {/* Submit form */}
-      <div
-        className="rounded-2xl border p-5"
-        style={{
-          borderColor: "var(--border-gray)",
-          backgroundColor: "var(--white)",
-        }}
-      >
-        <h3
-          className="font-syne mb-4 font-semibold"
-          style={{ color: "var(--heading-colour)" }}
-        >
-          Submit Today&apos;s Report
-        </h3>
-        {submitted ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center gap-2 text-sm font-medium"
-            style={{ color: "var(--status-active-text)" }}
-          >
-            <CheckCircle size={18} />
-            Report submitted successfully!
-          </motion.div>
-        ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1">
-              <label
-                className="text-sm font-medium"
-                style={{ color: "var(--heading-colour)" }}
-              >
-                Pages Sold Today
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={pages}
-                onChange={(e) => setPages(e.target.value)}
-                placeholder="e.g. 5"
-                required
-                className="rounded-xl border px-4 py-2.5 text-sm outline-none focus:ring-2"
-                style={{
-                  borderColor: "var(--border-gray)",
-                  color: "var(--heading-colour)",
-                  backgroundColor: "var(--bg-light)",
-                }}
-              />
-            </div>
-            <button
-              type="submit"
-              className="self-start rounded-full px-6 py-2.5 text-sm font-semibold transition-opacity hover:opacity-90"
-              style={{ backgroundColor: "var(--primary-color)", color: "#fff" }}
-            >
-              Submit Report
-            </button>
-          </form>
-        )}
-      </div>
-
-      {/* History */}
-      <div
-        className="overflow-hidden rounded-2xl border"
-        style={{
-          borderColor: "var(--border-gray)",
-          backgroundColor: "var(--white)",
-        }}
-      >
-        <div
-          className="grid grid-cols-5 gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase"
-          style={{
-            borderColor: "var(--border-gray)",
-            color: "var(--text-colour)",
-          }}
-        >
-          <span>Date</span>
-          <span>Pages</span>
-          <span>Amount</span>
-          <span>Commission</span>
-          <span>Status</span>
-        </div>
-        {MOCK_REPORTS.map((r, i) => {
-          const s = statusStyles[r.status];
+      <div className="flex flex-col">
+        {latest.map((entry, i) => {
+          const s = STATUS_STYLES[entry.status];
+          const isMissed = entry.status === "missed";
           return (
             <motion.div
-              key={r.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: i * 0.06 }}
-              className="grid grid-cols-5 gap-4 border-b px-5 py-4 text-sm last:border-0"
-              style={{ borderColor: "var(--border-gray)" }}
+              key={entry.id}
+              initial={{ opacity: 0, x: 8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.04 }}
+              className="border-border-gray flex items-center justify-between border-b px-5 py-3.5 last:border-0"
             >
-              <span style={{ color: "var(--text-colour)" }}>{r.date}</span>
-              <span style={{ color: "var(--heading-colour)" }}>
-                {r.pagesSold}
-              </span>
-              <span style={{ color: "var(--heading-colour)" }}>{r.amount}</span>
-              <span
-                className="font-semibold"
-                style={{ color: "var(--primary-color)" }}
-              >
-                {r.commission}
-              </span>
-              <span
-                className="w-fit rounded-full px-2 py-0.5 text-xs font-semibold"
-                style={{ backgroundColor: s.bg, color: s.text }}
-              >
-                {s.label}
-              </span>
+              <div className="flex flex-col gap-0.5">
+                <p className="text-xs" style={{ color: "var(--text-colour)" }}>
+                  {entry.dayLabel}
+                </p>
+                <p
+                  className="text-sm font-semibold"
+                  style={{
+                    color: isMissed
+                      ? "var(--text-colour)"
+                      : "var(--heading-colour)",
+                  }}
+                >
+                  {isMissed
+                    ? `${entry.bagsSold} bag  Day off`
+                    : `${entry.bagsSold} bags ${entry.area}`}
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span
+                  className="font-syne text-sm font-semibold"
+                  style={{ color: s.color }}
+                >
+                  {isMissed ? "Miss" : entry.amount}
+                </span>
+                <span className="text-sm font-bold" style={{ color: s.color }}>
+                  {s.icon}
+                </span>
+              </div>
             </motion.div>
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// === Form state
+interface ReportForm {
+  date: string;
+  bagsSold: string;
+  cashCollected: string;
+  bagsRemaining: string;
+  areaCovered: string;
+  feedback: string;
+  unsoldReason: string;
+}
+
+function formatCurrency(raw: string): string {
+  const digits = raw.replace(/[^0-9]/g, "");
+  if (!digits) return "";
+  return Number(digits).toLocaleString("en-NG");
+}
+
+// === Page
+
+export default function AgentDailyReportPage() {
+  const [form, setForm] = useState<ReportForm>({
+    date: getTodayDateString(),
+    bagsSold: "",
+    cashCollected: "",
+    bagsRemaining: "",
+    areaCovered: "",
+    feedback: "",
+    unsoldReason: "",
+  });
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  function handleChange(field: keyof ReportForm) {
+    return (
+      e: React.ChangeEvent<
+        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+      >,
+    ) => {
+      setForm((p) => ({ ...p, [field]: e.target.value }));
+    };
+  }
+
+  function handleCashCollected(e: React.ChangeEvent<HTMLInputElement>) {
+    setForm((p) => ({ ...p, cashCollected: formatCurrency(e.target.value) }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    // === PRODUCTION
+    // await fetch(`${BASE_BACKEND_URL}/agent/daily-report`, {
+    //   method: "POST",
+    //   credentials: "include",
+    //   headers: { "Content-Type": "application/json" },
+    //   body: JSON.stringify(form),
+    // });
+    await new Promise<void>((r) => setTimeout(r, 900));
+    setLoading(false);
+    setSubmitted(true);
+    setTimeout(() => setSubmitted(false), 3500);
+    setForm({
+      date: getTodayDateString(),
+      bagsSold: "",
+      cashCollected: "",
+      bagsRemaining: "",
+      areaCovered: "",
+      feedback: "",
+      unsoldReason: "",
+    });
+  }
+
+  return (
+    <div className="py-section-py grid gap-6 lg:grid-cols-[1fr_453px]">
+      {/* Left: Submit form */}
+      <div className="border-border-gray flex flex-col gap-5 rounded-2xl border bg-white p-6">
+        <h3 className="font-syne text-heading text-lg font-semibold">
+          Submit Today&apos;s Report
+        </h3>
+
+        <AnimatePresence mode="wait">
+          {submitted ? (
+            <motion.div
+              key="success"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium"
+              style={{
+                backgroundColor: "var(--status-delivered-bg)",
+                color: "var(--status-delivered-text)",
+              }}
+            >
+              <CheckCircle2 size={18} />
+              Report submitted successfully!
+            </motion.div>
+          ) : (
+            <motion.form
+              key="form"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              onSubmit={handleSubmit}
+              className="flex flex-col gap-6"
+            >
+              {/* Form */}
+              <div className="flex flex-col gap-4">
+                {/* Row 1: Date + Bags Sold */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <DashDateInput
+                    label="Date"
+                    required
+                    value={form.date}
+                    onChange={handleChange("date")}
+                  />
+                  <DashNumberInput
+                    label="Bags Sold Today"
+                    required
+                    min={0}
+                    placeholder="0"
+                    value={form.bagsSold}
+                    onChange={handleChange("bagsSold")}
+                  />
+                </div>
+
+                {/* Row 2: Cash Collected + Bags Remaining */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <DashTextInput
+                    label="Cash Collected"
+                    required
+                    placeholder="e.g. 15,000"
+                    value={form.cashCollected}
+                    onChange={handleCashCollected}
+                  />
+                  <DashNumberInput
+                    label="Bags Remaining"
+                    required
+                    min={0}
+                    placeholder="0"
+                    value={form.bagsRemaining}
+                    onChange={handleChange("bagsRemaining")}
+                  />
+                </div>
+
+                {/* Area Covered */}
+                <DashSelectInput
+                  label="Area Covered Today"
+                  required
+                  options={kadunaStateLgas}
+                  placeholder="Select area"
+                  value={form.areaCovered}
+                  onChange={handleChange("areaCovered")}
+                />
+
+                {/* Feedback */}
+                <DashTextareaInput
+                  label="Feedback"
+                  placeholder="Any issues, customer feedback…"
+                  maxWords={300}
+                  resizable={false}
+                  value={form.feedback}
+                  onChange={handleChange("feedback")}
+                />
+
+                {/* Unsold Reason */}
+                <DashSelectInput
+                  label="Unsold Reason"
+                  options={unsoldReasons}
+                  placeholder="Select if applicable"
+                  value={form.unsoldReason}
+                  onChange={handleChange("unsoldReason")}
+                />
+              </div>
+
+              {/* Submit */}
+              <div className="mx-auto w-full max-w-[410px]">
+                <SubmitButton
+                  loading={loading}
+                  loadingText="Submitting…"
+                  icon={Check}
+                >
+                  Submit Report
+                </SubmitButton>
+              </div>
+            </motion.form>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Right: History */}
+      <ReportHistoryCard entries={MOCK_HISTORY} />
     </div>
   );
 }
