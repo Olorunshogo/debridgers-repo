@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Icon } from "@iconify/react";
 import { Link } from "react-router";
+import { YellowPrimaryLink } from "@debridgers/ui-web";
 import {
   BarChart,
   Bar,
@@ -85,7 +86,7 @@ const MOCK_DATA: AgentDashData = {
     {
       label: "Total bags sold",
       value: "18",
-      icon: "lucide:shopping-bag",
+      icon: "lucide:box",
       trend: "↑ 7 this week",
     },
     {
@@ -194,38 +195,20 @@ function StatCard({ stat, index }: { stat: AgentStatCard; index: number }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: index * 0.07 }}
-      className="flex flex-col gap-3 rounded-2xl border p-4"
-      style={{
-        borderColor: "var(--border-gray)",
-        backgroundColor: "var(--white)",
-      }}
+      className="gap-sm flex flex-col rounded-2xl bg-white p-4"
     >
       <div className="flex items-center justify-between">
-        <span className="text-sm" style={{ color: "var(--text-colour)" }}>
+        <span className="text-text font-open-sans flex-1 text-base sm:text-base xl:text-xl">
           {stat.label}
         </span>
-        <span
-          className="flex h-8 w-8 items-center justify-center rounded-full"
-          style={{ backgroundColor: "var(--bg-light)" }}
-        >
-          <Icon
-            icon={stat.icon}
-            className="h-4 w-4"
-            style={{ color: "var(--primary-color)" }}
-          />
+        <span className="flex h-8 w-8 items-center justify-center rounded-full">
+          <Icon icon={stat.icon} className="text-text h-4 w-4" />
         </span>
       </div>
-      <p
-        className="font-syne text-2xl font-bold"
-        style={{ color: "var(--heading-colour)" }}
-      >
+      <p className="font-syne text-primary text-2xl font-bold sm:text-3xl lg:text-4xl">
         {stat.value}
       </p>
-      <p
-        className="flex items-center gap-1 text-xs"
-        style={{ color: "var(--primary-color)" }}
-      >
-        <ArrowUpRight size={12} />
+      <p className="text-primary font-open-sans flex items-center gap-1 text-[14px]">
         {stat.trend}
       </p>
     </motion.div>
@@ -266,7 +249,7 @@ export default function AgentOverviewPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="py-section-py flex flex-col gap-6">
       {/* Hero */}
       <HeroGreetingCard
         greeting={data.greeting}
@@ -289,46 +272,45 @@ export default function AgentOverviewPage() {
         }
         actions={
           <>
-            <Link
+            <YellowPrimaryLink
               to="/agent-dashboard/daily-report"
-              className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
-              style={{
-                backgroundColor: "var(--secondary-color)",
-                color: "var(--heading-colour)",
-              }}
+              icon="lucide:chart-line"
             >
-              <Icon icon="lucide:clipboard-pen-line" className="h-4 w-4" />
               Submit today&apos;s report
-            </Link>
+            </YellowPrimaryLink>
             <Link
               to="/agent-dashboard/leaderboard"
-              className="inline-flex items-center gap-1 text-sm font-medium text-white/80 transition-colors hover:text-white"
+              className="font-open-sans flex items-center gap-2.5 text-base text-[#E8EEE9] transition-all hover:text-white sm:text-lg lg:text-xl"
             >
-              View leader board →
+              View leader board
+              <ArrowRight size={18} strokeWidth={2} />
             </Link>
           </>
         }
         infoBox={
           <>
-            <div
-              className="flex min-w-[140px] flex-col gap-1 rounded-xl border border-white/20 p-4"
-              style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
-            >
-              <p className="text-xs text-white/60">This week earning</p>
-              <p className="font-syne text-xl font-bold text-white">
+            {/* This Week Earning */}
+            <div className="border-secondary bg-secondary/20 flex min-w-[200px] flex-col gap-1 rounded-xl border-[1.5px] px-4 py-1 backdrop-blur-sm">
+              <p className="font-open-sans text-base text-[#E8EEE9] lg:text-lg">
+                This week earning
+              </p>
+              <p className="font-syne text-xl font-bold text-white sm:text-2xl lg:text-3xl">
                 {data.weekEarning}
               </p>
-              <p className="text-xs text-white/60">{data.paymentCycle}</p>
+              <p className="font-open-sans text-base text-[#E8EEE9] lg:text-lg">
+                {data.paymentCycle}
+              </p>
             </div>
-            <div
-              className="flex min-w-[130px] flex-col gap-1 rounded-xl border border-white/20 p-4"
-              style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
-            >
-              <p className="text-xs text-white/60">Bags in hand</p>
-              <p className="font-syne text-xl font-bold text-white">
+
+            {/* Bags In Hand */}
+            <div className="border-secondary bg-secondary/20 flex min-w-[200px] flex-col gap-1 rounded-xl border-[1.5px] px-4 py-1 backdrop-blur-sm">
+              <p className="font-open-sans text-base text-[#E8EEE9] lg:text-lg">
+                Bags in hand
+              </p>
+              <p className="font-syne text-xl font-bold text-white sm:text-2xl lg:text-3xl">
                 {data.bagsInHand} bags
               </p>
-              <p className="text-xs text-white/60">
+              <p className="font-open-sans text-base text-[#E8EEE9] lg:text-lg">
                 {data.bagsSold} sold · {data.bagsRemaining} remaining
               </p>
             </div>
@@ -337,7 +319,7 @@ export default function AgentOverviewPage() {
       />
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="gap-base grid grid-cols-2 lg:grid-cols-4">
         {data.stats.map((stat, i) => (
           <StatCard key={stat.label} stat={stat} index={i} />
         ))}
@@ -346,32 +328,21 @@ export default function AgentOverviewPage() {
       {/* Checklist + Leaderboard */}
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
         {/* Checklist */}
-        <div
-          className="flex flex-col gap-3 rounded-2xl border p-5"
-          style={{
-            borderColor: "var(--border-gray)",
-            backgroundColor: "var(--white)",
-          }}
-        >
-          <h3
-            className="font-syne font-semibold"
-            style={{ color: "var(--heading-colour)" }}
-          >
+        <div className="flex flex-col gap-3 rounded-[12px] bg-[#FEFEFE] p-5 lg:gap-[39px]">
+          <h3 className="font-syne text-base font-semibold text-black lg:text-lg">
             Today&apos;s checklist
           </h3>
-          <div className="flex flex-col gap-2">
+          <div className="gap-lg flex flex-col">
             {data.checklist.map((item) => {
               const s = checklistStyles[item.status];
               return (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between rounded-xl px-4 py-3"
-                  style={{ backgroundColor: s.bg }}
+                  className="flex items-center justify-between rounded-[12px] bg-[#E8EEE9] px-4 py-3"
                 >
                   <p
-                    className="text-sm"
+                    className="text-text text-base lg:text-lg"
                     style={{
-                      color: "var(--heading-colour)",
                       textDecoration: s.strikethrough ? "line-through" : "none",
                       opacity: s.strikethrough ? 0.6 : 1,
                     }}
@@ -400,16 +371,12 @@ export default function AgentOverviewPage() {
           }}
         >
           <div className="flex items-center justify-between">
-            <h3
-              className="font-syne font-semibold"
-              style={{ color: "var(--heading-colour)" }}
-            >
+            <h3 className="font-open-sans text-heading text-base lg:text-lg">
               Today&apos;s checklist
             </h3>
             <a
               href="/agent-dashboard/leaderboard"
-              className="text-xs font-medium underline underline-offset-2"
-              style={{ color: "var(--primary-color)" }}
+              className="text-primary text-xs font-medium underline underline-offset-2"
             >
               Full Board
             </a>
@@ -462,18 +429,9 @@ export default function AgentOverviewPage() {
       {/* Chart + Next payout */}
       <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
         {/* Bags sold chart */}
-        <div
-          className="flex flex-col gap-4 rounded-2xl border p-5"
-          style={{
-            borderColor: "var(--border-gray)",
-            backgroundColor: "var(--white)",
-          }}
-        >
-          <h3
-            className="font-syne font-semibold"
-            style={{ color: "var(--heading-colour)" }}
-          >
-            Bag sold — this week
+        <div className="border-border-gray flex flex-col gap-4 rounded-2xl border bg-white p-5">
+          <h3 className="font-syne text-heading font-semibold">
+            Bag sold - this week
           </h3>
           <ResponsiveContainer width="100%" height={160}>
             <BarChart
@@ -526,8 +484,7 @@ export default function AgentOverviewPage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.2 }}
-          className="flex flex-col gap-3 rounded-2xl p-5"
-          style={{ backgroundColor: "var(--primary-color)" }}
+          className="bg-primary flex flex-col gap-3 rounded-2xl p-5"
         >
           <p className="text-xs text-white/60">Next Payout in</p>
           <p className="font-syne text-4xl font-extrabold text-white">

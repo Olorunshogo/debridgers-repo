@@ -1,5 +1,10 @@
 import React, { forwardRef } from "react";
 import { ChevronDown } from "lucide-react";
+import {
+  BaseInputField,
+  getInputStyles,
+  getInputFocusHandlers,
+} from "./base-input-field";
 
 interface SelectOption {
   value: string;
@@ -24,37 +29,20 @@ export const DashSelectInput = forwardRef<
     const inputId = id ?? name ?? label.toLowerCase().replace(/\s+/g, "-");
 
     return (
-      <div className={`font-syne flex flex-col gap-1.5 ${className}`}>
-        <label
-          htmlFor={inputId}
-          className="text-sm font-medium"
-          style={{ color: "var(--heading-colour)" }}
-        >
-          {label}
-        </label>
+      <BaseInputField
+        label={label}
+        error={error}
+        className={className}
+        inputId={inputId}
+      >
         <div className="relative">
           <select
             ref={ref}
             id={inputId}
             name={name ?? inputId}
             className="h-11 w-full appearance-none rounded-full border px-4 pr-10 text-sm transition-all duration-200 outline-none"
-            style={{
-              borderColor: error
-                ? "var(--input-error-red)"
-                : "var(--input-border)",
-              backgroundColor: "var(--input-bg)",
-              color: "var(--heading-colour)",
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = error
-                ? "var(--input-error-red)"
-                : "var(--input-border-focus)";
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = error
-                ? "var(--input-error-red)"
-                : "var(--input-border)";
-            }}
+            style={getInputStyles(error)}
+            {...getInputFocusHandlers(error)}
             {...props}
           >
             {placeholder && (
@@ -73,12 +61,7 @@ export const DashSelectInput = forwardRef<
             className="text-icon-secondary pointer-events-none absolute top-1/2 right-4 -translate-y-1/2"
           />
         </div>
-        {error && (
-          <p className="text-xs" style={{ color: "var(--input-error-red)" }}>
-            {error}
-          </p>
-        )}
-      </div>
+      </BaseInputField>
     );
   },
 );
