@@ -5,7 +5,17 @@ import { DashTextInput, DashNumberInput } from "@debridgers/ui-web";
 import { BASE_BACKEND_URL } from "../../../utils/api";
 
 export function meta() {
-  return [{ title: "Request Stock | Debridgers" }];
+  return [
+    { title: "Request Stock | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Request fresh foodstuff stock for your delivery zone as a Debridgers field agent.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 // === Types

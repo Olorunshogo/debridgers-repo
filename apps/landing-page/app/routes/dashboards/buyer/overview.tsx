@@ -21,7 +21,17 @@ import {
 } from "lucide-react";
 import { HeroGreetingCard } from "../shared/HeroGreetingCard";
 export function meta() {
-  return [{ title: "Overview | Debridgers" }];
+  return [
+    { title: "Overview | Debridgers" },
+    {
+      name: "description",
+      content:
+        "View your recent orders, spending and delivery activity from your Debridgers buyer dashboard.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 interface StatCard {

@@ -8,8 +8,28 @@ import {
 } from "react-router";
 
 import type { Route } from "./+types/root";
+import type { MetaFunction } from "react-router";
 import "./styles.css";
 import { IntroAnimation } from "./components/IntroAnim";
+
+export const meta: MetaFunction = () => [
+  { charSet: "utf-8" },
+  { name: "viewport", content: "width=device-width, initial-scale=1" },
+  { title: "Debridgers | Fresh Foodstuff at Market Prices in Kaduna" },
+  {
+    name: "description",
+    content:
+      "Debridgers delivers fresh foodstuff straight to your door or shop at the same price you would pay at Central Market. Rice, beans, oil and more. Serving Kaduna South.",
+  },
+  {
+    name: "keywords",
+    content:
+      "Fresh foodstuff delivery Kaduna, market price food delivery Nigeria, rice beans delivery Kaduna, Debridgers, affordable food delivery, Kaduna South food delivery, fresh produce Nigeria",
+  },
+  // === Author and Robots
+  { name: "author", content: "Debridgers Team" },
+  { name: "robots", content: "index, follow" },
+];
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -24,8 +44,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
       </head>
@@ -47,10 +65,6 @@ export default function App() {
   );
 }
 
-/*
-// COMMENTED OUT: Using new HydrationAnimationOverlay component instead
-// Preserved for reference
-
 export function HydrateFallback() {
   return (
     <div className="flex h-screen w-screen flex-col items-center justify-center bg-white">
@@ -66,7 +80,6 @@ export function HydrateFallback() {
     </div>
   );
 }
-*/
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   let message = "Oops!";

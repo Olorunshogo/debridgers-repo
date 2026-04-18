@@ -13,7 +13,17 @@ import {
 import { kadunaStateLgas, unsoldReasons } from "@/models/models";
 
 export function meta() {
-  return [{ title: "Daily Report | Debridgers" }];
+  return [
+    { title: "Daily Report | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Submit your daily sales and delivery report as a Debridgers field agent.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 // === Types

@@ -3,7 +3,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 
 export function meta() {
-  return [{ title: "My Orders | Debridgers" }];
+  return [
+    { title: "My Orders | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Track and manage all your Debridgers food orders. View order history and delivery status.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 type OrderStatus = "active" | "pending" | "cancelled" | "delivered";
@@ -125,7 +135,7 @@ export default function BuyerOrders() {
   const [selected, setSelected] = useState<Order | null>(null);
 
   useEffect(() => {
-    // PRODUCTION
+    // === PRODUCTION
     // fetch(`${BASE_BACKEND_URL}/buyer/orders`, { credentials: "include" })
     //   .then((r) => r.json())
     //   .then((json) => setOrders(json.data))

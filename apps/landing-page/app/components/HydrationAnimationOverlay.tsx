@@ -82,6 +82,7 @@ function LetterByLetterAnimation({
   //     ))}
   //   </div>
   // );
+  return null;
 }
 
 interface DisappearAnimationProps {

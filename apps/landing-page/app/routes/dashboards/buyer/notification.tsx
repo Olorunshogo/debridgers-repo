@@ -2,7 +2,17 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function meta() {
-  return [{ title: "Notification | Debridgers" }];
+  return [
+    { title: "Notifications | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Stay up to date with your latest order updates and platform notifications on Debridgers.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 interface Notification {
@@ -61,13 +71,13 @@ export default function BuyerNotification() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // ── PRODUCTION ────────────────────────────────────────────────────────────
+    // === PRODUCTION
     // fetch(`${BASE_BACKEND_URL}/buyer/notifications`, { credentials: "include" })
     //   .then((r) => r.json())
     //   .then((json) => setNotifications(json.data))
     //   .finally(() => setLoading(false));
 
-    // ── MOCK ──────────────────────────────────────────────────────────────────
+    // === MOCK
     const t = setTimeout(() => {
       setNotifications(MOCK_NOTIFICATIONS);
       setLoading(false);

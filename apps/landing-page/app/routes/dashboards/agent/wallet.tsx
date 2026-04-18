@@ -3,7 +3,17 @@ import { Wallet } from "lucide-react";
 import { YellowPrimaryLink } from "@debridgers/ui-web";
 
 export function meta() {
-  return [{ title: "Weekly Payout | Debridgers" }];
+  return [
+    { title: "Weekly Payout | Debridgers" },
+    {
+      name: "description",
+      content:
+        "View your weekly commission payouts and earnings history as a Debridgers field agent.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 // === Config
