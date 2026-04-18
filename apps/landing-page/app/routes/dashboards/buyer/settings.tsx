@@ -13,7 +13,17 @@ import {
 import { BASE_BACKEND_URL } from "../../../utils/api";
 
 export function meta() {
-  return [{ title: "Settings | Debridgers" }];
+  return [
+    { title: "Settings | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Manage your Debridgers buyer account settings including profile, notifications and security preferences.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 const schema = z

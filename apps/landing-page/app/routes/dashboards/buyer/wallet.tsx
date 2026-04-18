@@ -3,7 +3,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, ArrowDownLeft, Plus } from "lucide-react";
 
 export function meta() {
-  return [{ title: "Wallet & Payment | Debridgers" }];
+  return [
+    { title: "Wallet and Payment | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Manage your Debridgers wallet balance and payment history for food orders.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 type TransactionType = "credit" | "debit";

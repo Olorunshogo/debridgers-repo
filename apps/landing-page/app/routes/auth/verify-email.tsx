@@ -9,7 +9,14 @@ import { BASE_BACKEND_URL } from "../../utils/api";
 export function meta() {
   return [
     { title: "Verify Email | Debridgers" },
-    { name: "description", content: "Verify your email address." },
+    {
+      name: "description",
+      content:
+        "Verify your Debridgers email address using the 6-digit code we sent to your inbox to activate your account.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
   ];
 }
 

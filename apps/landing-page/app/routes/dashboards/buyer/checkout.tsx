@@ -5,7 +5,17 @@ import { CheckCircle2 } from "lucide-react";
 import { BASE_BACKEND_URL } from "../../../utils/api";
 
 export function meta() {
-  return [{ title: "Checkout | Debridgers" }];
+  return [
+    { title: "Checkout | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Complete your Debridgers food order. Review your cart and confirm delivery details.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 type Step = "cart" | "delivery" | "payment" | "confirmed";

@@ -5,7 +5,7 @@ export default function Footer() {
   const [email, setEmail] = useState<string>("");
 
   return (
-    <footer className="bg-primary relative overflow-hidden text-white">
+    <footer className="bg-primary relative h-full w-full overflow-hidden text-white">
       {/* Background "Debridgers" wordmark — top */}
       <div
         aria-hidden="true"
@@ -26,7 +26,7 @@ export default function Footer() {
       </div>
 
       {/* Background "Debridgers" wordmark — bottom */}
-      <div
+      {/* <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-center overflow-hidden select-none"
       >
@@ -42,10 +42,10 @@ export default function Footer() {
         >
           Debridgers
         </span>
-      </div>
+      </div> */}
 
       {/* Main footer content */}
-      <div className="gap-2xl px-section-px lg:gap-2xl sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex w-full flex-col">
+      <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-full w-full flex-col">
         {/* Top section: tagline + columns */}
         <div className="py-section-py lg:py-section-py-lg sm:py-section-py-sm grid grid-cols-1 gap-6 lg:grid-cols-[repeat(auto-fit,minmax(280px,1fr))] lg:items-start">
           {/* Tagline */}
@@ -152,11 +152,11 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="font-open-sans relative z-10 flex flex-col items-center justify-between gap-4 border-t border-white/10 py-6 text-sm text-white md:flex-row">
-          <p className="font-open-sans mx-auto text-sm text-white md:mx-0">
+        <div className="font-open-sans relative z-10 flex flex-wrap items-center justify-between gap-6 border-t border-white/10 py-6 text-sm text-white">
+          <p className="mx-auto text-sm text-white md:mx-0">
             &copy; 2026 Debridgers. Delivering fresh to Kaduna.
           </p>
-          <div className="hidden items-center gap-6 md:flex">
+          <div className="mx-auto flex items-center gap-6 md:mx-0">
             {[
               { label: "Privacy", to: "/privacy" },
               { label: "Contact", to: "/contact" },

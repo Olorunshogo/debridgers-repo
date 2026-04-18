@@ -18,7 +18,14 @@ import { kadunaStateLgas } from "../../models/models";
 export function meta() {
   return [
     { title: "Create Account | Debridgers" },
-    { name: "description", content: "Join Debridgers as a buyer or agent." },
+    {
+      name: "description",
+      content:
+        "Create a Debridgers account as a buyer to order fresh foodstuff at market prices, or sign up as an agent to start earning commissions.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
   ];
 }
 

@@ -1,4 +1,4 @@
-import type { Route } from "../+types/home";
+import type { Route } from "./+types/contact";
 import { useState, useEffect, useRef } from "react";
 import { Header } from "../../components/Header";
 import { HeroSection } from "@/components/HeroSection";
@@ -14,12 +14,47 @@ import {
 // === Metadata
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Contact Us | Debridgers" },
+    { title: "Contact Debridgers | Get in Touch" },
     {
       name: "description",
       content:
-        "Get in touch with Debridgers for quotes, partnerships, or support.",
+        "Reach out to Debridgers for orders, partnership inquiries or support. We are available 24 hours a day. Call, email or send us a message and we will get back to you promptly.",
     },
+    {
+      name: "keywords",
+      content:
+        "contact Debridgers, Debridgers support, food delivery Kaduna contact, Debridgers phone number, Debridgers email, partnership Debridgers Nigeria",
+    },
+
+    // === Open Graph
+    { property: "og:type", content: "website" },
+    { property: "og:url", content: "https://debridgers.com/contact" },
+    { property: "og:site_name", content: "Debridgers" },
+    { property: "og:title", content: "Contact Debridgers | Get in Touch" },
+    {
+      property: "og:description",
+      content:
+        "Reach out to Debridgers for orders, partnership inquiries or support. We are available 24 hours a day.",
+    },
+    { property: "og:image", content: "https://debridgers.com/og-image.png" },
+    { property: "og:image:width", content: "1200" },
+    { property: "og:image:height", content: "630" },
+    { property: "og:locale", content: "en_NG" },
+
+    // === Twitter
+    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:url", content: "https://debridgers.com/contact" },
+    { name: "twitter:title", content: "Contact Debridgers | Get in Touch" },
+    {
+      name: "twitter:description",
+      content:
+        "Reach out to Debridgers for orders, partnership inquiries or support. We are available 24 hours a day.",
+    },
+    { name: "twitter:image", content: "https://debridgers.com/og-image.png" },
+
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "index, follow" },
   ];
 }
 

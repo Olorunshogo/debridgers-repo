@@ -2,7 +2,17 @@ import { motion } from "framer-motion";
 import { Trophy, Medal, Star } from "lucide-react";
 
 export function meta() {
-  return [{ title: "Leaderboard | Debridgers" }];
+  return [
+    { title: "Leaderboard | Debridgers" },
+    {
+      name: "description",
+      content:
+        "See how you rank among Debridgers agents. Top performers earn priority orders and higher targets.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 const MOCK_LEADERS = [

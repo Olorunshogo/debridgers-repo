@@ -17,7 +17,14 @@ import type { JwtPayload } from "../../types/auth";
 export function meta() {
   return [
     { title: "Sign In | Debridgers" },
-    { name: "description", content: "Sign in to your Debridgers account." },
+    {
+      name: "description",
+      content:
+        "Sign in to your Debridgers account to manage orders, track deliveries and access your dashboard.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
   ];
 }
 

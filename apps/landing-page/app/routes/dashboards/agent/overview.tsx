@@ -16,7 +16,17 @@ import {
 import { HeroGreetingCard } from "../shared/HeroGreetingCard";
 
 export function meta() {
-  return [{ title: "Agent Overview | Debridgers" }];
+  return [
+    { title: "Agent Overview | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Track your sales, commissions and delivery activity from your Debridgers agent dashboard.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 // === Types
@@ -442,7 +452,7 @@ export default function AgentOverviewPage() {
             >
               <XAxis
                 type="number"
-                tick={{ fontSize: 11, fill: "var(--text-colour)" }}
+                tick={{ fontSize: 12, fill: "var(--text-colour)" }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(v: number) => `${v}k`}
@@ -450,7 +460,7 @@ export default function AgentOverviewPage() {
               <YAxis
                 type="category"
                 dataKey="month"
-                tick={{ fontSize: 11, fill: "var(--text-colour)" }}
+                tick={{ fontSize: 12, fill: "var(--text-colour)" }}
                 axisLine={false}
                 tickLine={false}
                 width={32}
@@ -458,12 +468,12 @@ export default function AgentOverviewPage() {
               <Tooltip
                 formatter={(v: number) => [`${v} bags`, "Sold"]}
                 contentStyle={{
-                  borderRadius: 8,
+                  borderRadius: 2,
                   border: "1px solid var(--border-gray)",
                   fontSize: 12,
                 }}
               />
-              <Bar dataKey="bags" radius={[0, 4, 4, 0]}>
+              <Bar dataKey="bags" radius={[0, 2, 2, 0]}>
                 {data.monthlySales.map((entry, i) => (
                   <Cell
                     key={entry.month}

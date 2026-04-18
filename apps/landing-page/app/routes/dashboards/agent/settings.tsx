@@ -3,10 +3,20 @@ import { motion } from "framer-motion";
 import { User, Lock, CheckCircle } from "lucide-react";
 
 export function meta() {
-  return [{ title: "Settings | Debridgers" }];
+  return [
+    { title: "Settings | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Manage your Debridgers agent account settings including profile and security preferences.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
-export default function AgentSettingsPage() {
+export default function AgentSettingspage() {
   const [profileSaved, setProfileSaved] = useState(false);
   const [passwordSaved, setPasswordSaved] = useState(false);
 

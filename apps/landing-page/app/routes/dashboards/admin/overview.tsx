@@ -5,7 +5,17 @@ import { Users, UserCheck, ShoppingBag, TrendingUp } from "lucide-react";
 import { BASE_BACKEND_URL } from "../../../utils/api";
 
 export function meta() {
-  return [{ title: "Admin Overview | Debridgers" }];
+  return [
+    { title: "Admin Overview | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Monitor platform activity, manage orders and oversee agents and buyers from the Debridgers admin dashboard.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 interface AdminStats {
@@ -27,7 +37,7 @@ export default function AdminOverview() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // -- PRODUCTION --
+    // === PRODUCTION --
     // fetch(`${BASE_BACKEND_URL}/admin/stats`, { credentials: "include" })
     //   .then((r) => r.json())
     //   .then((json) => setStats(json.data))

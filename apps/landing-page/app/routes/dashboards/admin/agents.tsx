@@ -3,7 +3,17 @@ import { motion } from "framer-motion";
 import { UserCheck, Search } from "lucide-react";
 
 export function meta() {
-  return [{ title: "Agents | Debridgers Admin" }];
+  return [
+    { title: "Agents | Debridgers Admin" },
+    {
+      name: "description",
+      content:
+        "View and manage all Debridgers field agents. Review applications, track performance and manage agent accounts.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 type AgentStatus = "active" | "pending" | "suspended";

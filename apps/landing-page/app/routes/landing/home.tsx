@@ -363,8 +363,49 @@ export function meta({}: Route.MetaArgs) {
     {
       name: "description",
       content:
-        "Fresh foodstuff delivered straight to your door or shop at market prices.",
+        "Debridgers delivers fresh foodstuff straight to your door or shop at the exact price you would pay at Central Market. Rice, beans, palm oil, garri and more. Now serving Kaduna South.",
     },
+    {
+      name: "keywords",
+      content:
+        "fresh foodstuff delivery Kaduna, market price food delivery Nigeria, rice beans delivery Kaduna South, affordable food delivery Nigeria, Debridgers, fresh produce delivery, zero hidden fees food delivery",
+    },
+
+    // === Open Graph
+    { property: "og:type", content: "website" },
+    { property: "og:url", content: "https://debridgers.com/" },
+    { property: "og:site_name", content: "Debridgers" },
+    {
+      property: "og:title",
+      content: "Debridgers | Market Prices. Zero Market Stress.",
+    },
+    {
+      property: "og:description",
+      content:
+        "Fresh foodstuff delivered to your door at the same price you would pay at Central Market. No hidden fees. No middlemen. Just fresh food, fast.",
+    },
+    { property: "og:image", content: "https://debridgers.com/og-image.png" },
+    { property: "og:image:width", content: "1200" },
+    { property: "og:image:height", content: "630" },
+    { property: "og:locale", content: "en_NG" },
+
+    // === Twitter
+    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:url", content: "https://debridgers.com/" },
+    {
+      name: "twitter:title",
+      content: "Debridgers | Market Prices. Zero Market Stress.",
+    },
+    {
+      name: "twitter:description",
+      content:
+        "Fresh foodstuff delivered to your door at the same price you would pay at Central Market. No hidden fees. No middlemen. Just fresh food, fast.",
+    },
+    { name: "twitter:image", content: "https://debridgers.com/og-image.png" },
+
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "index, follow" },
   ];
 }
 

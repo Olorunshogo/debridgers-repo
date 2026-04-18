@@ -3,7 +3,17 @@ import { motion } from "framer-motion";
 import { ShoppingBag, Search } from "lucide-react";
 
 export function meta() {
-  return [{ title: "Buyers | Debridgers Admin" }];
+  return [
+    { title: "Buyers | Debridgers Admin" },
+    {
+      name: "description",
+      content:
+        "View and manage all Debridgers buyer accounts. Track orders, activity and account details.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 type BuyerStatus = "active" | "inactive";

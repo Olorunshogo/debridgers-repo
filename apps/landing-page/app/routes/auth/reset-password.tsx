@@ -11,8 +11,12 @@ export function meta() {
     { title: "Reset Password | Debridgers" },
     {
       name: "description",
-      content: "Set a new password for your Debridgers account.",
+      content:
+        "Set a new password for your Debridgers account. Use the reset token sent to your email to complete the process.",
     },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
   ];
 }
 

@@ -4,7 +4,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, ShoppingCart, Minus, Plus, Trash2 } from "lucide-react";
 
 export function meta() {
-  return [{ title: "Shop / Catalog | Debridgers" }];
+  return [
+    { title: "Shop | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Browse and order fresh foodstuff at market prices. Rice, beans, palm oil and more delivered to your door.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 type Category = "all" | "grains" | "tuber" | "oil";

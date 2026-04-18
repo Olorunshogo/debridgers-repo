@@ -8,12 +8,53 @@ import { HeroSection } from "../../components/HeroSection";
 
 export function meta() {
   return [
-    { title: "Become an Agent | Debridgers" },
+    { title: "Become a Debridgers Agent | Earn 30% Commission in Kaduna" },
     {
       name: "description",
       content:
-        "Join Debridgers as a field agent. Earn 30% commission on every sale, work flexibly, and serve your community.",
+        "Join Debridgers as a field agent in Kaduna. Source fresh foodstuff, manage deliveries on your own schedule and earn 30% commission on every sale. Free training included.",
     },
+    {
+      name: "keywords",
+      content:
+        "Debridgers agent Kaduna, earn commission food delivery Nigeria, field agent job Kaduna, flexible work Kaduna, food delivery agent Nigeria, 30% commission sales agent",
+    },
+
+    // === Open Graph
+    { property: "og:type", content: "website" },
+    { property: "og:url", content: "https://debridgers.com/agents" },
+    { property: "og:site_name", content: "Debridgers" },
+    {
+      property: "og:title",
+      content: "Become a Debridgers Agent | Earn 30% Commission in Kaduna",
+    },
+    {
+      property: "og:description",
+      content:
+        "Earn 30% commission on every sale as a Debridgers field agent. Work flexibly, serve your community and get paid weekly. Apply in under 3 minutes.",
+    },
+    { property: "og:image", content: "https://debridgers.com/og-image.png" },
+    { property: "og:image:width", content: "1200" },
+    { property: "og:image:height", content: "630" },
+    { property: "og:locale", content: "en_NG" },
+
+    // === Twitter
+    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:url", content: "https://debridgers.com/agents" },
+    {
+      name: "twitter:title",
+      content: "Become a Debridgers Agent | Earn 30% Commission in Kaduna",
+    },
+    {
+      name: "twitter:description",
+      content:
+        "Earn 5% commission on every sale as a Debridgers field agent. Work flexibly, serve your community and get paid weekly. Apply in under 3 minutes.",
+    },
+    { name: "twitter:image", content: "https://debridgers.com/og-image.png" },
+
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "index, follow" },
   ];
 }
 

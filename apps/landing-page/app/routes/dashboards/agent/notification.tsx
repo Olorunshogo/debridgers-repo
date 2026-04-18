@@ -2,7 +2,17 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function meta() {
-  return [{ title: "Notifications | Debridgers" }];
+  return [
+    { title: "Notifications | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Stay up to date with your latest order updates and platform notifications on Debridgers.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 interface AgentNotification {

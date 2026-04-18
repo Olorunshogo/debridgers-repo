@@ -15,7 +15,14 @@ import { BASE_BACKEND_URL } from "../../utils/api";
 export function meta() {
   return [
     { title: "Forgot Password | Debridgers" },
-    { name: "description", content: "Reset your Debridgers password." },
+    {
+      name: "description",
+      content:
+        "Reset your Debridgers password. Enter your email and we will send you a reset token to get back into your account.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
   ];
 }
 
