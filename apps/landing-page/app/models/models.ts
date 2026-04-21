@@ -1,7 +1,7 @@
 // === Models
-import type { Object } from "@/types/modelTypes";
+import type { StringObject } from "@/types/modelTypes";
 
-export const kadunaStateLgas: Object[] = [
+export const kadunaStateLgas: StringObject[] = [
   { value: "birnin-gwari", label: "Birnin Gwari" },
   { value: "chikun", label: "Chikun" },
   { value: "giwa", label: "Giwa" },
@@ -27,7 +27,7 @@ export const kadunaStateLgas: Object[] = [
   { value: "zaria", label: "Zaria" },
 ];
 
-export const unsoldReasons: Object[] = [
+export const unsoldReasons: StringObject[] = [
   { value: "no_customers", label: "No customers today" },
   { value: "price_too_high", label: "Price too high" },
   { value: "product_quality", label: "Product quality issue" },

@@ -5,12 +5,12 @@ import {
   useImageCycle,
   useTrustCycle,
 } from "../../components/HeroSection";
-import { HeroSection } from "../../components/HeroSection";
 import { Icon } from "@iconify/react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useMotionValue } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 import { PrimaryLink, WhatsAppButton } from "@debridgers/ui-web";
 import { Dot } from "lucide-react";
+import type { NumberObject } from "@/types/modelTypes";
 
 // === Why Debridgers
 interface WhyCardData {
@@ -224,46 +224,130 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
   );
 }
 
-// === WhatWeDeliver: infinite seamless loop, 4 cards visible on lg
-function WhatWeDeliver() {
-  const [offset, setOffset] = useState<number>(0);
-  const [isAnimating, setIsAnimating] = useState<boolean>(true);
-  const [isHovered, setIsHovered] = useState<boolean>(false);
-  const autoScrollRef = useRef<NodeJS.Timeout | null>(null);
+// === WhatWeDeliver (OLD - commented out, kept for reference)
+// function WhatWeDeliver() {
+//   const [offset, setOffset] = useState<number>(0);
+//   const [isAnimating, setIsAnimating] = useState<boolean>(true);
+//   const [isHovered, setIsHovered] = useState<boolean>(false);
+//   const autoScrollRef = useRef<NodeJS.Timeout | null>(null);
+//
+//   const cardWidth = 260;
+//   const gap = 24;
+//   const step = cardWidth + gap;
+//   const totalCards = deliverCategories.length;
+//   const doubled = [...deliverCategories, ...deliverCategories];
+//
+//   useEffect(() => {
+//     if (isHovered) {
+//       if (autoScrollRef.current) clearInterval(autoScrollRef.current);
+//       return;
+//     }
+//     autoScrollRef.current = setInterval(() => {
+//       setOffset((prev) => {
+//         const next = prev + 1;
+//         if (next >= totalCards) {
+//           setTimeout(() => {
+//             setIsAnimating(false);
+//             setOffset(0);
+//             requestAnimationFrame(() => {
+//               requestAnimationFrame(() => setIsAnimating(true));
+//             });
+//           }, 700);
+//         }
+//         return next;
+//       });
+//     }, 2200);
+//     return () => {
+//       if (autoScrollRef.current) clearInterval(autoScrollRef.current);
+//     };
+//   }, [isHovered, totalCards]);
+//
+//   return (
+//     <section id="what-we-deliver" className="font-syne py-section-py sm:py-section-py-sm lg:py-section-py-lg relative w-full bg-white">
+//       <div className="gap-3xl px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto flex w-full flex-col">
+//         <div className="gap-md lg:gap-xl flex flex-col">
+//           <p className="text-primary-light text-xl tracking-widest">What we deliver</p>
+//           <div className="gap-xl flex w-full flex-wrap items-start justify-between">
+//             <h2 className="text-primary font-syne max-w-[751px] text-3xl leading-tight font-extrabold sm:text-4xl lg:text-[50px] lg:font-bold">
+//               Everything you spend on at the market.
+//             </h2>
+//             <PrimaryLink href="https://wa.me/+2348167042797" className="font-syne py-md px-xl text-xl font-bold sm:text-2xl lg:text-3xl">
+//               Send Order
+//             </PrimaryLink>
+//           </div>
+//         </div>
+//         <div className="overflow-hidden" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
+//           <motion.div
+//             className="flex gap-6"
+//             animate={{ x: `-${offset * step}px` }}
+//             transition={isAnimating ? { type: "spring", stiffness: 300, damping: 30 } : { duration: 0 }}
+//             style={{ width: `${doubled.length * (cardWidth + gap) - gap}px` }}
+//           >
+//             {doubled.map((category, index) => (
+//               <DeliverCard key={`${category.title}-${index}`} category={category} />
+//             ))}
+//           </motion.div>
+//         </div>
+//       </div>
+//     </section>
+//   );
+// }
 
-  const cardWidth = 260; // w-[260px]
-  const gap = 24; // gap-6 = 24px
+// === WhatWeDeliverSection: same UI, drag-to-scroll + auto-scroll with hover/drag pause
+function WhatWeDeliverSection() {
+  const cardWidth = 260;
+  const gap = 24;
   const step = cardWidth + gap;
   const totalCards = deliverCategories.length;
-  // === Render doubled list - when offset hits totalCards, silently snap back to 0
+  const loopWidth = totalCards * step; // width of one full set
   const doubled = [...deliverCategories, ...deliverCategories];
 
+  const x = useMotionValue(0);
+  const isPausedRef = useRef<boolean>(false);
+  const isDraggingRef = useRef<boolean>(false);
+  const autoScrollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
-    if (isHovered) {
-      if (autoScrollRef.current) clearInterval(autoScrollRef.current);
-      return;
-    }
     autoScrollRef.current = setInterval(() => {
-      setOffset((prev) => {
-        const next = prev + 1;
-        if (next >= totalCards) {
-          // Schedule a silent snap back to 0 after the spring animation completes
-          setTimeout(() => {
-            setIsAnimating(false);
-            setOffset(0);
-            // Re-enable animation on next tick
-            requestAnimationFrame(() => {
-              requestAnimationFrame(() => setIsAnimating(true));
-            });
-          }, 700); // matches spring duration
-        }
-        return next;
-      });
-    }, 2200);
+      if (isPausedRef.current) return;
+      const current = x.get();
+      const next = current - 1;
+      x.set(next <= -loopWidth ? next + loopWidth : next);
+    }, 16);
     return () => {
       if (autoScrollRef.current) clearInterval(autoScrollRef.current);
     };
-  }, [isHovered, totalCards]);
+  }, [loopWidth, x]);
+
+  const handleMouseEnter = () => {
+    isPausedRef.current = true;
+  };
+  const handleMouseLeave = () => {
+    if (!isDraggingRef.current) isPausedRef.current = false;
+  };
+  const handleDragStart = () => {
+    isDraggingRef.current = true;
+    isPausedRef.current = true;
+  };
+  const handleDragEnd = () => {
+    isDraggingRef.current = false;
+    // Snap x into the valid loop range so the seam stays invisible
+    const current = x.get();
+    if (current > 0)
+      x.set(
+        current % loopWidth === 0
+          ? 0
+          : current - Math.ceil(current / loopWidth) * loopWidth,
+      );
+    if (current < -loopWidth)
+      x.set(current + loopWidth * Math.ceil(Math.abs(current) / loopWidth));
+    // Resume after a short delay so the card doesn't immediately fly away
+    setTimeout(() => {
+      isPausedRef.current = false;
+    }, 800);
+  };
+
+  const stripWidth = doubled.length * step - gap;
 
   return (
     <section
@@ -291,23 +375,21 @@ function WhatWeDeliver() {
           </div>
         </div>
 
-        {/* Carousel - overflow-hidden clips cards beyond 4 on lg */}
+        {/* Carousel */}
         <div
-          className="overflow-hidden"
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
+          className="cursor-grab overflow-hidden active:cursor-grabbing"
+          style={{ touchAction: "none" }}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         >
           <motion.div
             className="flex gap-6"
-            animate={{ x: `-${offset * step}px` }}
-            transition={
-              isAnimating
-                ? { type: "spring", stiffness: 300, damping: 30 }
-                : { duration: 0 }
-            }
-            style={{
-              width: `${doubled.length * (cardWidth + gap) - gap}px`,
-            }}
+            drag="x"
+            dragConstraints={{ left: -loopWidth, right: 0 }}
+            dragElastic={0.05}
+            style={{ x, width: `${stripWidth}px` }}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
           >
             {doubled.map((category, index) => (
               <DeliverCard
@@ -340,13 +422,7 @@ function BlurDot({ className = "" }: { className?: string }) {
   );
 }
 
-// === Stats
-interface Stat {
-  value: number;
-  label: string;
-}
-
-const stats: Stat[] = [
+const stats: NumberObject[] = [
   { value: 92, label: "resident of Kaduna are using us." },
   { value: 1000, label: "areas in Kaduna we serve" },
   { value: 0, label: "hidden fees - ever" },
@@ -699,7 +775,7 @@ export default function Home() {
       </section>
 
       {/* What We Deliver */}
-      <WhatWeDeliver />
+      <WhatWeDeliverSection />
 
       {/* Stats Section */}
       <section
