@@ -326,7 +326,7 @@ export default function VerifyEmailPage() {
                   className="text-xl font-bold select-none"
                   style={{ color: "var(--border-gray)" }}
                 >
-                  —
+                  -
                 </span>
 
                 {/* Group 2 */}

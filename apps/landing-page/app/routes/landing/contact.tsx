@@ -150,7 +150,7 @@ function ContactMap({
 
       L.marker([lat, lng])
         .addTo(map)
-        .bindPopup("Debridgers — Barnawa Market Road, Kaduna")
+        .bindPopup("Debridgers - Barnawa Market Road, Kaduna")
         .openPopup();
 
       mapInstanceRef.current = map;
@@ -268,13 +268,13 @@ export default function ContactPage() {
                 { text: " Stress." },
               ],
             }}
-            subtext="Fresh foodstuff delivered straight to your door or shop — at the same price you'd pay at Central Market."
+            subtext="Fresh foodstuff delivered straight to your door at the same price you'd pay at Central Market."
             secondaryCta={{ label: "Contact Us ", href: "#contact-us" }}
             trustItems={[
               { icon: "lucide:check", label: "Guarantee fresh produce" },
               {
                 icon: "lucide:map-pin",
-                label: "Sarbon Tasha • Narayi• Kakuri",
+                label: "Sarbon Tasha &middot; Narayi&middot; Kakuri",
               },
               { icon: "lucide:tag", label: "Transparent, fixed pricing" },
               { icon: "lucide:truck", label: "Fast Delivery" },

@@ -566,7 +566,7 @@ export default function BuyerOverview() {
             className="font-syne font-semibold"
             style={{ color: "var(--heading-colour)" }}
           >
-            Spending — Last 6 Weeks
+            Spending - Last 6 Weeks
           </h3>
           <span
             className="rounded-full px-3 py-1 text-xs font-medium"

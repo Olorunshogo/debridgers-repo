@@ -5,6 +5,9 @@ import { resolve } from "path";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
+  optimizeDeps: {
+    exclude: ["framer-motion", "@iconify/react", "lucide-react"],
+  },
   root: __dirname,
   plugins: [
     tailwindcss(),

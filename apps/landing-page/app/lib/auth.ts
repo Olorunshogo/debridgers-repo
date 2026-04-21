@@ -9,7 +9,7 @@ import { BASE_BACKEND_URL } from "../utils/api";
 
 /**
  * Store access and refresh tokens as browser cookies.
- * Note: HttpOnly cannot be set via JS — for true HttpOnly protection the server
+ * Note: HttpOnly cannot be set via JS - for true HttpOnly protection the server
  * must set these via Set-Cookie response headers. This client-side path is used
  * for SPA flows where SSR headers aren't available.
  */
@@ -56,7 +56,7 @@ export async function logout(): Promise<void> {
         credentials: "include",
       });
     } catch {
-      // best-effort — clear tokens even if request fails
+      // best-effort - clear tokens even if request fails
     }
   }
   clearTokens();

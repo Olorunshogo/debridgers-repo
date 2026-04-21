@@ -161,7 +161,7 @@ Now scripts regenerate automatically after install.
   - build
   - lint
 
-If a package doesn’t have one, the command will fail — which is good (explicit contracts).
+If a package doesn’t have one, the command will fail - which is good (explicit contracts).
 
 ---
 

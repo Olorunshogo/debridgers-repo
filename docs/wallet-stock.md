@@ -47,7 +47,7 @@ Returns the agent's current wallet state.
 
 ### Pricing
 
-Each modu pack costs **₦1,300** (`130000` kobo) — this is the amount the agent remits back after selling.
+Each modu pack costs **₦1,300** (`130000` kobo) - this is the amount the agent remits back after selling.
 
 ---
 
@@ -80,8 +80,8 @@ Request stock packs from the warehouse. **Requires `kyc_status: approved`.**
 
 **Errors:**
 
-- `400` — `"KYC verification required before requesting stock"` — complete KYC first
-- `400` — `"Only approved agents can request stock"` — application not approved
+- `400` - `"KYC verification required before requesting stock"` - complete KYC first
+- `400` - `"Only approved agents can request stock"` - application not approved
 
 ---
 
@@ -111,7 +111,7 @@ Stock request statuses: `pending` → `fulfilled` | `cancelled`
 
 ### POST /api/v1/agent/stock/remit
 
-Record a payment remittance against a fulfilled stock request. Partial payments are allowed — multiple remittances can be made until `amount_to_remit` is fully covered.
+Record a payment remittance against a fulfilled stock request. Partial payments are allowed - multiple remittances can be made until `amount_to_remit` is fully covered.
 
 **Auth:** `Bearer <agentToken>`
 
@@ -141,13 +141,13 @@ Record a payment remittance against a fulfilled stock request. Partial payments 
 
 **Errors:**
 
-- `404` — stock request not found or doesn't belong to agent
-- `400` — `"Can only remit against a fulfilled stock request"` — not yet fulfilled by admin
-- `400` — `"Remittance exceeds the amount owed"` — cumulative total exceeds `amount_to_remit`
+- `404` - stock request not found or doesn't belong to agent
+- `400` - `"Can only remit against a fulfilled stock request"` - not yet fulfilled by admin
+- `400` - `"Remittance exceeds the amount owed"` - cumulative total exceeds `amount_to_remit`
 
 ---
 
-## Admin — Stock Management
+## Admin - Stock Management
 
 ### GET /api/v1/admin/stock/requests
 
@@ -165,14 +165,14 @@ Marks a pending request as fulfilled. This signals to the agent that stock has b
 
 **Errors:**
 
-- `404` — request not found
-- `400` — `"Only pending requests can be fulfilled"`
+- `404` - request not found
+- `400` - `"Only pending requests can be fulfilled"`
 
 ---
 
 ### GET /api/v1/admin/stock/inventory
 
-Warehouse overview — total received, total dispatched, current available stock.
+Warehouse overview - total received, total dispatched, current available stock.
 
 ```json
 {
@@ -198,7 +198,7 @@ Record stock received from supplier.
 {
   "quantity": 200,
   "source": "Farm Direct Ltd",
-  "notes": "April batch — 200 x 5kg modu packs"
+  "notes": "April batch - 200 x 5kg modu packs"
 }
 ```
 
@@ -212,8 +212,8 @@ Commissions are calculated automatically. There are four types:
 | ------------------------ | ----------------------------------------------------- | ------------------------------------- |
 | `direct`                 | Agent submits a sales report                          | Calculated from report amount         |
 | `buyer_referral`         | Buyer places an order using agent's `BUYER-XXXX` code | ₦20 per order                         |
-| `agent_override`         | Monthly cron — agent recruited other agents           | 5% of recruited agents' monthly sales |
-| `state_manager_override` | Monthly cron — for State Managers only                | 2% of all orders in their state       |
+| `agent_override`         | Monthly cron - agent recruited other agents           | 5% of recruited agents' monthly sales |
+| `state_manager_override` | Monthly cron - for State Managers only                | 2% of all orders in their state       |
 
 ### Commission Lifecycle
 

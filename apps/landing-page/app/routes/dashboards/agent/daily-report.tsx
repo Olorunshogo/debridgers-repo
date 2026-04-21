@@ -61,7 +61,7 @@ const MOCK_HISTORY: ReportHistoryEntry[] = [
     dayLabel: "Apr 3, Thu",
     bagsSold: 0,
     area: "Day off",
-    amount: "—",
+    amount: "-",
     status: "missed",
   },
   {

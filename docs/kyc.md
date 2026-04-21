@@ -10,10 +10,10 @@ KYC (Know Your Customer) is a mandatory gate before an agent can request stock o
 
 | State           | Meaning                                     |
 | --------------- | ------------------------------------------- |
-| `not_submitted` | Default — agent has not submitted KYC yet   |
-| `submitted`     | Agent submitted — awaiting admin review     |
-| `approved`      | Admin approved — agent is fully operational |
-| `rejected`      | Admin rejected — agent can resubmit         |
+| `not_submitted` | Default - agent has not submitted KYC yet   |
+| `submitted`     | Agent submitted - awaiting admin review     |
+| `approved`      | Admin approved - agent is fully operational |
+| `rejected`      | Admin rejected - agent can resubmit         |
 
 ---
 
@@ -169,7 +169,7 @@ Approve or reject a submitted KYC. Only works when agent's `kyc_status` is `subm
 
 Once `kyc_status: approved`, the agent can:
 
-- `POST /agent/stock/request` — request stock packs
+- `POST /agent/stock/request` - request stock packs
 - Process buyer orders (when orders module is live)
 - Access full operational features
 

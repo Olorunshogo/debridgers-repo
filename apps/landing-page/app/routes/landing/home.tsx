@@ -5,10 +5,12 @@ import {
   useImageCycle,
   useTrustCycle,
 } from "../../components/HeroSection";
+import { HeroSection } from "../../components/HeroSection";
 import { Icon } from "@iconify/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 import { PrimaryLink, WhatsAppButton } from "@debridgers/ui-web";
+import { Dot } from "lucide-react";
 
 // === Why Debridgers
 interface WhyCardData {
@@ -22,7 +24,7 @@ const whyCardsData: WhyCardData[] = [
     icon: "lucide:lock-keyhole",
     title: "Fixed, fair prices",
     description:
-      "No more guessing what rice costs today. Our prices are set weekly and always reflect real market rates — nothing more.",
+      "No more guessing what rice costs today. Our prices are set weekly and always reflect real market rates - nothing more.",
   },
   {
     icon: "lucide:check",
@@ -34,7 +36,7 @@ const whyCardsData: WhyCardData[] = [
     icon: "lucide:smartphone",
     title: "Order your way",
     description:
-      "WhatsApp, phone call, or app — whatever is easiest for you. No complex platforms, no downloads required to get started.",
+      "WhatsApp, phone call, or app - whatever is easiest for you. No complex platforms, no downloads required to get started.",
   },
 ];
 
@@ -177,7 +179,7 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
       transition={{ duration: 0.3 }}
       className="group relative h-[380px] w-[260px] shrink-0 cursor-default overflow-hidden rounded-3xl shadow-lg"
     >
-      {/* Images — static until hover, then swipe right-to-left */}
+      {/* Images - static until hover, then swipe right-to-left */}
       {category.images.map((src, idx) => (
         <motion.img
           key={src}
@@ -205,7 +207,7 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
         <p className="text-base">{category.subtitle}</p>
       </div>
 
-      {/* Image dots — visible on hover */}
+      {/* Image dots - visible on hover */}
       {isHovered && category.images.length > 1 && (
         <div className="absolute bottom-20 left-1/2 flex -translate-x-1/2 gap-1.5">
           {category.images.map((_, i) => (
@@ -289,7 +291,7 @@ function WhatWeDeliver() {
           </div>
         </div>
 
-        {/* Carousel — overflow-hidden clips cards beyond 4 on lg */}
+        {/* Carousel - overflow-hidden clips cards beyond 4 on lg */}
         <div
           className="overflow-hidden"
           onMouseEnter={() => setIsHovered(true)}
@@ -346,8 +348,8 @@ interface Stat {
 
 const stats: Stat[] = [
   { value: 92, label: "resident of Kaduna are using us." },
-  { value: 1000, label: "areas in Kaduna South we serve" },
-  { value: 0, label: "hidden fees — ever" },
+  { value: 1000, label: "areas in Kaduna we serve" },
+  { value: 0, label: "hidden fees - ever" },
 ];
 
 const statsFormatters: Array<(v: number) => string> = [
@@ -363,12 +365,12 @@ export function meta({}: Route.MetaArgs) {
     {
       name: "description",
       content:
-        "Debridgers delivers fresh foodstuff straight to your door or shop at the exact price you would pay at Central Market. Rice, beans, palm oil, garri and more. Now serving Kaduna South.",
+        "Debridgers delivers fresh foodstuff straight to your door or shop at the exact price you would pay at Central Market. Rice, beans, palm oil, garri and more. Now serving Kaduna.",
     },
     {
       name: "keywords",
       content:
-        "fresh foodstuff delivery Kaduna, market price food delivery Nigeria, rice beans delivery Kaduna South, affordable food delivery Nigeria, Debridgers, fresh produce delivery, zero hidden fees food delivery",
+        "fresh foodstuff delivery Kaduna, market price food delivery Nigeria, rice beans delivery Kaduna, affordable food delivery Nigeria, Debridgers, fresh produce delivery, zero hidden fees food delivery",
     },
 
     // === Open Graph
@@ -417,7 +419,10 @@ export default function Home() {
 
   const trustItems = [
     { icon: "lucide:check", label: "Guarantee fresh produce" },
-    { icon: "lucide:map-pin", label: "Sarbon Tasha • Narayi• Kakuri" },
+    {
+      icon: "lucide:map-pin",
+      label: "Sarbon Tasha &middot; Narayi&middot; Kakuri",
+    },
     { icon: "lucide:tag", label: "Transparent, fixed pricing" },
     { icon: "lucide:truck", label: "Fast Delivery" },
   ];
@@ -477,7 +482,7 @@ export default function Home() {
                   {/* Heading and Paragraph */}
                   <div className="gap-lg flex flex-col">
                     {/* Heading */}
-                    <h1 className="flex flex-col text-4xl leading-tight font-bold text-white sm:text-6xl lg:text-7xl">
+                    <h1 className="flex flex-col text-5xl leading-tight font-bold text-white sm:text-6xl lg:text-7xl">
                       <span>Market Prices.</span>
                       <span className="flex flex-wrap items-baseline gap-x-3">
                         {/* Curved Underlined Zero */}
@@ -560,7 +565,7 @@ export default function Home() {
                         <span className="text-[#FCFDFD]">
                           {renderIcon(item.icon)}
                         </span>
-                        <span className="text-[14px] font-semibold whitespace-nowrap">
+                        <span className="text-[14px] font-semibold whitespace-nowrap lg:text-base">
                           {item.label}
                         </span>
                       </div>
@@ -609,7 +614,7 @@ export default function Home() {
                     </h3>
                     <p className="font-open-sans text-[14px] leading-relaxed lg:text-base">
                       Chat on WhatsApp, call, or browse our catalog. Tell us
-                      what you need — rice, beans, palm oil, anything.
+                      what you need like rice, beans, palm oil, anything.
                     </p>
                   </div>
                 </div>
@@ -653,7 +658,7 @@ export default function Home() {
                     Next Delivery
                   </div>
                   <p className="text-[14px] font-semibold lg:text-lg">
-                    Kaduna South • Today
+                    Kaduna <Dot /> Today
                   </p>
                   <p className="text-sm lg:text-base">
                     Order before 12pm to experience same day delivery
@@ -881,8 +886,8 @@ export default function Home() {
                 <ul className="gap-base flex flex-col text-sm text-green-100">
                   {[
                     "Access to a larger, verified network of food directly from farm",
-                    "More consistent stock — even during off-season period",
-                    "Two teams, one mission — fresh food at honest prices",
+                    "More consistent stock - even during off-season period",
+                    "Two teams, one mission - fresh food at honest prices",
                   ].map((item) => (
                     <li
                       key={item}

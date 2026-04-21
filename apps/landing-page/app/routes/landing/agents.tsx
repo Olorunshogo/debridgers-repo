@@ -81,7 +81,7 @@ const whatYouDoCards: WhatYouDoCard[] = [
     icon: "lucide:package-search",
     title: "Source Products",
     description:
-      "Connect buyers with fresh foodstuff from verified local markets. You know your area — we give you the tools.",
+      "Connect buyers with fresh foodstuff from verified local markets. You know your area - we give you the tools.",
   },
   {
     icon: "lucide:truck",
@@ -93,7 +93,7 @@ const whatYouDoCards: WhatYouDoCard[] = [
     icon: "lucide:banknote",
     title: "Earn Commissions",
     description:
-      "Get 30% of every sale you close. The more you sell, the more you earn — paid weekly, no delays.",
+      "Get 30% of every sale you close. The more you sell, the more you earn - paid weekly, no delays.",
   },
 ];
 
@@ -111,7 +111,7 @@ const benefits: BenefitItem[] = [
   {
     icon: "lucide:graduation-cap",
     title: "Free training",
-    description: "We onboard you fully — no prior experience needed.",
+    description: "We onboard you fully - no prior experience needed.",
   },
   {
     icon: "lucide:map-pin",
@@ -121,7 +121,7 @@ const benefits: BenefitItem[] = [
   {
     icon: "lucide:shield-check",
     title: "Verified & trusted",
-    description: "Work under the Debridgers brand — buyers already trust us.",
+    description: "Work under the Debridgers brand - buyers already trust us.",
   },
   {
     icon: "lucide:trending-up",
@@ -199,7 +199,7 @@ export default function AgentsPage() {
                 { text: "." },
               ],
             }}
-            subtext="Become a Debridgers field agent. Source fresh foodstuff, manage deliveries, and earn 30% commission on every sale — on your own schedule."
+            subtext="Become a Debridgers field agent. Source fresh foodstuff, manage deliveries, and earn 30% commission on every sale - on your own schedule."
             secondaryCta={{ label: "Apply Now", href: "#apply-now" }}
             trustItems={[
               { icon: "lucide:wallet", label: "30% commission per sale" },
@@ -208,7 +208,7 @@ export default function AgentsPage() {
                 icon: "lucide:graduation-cap",
                 label: "Free onboarding & training",
               },
-              { icon: "lucide:map-pin", label: "Kaduna South — local routes" },
+              { icon: "lucide:map-pin", label: "Kaduna - local routes" },
             ]}
           />
         </div>
@@ -520,7 +520,7 @@ export default function AgentsPage() {
               Apply in under 3 minutes.
             </h2>
             <p className="font-open-sans text-text mx-auto max-w-[550px] text-lg leading-relaxed">
-              No experience required. Just bring your hustle — we&apos;ll handle
+              No experience required. Just bring your hustle - we&apos;ll handle
               the rest.
             </p>
             <Link

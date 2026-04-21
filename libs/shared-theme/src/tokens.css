@@ -66,7 +66,7 @@
   --dash-topbar-bg: #ffffff;
   --dash-page-bg: #f3f3f3;
 
-  /* Spacing scale (gap + padding/margin — same values, one scale) */
+  /* Spacing scale (gap + padding/margin - same values, one scale) */
   --space-sm: 0.5rem; /* 8px  */
   --space-md: 0.75rem; /* 12px */
   --space-base: 1rem; /* 16px */

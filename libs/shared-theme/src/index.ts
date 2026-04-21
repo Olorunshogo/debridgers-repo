@@ -1,7 +1,7 @@
 /**
  * shared-theme/index.ts
  *
- * Single source of truth for design tokens — values mirror tokens.css.
+ * Single source of truth for design tokens - values mirror tokens.css.
  * Use these in JS/TS contexts (e.g. inline styles, tests, non-Tailwind code).
  * For Tailwind usage, rely on the CSS variable classes defined via @theme in styles.css.
  */
@@ -63,7 +63,7 @@ export type Colors = typeof colors;
 export type Spacing = typeof spacing;
 export type Shadows = typeof shadows;
 
-// Tailwind preset — consumed by apps/*/tailwind.config.ts
+// Tailwind preset - consumed by apps/*/tailwind.config.ts
 const preset = {
   theme: {
     extend: {
