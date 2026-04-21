@@ -78,11 +78,11 @@ export function HeroSection({
               className="absolute inset-0 h-full w-full bg-red-900 object-contain object-cover"
             />
           )}
-
-          {/* Inset */}
-          <div className="absolute inset-0 h-full w-full bg-linear-to-b from-[40BF4F]/20 from-0% via-[#23682B]/70 via-23% to-[#061107] to-100%"></div>
-          <div className="absolute inset-0 h-full w-full bg-linear-to-b from-[40BF4F]/20 from-0% to-[#061107] to-100%"></div>
         </AnimatePresence>
+
+        {/* Inset overlays - outside AnimatePresence to avoid duplicate empty keys */}
+        <div className="absolute inset-0 h-full w-full bg-linear-to-b from-[40BF4F]/20 from-0% via-[#23682B]/70 via-23% to-[#061107] to-100%"></div>
+        <div className="absolute inset-0 h-full w-full bg-linear-to-b from-[40BF4F]/20 from-0% to-[#061107] to-100%"></div>
       </div>
 
       {/* Content Wrapper */}
@@ -166,7 +166,7 @@ export function HeroSection({
               </h1>
 
               {/* Subtext */}
-              <p className="w-full max-w-[360px] text-lg leading-relaxed font-semibold text-white lg:max-w-[574px] lg:text-xl">
+              <p className="w-full max-w-[360px] text-base leading-relaxed font-semibold text-white sm:text-lg lg:max-w-[574px] lg:text-xl">
                 {subtext}
               </p>
             </div>
@@ -243,7 +243,7 @@ export function HeroSection({
                   <span className="text-[#FCFDFD]">
                     {renderIcon(item.icon)}
                   </span>
-                  <span className="text-[14px] font-semibold whitespace-nowrap">
+                  <span className="text-[14px] font-semibold whitespace-nowrap lg:text-base">
                     {item.label}
                   </span>
                 </div>

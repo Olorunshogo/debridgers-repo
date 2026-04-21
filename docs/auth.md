@@ -2,12 +2,12 @@
 
 ## Overview
 
-The Auth module handles registration, login, token refresh, logout, and password reset for **all user types** — `admin`, `agent`, `buyer`, and `company`.
+The Auth module handles registration, login, token refresh, logout, and password reset for **all user types** - `admin`, `agent`, `buyer`, and `company`.
 
 The system uses two JWTs:
 
-- **Access Token** — short-lived (`15m`), sent as `Authorization: Bearer <token>`
-- **Refresh Token** — long-lived (`7d`), sent as `Authorization: Refresh <token>` for rotation
+- **Access Token** - short-lived (`15m`), sent as `Authorization: Bearer <token>`
+- **Refresh Token** - long-lived (`7d`), sent as `Authorization: Refresh <token>` for rotation
 
 > **Note for agents:** Login is blocked until an admin approves the application. Attempting to log in with a `pending` agent account returns `401` with message `"Your account is not yet approved. Please contact customer care."`
 
@@ -79,8 +79,8 @@ Creates a new user account directly. For agents, prefer `POST /agent/apply` whic
 
 **Errors:**
 
-- `401` — wrong credentials: `"Invalid credentials"`
-- `401` — agent not approved: `"Your account is not yet approved. Please contact customer care."`
+- `401` - wrong credentials: `"Invalid credentials"`
+- `401` - agent not approved: `"Your account is not yet approved. Please contact customer care."`
 
 ---
 

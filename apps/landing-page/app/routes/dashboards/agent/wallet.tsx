@@ -178,7 +178,7 @@ function WeekBreakdownCard({ week }: { week: WeekBreakdown }) {
         ))}
       </div>
 
-      {/* Progress bar — current week only */}
+      {/* Progress bar - current week only */}
       {week.isCurrent && (
         <div className="flex flex-col gap-1">
           <div className="border-border-gray relative h-1.5 w-full overflow-hidden rounded-full">

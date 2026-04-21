@@ -6,7 +6,7 @@ export default function Footer() {
 
   return (
     <footer className="bg-primary relative h-full w-full overflow-hidden text-white">
-      {/* Background "Debridgers" wordmark — top */}
+      {/* Background "Debridgers" wordmark - top */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 flex justify-center overflow-hidden select-none"
@@ -25,7 +25,7 @@ export default function Footer() {
         </span>
       </div>
 
-      {/* Background "Debridgers" wordmark — bottom */}
+      {/* Background "Debridgers" wordmark - bottom */}
       {/* <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-center overflow-hidden select-none"
@@ -128,7 +128,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Keep in Touch — always full width */}
+          {/* Keep in Touch - always full width */}
           <div className="font-open-sans flex w-full flex-col gap-5">
             <h3 className="font-open-sans text-[14px] font-semibold tracking-widest text-white uppercase">
               Keep in Touch
@@ -154,7 +154,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="font-open-sans relative z-10 flex flex-wrap items-center justify-between gap-6 border-t border-white/10 py-6 text-sm text-white">
           <p className="mx-auto text-sm text-white md:mx-0">
-            &copy; 2026 Debridgers. Delivering fresh to Kaduna.
+            copy 2026 Debridgers. Delivering fresh to Kaduna.
           </p>
           <div className="mx-auto flex items-center gap-6 md:mx-0">
             {[

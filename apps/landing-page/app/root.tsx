@@ -10,21 +10,22 @@ import {
 import type { Route } from "./+types/root";
 import type { MetaFunction } from "react-router";
 import "./styles.css";
-import { IntroAnimation } from "./components/IntroAnim";
+import { IntroAnimation } from "./components/IntroAnimation";
 
 export const meta: MetaFunction = () => [
+  { charSet: "utf-8" },
   { charSet: "utf-8" },
   { name: "viewport", content: "width=device-width, initial-scale=1" },
   { title: "Debridgers | Fresh Foodstuff at Market Prices in Kaduna" },
   {
     name: "description",
     content:
-      "Debridgers delivers fresh foodstuff straight to your door or shop at the same price you would pay at Central Market. Rice, beans, oil and more. Serving Kaduna South.",
+      "Debridgers delivers fresh foodstuff straight to your door or shop at the same price you would pay at Central Market. Rice, beans, oil and more. Serving Kaduna.",
   },
   {
     name: "keywords",
     content:
-      "Fresh foodstuff delivery Kaduna, market price food delivery Nigeria, rice beans delivery Kaduna, Debridgers, affordable food delivery, Kaduna South food delivery, fresh produce Nigeria",
+      "Fresh foodstuff delivery Kaduna, market price food delivery Nigeria, rice beans delivery Kaduna, Debridgers, affordable food delivery, Kaduna food delivery, fresh produce Nigeria",
   },
   // === Author and Robots
   { name: "author", content: "Debridgers Team" },

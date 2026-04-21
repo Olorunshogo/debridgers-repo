@@ -38,7 +38,7 @@ Submit an agent application. No auth required. Accepts `multipart/form-data`.
 | `password`               | string | Yes      | Min 8 chars, mixed case + number |
 | `confirm_password`       | string | Yes      | Must match `password`            |
 | `referred_by_agent_code` | string | No       | An agent's `AGENT-XXXX` code     |
-| `cv`                     | file   | No       | PDF — uploaded to `/tmp`         |
+| `cv`                     | file   | No       | PDF - uploaded to `/tmp`         |
 
 **Response (201):**
 
@@ -109,9 +109,9 @@ Submit KYC documents. Accepts `multipart/form-data`. Agent must be `status: appr
 
 **Errors:**
 
-- `400` — application not yet approved
-- `400` — KYC already submitted or approved
-- `400` — both files required
+- `400` - application not yet approved
+- `400` - KYC already submitted or approved
+- `400` - both files required
 
 ---
 
@@ -166,8 +166,8 @@ Request stock packs. **Requires `kyc_status: approved`.**
 
 **Errors:**
 
-- `400` — KYC not approved
-- `400` — agent not approved
+- `400` - KYC not approved
+- `400` - agent not approved
 
 ---
 

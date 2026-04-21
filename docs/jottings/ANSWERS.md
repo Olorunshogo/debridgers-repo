@@ -85,7 +85,7 @@ If they can&apos;t price below market, they&apos;re just another middleman. Whic
 
 - What is your farm-gate cost per bag? (You need to know their actual margin)
 - What price do you sell to regular market traders at?
-- What volume would unlock a lower price for us — 50 bags? 100? 500?
+- What volume would unlock a lower price for us - 50 bags? 100? 500?
 - Can we agree on a tiered pricing structure as our orders scale?
 
 **On Their Supply Chain**

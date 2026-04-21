@@ -47,14 +47,14 @@ const MOCK_DATA: WalletData = {
     },
     {
       id: "t2",
-      description: "Order #AGL-0024 — Rice, Beans, Palm Oil",
+      description: "Order #AGL-0024 - Rice, Beans, Palm Oil",
       amount: 6800,
       type: "debit",
       date: "Mar 24, 2026",
     },
     {
       id: "t3",
-      description: "Order #AGL-0023 — Beans, Yam",
+      description: "Order #AGL-0023 - Beans, Yam",
       amount: 5300,
       type: "debit",
       date: "Mar 22, 2026",
@@ -68,14 +68,14 @@ const MOCK_DATA: WalletData = {
     },
     {
       id: "t5",
-      description: "Order #AGL-0022 — Rice, Gari",
+      description: "Order #AGL-0022 - Rice, Gari",
       amount: 3200,
       type: "debit",
       date: "Mar 18, 2026",
     },
     {
       id: "t6",
-      description: "Order #AGL-0021 — Rice, Yam, Palm Oil",
+      description: "Order #AGL-0021 - Rice, Yam, Palm Oil",
       amount: 8800,
       type: "debit",
       date: "Mar 15, 2026",

@@ -47,7 +47,7 @@
 
 //     const { fullName, email, message } = contactFormSchema.parse(rawData);
 
-//     // 1. Send Admin Alert — "New Contact Form Message"
+//     // 1. Send Admin Alert - "New Contact Form Message"
 //     const adminHtml = renderTemplate("contact-form", {
 //       name: fullName,
 //       email,
@@ -80,7 +80,7 @@
 //       to: [{ email }],
 //       subject: `We've received your message - Debrigger`,
 //       html: userHtml,
-//       text: `Hi ${fullName},\n\nThanks for contacting us! We’ll reply within 24 hours.\n\n— Debridgers Team`,
+//       text: `Hi ${fullName},\n\nThanks for contacting us! We’ll reply within 24 hours.\n\n- Debridgers Team`,
 //     })
 //     .then(console.log)
 //     .catch(console.error);

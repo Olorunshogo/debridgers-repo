@@ -229,7 +229,7 @@ Returns a single buyer with their full order history.
 
 ### PATCH /api/v1/admin/buyers/:id/block
 
-Blocks a buyer — prevents them from placing orders.
+Blocks a buyer - prevents them from placing orders.
 
 ### PATCH /api/v1/admin/buyers/:id/unblock
 
@@ -338,6 +338,6 @@ Marks a commission as paid after manual bank transfer to the agent.
 ## Security Notes
 
 - Admin routes are double-guarded: `AuthGuard` + `RolesGuard` (`role === 'admin'`)
-- There is no public admin registration — admins are created via seeder or database
-- Admin JWTs expire in 15 minutes — refresh using `POST /auth/refresh`
+- There is no public admin registration - admins are created via seeder or database
+- Admin JWTs expire in 15 minutes - refresh using `POST /auth/refresh`
 - The seeded admin password should be changed immediately after first login in production

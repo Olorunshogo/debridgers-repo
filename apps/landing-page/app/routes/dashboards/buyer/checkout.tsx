@@ -30,14 +30,14 @@ interface Address {
 const MOCK_ADDRESSES: Address[] = [
   {
     id: "1",
-    label: "Home — Default",
-    full: "10 Barnawa Close, off Rabah Road, Barnawa, Kaduna South",
+    label: "Home - Default",
+    full: "10 Barnawa Close, off Rabah Road, Barnawa, Kaduna",
     isDefault: true,
   },
   {
     id: "2",
-    label: "Shop — Backup",
-    full: "14 Business Drive, off Rabah Road, Barnawa, Kaduna South",
+    label: "Shop - Backup",
+    full: "14 Business Drive, off Rabah Road, Barnawa, Kaduna",
     isDefault: false,
   },
 ];

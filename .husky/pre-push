@@ -17,7 +17,7 @@ pnpm --filter @debridgers/debridgers-backend-e2e test || {
 }
 echo "✅ E2E tests passed."
 
-# 3️⃣ Protected branch checks — runs when pushing to develop or main
+# 3️⃣ Protected branch checks, runs when pushing to develop or main
 current_user=$(git config user.email)
 allowed_user='shownzy001@gmail.com'
 z40=0000000000000000000000000000000000000000

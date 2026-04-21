@@ -1,4 +1,4 @@
-# Debridgers Backend — Architecture & Structure
+# Debridgers Backend - Architecture & Structure
 
 ## Overview
 
@@ -26,7 +26,7 @@ All responses are wrapped by a global interceptor:
 ```
 apps/debridgers-backend/
 ├── src/
-│   ├── main.ts                          # Entry point — CORS, versioning, Swagger, global interceptor
+│   ├── main.ts                          # Entry point - CORS, versioning, Swagger, global interceptor
 │   ├── app/                             # Feature modules
 │   │   ├── app.module.ts                # Root module
 │   │   ├── app.controller.ts            # GET /health
@@ -61,7 +61,7 @@ apps/debridgers-backend/
 │   │   │       └── review-kyc.dto.ts
 │   │   ├── commission/                  # Monthly cron commission calculation
 │   │   │   ├── commission.module.ts
-│   │   │   └── commission.service.ts    # @Cron — runs 1st of each month
+│   │   │   └── commission.service.ts    # @Cron - runs 1st of each month
 │   │   ├── contact/                     # Landing page lead capture
 │   │   │   └── contact.controller.ts    # POST /contact
 │   │   └── payment/                     # Paystack split payment
@@ -101,7 +101,7 @@ apps/debridgers-backend/
 | -------------------- | -------------------------------------------------------------------------- |
 | `users`              | All user types: `admin \| agent \| buyer \| company`                       |
 | `agent_profiles`     | Agent data: KYC status, referral codes, bank details, state manager flag   |
-| `wallets`            | Agent wallet — available + pending balance (in kobo)                       |
+| `wallets`            | Agent wallet - available + pending balance (in kobo)                       |
 | `stock_requests`     | Agent stock requests + remittance tracking                                 |
 | `inventory_records`  | Admin records of stock received from supplier                              |
 | `commissions`        | Per-order commissions: direct, buyer_referral, agent_override, sm_override |
@@ -163,19 +163,19 @@ pnpm test:e2e      # Run backend e2e tests
 ```
 Client → PATCH /api/v1/admin/agents/5/status
   ↓
-AuthGuard — verifies Bearer JWT
+AuthGuard - verifies Bearer JWT
   ↓
-RolesGuard — checks role === 'admin'
+RolesGuard - checks role === 'admin'
   ↓
-ZodValidationPipe (on @Body) — validates { status: "approved" }
+ZodValidationPipe (on @Body) - validates { status: "approved" }
   ↓
-AdminService.updateAgentStatus() — generates referral codes, creates wallet
+AdminService.updateAgentStatus() - generates referral codes, creates wallet
   ↓
 EventEmitter2.emit('agent.approved', payload)   ← async, non-blocking
   ↓ (background)
 UserListeners.onAgentApproved() → EmailService.sendAgentApproved()
   ↓
-ApiResponseInterceptor — wraps result in standard JSON envelope
+ApiResponseInterceptor - wraps result in standard JSON envelope
   ↓
 Client ← 200 OK { statusCode, message, data, timestamp, path }
 ```
