@@ -137,48 +137,148 @@ apps/debridgers-backend/
 
 ---
 
-## Scripts
+## Local Development Setup (Docker Postgres)
+
+The backend uses PostgreSQL. For local development, a Docker container replaces any need for a hosted DB (Neon, Supabase, etc.).
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) installed and running
+- Node.js 24+ and pnpm 10+
+
+### First-time setup
+
+Run these once when setting up the project for the first time:
+
+**1. Copy and fill in the backend env file**
 
 ```bash
-pnpm dev           # Start backend with hot reload
-pnpm build         # Compile to dist/
-pnpm start         # Run compiled dist/main.js
-pnpm db:generate   # Generate migration SQL from schema changes
-pnpm db:migrate    # Apply migrations to Neon
-pnpm db:studio     # Open Drizzle Studio (visual DB browser)
-pnpm db:seed       # Seed admin account (run once on new DB)
+cp apps/debridgers-backend/.env.example apps/debridgers-backend/.env
 ```
 
-From repo root:
+The example already has `DATABASE_URL` set to the local Docker Postgres connection string. Fill in the remaining required variables:
+
+- **JWT secrets** — generate strong random strings for `ACCESS_TOKEN_SECRET` and `REFRESH_TOKEN_SECRET`
+- **Cloudinary** — get credentials from your Cloudinary dashboard
+- **Mailtrap** — get your API token from Mailtrap
+- **Paystack** — get your secret and public keys from Paystack
+- **Admin seed** — set `ADMIN_PASSWORD` (email defaults to `admin@debridgers.com`)
+
+Optional:
+
+- **Redis** — set `UPSTASH_REDIS_URL` if you want persistent caching (otherwise uses in-memory)
+- **App URL** — defaults to `http://localhost:3000`, change if your frontend runs elsewhere
+
+**2. Start Postgres and run migrations**
 
 ```bash
-pnpm dev           # Start backend + frontend together (concurrently)
-pnpm test:e2e      # Run backend e2e tests
+pnpm docker:migrate
 ```
+
+This does two things in sequence:
+
+- Starts the Postgres container and waits until it passes its healthcheck
+- Runs all Drizzle migrations against it
+
+**3. Seed the admin account**
+
+```bash
+pnpm db:seed
+```
+
+Creates the default admin user (`admin@debridgers.com` / `Admin@2026!` unless overridden by `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env`). Safe to skip if you don't need the seed data.
+
+**4. Start the backend**
+
+```bash
+pnpm dev:backend
+```
+
+Backend is now running at `http://localhost:4000/api/v1`.
+Swagger UI at `http://localhost:4000/api/docs`.
+
+---
+
+### Day-to-day workflow
+
+On subsequent runs, Postgres persists data in a named Docker volume — you only need to start the container:
+
+```bash
+pnpm docker:up      # Start
 
 ---
 
 ## How a Request Flows
 
 ```
+
 Client → PATCH /api/v1/admin/agents/5/status
-  ↓
+↓
 AuthGuard - verifies Bearer JWT
-  ↓
+↓
 RolesGuard - checks role === 'admin'
-  ↓
+↓
 ZodValidationPipe (on @Body) - validates { status: "approved" }
-  ↓
+↓
 AdminService.updateAgentStatus() - generates referral codes, creates wallet
-  ↓
-EventEmitter2.emit('agent.approved', payload)   ← async, non-blocking
+↓
+EventEmitter2.emit('agent.approved', payload) ← async, non-blocki-------------------------- |
+| `pnpm docker:up` | Start the Postgres container in the background, wait for healthcheck |
+| `pnpm docker:down` | Stop and remove the Postgres container (data volume is preserved) |
+| `pnpm docker:migrate` | `docker:up` + `db:migrate` in one step |
+
+To also remove the data volume (full reset):
+
+```bash
+docker compose -p debridgers -f docker/docker-compose.yml down -v
+```
+
+---
+
+### Switching between local Docker and a hosted DB (Neon/Supabase)
+
+Just swap `DATABASE_URL` in `apps/debridgers-backend/.env`:
+
+```env
+# Local Docker
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/debridgers
+
+# Hosted (Neon example)
+DATABASE_URL=postgresql://user:pass@ep-xxx.neon.tech/debridgers?sslmode=require
+```
+
+SSL is handled automatically — the database provider and seeder detect `localhost`/`127.0.0.1` and disable SSL for local connections.
+
+---
+
+## Scripts
+
+```bash
+pnpm dev:backend   # Start backend with hot reload
+pnpm build:backend # Compile to dist/
+pnpm start:backend # Run compiled dist/main.js
+pnpm db:generate   # Generate migration SQL from schema changes
+pnpm db:migrate    # Apply migrations to the database
+pnpm db:studio     # Open Drizzle Studio (visual DB browser)
+pnpm db:seed       # Seed admin account (run once on new DB)
+pnpm docker:up     # Start local Postgres container
+pnpm docker:down   # Stop local Postgres container
+pnpm docker:migrate # Start Postgres + run migrations in one step
+```
+
+From repo root:
+
+````bash
+pnpm dev           # Start backend + frontend together (concurrently)
+pnpm test:e2e      # Run backend e2e tests
+```ng
   ↓ (background)
 UserListeners.onAgentApproved() → EmailService.sendAgentApproved()
   ↓
 ApiResponseInterceptor - wraps result in standard JSON envelope
   ↓
 Client ← 200 OK { statusCode, message, data, timestamp, path }
-```
+````
 
 ---
 
