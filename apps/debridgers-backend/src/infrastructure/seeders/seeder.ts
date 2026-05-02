@@ -7,9 +7,14 @@ import * as bcrypt from "bcryptjs";
 import * as schema from "../persistence/index";
 
 async function seed() {
+  const url = process.env.DATABASE_URL;
+
+  // SSL is required for hosted providers (Neon, Supabase, etc.) but not for local Docker
+  const isLocal = url?.includes("localhost") || url?.includes("127.0.0.1");
+
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
+    connectionString: url,
+    ssl: isLocal ? false : { rejectUnauthorized: false },
   });
 
   const db = drizzle(pool, { schema });

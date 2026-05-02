@@ -273,14 +273,41 @@ pnpm install
 
 ### Environment variables
 
-Each app has its own `.env`. Copy and fill in:
+Each app has its own `.env`. Copy the examples and fill in the values:
 
 ```bash
 cp apps/debridgers-backend/.env.example apps/debridgers-backend/.env
-cp .env.example .env
+cp apps/landing-page/.env.example apps/landing-page/.env
+```
+
+The backend `.env` covers database, JWT, Cloudinary, Mailtrap, Paystack, Redis, and seed config. For local development the default `DATABASE_URL` in the example already points at the Docker Postgres container — no change needed there unless you're using a hosted DB.
+
+### Start Postgres and run migrations
+
+```bash
+pnpm docker:migrate   # Starts the Postgres container + runs migrations
+```
+
+Or step by step:
+
+```bash
+pnpm docker:up    # Start Postgres container
+pnpm db:migrate   # Run migrations
+pnpm db:seed      # (Optional) Seed initial data
 ```
 
 ### Run everything in dev
+
+```bash
+pnpm dev          # Runs all apps in parallel
+```
+
+Or individually:
+
+```bash
+pnpm dev:landing
+pnpm dev:backend
+```
 
 ```bash
 pnpm dev          # Runs all apps in parallel
@@ -342,18 +369,21 @@ pnpm --filter @debridgers/ui-app dev
 
 **Backend only**
 
-| Script                   | What it does                             |
-| ------------------------ | ---------------------------------------- |
-| `pnpm dev:backend`       | Watch mode (http://localhost:4000)       |
-| `pnpm build:backend`     | Production build                         |
-| `pnpm start:backend`     | Serve production build                   |
-| `pnpm typecheck:backend` | Type check                               |
-| `pnpm lint:backend`      | Lint                                     |
-| `pnpm lint:fix:backend`  | Lint + auto-fix                          |
-| `pnpm db:generate`       | Generate Drizzle migrations              |
-| `pnpm db:migrate`        | Run Drizzle migrations                   |
-| `pnpm db:seed`           | Seed the database                        |
-| `pnpm test:e2e`          | Run e2e tests (requires backend running) |
+| Script                   | What it does                                |
+| ------------------------ | ------------------------------------------- |
+| `pnpm dev:backend`       | Watch mode (http://localhost:4000)          |
+| `pnpm build:backend`     | Production build                            |
+| `pnpm start:backend`     | Serve production build                      |
+| `pnpm typecheck:backend` | Type check                                  |
+| `pnpm lint:backend`      | Lint                                        |
+| `pnpm lint:fix:backend`  | Lint + auto-fix                             |
+| `pnpm db:generate`       | Generate Drizzle migrations                 |
+| `pnpm db:migrate`        | Run Drizzle migrations                      |
+| `pnpm db:seed`           | Seed the database                           |
+| `pnpm docker:up`         | Start local Postgres container (background) |
+| `pnpm docker:down`       | Stop and remove Postgres container          |
+| `pnpm docker:migrate`    | Start Postgres + run migrations in one step |
+| `pnpm test:e2e`          | Run e2e tests (requires backend running)    |
 
 **UI packages**
 
@@ -427,7 +457,7 @@ Pre-push hooks enforce:
 
 ## Database
 
-The backend uses Drizzle ORM with PostgreSQL (Neon serverless).
+The backend uses Drizzle ORM with PostgreSQL. For local development, run Postgres via Docker (see below). For production, use a hosted provider like Neon.
 
 ```bash
 # Generate migration files from schema changes
@@ -443,7 +473,7 @@ pnpm db:seed
 pnpm --filter @debridgers/debridgers-backend db:studio
 ```
 
-Schema files live in `apps/debridgers-backend/src/infrastructure/schema/`.
+Schema files live in `apps/debridgers-backend/src/infrastructure/persistence/schemas/`.
 
 ---
 
@@ -461,6 +491,51 @@ pnpm build:backend
 ---
 
 ## Docker
+
+### Local Postgres only (recommended for development)
+
+Spin up just the database — the backend still runs locally via `pnpm dev:backend`.
+
+**First time:**
+
+```bash
+# 1. Set DATABASE_URL in apps/debridgers-backend/.env
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/debridgers
+
+# 2. Start Postgres + run migrations in one step
+pnpm docker:migrate
+
+# 3. Seed the admin account (once)
+pnpm db:seed
+
+# 4. Start the backend
+pnpm dev:backend
+```
+
+**Every subsequent run** (data is persisted in a Docker volume):
+
+```bash
+pnpm docker:up      # Start Postgres if not already running
+pnpm dev:backend    # Start the backend
+```
+
+**Docker scripts:**
+
+| Script                | What it does                                                 |
+| --------------------- | ------------------------------------------------------------ |
+| `pnpm docker:up`      | Start Postgres container in background, wait for healthcheck |
+| `pnpm docker:down`    | Stop and remove the container (volume is preserved)          |
+| `pnpm docker:migrate` | `docker:up` + `db:migrate` in one step                       |
+
+To wipe the database volume entirely (full reset):
+
+```bash
+docker compose -p debridgers -f docker/docker-compose.yml down -v
+```
+
+### Full stack via Docker Compose
+
+Builds and runs the backend + frontend containers alongside Postgres:
 
 ```bash
 # Start all services
@@ -552,7 +627,13 @@ The landing page dev server runs on port 3000. Kill the existing process or chan
 
 **Backend not connecting to DB**
 
-Ensure `apps/debridgers-backend/.env` has the correct `DATABASE_URL` pointing to your Neon instance.
+For local dev, make sure the Postgres container is running (`pnpm docker:up`) and `DATABASE_URL` in `apps/debridgers-backend/.env` is:
+
+```env
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/debridgers
+```
+
+For production, point `DATABASE_URL` at your hosted provider (Neon, Supabase, Railway, etc.).
 
 **Drizzle migration errors**
 

@@ -1,6 +1,23 @@
-version: "3.9"
+name: debridgers
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: debridgers
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: .
@@ -8,7 +25,10 @@ services:
     ports:
       - "4000:4000"
     env_file:
-      - apps/backend/.env
+      - apps/debridgers-backend/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   landing:
     build:
@@ -20,3 +40,6 @@ services:
       - apps/landing-page/.env
     depends_on:
       - backend
+
+volumes:
+  postgres_data:

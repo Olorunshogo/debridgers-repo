@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import { WhatsAppButton } from "@debridgers/ui-web";
+import { ArrowRight } from "lucide-react";
 
 export type HeadingPart = { text: string; highlight?: boolean };
 export type TrustItem = { icon: string | React.ReactNode; label: string };
@@ -62,7 +63,7 @@ export function HeroSection({
   const activeTrustIndex = useTrustCycle(trustItems.length);
 
   return (
-    <section className="font-syne relative mx-auto flex h-full h-screen max-h-[800px] w-full flex-col overflow-hidden xl:max-h-[900px]">
+    <section className="font-syne relative mx-auto flex h-screen max-h-[1100px] w-full flex-col overflow-hidden sm:max-h-[1000px] lg:max-h-[900px] xl:max-h-[900px]">
       {/* Background layer */}
       <div className="absolute inset-0 z-0">
         <AnimatePresence mode="sync">
@@ -86,11 +87,11 @@ export function HeroSection({
       </div>
 
       {/* Content Wrapper */}
-      <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-screen max-h-[800px] w-full flex-col justify-between gap-[48px] xl:max-h-[900px]">
+      <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-screen max-h-[1100px] w-full flex-col justify-between gap-[48px] sm:max-h-[1000px] xl:max-h-[900px]">
         <div className="relative flex flex-1 flex-col pt-20 sm:pt-24 lg:pt-32">
           <div className="gap-2xl lg:gap-4xl flex flex-1 flex-col justify-center">
             {/* Location badge */}
-            <div className="text-primary border-primary font-open-sans p-sm inline-flex w-fit items-center gap-1 rounded-full border border-white/30 bg-[#A5BDA8] text-sm font-semibold shadow-[50px] backdrop-blur-lg">
+            <div className="text-primary font-open-sans p-sm inline-flex w-fit items-center gap-1 rounded-full border border-white/30 bg-[#A5BDA8] text-sm font-semibold shadow-[50px] backdrop-blur-lg">
               <span className="bg-primary h-1.5 w-1.5 rounded-full" />
               {servingLocation}
             </div>
@@ -172,16 +173,14 @@ export function HeroSection({
             </div>
 
             {/* CTAs */}
-            <div className="gap-base flex flex-col items-center justify-center lg:flex-row lg:justify-baseline lg:justify-start lg:gap-[74px]">
+            <div className="gap-base flex flex-col items-center justify-center lg:flex-row lg:justify-start lg:gap-[74px]">
               <WhatsAppButton className="w-auto" />
               <a
                 href={secondaryCta.href}
-                className="font-open-sans flex items-center gap-1 text-base text-white transition-all duration-300 ease-in-out hover:text-white lg:gap-[10px] lg:text-lg lg:text-xl"
+                className="font-open-sans flex items-center gap-1 text-base text-white transition-all duration-300 ease-in-out lg:gap-[10px] lg:text-lg xl:text-xl"
               >
                 {secondaryCta.label}
-                <div className="h-4 w-4 shrink-0 lg:h-5 lg:w-5">
-                  <Icon icon="lucide:arrow-right" width={18} height={18} />
-                </div>
+                <ArrowRight size={18} />
               </a>
             </div>
           </div>

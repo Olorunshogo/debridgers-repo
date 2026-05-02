@@ -10,7 +10,7 @@ import { Icon } from "@iconify/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 import { PrimaryLink, WhatsAppButton } from "@debridgers/ui-web";
-import { Dot } from "lucide-react";
+import { ArrowRight, Dot } from "lucide-react";
 
 // === Why Debridgers
 interface WhyCardData {
@@ -443,7 +443,7 @@ export default function Home() {
 
       {/* Hero Section */}
       <div className="relative flex w-full flex-col">
-        <div className="-mt-navbar-h flex max-h-[800px] min-h-0 w-full flex-1 xl:max-h-[900px]">
+        <div className="-mt-navbar-h flex max-h-[1100px] min-h-0 w-full flex-1 sm:max-h-[1000px] lg:max-h-[900px]">
           <div className="font-syne -mt-navbar-h bg-primary absolute inset-0 z-0 overflow-hidden" />
           <section
             id="hero-section"
@@ -470,11 +470,11 @@ export default function Home() {
             </div>
 
             {/* Content Wrapper */}
-            <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-screen max-h-[800px] w-full flex-col justify-between gap-[48px] xl:max-h-[900px]">
+            <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-screen max-h-[1100px] w-full flex-col justify-between gap-[48px] sm:max-h-[1000px] lg:max-h-[900px] xl:max-h-[900px]">
               <div className="relative flex flex-1 flex-col pt-20 sm:pt-24 lg:pt-32">
                 <div className="gap-2xl lg:gap-4xl flex flex-1 flex-col justify-center">
                   {/* Location badge */}
-                  <div className="text-primary border-primary font-open-sans p-sm inline-flex w-fit items-center gap-1 rounded-full border border-white/30 bg-[#A5BDA8] text-sm font-semibold shadow-[50px] backdrop-blur-lg">
+                  <div className="text-primary font-open-sans p-sm inline-flex w-fit items-center gap-1 rounded-full border border-white/30 bg-[#A5BDA8] text-sm font-semibold shadow-[50px] backdrop-blur-lg">
                     <span className="bg-primary h-1.5 w-1.5 rounded-full" />
                     Now Serving in Kaduna
                   </div>
@@ -519,13 +519,7 @@ export default function Home() {
                       className="font-open-sans flex items-center gap-1 text-base text-white transition-all duration-300 ease-in-out hover:text-white sm:text-lg lg:gap-[10px] lg:text-xl"
                     >
                       See how it works
-                      <div className="h-4 w-4 shrink-0 lg:h-5 lg:w-5">
-                        <Icon
-                          icon="lucide:arrow-right"
-                          width={18}
-                          height={18}
-                        />
-                      </div>
+                      <ArrowRight size={18} />
                     </a>
                   </div>
                 </div>
