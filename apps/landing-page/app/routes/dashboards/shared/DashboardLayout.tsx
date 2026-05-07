@@ -15,6 +15,7 @@ const titleMaps: Record<string, Record<string, string>> = {
     "/agent-dashboard/wallet": "Weekly Payout",
     "/agent-dashboard/notification": "Notification",
     "/agent-dashboard/settings": "Settings",
+    "/agent-dashboard/help": "Help Center",
   },
   "/buyer-dashboard": {
     "/buyer-dashboard": "Overview",
@@ -24,6 +25,7 @@ const titleMaps: Record<string, Record<string, string>> = {
     "/buyer-dashboard/notification": "Notification",
     "/buyer-dashboard/settings": "Profile & Address",
     "/buyer-dashboard/checkout": "Checkout",
+    "/buyer-dashboard/help": "Help Center",
   },
   "/admin-dashboard": {
     "/admin-dashboard": "Overview",
@@ -65,9 +67,9 @@ export default function DashboardLayout() {
 
   function Sidebar({ onNavClick }: { onNavClick?: () => void }) {
     return (
-      <div className="flex h-full flex-col px-4">
-        {/* Logo + Nav + User Card */}
-        <div className="flex h-full flex-1 flex-col gap-6 py-6">
+      <div className="flex h-full flex-col">
+        {/* Scrollable area: logo + nav + user card */}
+        <div className="flex flex-col gap-6 overflow-y-auto rounded-xl bg-[#FCFDFD] p-4 pt-6">
           {/* Logo */}
           <div className="mx-auto flex h-16 items-center">
             <Link to={basePath} onClick={onNavClick}>
@@ -76,20 +78,17 @@ export default function DashboardLayout() {
           </div>
 
           {/* Nav */}
-          <nav className="flex flex-col gap-6 overflow-y-auto">
+          <nav className="flex flex-1 flex-col gap-4">
             {groups.map((group) => (
               <div key={group.label} className="flex flex-col gap-1">
-                <p
-                  className="font-open-sans text-base tracking-widest uppercase"
-                  style={{ color: "var(--text-colour)" }}
-                >
+                <p className="font-open-sans text-heading text-base font-medium uppercase">
                   {group.label}
                 </p>
                 {group.items.map((item) => {
                   const active = isActive(item.href);
                   const isExternal = item.href.startsWith("http");
                   const cls =
-                    "flex items-center gap-3 font-open-sans rounded-[16px] p-4 text-lg transition-all duration-300 ease-in-out cursor-pointer";
+                    "flex items-center gap-3 font-open-sans rounded-[16px] p-3 text-base transition-all duration-300 ease-in-out cursor-pointer";
                   const style = {
                     backgroundColor: active
                       ? "rgba(75,122,81,1)"
@@ -148,7 +147,7 @@ export default function DashboardLayout() {
             ))}
           </nav>
 
-          {/* User card + logout */}
+          {/* User card */}
           <div className="flex items-center gap-3 rounded-xl bg-[#FAFAFB] px-4 py-2">
             <div
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
@@ -173,10 +172,10 @@ export default function DashboardLayout() {
           </div>
         </div>
 
-        {/* Logout button */}
+        {/* Logout — always anchored at bottom, never scrolls away */}
         <button
           onClick={handleLogout}
-          className="font-open-sans text-text flex w-full cursor-pointer items-center gap-3 rounded-[16px] p-4 text-base transition-all duration-300 ease-in-out"
+          className="font-open-sans text-text z-10 flex w-full shrink-0 cursor-pointer items-center gap-3 rounded-[16px] p-4 text-base transition-all duration-300 ease-in-out"
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = "#FEE2E2";
             e.currentTarget.style.color = "#DC2626";
@@ -194,11 +193,11 @@ export default function DashboardLayout() {
   }
 
   return (
-    <div className="relative min-h-screen bg-black">
-      <div className="layout-max-width relative flex min-h-screen flex-col">
-        <div className="bg-dash-page-bg px-section-px flex min-h-screen w-full gap-6">
+    <div className="relative h-screen overflow-hidden bg-black">
+      <div className="layout-max-width relative flex h-screen flex-col">
+        <div className="bg-dash-page-bg px-section-px flex h-screen w-full gap-6">
           {/* Desktop sidebar */}
-          <aside className="border-gray hidden w-[280px] shrink-0 rounded-[16px] border bg-[#FCFDFD] lg:flex lg:flex-col">
+          <aside className="sticky top-0 hidden h-screen w-[280px] shrink-0 rounded-[16px] lg:flex lg:flex-col">
             <Sidebar />
           </aside>
 
@@ -211,7 +210,7 @@ export default function DashboardLayout() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+                  className="fixed inset-0 z-40 cursor-pointer bg-black/50 lg:hidden"
                   onClick={() => setMobileOpen(false)}
                 />
                 <motion.aside
@@ -236,27 +235,18 @@ export default function DashboardLayout() {
           </AnimatePresence>
 
           {/* Main area */}
-          <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex h-screen min-w-0 flex-1 flex-col overflow-y-auto">
             {/* Topbar */}
-            <header
-              className="flex h-16 shrink-0 items-center justify-between gap-4 border-b px-4 lg:px-6"
-              style={{
-                backgroundColor: "var(--dash-topbar-bg)",
-                borderColor: "var(--border-gray)",
-              }}
-            >
+            <header className="border-border-gray bg-dash-topbar-bg flex h-16 shrink-0 items-center justify-between gap-4 border-b px-4 lg:px-6">
               <div className="flex items-center gap-3">
                 <button
-                  className="shrink-0 transition-colors lg:hidden"
+                  className="text-text shrink-0 cursor-pointer transition-colors lg:hidden"
                   onClick={() => setMobileOpen(true)}
                   aria-label="Open menu"
                 >
-                  <Menu size={22} style={{ color: "var(--text-colour)" }} />
+                  <Menu size={22} />
                 </button>
-                <h1
-                  className="font-syne shrink-0 text-lg font-bold lg:text-xl"
-                  style={{ color: "var(--heading-colour)" }}
-                >
+                <h1 className="font-syne text-heading hidden shrink-0 text-lg font-bold sm:block lg:text-xl">
                   {pageTitle}
                 </h1>
               </div>
@@ -298,7 +288,7 @@ export default function DashboardLayout() {
             </header>
 
             {/* Page content */}
-            <main className="flex-1 overflow-y-auto">
+            <main className="flex-1">
               <Outlet />
             </main>
           </div>

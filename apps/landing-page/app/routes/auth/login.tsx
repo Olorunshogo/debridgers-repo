@@ -115,7 +115,7 @@ export default function LoginPage() {
       </div>
 
       {/* Form panel */}
-      <div className="flex flex-1 flex-col items-center justify-center bg-white px-6 py-12 lg:px-16">
+      <div className="flex min-h-screen flex-1 flex-col items-center justify-center bg-white px-6 lg:px-16">
         <div className="flex w-full max-w-[500px] flex-col gap-6">
           <div className="flex justify-center lg:hidden">
             <AppLogo />
@@ -123,7 +123,7 @@ export default function LoginPage() {
 
           <div className="flex flex-col gap-1">
             <h1 className="font-syne text-heading text-2xl font-bold">
-              Sign in to your account
+              Log in to your account
             </h1>
             <p className="text-text text-sm">
               No account?{" "}

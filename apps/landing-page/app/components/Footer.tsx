@@ -56,6 +56,8 @@ export default function Footer() {
                 <span>Zero</span>
                 <img
                   src="/images/curved-underline.png"
+                  alt=""
+                  aria-hidden="true"
                   className="absolute -mt-2 w-fit"
                 />
               </div>

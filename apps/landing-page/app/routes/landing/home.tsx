@@ -184,7 +184,7 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
         <motion.img
           key={src}
           src={src}
-          alt={`${category.title} - image ${idx + 1}`}
+          alt={`${category.title} – ${category.subtitle}, image ${idx + 1}`}
           className="absolute inset-0 h-full w-full object-cover"
           animate={{
             x:
@@ -456,7 +456,8 @@ export default function Home() {
                   <motion.img
                     key={`hero-img-${currentIndex}`}
                     src={images[currentIndex]}
-                    alt=""
+                    alt="Fresh foodstuff market scene"
+                    fetchPriority="high"
                     initial={{ x: "100%" }}
                     animate={{ x: "0%" }}
                     exit={{ x: "-100%" }}
@@ -490,6 +491,8 @@ export default function Home() {
                           <span>Zero</span>
                           <img
                             src="/images/curved-underline.png"
+                            alt=""
+                            aria-hidden="true"
                             className="absolute -mt-2 w-fit"
                           />
                         </div>

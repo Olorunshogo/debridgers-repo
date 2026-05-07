@@ -72,6 +72,8 @@ export function HeroSection({
               key={currentIndex}
               src={images[currentIndex]}
               alt=""
+              aria-hidden="true"
+              fetchPriority="high"
               initial={{ x: "100%" }}
               animate={{ x: "0%" }}
               exit={{ x: "-100%" }}
@@ -107,6 +109,8 @@ export function HeroSection({
                 <span>Zero</span>
                 <img
                   src="/images/curved-underline.png"
+                  alt=""
+                  aria-hidden="true"
                   className="absolute -mt-2 w-fit"
                 />
               </div>

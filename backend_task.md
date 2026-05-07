@@ -25,3 +25,11 @@ Quick explanation before we start:
 Stock & Inventory — this is Mode 2 where agents request beans stock from Debridgers, sell themselves, then remit money back. It needs the agent wallet to exist first so the system knows what they owe and earn. No wallet = can't track it properly.
 Referral commission cron job — the monthly auto-calculation that pays 5% of a recruited agent's earnings to whoever recruited them. The product doc puts this in Phase 4, it's not needed to launch.
 Rider app — a completely separate mobile app for delivery riders. Phase 5, ignore it for now.
+
+Run this
+
+_JWT_TOKEN_:
+
+```bash
+$ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+```

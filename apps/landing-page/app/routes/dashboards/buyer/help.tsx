@@ -10,11 +10,11 @@ import { useState } from "react";
 
 export function meta() {
   return [
-    { title: "Help Center | Debridgers Agent" },
+    { title: "Help Center | Debridgers" },
     {
       name: "description",
       content:
-        "Get help with your Debridgers agent account — FAQs, guides, and support.",
+        "Get help with your Debridgers buyer account — FAQs, order support, and more.",
     },
     // === Author and Robots
     { name: "author", content: "Debridgers Team" },
@@ -31,38 +31,38 @@ interface FaqItem {
 // === Data
 const faqs: FaqItem[] = [
   {
-    question: "How do I request new stock?",
+    question: "How do I place an order?",
     answer:
-      "Go to Request Stock from the sidebar, fill in the quantity you need, and submit. Your manager will approve and arrange delivery to your pickup point.",
+      "Go to Shop / Catalog from the sidebar, browse available products, add items to your cart, and proceed to checkout. You can pay on delivery or via bank transfer.",
   },
   {
-    question: "When do I get paid?",
+    question: "How long does delivery take?",
     answer:
-      "Payments are processed every Friday. Your commission is calculated based on the number of bags sold during the week (Monday–Thursday).",
+      "Delivery is typically within 24-48 hours for orders placed before 12pm. You will receive a confirmation once your order is assigned to an agent.",
   },
   {
-    question: "How do I submit my daily report?",
+    question: "Can I cancel or modify my order?",
     answer:
-      "Navigate to Daily Report in the sidebar. Fill in the number of bags sold, cash collected, and any notes. Reports must be submitted before 8pm each day.",
+      "You can cancel an order before it is assigned to a delivery agent. Once assigned, contact support via WhatsApp to request a modification.",
   },
   {
-    question: "What happens if I miss a daily report?",
+    question: "What payment methods are accepted?",
     answer:
-      "Missing reports affect your leaderboard ranking and may delay your payout. Contact your manager via WhatsApp if you missed a report due to an emergency.",
+      "We accept cash on delivery and bank transfer. Card payments are coming soon. Your wallet balance can also be used to pay for orders.",
   },
   {
-    question: "How is my leaderboard rank calculated?",
+    question: "How do I track my order?",
     answer:
-      "Your rank is based on total bags sold in the current week. Ties are broken by the number of days reported on time.",
+      "Go to My Orders in the sidebar to see the current status of all your orders — pending, in transit, or delivered.",
   },
   {
-    question: "How do I remit cash to the company?",
+    question: "What if I receive the wrong item or quantity?",
     answer:
-      "Cash remittance details are provided by your manager. After remitting, record it in your daily report. Always keep your payment receipt.",
+      "Contact us immediately via WhatsApp with your order number and a photo of what you received. We will resolve it within 24 hours.",
   },
 ];
 
-// === FAQ item component
+// === FAQ row
 function FaqRow({ item, index }: { item: FaqItem; index: number }) {
   const [open, setOpen] = useState(false);
 
@@ -115,7 +115,7 @@ function FaqRow({ item, index }: { item: FaqItem; index: number }) {
 }
 
 // === Page
-export default function AgentHelpPage() {
+export default function BuyerHelpPage() {
   return (
     <div className="py-section-px flex flex-col gap-6">
       {/* Header */}
@@ -129,7 +129,7 @@ export default function AgentHelpPage() {
             Help Center
           </h2>
           <p className="text-sm" style={{ color: "var(--text-colour)" }}>
-            Answers to common questions for agents
+            Answers to common questions for buyers
           </p>
         </div>
       </div>
@@ -165,7 +165,7 @@ export default function AgentHelpPage() {
               WhatsApp Support
             </p>
             <p className="text-sm" style={{ color: "var(--text-colour)" }}>
-              Chat with your manager directly
+              Chat with our support team
             </p>
           </div>
         </motion.a>
@@ -194,10 +194,10 @@ export default function AgentHelpPage() {
               className="font-syne font-semibold"
               style={{ color: "var(--heading-colour)" }}
             >
-              Agent Guidelines
+              Buyer Guide
             </p>
             <p className="text-sm" style={{ color: "var(--text-colour)" }}>
-              Rules, expectations, and best practices
+              How ordering and delivery works
             </p>
           </div>
         </motion.div>

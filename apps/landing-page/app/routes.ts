@@ -34,6 +34,7 @@ export default [
       "routes/dashboards/buyer/notification.tsx",
     ),
     route("buyer-dashboard/settings", "routes/dashboards/buyer/settings.tsx"),
+    route("buyer-dashboard/help", "routes/dashboards/buyer/help.tsx"),
   ]),
 
   // === Agent Dashboard
@@ -57,6 +58,7 @@ export default [
       "routes/dashboards/agent/notification.tsx",
     ),
     route("agent-dashboard/settings", "routes/dashboards/agent/settings.tsx"),
+    route("agent-dashboard/help", "routes/dashboards/agent/help.tsx"),
   ]),
 
   // === Admin Dashboard

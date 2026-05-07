@@ -1,3 +1,6 @@
+// === Utils
+export * from "./lib/utils";
+
 // === Links
 export * from "./components/primary-link";
 export * from "./components/secondary-link";
