@@ -205,7 +205,7 @@ function StatCard({ stat, index }: { stat: AgentStatCard; index: number }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: index * 0.07 }}
-      className="gap-sm flex flex-col rounded-2xl bg-white p-3 sm:p-4"
+      className="flex flex-col gap-2 rounded-2xl bg-white p-3 sm:p-4"
     >
       <div className="flex items-center justify-between">
         <span className="text-text font-open-sans flex-1 text-base sm:text-base xl:text-xl">
@@ -329,7 +329,7 @@ export default function AgentOverviewPage() {
       />
 
       {/* Stat cards */}
-      <div className="gap-base grid grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {data.stats.map((stat, i) => (
           <StatCard key={stat.label} stat={stat} index={i} />
         ))}
@@ -342,7 +342,7 @@ export default function AgentOverviewPage() {
           <h3 className="font-syne text-base font-semibold text-black lg:text-lg">
             Today&apos;s checklist
           </h3>
-          <div className="gap-lg flex flex-col">
+          <div className="flex flex-col gap-5">
             {data.checklist.map((item) => {
               const s = checklistStyles[item.status];
               return (

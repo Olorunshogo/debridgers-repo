@@ -83,15 +83,22 @@
   --color-dash-topbar-bg: var(--dash-topbar-bg);
   --color-dash-page-bg: var(--dash-page-bg);
 
+  /* ── Typography scale (fluid, clamp-based) ── */
+  /* Usage: text-hero, text-h1 … text-h6, text-body-lg, text-body-sm */
+  --text-hero: clamp(2rem, 5vw + 1rem, 4.5rem); /* 32px → 72px */
+  --text-h1: clamp(1.75rem, 4vw + 0.5rem, 3.75rem); /* 28px → 60px */
+  --text-h2: clamp(1.5rem, 3vw + 0.5rem, 3rem); /* 24px → 48px */
+  --text-h3: clamp(1.25rem, 2vw + 0.5rem, 2rem); /* 20px → 32px */
+  --text-h4: clamp(1.125rem, 1.5vw + 0.25rem, 1.5rem); /* 18px → 24px */
+  --text-h5: clamp(1rem, 1vw + 0.25rem, 1.25rem); /* 16px → 20px */
+  --text-h6: clamp(0.875rem, 0.5vw + 0.25rem, 1rem); /* 14px → 16px */
+  --text-body-lg: clamp(1rem, 1vw + 0.125rem, 1.25rem); /* 16px → 20px */
+  --text-body-sm: 0.875rem; /* 14px fixed  */
+
   /* ── Spacing scale → mt-sm, p-base, gap-xl, top-3xl … ── */
-  --spacing-sm: var(--space-sm);
-  --spacing-md: var(--space-md);
-  --spacing-base: var(--space-base);
-  --spacing-lg: var(--space-lg);
-  --spacing-xl: var(--space-xl);
-  --spacing-2xl: var(--space-2xl);
-  --spacing-3xl: var(--space-3xl);
-  --spacing-4xl: var(--space-4xl);
+  /* Removed: use Tailwind's default numeric scale instead.
+     gap-2 = 8px, gap-3 = 12px, gap-4 = 16px, gap-5 = 20px,
+     gap-6 = 24px, gap-7 = 28px, gap-8 = 32px, gap-10 = 40px */
 
   /* Layout tokens → mt-navbar-h, px-section-px-lg, py-section-py … */
   --spacing-navbar-h: var(--navbar-h);
@@ -137,6 +144,8 @@
   }
 
   html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
     scroll-behavior: smooth;
   }
 

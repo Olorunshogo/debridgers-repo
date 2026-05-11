@@ -217,7 +217,7 @@ export default function AgentsPage() {
       {/* What You Do / Your Role */}
       <section className="py-section-py sm:py-section-py-sm lg:py-section-py-lg bg-white">
         <div className="default-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
-          <div className="gap-3xl flex flex-col">
+          <div className="flex flex-col gap-8">
             {/* Role Title */}
             <motion.div
               initial="hidden"
@@ -225,7 +225,7 @@ export default function AgentsPage() {
               viewport={{ once: true }}
               custom={0}
               variants={fadeUp}
-              className="gap-md flex flex-col"
+              className="flex flex-col gap-3"
             >
               <p className="text-primary-light text-xl tracking-widest">
                 Your role
@@ -286,7 +286,7 @@ export default function AgentsPage() {
         style={{ backgroundColor: "var(--bg-light)" }}
       >
         <div className="default-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
-          <div className="gap-3xl flex flex-col">
+          <div className="flex flex-col gap-8">
             {/* Why Join Us Title */}
             <motion.div
               initial="hidden"
@@ -294,7 +294,7 @@ export default function AgentsPage() {
               viewport={{ once: true }}
               custom={0}
               variants={fadeUp}
-              className="gap-md flex flex-col"
+              className="flex flex-col gap-3"
             >
               <p className="text-primary-light text-xl tracking-widest">
                 Why join us
@@ -355,7 +355,7 @@ export default function AgentsPage() {
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg bg-white"
       >
         <div className="default-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
-          <div className="gap-3xl flex flex-col">
+          <div className="flex flex-col gap-8">
             {/* Heading */}
             <motion.div
               initial="hidden"
@@ -363,7 +363,7 @@ export default function AgentsPage() {
               viewport={{ once: true }}
               custom={0}
               variants={fadeUp}
-              className="gap-md flex flex-col"
+              className="flex flex-col gap-3"
             >
               <p className="text-primary-light text-xl tracking-widest">
                 The process
@@ -434,7 +434,7 @@ export default function AgentsPage() {
         style={{ backgroundColor: "var(--primary-color)" }}
       >
         <div className="default-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
-          <div className="gap-3xl grid items-center lg:grid-cols-2">
+          <div className="grid items-center gap-8 lg:grid-cols-2">
             {/* Heading */}
             <motion.div
               initial="hidden"
@@ -442,7 +442,7 @@ export default function AgentsPage() {
               viewport={{ once: true }}
               custom={0}
               variants={fadeUp}
-              className="gap-md flex flex-col"
+              className="flex flex-col gap-3"
             >
               <p className="text-xl tracking-widest text-white/60">
                 Example earnings

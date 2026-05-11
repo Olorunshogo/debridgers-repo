@@ -73,7 +73,6 @@ export function HeroSection({
               src={images[currentIndex]}
               alt=""
               aria-hidden="true"
-              fetchPriority="high"
               initial={{ x: "100%" }}
               animate={{ x: "0%" }}
               exit={{ x: "-100%" }}
@@ -91,15 +90,15 @@ export function HeroSection({
       {/* Content Wrapper */}
       <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-screen max-h-[1100px] w-full flex-col justify-between gap-[48px] sm:max-h-[1000px] xl:max-h-[900px]">
         <div className="relative flex flex-1 flex-col pt-20 sm:pt-24 lg:pt-32">
-          <div className="gap-2xl lg:gap-4xl flex flex-1 flex-col justify-center">
+          <div className="flex flex-1 flex-col justify-center gap-7 lg:gap-10">
             {/* Location badge */}
-            <div className="text-primary font-open-sans p-sm inline-flex w-fit items-center gap-1 rounded-full border border-white/30 bg-[#A5BDA8] text-sm font-semibold shadow-[50px] backdrop-blur-lg">
+            <div className="text-primary font-open-sans inline-flex w-fit items-center gap-1 rounded-full border border-white/30 bg-[#A5BDA8] p-2 text-sm font-semibold shadow-[50px] backdrop-blur-lg">
               <span className="bg-primary h-1.5 w-1.5 rounded-full" />
               {servingLocation}
             </div>
 
             {/* Heading and Paragraph */}
-            <div className="gap-lg flex flex-col">
+            <div className="flex flex-col gap-5">
               {/* Heading */}
               {/* <h1 className="flex flex-col text-4xl leading-tight font-bold text-white sm:text-6xl lg:text-7xl">
                 <span>Market Prices.</span>
@@ -124,7 +123,7 @@ export function HeroSection({
               </h1> */}
 
               {/* Heading */}
-              <h1 className="flex flex-col text-5xl leading-tight font-bold text-white sm:text-6xl lg:text-7xl">
+              <h1 className="flex flex-col text-3xl leading-tight font-bold text-white sm:text-5xl lg:text-7xl">
                 {/* Top line */}
                 <span>
                   {headingParts.top.map((part) => part.text).join("")}
@@ -171,17 +170,17 @@ export function HeroSection({
               </h1>
 
               {/* Subtext */}
-              <p className="w-full max-w-[360px] text-base leading-relaxed font-semibold text-white sm:text-lg lg:max-w-[574px] lg:text-xl">
+              <p className="w-full text-sm leading-relaxed font-semibold text-white sm:max-w-[360px] sm:text-base lg:max-w-[574px] lg:text-xl">
                 {subtext}
               </p>
             </div>
 
             {/* CTAs */}
-            <div className="gap-base flex flex-col items-center justify-center lg:flex-row lg:justify-start lg:gap-[74px]">
+            <div className="flex flex-col items-center justify-center gap-4 lg:flex-row lg:justify-start lg:gap-[74px]">
               <WhatsAppButton className="w-auto" />
               <a
                 href={secondaryCta.href}
-                className="font-open-sans flex items-center gap-1 text-base text-white transition-all duration-300 ease-in-out lg:gap-[10px] lg:text-lg xl:text-xl"
+                className="font-open-sans flex items-center gap-1 text-sm text-white transition-all duration-300 ease-in-out sm:text-base lg:gap-[10px] lg:text-lg xl:text-xl"
               >
                 {secondaryCta.label}
                 <ArrowRight size={18} />
@@ -190,7 +189,7 @@ export function HeroSection({
           </div>
         </div>
 
-        <div className="gap-4xl lg:gap-base relative flex w-full flex-col">
+        <div className="relative flex w-full flex-col gap-10 lg:gap-4">
           {/* Progress bar + SCROLL label */}
           {/* {images.length > 0 && (
             <div className="gap-md flex items-center justify-center lg:justify-end">
@@ -214,7 +213,7 @@ export function HeroSection({
           )} */}
 
           {/* Trust bar */}
-          <div className="bg-primary py-xl px-base mx-auto w-full shadow-md">
+          <div className="bg-primary mx-auto w-full px-4 py-6 shadow-md">
             {/* Mobile: slideshow, one item at a time */}
             <div className="relative flex h-6 items-center justify-center truncate overflow-hidden lg:hidden">
               <AnimatePresence mode="sync">
@@ -224,7 +223,7 @@ export function HeroSection({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.4 }}
-                  className="gap-sm absolute flex items-center text-white/80"
+                  className="absolute flex items-center gap-2 text-white/80"
                 >
                   <span className="text-white/60">
                     {renderIcon(trustItems[activeTrustIndex].icon)}
@@ -241,7 +240,7 @@ export function HeroSection({
               {trustItems.map((item, i) => (
                 <div
                   key={item.label}
-                  className={`gap-xl px-base flex shrink-0 items-center text-white ${i < trustItems.length - 1 ? "border-r border-[#FCFDFD]" : ""}`}
+                  className={`flex shrink-0 items-center gap-6 px-4 text-white ${i < trustItems.length - 1 ? "border-r border-[#FCFDFD]" : ""}`}
                 >
                   <span className="text-[#FCFDFD]">
                     {renderIcon(item.icon)}

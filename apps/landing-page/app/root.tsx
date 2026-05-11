@@ -13,8 +13,6 @@ import "./styles.css";
 import { IntroAnimation } from "./components/IntroAnimation";
 
 export const meta: MetaFunction = () => [
-  { charSet: "utf-8" },
-  { charSet: "utf-8" },
   { name: "viewport", content: "width=device-width, initial-scale=1" },
   { title: "Debridgers | Fresh Foodstuff at Market Prices in Kaduna" },
   {
@@ -45,6 +43,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
+        <meta charSet="utf-8" />
         <Meta />
         <Links />
       </head>

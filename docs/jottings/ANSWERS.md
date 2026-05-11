@@ -2,7 +2,7 @@
 
 **Vision**
 
-A Nigeria where every family and business pays the true price of food with no exploutation, no information gap and no middlemen tax.
+A Nigeria where every family and business pays the true price of food with no exploitation, no information gap and no middlemen tax.
 
 Debridgers envisions a future where the agricultural value chain in Nigeria is transparent, efficient, and fair.
 A country where farmers earn what their produce is worth, and consumers pay only what it actually costs to get food from farm to table.

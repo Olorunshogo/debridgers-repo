@@ -80,7 +80,7 @@ export function Header({
 
   return (
     <motion.header
-      className="p-base font-syne h-navbar-h mx-auto flex w-9/10 max-w-[928px] rounded-full shadow-md"
+      className="font-syne h-navbar-h mx-auto flex w-9/10 max-w-[928px] rounded-full p-4 shadow-md"
       animate={{ backgroundColor: pillBg, backdropFilter: pillBlur }}
       transition={{ duration: 0.35, ease: "easeInOut" }}
     >
@@ -91,7 +91,7 @@ export function Header({
         </Link>
 
         {/* Desktop nav links */}
-        <nav className="gap-sm hidden items-center lg:flex">
+        <nav className="hidden items-center gap-2 lg:flex">
           {navLinks.map((link) => {
             const isHash = link.href.startsWith("#");
             if (isHash) {
@@ -124,7 +124,7 @@ export function Header({
         </nav>
 
         {/* Desktop CTA buttons */}
-        <div className="gap-sm hidden lg:flex">
+        <div className="hidden gap-2 lg:flex">
           <PrimaryLink href={orderNowHref} style={primaryLinkStyle}>
             Order Now
           </PrimaryLink>
@@ -167,7 +167,7 @@ export function Header({
                   transition={{ type: "tween", duration: 0.3 }}
                   className="px-section-px fixed top-0 left-0 z-50 h-full w-[85%] max-w-[380px] overflow-hidden bg-white shadow-xl lg:hidden"
                 >
-                  <div className="gap-base py-xl flex h-full w-full flex-col">
+                  <div className="flex h-full w-full flex-col gap-4 py-6">
                     <div className="flex w-full items-center justify-between">
                       <Link
                         to="/"
@@ -178,7 +178,7 @@ export function Header({
 
                       <X size={16} strokeWidth={2} className="cursor-pointer" />
                     </div>
-                    <div className="gap-2xl py-base flex flex-col">
+                    <div className="flex flex-col gap-7 py-4">
                       {navLinks.map((link) => {
                         const isHash = link.href.startsWith("#");
                         if (isHash) {

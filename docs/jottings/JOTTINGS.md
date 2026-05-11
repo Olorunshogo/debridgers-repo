@@ -51,3 +51,9 @@ Agent Modal 10. 📩 User Feedback (Frontend UX)
 After Registration:
 Display:
 “Your application has been received and is under review. You will be notified once approved.”
+
+i dont mind that hero text being big. i want it that way. its okay.
+
+however, we can still make it better. you know all the breakpoints we have here and the pattern, we can have them in a --text-h2, --text-h3 to --text-h6 and the likes, right, and after that, and also --text-hero too is exactly the way i have it there
+
+we will do
