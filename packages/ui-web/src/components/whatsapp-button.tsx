@@ -30,7 +30,7 @@ export function WhatsAppButton({
       target="_blank"
       rel="noreferrer"
       style={{ backgroundColor: "var(--color-secondary)", color: "#fff" }}
-      className={`shadow-yellow px-base lg:px-xl py-xl lg:py-2xl inline-flex h-[54px] w-full max-w-fit items-center gap-[10px] rounded-full text-lg font-semibold transition-opacity lg:h-[72px] lg:text-xl hover:opacity-90${className ? ` ${className}` : ""}`}
+      className={`shadow-yellow inline-flex h-[54px] w-full max-w-fit items-center gap-[10px] rounded-full px-4 py-6 text-lg font-semibold transition-opacity lg:h-[72px] lg:px-6 lg:py-7 lg:text-xl hover:opacity-90${className ? ` ${className}` : ""}`}
     >
       {/* <WhatsAppIcon /> */}
       <Icon icon="cib:whatsapp" className="h-5 w-5" />

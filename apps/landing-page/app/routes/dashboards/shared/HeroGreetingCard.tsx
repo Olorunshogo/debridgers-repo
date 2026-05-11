@@ -21,10 +21,10 @@ export function HeroGreetingCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="lg:px-2xl px-xl py-base lg:py-lg bg-primary relative overflow-hidden rounded-2xl"
+      className="bg-primary relative overflow-hidden rounded-2xl px-6 py-4 lg:px-7 lg:py-5"
     >
-      <div className="lg:gap-base gap-xl sm:gap-2xl lg:justify-betwee flex h-full min-h-40 flex-col lg:flex-row lg:items-center">
-        <div className="gap-lg flex h-full flex-1 flex-col justify-between">
+      <div className="lg:justify-betwee flex h-full min-h-40 flex-col gap-6 sm:gap-7 lg:flex-row lg:items-center lg:gap-4">
+        <div className="flex h-full flex-1 flex-col justify-between gap-5">
           <p className="text-sm text-white/70">{greeting}</p>
           <h2 className="font-syne text-2xl font-bold text-white lg:text-3xl">
             {userName}

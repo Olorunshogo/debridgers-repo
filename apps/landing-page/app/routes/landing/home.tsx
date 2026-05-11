@@ -53,7 +53,7 @@ function WhyCard({ card, isActive, onHover }: WhyCardProps) {
       onClick={onHover}
       whileHover={{ y: -10 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`group font-syne gap-base lg:gap-xl py-base px-3xl flex h-full flex-col rounded-3xl transition-all duration-300 ease-in-out ${
+      className={`group font-syne flex h-full flex-col gap-4 rounded-3xl px-8 py-4 transition-all duration-300 ease-in-out lg:gap-6 ${
         isActive
           ? "bg-primary text-white"
           : "border-gray hover:border-primary border bg-white"
@@ -73,14 +73,14 @@ function WhyCard({ card, isActive, onHover }: WhyCardProps) {
       {/* Content */}
       <div className="flex flex-col gap-4">
         <h3
-          className={`text-xl font-bold transition-colors duration-300 lg:text-2xl ${
+          className={`text-h3 font-bold transition-colors duration-300 ${
             isActive ? "text-white" : "text-heading group-hover:text-white"
           }`}
         >
           {card.title}
         </h3>
         <p
-          className={`font-open-sans flex-1 text-base leading-relaxed transition-colors duration-300 lg:text-lg ${
+          className={`font-open-sans flex-1 text-sm leading-relaxed transition-colors duration-300 sm:text-base lg:text-lg ${
             isActive ? "text-white" : "text-text group-hover:text-emerald-100"
           }`}
         >
@@ -202,7 +202,7 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
       <div className="absolute inset-0 bg-linear-to-t from-black/60 via-[#666666]/30 to-transparent" />
 
       {/* Label */}
-      <div className="font-open-sans px-base absolute right-0 bottom-0 left-0 flex flex-col gap-1 pb-(--space-base) text-white">
+      <div className="font-open-sans absolute right-0 bottom-0 left-0 flex flex-col gap-1 px-4 pb-(--space-base) text-white">
         <p className="text-lg font-semibold">{category.title}</p>
         <p className="text-base">{category.subtitle}</p>
       </div>
@@ -270,21 +270,21 @@ function WhatWeDeliver() {
       id="what-we-deliver"
       className="font-syne py-section-py sm:py-section-py-sm lg:py-section-py-lg relative w-full bg-white"
     >
-      <div className="gap-3xl px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto flex w-full flex-col">
+      <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto flex w-full flex-col gap-8">
         {/* Header */}
-        <div className="gap-md lg:gap-xl flex flex-col">
+        <div className="flex flex-col gap-3 lg:gap-6">
           <p className="text-primary-light text-xl tracking-widest">
             What we deliver
           </p>
 
-          <div className="gap-xl flex w-full flex-wrap items-start justify-between">
-            <h2 className="text-primary font-syne max-w-[751px] text-3xl leading-tight font-extrabold sm:text-4xl lg:text-[50px] lg:font-bold">
+          <div className="flex w-full flex-wrap items-start justify-between gap-6">
+            <h2 className="text-primary font-syne max-w-[751px] text-2xl leading-tight font-extrabold sm:text-3xl lg:text-[50px] lg:font-bold">
               Everything you spend on at the market.
             </h2>
 
             <PrimaryLink
               href="https://wa.me/+2348167042797"
-              className="font-syne py-md px-xl text-xl font-bold sm:text-2xl lg:text-3xl"
+              className="font-syne px-6 py-3 text-base font-bold sm:text-xl lg:text-3xl"
             >
               Send Order
             </PrimaryLink>
@@ -457,7 +457,6 @@ export default function Home() {
                     key={`hero-img-${currentIndex}`}
                     src={images[currentIndex]}
                     alt="Fresh foodstuff market scene"
-                    fetchPriority="high"
                     initial={{ x: "100%" }}
                     animate={{ x: "0%" }}
                     exit={{ x: "-100%" }}
@@ -473,17 +472,17 @@ export default function Home() {
             {/* Content Wrapper */}
             <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-screen max-h-[1100px] w-full flex-col justify-between gap-[48px] sm:max-h-[1000px] lg:max-h-[900px] xl:max-h-[900px]">
               <div className="relative flex flex-1 flex-col pt-20 sm:pt-24 lg:pt-32">
-                <div className="gap-2xl lg:gap-4xl flex flex-1 flex-col justify-center">
+                <div className="flex flex-1 flex-col justify-center gap-7 lg:gap-10">
                   {/* Location badge */}
-                  <div className="text-primary font-open-sans p-sm inline-flex w-fit items-center gap-1 rounded-full border border-white/30 bg-[#A5BDA8] text-sm font-semibold shadow-[50px] backdrop-blur-lg">
+                  <div className="text-primary font-open-sans inline-flex w-fit items-center gap-1 rounded-full border border-white/30 bg-[#A5BDA8] p-2 text-sm font-semibold shadow-[50px] backdrop-blur-lg">
                     <span className="bg-primary h-1.5 w-1.5 rounded-full" />
                     Now Serving in Kaduna
                   </div>
 
                   {/* Heading and Paragraph */}
-                  <div className="gap-lg flex flex-col">
+                  <div className="flex flex-col gap-5">
                     {/* Heading */}
-                    <h1 className="flex flex-col text-5xl leading-tight font-bold text-white sm:text-6xl lg:text-7xl">
+                    <h1 className="text-hero flex flex-col leading-tight font-bold text-white">
                       <span>Market Prices.</span>
                       <span className="flex flex-wrap items-baseline gap-x-3">
                         {/* Curved Underlined Zero */}
@@ -508,18 +507,18 @@ export default function Home() {
                     </h1>
 
                     {/* Subtext */}
-                    <p className="w-full max-w-[360px] text-base leading-relaxed font-semibold text-white sm:text-lg lg:max-w-[574px] lg:text-xl">
+                    <p className="text-body-lg w-full leading-relaxed font-semibold text-white sm:max-w-[360px] lg:max-w-[574px]">
                       Fresh foodstuff delivered straight to your door step. At
                       the same price you&apos;d pay at Central Market.
                     </p>
                   </div>
 
                   {/* CTAs */}
-                  <div className="gap-base flex flex-col items-center justify-center lg:flex-row lg:justify-start lg:gap-[74px]">
+                  <div className="flex flex-col items-center justify-center gap-4 lg:flex-row lg:justify-start lg:gap-[74px]">
                     <WhatsAppButton className="w-auto" />
                     <a
                       href="#how-it-works"
-                      className="font-open-sans flex items-center gap-1 text-base text-white transition-all duration-300 ease-in-out hover:text-white sm:text-lg lg:gap-[10px] lg:text-xl"
+                      className="font-open-sans flex items-center gap-1 text-sm text-white transition-all duration-300 ease-in-out hover:text-white sm:text-base lg:gap-[10px] lg:text-xl"
                     >
                       See how it works
                       <ArrowRight size={18} />
@@ -528,9 +527,9 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="gap-4xl lg:gap-base relative flex w-full flex-col">
+              <div className="relative flex w-full flex-col gap-10 lg:gap-4">
                 {/* Trust bar */}
-                <div className="bg-primary py-xl px-base mx-auto w-full shadow-md">
+                <div className="bg-primary mx-auto w-full px-4 py-6 shadow-md">
                   {/* Mobile: slideshow */}
                   <div className="relative flex h-6 items-center justify-center overflow-hidden lg:hidden">
                     <AnimatePresence mode="sync">
@@ -540,7 +539,7 @@ export default function Home() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.4 }}
-                        className="gap-sm absolute flex items-center text-white/80"
+                        className="absolute flex items-center gap-2 text-white/80"
                       >
                         <span className="text-white/60">
                           {renderIcon(trustItems[activeTrustIndex].icon)}
@@ -557,7 +556,7 @@ export default function Home() {
                     {trustItems.map((item, i) => (
                       <div
                         key={item.label}
-                        className={`gap-xl px-base flex shrink-0 items-center text-white ${i < trustItems.length - 1 ? "border-r border-[#FCFDFD]" : ""}`}
+                        className={`flex shrink-0 items-center gap-6 px-4 text-white ${i < trustItems.length - 1 ? "border-r border-[#FCFDFD]" : ""}`}
                       >
                         <span className="text-[#FCFDFD]">
                           {renderIcon(item.icon)}
@@ -581,19 +580,18 @@ export default function Home() {
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative bg-white"
       >
         <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto">
-          <div className="gap-4xl grid items-center lg:grid-cols-2">
+          <div className="grid items-center gap-10 lg:grid-cols-2">
             {/* Left Content */}
             <motion.div
               initial={{ opacity: 0, x: -24 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="gap-3xl flex flex-col"
+              className="flex flex-col gap-8"
             >
-              <div className="gap-md flex flex-col">
-                <p className="text-text text-[14px] font-semibold">
-                  How it works
-                </p>
+              <div className="flex flex-col gap-3">
+                {/* <p className="text-text text-[14px] text- font-semibold"> */}
+                <p className="text-text text-2xl font-semibold">How it works</p>
                 <h2 className="text-primary text-xl leading-tight font-bold sm:text-3xl lg:text-5xl">
                   From market to your door in two steps
                 </h2>
@@ -601,15 +599,15 @@ export default function Home() {
 
               <div className="flex flex-col">
                 {/* Step 1 */}
-                <div className="py-base text-text gap-lg flex border-b border-[#E5E7EB]">
+                <div className="text-text flex gap-5 border-b border-[#E5E7EB] py-4">
                   <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
                     01
                   </div>
-                  <div className="gap-sm flex flex-col">
-                    <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
+                  <div className="flex flex-col gap-2">
+                    <h3 className="font-syne text-h3 font-bold">
                       Send us your order
                     </h3>
-                    <p className="font-open-sans text-[14px] leading-relaxed lg:text-base">
+                    <p className="font-open-sans text-sm leading-relaxed sm:text-[14px] lg:text-base">
                       Chat on WhatsApp, call, or browse our catalog. Tell us
                       what you need like rice, beans, palm oil, anything.
                     </p>
@@ -617,16 +615,15 @@ export default function Home() {
                 </div>
 
                 {/* Step 2 */}
-
-                <div className="py-base text-text gap-lg flex">
+                <div className="text-text flex gap-5 py-4">
                   <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
                     02
                   </div>
-                  <div className="gap-sm flex flex-col">
-                    <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
+                  <div className="flex flex-col gap-2">
+                    <h3 className="font-syne text-h3 font-bold">
                       Delivered to you
                     </h3>
-                    <p className="font-open-sans text-[14px] leading-relaxed lg:text-base">
+                    <p className="font-open-sans text-sm leading-relaxed sm:text-[14px] lg:text-base">
                       Your order arrives at your home or shop at the market
                       price you agreed. No surprises, no hidden fees.
                     </p>
@@ -672,12 +669,12 @@ export default function Home() {
         id="why-debridgers"
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg font-syne relative bg-[#F6F3F3]"
       >
-        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-3xl default-max-width mx-auto flex w-full flex-col">
-          <div className="lg:gap-xl gap-md flex flex-col">
+        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto flex w-full flex-col gap-8">
+          <div className="flex flex-col gap-3 lg:gap-6">
             <p className="text-primary-light text-xl tracking-widest">
               Why Debridgers
             </p>
-            <h2 className="text-primary w-full max-w-[730px] text-3xl font-bold sm:text-4xl lg:text-5xl lg:font-bold">
+            <h2 className="text-primary text-h2 w-full max-w-[730px] font-bold lg:font-bold">
               We solve what the market can&apos;t.
             </h2>
           </div>
@@ -712,17 +709,17 @@ export default function Home() {
           </div>
 
           {/* Stats */}
-          <div className="px-section-px px sm:px-section-px-sm lg:px-section-px-lg lg:gap-4xl default-max-width relative z-10 mx-auto flex flex-col">
-            <div className="font-syne pb-2xl gap-md flex flex-col">
+          <div className="px-section-px px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex flex-col lg:gap-10">
+            <div className="font-syne flex flex-col gap-3 pb-7">
               <p className="text-text2 text-xl tracking-[3px] uppercase">
                 Early Numbers
               </p>
-              <h2 className="w-full max-w-[831px] text-3xl leading-tight font-bold sm:text-4xl lg:text-5xl lg:font-extrabold">
+              <h2 className="text-h2 w-full max-w-[831px] leading-tight font-bold lg:font-extrabold">
                 People are already excited.
               </h2>
             </div>
 
-            <div className="gap-base sm:gap-3xl grid grid-cols-3">
+            <div className="grid grid-cols-3 gap-4 sm:gap-8">
               {stats.map((stat, i) => {
                 const displayValue = statsFormatters[i](stat.value);
                 return (
@@ -732,9 +729,9 @@ export default function Home() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: i * 0.1 }}
-                    className="gap-sm flex flex-col lg:w-[236px]"
+                    className="flex flex-col gap-2 lg:w-[236px]"
                   >
-                    <div className="text-secondary font-syne text-2xl leading-none font-extrabold sm:text-4xl lg:text-5xl">
+                    <div className="text-secondary font-syne text-xl leading-none font-extrabold sm:text-3xl lg:text-5xl">
                       {displayValue}
                     </div>
                     <p className="font-open-sans text-[14px] text-white sm:text-base lg:text-lg">
@@ -771,13 +768,13 @@ export default function Home() {
           <BlurDot className="absolute bottom-[70%] left-[90%] h-[115px] w-[110px] lg:left-[70%]" />
         </div>
 
-        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-xl default-max-width lg:gap-3xl relative mx-auto flex w-full flex-col items-center justify-center text-center">
-          <div className="gap-md flex flex-col">
+        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative mx-auto flex w-full flex-col items-center justify-center gap-6 text-center lg:gap-8">
+          <div className="flex flex-col gap-3">
             <p className="text-primary-light font-open-sans text-center text-lg font-semibold tracking-widest lg:text-xl">
               Get started
             </p>
 
-            <h2 className="text-primary font-syne mx-auto w-full max-w-[257px] text-center text-4xl leading-tight font-extrabold sm:max-w-[500px] lg:max-w-[831px] lg:text-5xl">
+            <h2 className="text-primary font-syne mx-auto w-full max-w-[257px] text-center text-3xl leading-tight font-extrabold sm:max-w-[500px] sm:text-4xl lg:max-w-[831px] lg:text-5xl">
               Your first delivery is on us.
             </h2>
 

@@ -284,9 +284,9 @@ export default function ContactPage() {
       </div>
 
       <section className="font-openSans h-full w-full bg-white">
-        <div className="px-section-px gap-4xl sm:px-section-px-sm lg:px-section-px-lg py-section-py sm:py-section-py-sm lg:py-section-py-lg default-max-width mx-auto flex flex-col">
+        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg py-section-py sm:py-section-py-sm lg:py-section-py-lg default-max-width mx-auto flex flex-col gap-10">
           {/* Contact Heading */}
-          <div className="gap-base flex flex-col items-center text-center">
+          <div className="flex flex-col items-center gap-4 text-center">
             <h2 className="font-open-sans text-2xl text-[14px] font-semibold sm:text-3xl sm:text-xl lg:text-4xl">
               Contact Debridgers
             </h2>
@@ -299,10 +299,10 @@ export default function ContactPage() {
           {/* Contact Form */}
           <div
             id="contact-us"
-            className="gap-2xl lg:gap-4xl grid grid-cols-1 lg:grid-cols-2"
+            className="grid grid-cols-1 gap-7 lg:grid-cols-2 lg:gap-10"
           >
             {/* Form */}
-            <div className="gap-2xl border-primary flex flex-col rounded-2xl border bg-white px-[18px] py-[20px] lg:border-0">
+            <div className="border-primary flex flex-col gap-7 rounded-2xl border bg-white px-[18px] py-[20px] lg:border-0">
               <h2 className="font-open-sans text-2xl font-semibold text-black">
                 Send Us A Message
               </h2>
@@ -343,7 +343,7 @@ export default function ContactPage() {
                     exit={{ opacity: 0 }}
                     onSubmit={handleSubmit}
                     noValidate
-                    className="gap-4xl flex flex-col pb-[120px] lg:pb-0"
+                    className="flex flex-col gap-10 pb-[120px] lg:pb-0"
                   >
                     <TextInput
                       label="Full Name"
@@ -392,9 +392,9 @@ export default function ContactPage() {
             </div>
 
             {/* Right column: info + map */}
-            <div className="gap-4xl flex flex-col">
+            <div className="flex flex-col gap-10">
               {/* Contact info cards */}
-              <div className="gap-md flex flex-col">
+              <div className="flex flex-col gap-3">
                 {contactItems.map(({ icon: Icon, label, value, href }) => {
                   const inner = (
                     <div className="border-gray flex w-full items-center gap-[14px] rounded-2xl border p-5 lg:border-0">
