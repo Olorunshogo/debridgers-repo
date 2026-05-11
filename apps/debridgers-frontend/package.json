@@ -1,5 +1,5 @@
 {
-  "name": "@debridgers/landing-page",
+  "name": "@debridgers/debridgers-frontend",
   "private": true,
   "type": "module",
   "scripts": {

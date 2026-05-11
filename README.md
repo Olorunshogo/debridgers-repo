@@ -32,7 +32,7 @@ A pnpm monorepo for the Debridgers platform — a marketplace connecting farmers
 debridgers-repo/
 ├── api/                         # Vercel serverless API entry (index.ts)
 ├── apps/
-│   ├── landing-page/            # @debridgers/landing-page — React Router v7 SSR web app
+│   ├── debridgers-frontend/            # @debridgers/debridgers-frontend — React Router v7 SSR web app
 │   ├── debridgers-backend/      # @debridgers/debridgers-backend — NestJS REST API
 │   └── debridgers-backend-e2e/  # E2E test suite for the backend (Jest)
 ├── packages/
@@ -58,12 +58,12 @@ debridgers-repo/
 
 ## Apps
 
-### `apps/landing-page` — `@debridgers/landing-page`
+### `apps/debridgers-frontend` — `@debridgers/debridgers-frontend`
 
 The main web application. Built with React Router v7 (SSR), Tailwind CSS v4, and TypeScript. Deployed on Vercel.
 
 ```
-apps/landing-page/
+apps/debridgers-frontend/
 ├── app/
 │   ├── components/      # App-level shared components
 │   ├── contexts/        # React context providers
@@ -94,7 +94,7 @@ pnpm lint:landing         # Lint
 pnpm lint:fix:landing     # Lint + auto-fix
 pnpm analyze              # Bundle size visualizer (opens in browser)
 
-# From apps/landing-page directly
+# From apps/debridgers-frontend directly
 pnpm dev
 pnpm build
 pnpm start
@@ -224,7 +224,7 @@ Shared API client with typed axios wrappers for consuming the backend.
 import { apiClient } from "@debridgers/api-client";
 ```
 
-> In `apps/landing-page`, `ui-web` and `ui-app` are aliased directly to their `src/` in Vite — no need to build them during development. See [Import Aliases](#import-aliases).
+> In `apps/debridgers-frontend`, `ui-web` and `ui-app` are aliased directly to their `src/` in Vite — no need to build them during development. See [Import Aliases](#import-aliases).
 
 ---
 
@@ -277,7 +277,7 @@ Each app has its own `.env`. Copy the examples and fill in the values:
 
 ```bash
 cp apps/debridgers-backend/.env.example apps/debridgers-backend/.env
-cp apps/landing-page/.env.example apps/landing-page/.env
+cp apps/debridgers-frontend/.env.example apps/debridgers-frontend/.env
 ```
 
 The backend `.env` covers database, JWT, Cloudinary, Mailtrap, Paystack, Redis, and seed config. For local development the default `DATABASE_URL` in the example already points at the Docker Postgres container — no change needed there unless you're using a hosted DB.
@@ -326,7 +326,7 @@ pnpm dev:backend
 
 ### Working on UI packages without rebuilding
 
-`apps/landing-page` aliases `@debridgers/ui-web` and `@debridgers/ui-app` directly to their `src/` in Vite. Changes to components are picked up instantly via HMR — no `tsup --watch` needed.
+`apps/debridgers-frontend` aliases `@debridgers/ui-web` and `@debridgers/ui-app` directly to their `src/` in Vite. Changes to components are picked up instantly via HMR — no `tsup --watch` needed.
 
 ### Working on packages consumed via dist/
 
@@ -397,13 +397,13 @@ pnpm --filter @debridgers/ui-app dev
 
 ## Import Aliases
 
-Configured in `apps/landing-page/vite.config.ts` and `tsconfig.json`:
+Configured in `apps/debridgers-frontend/vite.config.ts` and `tsconfig.json`:
 
-| Alias                | Resolves to               |
-| -------------------- | ------------------------- |
-| `@/*`                | `apps/landing-page/app/*` |
-| `@debridgers/ui-web` | `packages/ui-web/src`     |
-| `@debridgers/ui-app` | `packages/ui-app/src`     |
+| Alias                | Resolves to                      |
+| -------------------- | -------------------------------- |
+| `@/*`                | `apps/debridgers-frontend/app/*` |
+| `@debridgers/ui-web` | `packages/ui-web/src`            |
+| `@debridgers/ui-app` | `packages/ui-app/src`            |
 
 ```tsx
 import { Button } from "@debridgers/ui-web";
@@ -560,10 +560,10 @@ Individual Dockerfiles:
 Inspect what's bloating the landing page bundle:
 
 ```bash
-pnpm --filter @debridgers/landing-page run analyze
+pnpm --filter @debridgers/debridgers-frontend run analyze
 ```
 
-Or from inside `apps/landing-page`:
+Or from inside `apps/debridgers-frontend`:
 
 ```bash
 pnpm analyze
@@ -619,7 +619,7 @@ pnpm --filter @debridgers/ui-app build
 
 **Type errors on `@debridgers/ui-web` or `@debridgers/ui-app`**
 
-Check that `tsconfig.json` paths are set correctly in the consuming app. See `apps/landing-page/tsconfig.json` for reference.
+Check that `tsconfig.json` paths are set correctly in the consuming app. See `apps/debridgers-frontend/tsconfig.json` for reference.
 
 **Port already in use**
 

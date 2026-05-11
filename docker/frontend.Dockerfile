@@ -11,8 +11,8 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-RUN pnpm --filter @debridgers/landing-page build
+RUN pnpm --filter @debridgers/debridgers-frontend build
 
 EXPOSE 3000
 
-CMD ["pnpm", "--filter", "@debridgers/landing-page", "start"]
+CMD ["pnpm", "--filter", "@debridgers/debridgers-frontend", "start"]
