@@ -590,8 +590,7 @@ export default function Home() {
               className="flex flex-col gap-8"
             >
               <div className="flex flex-col gap-3">
-                {/* <p className="text-text text-[14px] text- font-semibold"> */}
-                <p className="text-text text-2xl font-semibold">How it works</p>
+                <p className="text-text text-5xl font-semibold">How it works</p>
                 <h2 className="text-primary text-xl leading-tight font-bold sm:text-3xl lg:text-5xl">
                   From market to your door in two steps
                 </h2>
