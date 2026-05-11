@@ -11,8 +11,8 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-RUN pnpm --filter @debridgers/backend build
+RUN pnpm --filter @debridgers/debridgers-backend build
 
 EXPOSE 4000
 
-CMD ["node", "apps/backend/dist/index.js"]
+CMD ["node", "apps/debridgers-backend/dist/main.js"]

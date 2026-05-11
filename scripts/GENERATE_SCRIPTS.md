@@ -104,7 +104,7 @@ pnpm generate:scripts
 
 If you have:
 
-- @debridgers/landing-page
+- @debridgers/debridgers-frontend
 - @debridgers/backend
 - @debridgers/ui-web
 
@@ -112,9 +112,9 @@ It will generate:
 
 ```json
 {
-  "dev-landing-page": "pnpm --filter @debridgers/landing-page dev",
-  "build-landing-page": "pnpm --filter @debridgers/landing-page build",
-  "lint-landing-page": "pnpm --filter @debridgers/landing-page lint",
+  "dev-debridgers-frontend": "pnpm --filter @debridgers/debridgers-frontend dev",
+  "build-debridgers-frontend": "pnpm --filter @debridgers/debridgers-frontend build",
+  "lint-debridgers-frontend": "pnpm --filter @debridgers/debridgers-frontend lint",
 
   "dev-backend": "pnpm --filter @debridgers/backend dev",
   "build-backend": "pnpm --filter @debridgers/backend build",
@@ -147,7 +147,7 @@ Now scripts regenerate automatically after install.
 ## 🧠 7. Important Design Notes
 
 - Script names are derived from package name:
-  - @debridgers/landing-page → landing-page
+  - @debridgers/debridgers-frontend → debridgers-frontend
 - Works regardless of how many packages you add
 - No manual updates needed
 - Fully deterministic

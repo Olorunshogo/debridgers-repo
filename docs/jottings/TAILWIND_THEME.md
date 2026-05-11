@@ -7,7 +7,7 @@ tokens.css  →  styles.css (@theme)  →  Tailwind utility classes
 ```
 
 - `libs/shared-theme/src/tokens.css` — raw CSS variables. **Source of truth.** Edit here first.
-- `apps/landing-page/app/styles.css` — maps those vars into Tailwind via `@theme inline`.
+- `apps/debridgers-frontend/app/styles.css` — maps those vars into Tailwind via `@theme inline`.
 - `libs/shared-theme/src/index.ts` — JS/TS colour exports that reference the same CSS vars. Use in inline styles or non-Tailwind code.
 
 > `tailwind.config.ts` has been deleted. Tailwind v4 is configured entirely through CSS (`@theme` in `styles.css`). There is no JS config file.
@@ -114,7 +114,7 @@ For inline styles (when you need opacity modifiers or dynamic values):
 
 ---
 
-## Layout Tokens (landing-page specific)
+## Layout Tokens (debridgers-frontend specific)
 
 These live in `styles.css :root`, not in `tokens.css` (they are app-specific).
 
