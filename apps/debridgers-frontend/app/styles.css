@@ -85,7 +85,7 @@
 
   /* Typography scale (fluid, clamp-based) */
   /* Usage: text-hero, text-h1 … text-h6, text-body-lg, text-body-sm */
-  --text-hero: clamp(3rem, 5vw + 1rem, 4.5rem); /* 32px → 72px */
+  --text-hero: clamp(3rem, 8vw + 1rem, 4.5rem); /* 32px → 72px */
   --text-h1: clamp(1.75rem, 4vw + 0.5rem, 3.75rem); /* 28px → 60px */
   --text-h2: clamp(1.5rem, 3vw + 0.5rem, 3rem); /* 24px → 48px */
   --text-h3: clamp(1.25rem, 2vw + 0.5rem, 2rem); /* 20px → 32px */

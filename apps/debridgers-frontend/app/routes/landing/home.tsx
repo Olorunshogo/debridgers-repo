@@ -273,7 +273,7 @@ function WhatWeDeliver() {
       <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto flex w-full flex-col gap-8">
         {/* Header */}
         <div className="flex flex-col gap-3 lg:gap-6">
-          <p className="text-primary-light text-xl tracking-widest">
+          <p className="text-primary-light text-body-lg tracking-widest">
             What we deliver
           </p>
 
@@ -447,7 +447,7 @@ export default function Home() {
           <div className="font-syne -mt-navbar-h bg-primary absolute inset-0 z-0 overflow-hidden" />
           <section
             id="hero-section"
-            className="font-syne relative mx-auto flex h-full min-h-screen w-full max-w-[1840px] flex-col overflow-hidden"
+            className="font-syne relative mx-auto flex h-full min-h-screen w-full flex-col overflow-hidden"
           >
             {/* Background layer */}
             <div className="absolute inset-0 z-0 h-full w-full">
@@ -461,7 +461,7 @@ export default function Home() {
                     animate={{ x: "0%" }}
                     exit={{ x: "-100%" }}
                     transition={{ duration: 0.1, ease: "easeInOut" }}
-                    className="absolute inset-0 h-full w-full object-contain object-cover"
+                    className="absolute inset-0 h-full w-full object-cover"
                   />
                 )}
               </AnimatePresence>
@@ -590,7 +590,9 @@ export default function Home() {
               className="flex flex-col gap-8"
             >
               <div className="flex flex-col gap-3">
-                <p className="text-text text-5xl font-semibold">How it works</p>
+                <p className="text-text text-body-sm font-semibold">
+                  How it works
+                </p>
                 <h2 className="text-primary text-xl leading-tight font-bold sm:text-3xl lg:text-5xl">
                   From market to your door in two steps
                 </h2>
@@ -606,7 +608,7 @@ export default function Home() {
                     <h3 className="font-syne text-h3 font-bold">
                       Send us your order
                     </h3>
-                    <p className="font-open-sans text-sm leading-relaxed sm:text-[14px] lg:text-base">
+                    <p className="font-open-sans text-body-sm leading-relaxed">
                       Chat on WhatsApp, call, or browse our catalog. Tell us
                       what you need like rice, beans, palm oil, anything.
                     </p>
@@ -622,7 +624,7 @@ export default function Home() {
                     <h3 className="font-syne text-h3 font-bold">
                       Delivered to you
                     </h3>
-                    <p className="font-open-sans text-sm leading-relaxed sm:text-[14px] lg:text-base">
+                    <p className="font-open-sans text-body-sm leading-relaxed">
                       Your order arrives at your home or shop at the market
                       price you agreed. No surprises, no hidden fees.
                     </p>
@@ -670,7 +672,7 @@ export default function Home() {
       >
         <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto flex w-full flex-col gap-8">
           <div className="flex flex-col gap-3 lg:gap-6">
-            <p className="text-primary-light text-xl tracking-widest">
+            <p className="text-primary-light text-body-lg tracking-widest">
               Why Debridgers
             </p>
             <h2 className="text-primary text-h2 w-full max-w-[730px] font-bold lg:font-bold">
@@ -710,7 +712,7 @@ export default function Home() {
           {/* Stats */}
           <div className="px-section-px px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex flex-col lg:gap-10">
             <div className="font-syne flex flex-col gap-3 pb-7">
-              <p className="text-text2 text-xl tracking-[3px] uppercase">
+              <p className="text-text2 text-body-lg tracking-[3px] uppercase">
                 Early Numbers
               </p>
               <h2 className="text-h2 w-full max-w-[831px] leading-tight font-bold lg:font-extrabold">
@@ -769,15 +771,15 @@ export default function Home() {
 
         <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative mx-auto flex w-full flex-col items-center justify-center gap-6 text-center lg:gap-8">
           <div className="flex flex-col gap-3">
-            <p className="text-primary-light font-open-sans text-center text-lg font-semibold tracking-widest lg:text-xl">
+            <p className="text-primary-light font-open-sans text-body-lg text-center font-semibold tracking-widest lg:text-xl">
               Get started
             </p>
 
-            <h2 className="text-primary font-syne mx-auto w-full max-w-[257px] text-center text-3xl leading-tight font-extrabold sm:max-w-[500px] sm:text-4xl lg:max-w-[831px] lg:text-5xl">
+            <h2 className="text-primary font-syne text-h2 mx-auto w-full max-w-[257px] text-center leading-tight font-extrabold sm:max-w-[500px] lg:max-w-[831px]">
               Your first delivery is on us.
             </h2>
 
-            <p className="text-primary font-open-sans mx-auto w-full max-w-[256px] max-w-[831px] text-base sm:max-w-[500px] lg:text-lg">
+            <p className="text-primary font-open-sans text-body-lg mx-auto w-full max-w-[256px] sm:max-w-[500px]">
               Join early and get free delivery on your first order. Just send us
               a WhatsApp and we&apos;ll take it from there.
             </p>
