@@ -7,6 +7,7 @@ interface AuthSuccessModalProps {
   description: string;
   submitButtonText: string;
   redirectUrl: string;
+  navigateState?: Record<string, unknown>;
 }
 
 export default function AuthSuccessModal({
@@ -14,11 +15,12 @@ export default function AuthSuccessModal({
   description,
   submitButtonText,
   redirectUrl,
+  navigateState,
 }: AuthSuccessModalProps) {
   const navigate = useNavigate();
 
   function handleRedirect() {
-    navigate(redirectUrl);
+    navigate(redirectUrl, { state: navigateState });
   }
 
   return (

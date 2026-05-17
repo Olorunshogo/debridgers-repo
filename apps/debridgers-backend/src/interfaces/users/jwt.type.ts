@@ -1,19 +1,19 @@
 import { Request } from "express";
 import { UserRole } from "./roles.type";
 
-export interface JwtUser {
-  id: number;
+export interface JwtPayload {
+  sub: number;
   email: string;
   role: UserRole;
   iat?: number;
   exp?: number;
 }
 
-export interface JwtPayload extends JwtUser {
-  sub: number;
+export interface JwtUser extends JwtPayload {
+  id: number;
 }
 
-export interface JwtRefreshPayload extends JwtPayload {
+export interface JwtRefreshPayload extends JwtUser {
   refreshToken: string;
 }
 

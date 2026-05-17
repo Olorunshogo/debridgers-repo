@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Bell, LogOut } from "lucide-react";
@@ -53,6 +53,28 @@ export default function DashboardLayout() {
   const { groups, isActive, basePath, isAgent, isBuyer } = useDashboardNav();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [hasUnread, setHasUnread] = useState(false);
+
+  const notifPath = `${basePath}/notification`;
+
+  useEffect(() => {
+    const stored = localStorage.getItem("debridgers_has_unread");
+    // First visit ever: default to showing the dot (assume unread notifications exist)
+    if (stored === null) {
+      localStorage.setItem("debridgers_has_unread", "true");
+      setHasUnread(true);
+    } else {
+      setHasUnread(stored === "true");
+    }
+  }, [pathname]);
+
+  // Clear the dot when navigating to the notification page
+  useEffect(() => {
+    if (pathname === notifPath) {
+      localStorage.setItem("debridgers_has_unread", "false");
+      setHasUnread(false);
+    }
+  }, [pathname, notifPath]);
 
   const titleMap = titleMaps[basePath] ?? {};
   const pageTitle = titleMap[pathname] ?? "Dashboard";
@@ -284,16 +306,19 @@ export default function DashboardLayout() {
                   </Link>
                 ) : null}
 
-                <button
+                <Link
+                  to={notifPath}
                   className="relative rounded-full p-2 transition-colors"
                   aria-label="Notifications"
                 >
                   <Bell size={20} style={{ color: "var(--icon-secondary)" }} />
-                  <span
-                    className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full"
-                    style={{ backgroundColor: "var(--error-red)" }}
-                  />
-                </button>
+                  {hasUnread && (
+                    <span
+                      className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full"
+                      style={{ backgroundColor: "var(--error-red)" }}
+                    />
+                  )}
+                </Link>
               </div>
             </header>
 

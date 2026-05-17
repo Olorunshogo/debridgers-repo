@@ -24,7 +24,7 @@ interface CartItem extends Product {
   qty: number;
 }
 
-const MOCK_PRODUCTS: Product[] = [
+const PRODUCTS: Product[] = [
   {
     id: "1",
     name: "Parboiled Rice",
@@ -137,16 +137,13 @@ export default function BuyerShop() {
   const [qtys, setQtys] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setProducts(MOCK_PRODUCTS);
-      const init: Record<string, number> = {};
-      MOCK_PRODUCTS.forEach((p) => {
-        init[p.id] = 1;
-      });
-      setQtys(init);
-      setLoading(false);
-    }, 400);
-    return () => clearTimeout(t);
+    const init: Record<string, number> = {};
+    PRODUCTS.forEach((p) => {
+      init[p.id] = 1;
+    });
+    setProducts(PRODUCTS);
+    setQtys(init);
+    setLoading(false);
   }, []);
 
   const filtered = useMemo(
@@ -159,6 +156,14 @@ export default function BuyerShop() {
 
   const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
+
+  useEffect(() => {
+    if (cart.length > 0) {
+      localStorage.setItem("debridgers_cart", JSON.stringify(cart));
+    } else {
+      localStorage.removeItem("debridgers_cart");
+    }
+  }, [cart]);
 
   function addToCart(product: Product) {
     const qty = qtys[product.id] ?? 1;

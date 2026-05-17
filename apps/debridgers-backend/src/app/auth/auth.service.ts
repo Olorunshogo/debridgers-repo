@@ -41,31 +41,48 @@ export class AuthService {
       throw new ConflictException("Email already registered");
     }
 
+    const referredByAgentId = await this.resolveBuyerReferrerId(
+      dto.referred_by_agent_code,
+    );
+
     const hashed = await bcrypt.hash(dto.password, 12);
 
-    const [user] = await this.db
-      .insert(schema.users)
-      .values({
-        first_name: dto.first_name,
-        last_name: dto.last_name,
-        email: dto.email.toLowerCase(),
-        phone: dto.phone,
-        password: hashed,
-        role: dto.role,
-      })
-      .returning();
+    const verificationToken = this.generateVerificationOtp();
+    const verificationExpiresAt = new Date(Date.now() + 24 * 3600 * 1000);
 
-    this.eventEmitter.emit(USER_EVENTS.CONTACT_SUBMITTED, {
-      name: `${user.first_name} ${user.last_name}`,
-      email: user.email,
+    const [user] = await this.db.transaction(async (tx) => {
+      const [createdUser] = await tx
+        .insert(schema.users)
+        .values({
+          first_name: dto.first_name,
+          last_name: dto.last_name,
+          email: dto.email.toLowerCase(),
+          phone: dto.phone,
+          password: hashed,
+          role: "buyer",
+          referred_by_agent_id: referredByAgentId,
+        })
+        .returning();
+
+      await tx.insert(schema.email_verification).values({
+        user_id: createdUser.id,
+        token: verificationToken,
+        expires_at: verificationExpiresAt,
+      });
+
+      await this.eventEmitter.emitAsync(USER_EVENTS.USER_REGISTERED, {
+        name: `${createdUser.first_name} ${createdUser.last_name}`,
+        email: createdUser.email,
+        otp: verificationToken,
+        role: createdUser.role,
+      });
+
+      return [createdUser];
     });
 
-    const tokens = await this.generateTokens(user);
-    await this.saveRefreshToken(user.id, tokens.refreshToken);
-
     return {
-      message: "Registration successful",
-      data: { user: this.sanitize(user), ...tokens },
+      message: "Registration successful. Please verify your email to continue.",
+      data: { user: this.sanitize(user) },
     };
   }
 
@@ -80,10 +97,16 @@ export class AuthService {
       throw new UnauthorizedException("Invalid credentials");
     }
 
-    const valid = await bcrypt.compare(dto.password, user.password);
+    const passwordHash = user.password;
+    const valid = await bcrypt.compare(dto.password, passwordHash);
     if (!valid) throw new UnauthorizedException("Invalid credentials");
 
-    // Block unapproved agents from logging in
+    if (!user.is_email_verified) {
+      throw new UnauthorizedException(
+        "Please verify your email before logging in.",
+      );
+    }
+
     if (user.role === "agent") {
       const [profile] = await this.db
         .select({ status: schema.agent_profiles.status })
@@ -91,9 +114,12 @@ export class AuthService {
         .where(eq(schema.agent_profiles.user_id, user.id))
         .limit(1);
 
-      if (profile && profile.status !== "approved") {
+      if (
+        profile &&
+        (profile.status === "rejected" || profile.status === "suspended")
+      ) {
         throw new UnauthorizedException(
-          "Your account is not yet approved. Please contact customer care.",
+          "Your application has been rejected or suspended. Please contact customer care.",
         );
       }
     }
@@ -101,8 +127,42 @@ export class AuthService {
     const tokens = await this.generateTokens(user);
     await this.saveRefreshToken(user.id, tokens.refreshToken);
 
+    this.eventEmitter.emit(USER_EVENTS.USER_LOGGED_IN, {
+      name: `${user.first_name} ${user.last_name}`,
+      email: user.email,
+      role: user.role,
+    });
+
     return {
       message: "Login successful",
+      data: { user: this.sanitize(user), ...tokens },
+    };
+  }
+
+  async loginAdmin(dto: LoginDto) {
+    const [user] = await this.db
+      .select()
+      .from(schema.users)
+      .where(eq(sql`lower(${schema.users.email})`, dto.email.toLowerCase()))
+      .limit(1);
+
+    if (!user || !user.password) {
+      throw new UnauthorizedException("Invalid admin credentials");
+    }
+
+    const passwordHash = user.password;
+    const valid = await bcrypt.compare(dto.password, passwordHash);
+    if (!valid) throw new UnauthorizedException("Invalid admin credentials");
+
+    if (user.role !== "admin") {
+      throw new UnauthorizedException("Admin access only");
+    }
+
+    const tokens = await this.generateTokens(user);
+    await this.saveRefreshToken(user.id, tokens.refreshToken);
+
+    return {
+      message: "Admin login successful",
       data: { user: this.sanitize(user), ...tokens },
     };
   }
@@ -118,7 +178,8 @@ export class AuthService {
       throw new UnauthorizedException("Access denied");
     }
 
-    const match = await bcrypt.compare(refreshToken, user.refresh_token);
+    const tokenHash = user.refresh_token;
+    const match = await bcrypt.compare(refreshToken, tokenHash);
     if (!match) throw new UnauthorizedException("Access denied");
 
     const tokens = await this.generateTokens(user);
@@ -166,6 +227,90 @@ export class AuthService {
     return { message: "Password reset email sent", data: null };
   }
 
+  async verifyEmail(email: string, otp: string) {
+    const [user] = await this.db
+      .select()
+      .from(schema.users)
+      .where(eq(sql`lower(${schema.users.email})`, email.toLowerCase()))
+      .limit(1);
+
+    if (!user) {
+      throw new NotFoundException("Account not found");
+    }
+
+    if (user.is_email_verified) {
+      throw new BadRequestException("Email is already verified");
+    }
+
+    const [record] = await this.db
+      .select()
+      .from(schema.email_verification)
+      .where(eq(schema.email_verification.user_id, user.id))
+      .limit(1);
+
+    if (!record) {
+      throw new BadRequestException(
+        "Verification OTP not found. Please resend the OTP.",
+      );
+    }
+
+    if (record.expires_at < new Date()) {
+      throw new BadRequestException(
+        "Verification OTP has expired. Please resend the OTP.",
+      );
+    }
+
+    if (record.token !== otp) {
+      throw new BadRequestException("Invalid verification OTP");
+    }
+
+    await this.db
+      .update(schema.users)
+      .set({ is_email_verified: true })
+      .where(eq(schema.users.id, record.user_id));
+
+    await this.db
+      .delete(schema.email_verification)
+      .where(eq(schema.email_verification.user_id, record.user_id));
+
+    return { message: "Email verified successfully", data: null };
+  }
+
+  async resendVerification(email: string) {
+    const [user] = await this.db
+      .select()
+      .from(schema.users)
+      .where(eq(sql`lower(${schema.users.email})`, email.toLowerCase()))
+      .limit(1);
+
+    if (user && !user.is_email_verified) {
+      const verificationToken = this.generateVerificationOtp();
+      const verificationExpiresAt = new Date(Date.now() + 24 * 3600 * 1000);
+
+      await this.db
+        .delete(schema.email_verification)
+        .where(eq(schema.email_verification.user_id, user.id));
+
+      await this.db.insert(schema.email_verification).values({
+        user_id: user.id,
+        token: verificationToken,
+        expires_at: verificationExpiresAt,
+      });
+
+      this.eventEmitter.emit(USER_EVENTS.EMAIL_VERIFICATION_REQUESTED, {
+        name: `${user.first_name} ${user.last_name}`,
+        email: user.email,
+        token: verificationToken,
+        role: user.role,
+      });
+    }
+
+    return {
+      message: "Verification email sent if the account exists",
+      data: null,
+    };
+  }
+
   async resetPassword(token: string, newPassword: string) {
     const [reset] = await this.db
       .select()
@@ -177,6 +322,16 @@ export class AuthService {
       throw new BadRequestException("Invalid or expired reset token");
     }
 
+    const [user] = await this.db
+      .select({
+        first_name: schema.users.first_name,
+        last_name: schema.users.last_name,
+        email: schema.users.email,
+      })
+      .from(schema.users)
+      .where(eq(schema.users.id, reset.user_id))
+      .limit(1);
+
     const hashed = await bcrypt.hash(newPassword, 12);
     await this.db
       .update(schema.users)
@@ -186,6 +341,13 @@ export class AuthService {
     await this.db
       .delete(schema.password_resets)
       .where(eq(schema.password_resets.id, reset.id));
+
+    if (user) {
+      this.eventEmitter.emit(USER_EVENTS.PASSWORD_RESET_COMPLETED, {
+        name: `${user.first_name} ${user.last_name}`,
+        email: user.email,
+      });
+    }
 
     return { message: "Password reset successful", data: null };
   }
@@ -224,6 +386,34 @@ export class AuthService {
     ]);
 
     return { accessToken, refreshToken };
+  }
+
+  private async resolveBuyerReferrerId(referralCode?: string) {
+    if (referralCode) {
+      const [recruiterProfile] = await this.db
+        .select({ user_id: schema.agent_profiles.user_id })
+        .from(schema.agent_profiles)
+        .where(eq(schema.agent_profiles.referral_agent_code, referralCode))
+        .limit(1);
+
+      if (recruiterProfile) {
+        return recruiterProfile.user_id;
+      }
+    }
+
+    const adminEmail =
+      this.config.get<string>("ADMIN_EMAIL") ?? "admin@debridgers.com";
+    const [defaultReferrer] = await this.db
+      .select({ id: schema.users.id })
+      .from(schema.users)
+      .where(eq(sql`lower(${schema.users.email})`, adminEmail.toLowerCase()))
+      .limit(1);
+
+    return defaultReferrer?.id ?? null;
+  }
+
+  private generateVerificationOtp() {
+    return crypto.randomInt(100000, 999999).toString();
   }
 
   private async saveRefreshToken(userId: number, token: string) {

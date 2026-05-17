@@ -99,6 +99,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
 
   // === Derived validity
   const isBuyerValid = buyerSchema.safeParse(buyerForm).success;
@@ -183,6 +184,7 @@ export default function SignupPage() {
       }
 
       storeTokens(json.data?.accessToken ?? "", json.data?.refreshToken ?? "");
+      setRegisteredEmail(result.data.email);
       setShowSuccess(true);
     } catch {
       setApiError("Network error. Please try again.");
@@ -245,6 +247,7 @@ export default function SignupPage() {
       }
 
       storeTokens(json.data?.accessToken ?? "", json.data?.refreshToken ?? "");
+      setRegisteredEmail(result.data.email);
       setShowSuccess(true);
     } catch {
       setApiError("Network error. Please try again.");
@@ -263,6 +266,7 @@ export default function SignupPage() {
             description="Check your email for the verification code."
             submitButtonText="Verify Email"
             redirectUrl="/verify-email"
+            navigateState={{ email: registeredEmail, role: activeTab }}
           />
         )}
       </AnimatePresence>

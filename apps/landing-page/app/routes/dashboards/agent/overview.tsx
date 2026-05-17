@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { Icon } from "@iconify/react";
 import { Link } from "react-router";
+import { apiFetch } from "../../../utils/apiFetch";
 import {
   BarChart,
   Bar,
@@ -70,89 +71,132 @@ interface AgentDashData {
   };
 }
 
-// === Mock data
-const MOCK_DATA: AgentDashData = {
-  name: "Abdul-malik Ajadi",
-  location: "Barnawa · Narayi",
-  ninVerified: true,
-  greeting: "Good Morning 🌤",
-  weekEarning: "₦18,400",
-  bagsInHand: 7,
-  bagsSold: 5,
-  bagsRemaining: 2,
-  paymentCycle: "Paid every Friday",
-  stats: [
-    {
-      label: "Total bags sold",
-      value: "18",
-      icon: "lucide:shopping-bag",
-      trend: "↑ 7 this week",
+interface ApiProfile {
+  first_name: string;
+  last_name: string;
+  role: string;
+  status: string;
+  address?: string | null;
+  total_earnings: string;
+}
+
+interface ApiDashStats {
+  total_bags_sold: number;
+  total_earned: string;
+  rank: number | null;
+  days_reported: number;
+  commission_pending: string;
+}
+
+interface ApiLeaderEntry {
+  rank: number;
+  name: string;
+  location: string;
+  bags_sold: number;
+}
+
+function mapToDashboard(
+  profile: ApiProfile,
+  stats: ApiDashStats,
+  leaderTop3: ApiLeaderEntry[],
+): AgentDashData {
+  const now = new Date();
+  const hour = now.getHours();
+  const greeting =
+    hour < 12
+      ? "Good Morning 🌤"
+      : hour < 17
+        ? "Good Afternoon ☀️"
+        : "Good Evening 🌙";
+
+  const fmtNaira = (val: string | number) => {
+    const n = typeof val === "string" ? parseFloat(val) : val;
+    return `₦${n.toLocaleString("en-NG", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  };
+
+  const pendingNaira = parseFloat(stats.commission_pending);
+
+  const nextFriday = (() => {
+    const d = new Date();
+    const day = d.getDay();
+    const diff = (5 - day + 7) % 7 || 7;
+    d.setDate(d.getDate() + diff);
+    return {
+      daysLeft: diff,
+      label: d.toLocaleDateString("en-NG", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      }),
+    };
+  })();
+
+  return {
+    name: `${profile.first_name} ${profile.last_name}`.trim(),
+    location: profile.address ?? "—",
+    ninVerified: profile.status === "approved",
+    greeting,
+    weekEarning: fmtNaira(stats.total_earned),
+    bagsInHand: 0,
+    bagsSold: stats.total_bags_sold,
+    bagsRemaining: 0,
+    paymentCycle: "Paid every Friday",
+    stats: [
+      {
+        label: "Total bags sold",
+        value: String(stats.total_bags_sold),
+        icon: "lucide:shopping-bag",
+        trend: "All time",
+      },
+      {
+        label: "Total earned",
+        value: fmtNaira(stats.total_earned),
+        icon: "lucide:banknote",
+        trend: `${fmtNaira(stats.commission_pending)} pending`,
+      },
+      {
+        label: "Current rank",
+        value: stats.rank != null ? String(stats.rank).padStart(2, "0") : "—",
+        icon: "lucide:trophy",
+        trend: "Overall",
+      },
+      {
+        label: "Days reported",
+        value: String(stats.days_reported),
+        icon: "lucide:calendar-check",
+        trend: "↑ Report today",
+      },
+    ],
+    checklist: [
+      {
+        id: "c1",
+        label: "Submit daily report",
+        status: "action",
+        actionLabel: "Do it →",
+      },
+      {
+        id: "c2",
+        label: "Request next batch of stock",
+        status: "request",
+        actionLabel: "Request →",
+      },
+    ],
+    leaderboard: leaderTop3.map((e) => ({
+      rank: e.rank,
+      name: e.name,
+      location: e.location,
+      bags: e.bags_sold,
+    })),
+    monthlySales: [],
+    nextPayout: {
+      daysLeft: nextFriday.daysLeft,
+      date: nextFriday.label,
+      amountPending: pendingNaira > 0 ? fmtNaira(pendingNaira) : "₦0",
+      weekProgress: new Date().getDay() || 7,
+      weekLabel: `${nextFriday.daysLeft} day${nextFriday.daysLeft !== 1 ? "s" : ""} until payout`,
     },
-    {
-      label: "Total earned",
-      value: "₦42,500",
-      icon: "lucide:banknote",
-      trend: "↑ ₦18,400 pending",
-    },
-    {
-      label: "Current rank",
-      value: "04",
-      icon: "lucide:trophy",
-      trend: "↑ 2 spots this week",
-    },
-    {
-      label: "Days reported",
-      value: "18/21",
-      icon: "lucide:calendar-check",
-      trend: "↑ Report today",
-    },
-  ],
-  checklist: [
-    {
-      id: "c1",
-      label: "Pick up two bags of beans from depot",
-      status: "done",
-      actionLabel: "Done",
-    },
-    {
-      id: "c2",
-      label: "Submit daily report",
-      status: "action",
-      actionLabel: "Do it →",
-    },
-    {
-      id: "c3",
-      label: "Collect money from Alh Musa (₦2,500)",
-      status: "pending",
-      actionLabel: "Pending",
-    },
-    {
-      id: "c4",
-      label: "Request next batch of stock",
-      status: "request",
-      actionLabel: "Request →",
-    },
-  ],
-  leaderboard: [
-    { rank: 1, name: "Fatima Kabir", location: "Sabon Tasha", bags: 12 },
-    { rank: 2, name: "Usman Ibrahim", location: "Kakuri", bags: 12 },
-    { rank: 3, name: "Fatima Kabir", location: "Barnawa, Narayi", bags: 12 },
-  ],
-  monthlySales: [
-    { month: "Jan", bags: 120 },
-    { month: "Feb", bags: 80 },
-    { month: "Mar", bags: 200 },
-    { month: "Apr", bags: 100 },
-    { month: "May", bags: 140 },
-  ],
-  nextPayout: {
-    daysLeft: 3,
-    date: "Friday, April 4",
-    amountPending: "₦8,400",
-    weekProgress: 5,
-    weekLabel: "Mon–Thu complete (5/7 days)",
-  },
-};
+  };
+}
 
 // === Status styles
 const checklistStyles: Record<
@@ -238,11 +282,16 @@ export default function AgentOverviewPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setData(MOCK_DATA);
-      setLoading(false);
-    }, 600);
-    return () => clearTimeout(t);
+    Promise.all([
+      apiFetch<ApiProfile>("/agent/me"),
+      apiFetch<ApiDashStats>("/agent/dashboard"),
+      apiFetch<ApiLeaderEntry[]>("/agent/leaderboard"),
+    ])
+      .then(([profile, stats, leaderboard]) => {
+        setData(mapToDashboard(profile, stats, leaderboard.slice(0, 3)));
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading || !data) {

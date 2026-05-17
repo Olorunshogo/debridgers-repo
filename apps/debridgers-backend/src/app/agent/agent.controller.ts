@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Patch,
   Post,
   UploadedFile,
   UploadedFiles,
@@ -28,6 +29,10 @@ import { StockService } from "./stock.service";
 import { KycService } from "./kyc.service";
 import { ZodValidationPipe } from "../../infrastructure/pipeline/validation.pipeline";
 import { applyAgentSchema, ApplyAgentDto } from "./dto/apply-agent.dto";
+import {
+  updateAgentProfileSchema,
+  UpdateAgentProfileDto,
+} from "./dto/update-agent-profile.dto";
 import { submitReportSchema, SubmitReportDto } from "./dto/submit-report.dto";
 import { stockRequestSchema, StockRequestDto } from "./dto/stock-request.dto";
 import { remitStockSchema, RemitStockDto } from "./dto/remit-stock.dto";
@@ -112,6 +117,59 @@ export class AgentController {
     return this.agentService.apply(dto as ApplyAgentDto, cvUrl);
   }
 
+  // ─── Leaderboard & Dashboard ─────────────────────────────────────────────────
+
+  @Get("leaderboard")
+  @ApiOperation({ summary: "Get top 20 agents leaderboard (public)" })
+  @ApiResponse({
+    status: 200,
+    description: "Leaderboard retrieved",
+    schema: {
+      example: {
+        statusCode: 200,
+        message: "Leaderboard retrieved",
+        data: [
+          {
+            rank: 1,
+            name: "Amina Yusuf",
+            location: "Kaduna North",
+            bags_sold: 42,
+          },
+        ],
+      },
+    },
+  })
+  getLeaderboard() {
+    return this.agentService.getLeaderboard();
+  }
+
+  @Get("dashboard")
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("agent")
+  @ApiBearerAuth("access-token")
+  @ApiOperation({ summary: "Get agent dashboard stats" })
+  @ApiResponse({
+    status: 200,
+    description: "Dashboard stats retrieved",
+    schema: {
+      example: {
+        statusCode: 200,
+        message: "Dashboard stats retrieved",
+        data: {
+          total_bags_sold: 42,
+          total_earned: "315000.00",
+          rank: 3,
+          days_reported: 14,
+          commission_pending: "45000.00",
+          recent_reports: [],
+        },
+      },
+    },
+  })
+  getDashboardStats(@CurrentUser() user: JwtPayload) {
+    return this.agentService.getDashboardStats(user);
+  }
+
   // ─── Profile ─────────────────────────────────────────────────────────────────
 
   @Get("me")
@@ -148,6 +206,21 @@ export class AgentController {
   @ApiResponse({ status: 401, description: "Unauthorized" })
   getProfile(@CurrentUser() user: JwtPayload) {
     return this.agentService.getProfile(user);
+  }
+
+  @Patch("profile")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("agent")
+  @ApiBearerAuth("access-token")
+  @ApiOperation({ summary: "Update agent profile (name, phone, address)" })
+  @ApiResponse({ status: 200, description: "Profile updated" })
+  updateProfile(
+    @Body(new ZodValidationPipe(updateAgentProfileSchema))
+    dto: UpdateAgentProfileDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.agentService.updateProfile(dto, user);
   }
 
   // ─── Reports & Commissions ───────────────────────────────────────────────────
@@ -424,7 +497,7 @@ export class AgentController {
   @ApiOperation({
     summary: "Submit KYC documents",
     description:
-      "Multipart upload. Agent must be approved first. Required before requesting stock.",
+      "Multipart upload. Pending agents can submit KYC; approved agents can resubmit only if support clears it.",
   })
   @ApiConsumes("multipart/form-data")
   @ApiBody({

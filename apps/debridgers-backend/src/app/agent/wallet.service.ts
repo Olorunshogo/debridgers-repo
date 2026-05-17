@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
 import * as schema from "../../infrastructure/persistence/index";
@@ -19,7 +19,19 @@ export class WalletService {
       .where(eq(schema.wallets.agent_id, user.sub))
       .limit(1);
 
-    if (!wallet) throw new NotFoundException("Wallet not found");
+    if (!wallet) {
+      return {
+        message: "Wallet retrieved",
+        data: {
+          id: null,
+          agent_id: user.sub,
+          available_balance: 0,
+          pending_balance: 0,
+          total_earned: 0,
+          updated_at: null,
+        },
+      };
+    }
 
     return { message: "Wallet retrieved", data: wallet };
   }
