@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ClipboardPenLine, CheckCircle } from "lucide-react";
+import { apiFetch, ApiError } from "../../../utils/apiFetch";
 
 export function meta() {
   return [{ title: "Daily Report | Debridgers" }];
@@ -15,40 +16,30 @@ interface ReportEntry {
   status: "approved" | "pending" | "rejected";
 }
 
-const MOCK_REPORTS: ReportEntry[] = [
-  {
-    id: "r1",
-    date: "Apr 5, 2026",
-    pagesSold: 6,
-    amount: "₦90,000",
-    commission: "₦27,000",
-    status: "approved",
-  },
-  {
-    id: "r2",
-    date: "Apr 4, 2026",
-    pagesSold: 4,
-    amount: "₦60,000",
-    commission: "₦18,000",
+interface ApiReport {
+  id: number;
+  pages_sold: number;
+  amount: string;
+  notes?: string | null;
+  created_at: string;
+}
+
+function mapReport(r: ApiReport): ReportEntry {
+  const amount = parseFloat(r.amount);
+  const commission = amount * 0.3;
+  return {
+    id: String(r.id),
+    date: new Date(r.created_at).toLocaleDateString("en-NG", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
+    pagesSold: r.pages_sold,
+    amount: `₦${amount.toLocaleString("en-NG", { minimumFractionDigits: 0 })}`,
+    commission: `₦${commission.toLocaleString("en-NG", { minimumFractionDigits: 0 })}`,
     status: "pending",
-  },
-  {
-    id: "r3",
-    date: "Apr 3, 2026",
-    pagesSold: 5,
-    amount: "₦75,000",
-    commission: "₦22,500",
-    status: "approved",
-  },
-  {
-    id: "r4",
-    date: "Apr 2, 2026",
-    pagesSold: 2,
-    amount: "₦30,000",
-    commission: "₦9,000",
-    status: "rejected",
-  },
-];
+  };
+}
 
 const statusStyles: Record<
   string,
@@ -65,13 +56,44 @@ const statusStyles: Record<
 
 export default function AgentDailyReportPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [pages, setPages] = useState("");
+  const [amount, setAmount] = useState("");
+  const [reports, setReports] = useState<ReportEntry[]>([]);
+  const [loadingReports, setLoadingReports] = useState(true);
 
-  function handleSubmit(e: React.FormEvent) {
+  useEffect(() => {
+    apiFetch<ApiReport[]>("/agent/reports")
+      .then((rows) => setReports(rows.map(mapReport)))
+      .catch(console.error)
+      .finally(() => setLoadingReports(false));
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
-    setPages("");
+    setSubmitError(null);
+    try {
+      await apiFetch("/agent/report", {
+        method: "POST",
+        body: JSON.stringify({
+          pages_sold: Number(pages),
+          amount: Number(amount),
+        }),
+      });
+      setSubmitted(true);
+      setPages("");
+      setAmount("");
+      // Refresh reports list
+      const rows = await apiFetch<ApiReport[]>("/agent/reports");
+      setReports(rows.map(mapReport));
+      setTimeout(() => setSubmitted(false), 3000);
+    } catch (err) {
+      setSubmitError(
+        err instanceof ApiError
+          ? err.message
+          : "Failed to submit. Please try again.",
+      );
+    }
   }
 
   return (
@@ -118,27 +140,63 @@ export default function AgentDailyReportPage() {
           </motion.div>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1">
-              <label
-                className="text-sm font-medium"
-                style={{ color: "var(--heading-colour)" }}
-              >
-                Pages Sold Today
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={pages}
-                onChange={(e) => setPages(e.target.value)}
-                placeholder="e.g. 5"
-                required
-                className="rounded-xl border px-4 py-2.5 text-sm outline-none focus:ring-2"
+            {submitError && (
+              <p
+                className="rounded-xl px-4 py-3 text-sm"
                 style={{
-                  borderColor: "var(--border-gray)",
-                  color: "var(--heading-colour)",
-                  backgroundColor: "var(--bg-light)",
+                  backgroundColor: "var(--status-cancelled-bg)",
+                  color: "var(--status-cancelled-text)",
                 }}
-              />
+              >
+                {submitError}
+              </p>
+            )}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-1">
+                <label
+                  className="text-sm font-medium"
+                  style={{ color: "var(--heading-colour)" }}
+                >
+                  Bags Sold Today
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={pages}
+                  onChange={(e) => setPages(e.target.value)}
+                  placeholder="e.g. 5"
+                  required
+                  className="rounded-xl border px-4 py-2.5 text-sm outline-none focus:ring-2"
+                  style={{
+                    borderColor: "var(--border-gray)",
+                    color: "var(--heading-colour)",
+                    backgroundColor: "var(--bg-light)",
+                  }}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label
+                  className="text-sm font-medium"
+                  style={{ color: "var(--heading-colour)" }}
+                >
+                  Total Amount (₦)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="e.g. 75000"
+                  required
+                  className="rounded-xl border px-4 py-2.5 text-sm outline-none focus:ring-2"
+                  style={{
+                    borderColor: "var(--border-gray)",
+                    color: "var(--heading-colour)",
+                    backgroundColor: "var(--bg-light)",
+                  }}
+                />
+              </div>
             </div>
             <button
               type="submit"
@@ -172,7 +230,28 @@ export default function AgentDailyReportPage() {
           <span>Commission</span>
           <span>Status</span>
         </div>
-        {MOCK_REPORTS.map((r, i) => {
+        {loadingReports ? (
+          <div className="flex animate-pulse flex-col gap-0">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="h-14 border-b"
+                style={{
+                  borderColor: "var(--border-gray)",
+                  backgroundColor: "var(--bg-light)",
+                }}
+              />
+            ))}
+          </div>
+        ) : reports.length === 0 ? (
+          <p
+            className="py-8 text-center text-sm"
+            style={{ color: "var(--text-colour)" }}
+          >
+            No reports submitted yet.
+          </p>
+        ) : null}
+        {reports.map((r, i) => {
           const s = statusStyles[r.status];
           return (
             <motion.div

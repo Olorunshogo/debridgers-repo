@@ -1,48 +1,37 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Minus, Plus, CheckCircle2 } from "lucide-react";
+import { apiFetch, ApiError } from "../../../utils/apiFetch";
 
 export function meta() {
   return [{ title: "Request Stock | Debridgers" }];
 }
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-type FulfilledStatus = "fulfilled" | "pending";
+type RequestStatus = "pending" | "fulfilled" | "cancelled";
 
-interface PastRequest {
+interface StockRequest {
   id: string;
-  description: string;
-  date: string;
-  status: FulfilledStatus;
+  quantity: number;
+  status: RequestStatus;
+  amount_to_remit: number;
+  amount_remitted: number;
+  created_at: string;
 }
 
-// ── Mock data ─────────────────────────────────────────────────────────────────
-const MOCK_PAST_REQUESTS: PastRequest[] = [
-  {
-    id: "r1",
-    description: "10 bags of beans",
-    date: "Mar 26",
-    status: "fulfilled",
-  },
-  {
-    id: "r2",
-    description: "10 bags of beans",
-    date: "Mar 26",
-    status: "fulfilled",
-  },
-  {
-    id: "r3",
-    description: "10 bags of beans",
-    date: "Mar 26",
-    status: "pending",
-  },
-];
+interface ApiStockRequest {
+  id: number;
+  quantity: number;
+  status: string;
+  amount_to_remit: number;
+  amount_remitted: number;
+  fulfilled_at: string | null;
+  created_at: string;
+}
 
-const PRICE_PER_BAG = 10000;
-const COMMISSION_PER_BAG = 2000;
+const PRICE_PER_PACK_KOBO = 130000;
 
 const statusStyles: Record<
-  FulfilledStatus,
+  RequestStatus,
   { bg: string; text: string; label: string }
 > = {
   fulfilled: {
@@ -50,52 +39,71 @@ const statusStyles: Record<
     text: "var(--status-delivered-text)",
     label: "Fulfilled",
   },
-  pending: {
-    bg: "var(--status-pending-bg)",
-    text: "var(--status-pending-text)",
-    label: "Pending",
+  pending: { bg: "#FEF3C7", text: "#92400E", label: "Pending" },
+  cancelled: {
+    bg: "var(--status-cancelled-bg)",
+    text: "var(--status-cancelled-text)",
+    label: "Cancelled",
   },
 };
 
-function fmt(n: number) {
-  return "₦" + n.toLocaleString();
+function fmt(kobo: number) {
+  return (
+    "₦" + (kobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 0 })
+  );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
 export default function AgentRequestStockPage() {
   const [bags, setBags] = useState(5);
-  const [deliveryAddress, setDeliveryAddress] = useState(
-    "12 Barnawa Close, off Rabah Road, Barnawa",
-  );
-  const [deliveryTime, setDeliveryTime] = useState("Morning (8am - 12pm)");
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pastRequests, setPastRequests] = useState<StockRequest[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(true);
 
-  function decrement() {
-    setBags((b) => Math.max(1, b - 1));
+  function loadRequests() {
+    return apiFetch<ApiStockRequest[]>("/agent/stock")
+      .then((rows) =>
+        setPastRequests(
+          rows.map((r) => ({
+            id: String(r.id),
+            quantity: r.quantity,
+            status: r.status as RequestStatus,
+            amount_to_remit: r.amount_to_remit,
+            amount_remitted: r.amount_remitted,
+            created_at: r.created_at,
+          })),
+        ),
+      )
+      .catch(console.error);
   }
 
-  function increment() {
-    setBags((b) => b + 1);
-  }
+  useEffect(() => {
+    loadRequests().finally(() => setLoadingRequests(false));
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setSubmitError(null);
     setLoading(true);
-
-    // ── PRODUCTION ────────────────────────────────────────────────────────────
-    // await fetch(`${BASE_BACKEND_URL}/agent/stock-request`, {
-    //   method: "POST",
-    //   credentials: "include",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ bags, deliveryAddress, deliveryTime }),
-    // });
-
-    // ── MOCK ──────────────────────────────────────────────────────────────────
-    await new Promise<void>((r) => setTimeout(r, 800));
-    setLoading(false);
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
+    try {
+      await apiFetch("/agent/stock/request", {
+        method: "POST",
+        body: JSON.stringify({ quantity: bags }),
+      });
+      setSubmitted(true);
+      setBags(5);
+      await loadRequests();
+      setTimeout(() => setSubmitted(false), 3000);
+    } catch (err) {
+      setSubmitError(
+        err instanceof ApiError
+          ? err.message
+          : "Failed to submit. Please try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -139,16 +147,27 @@ export default function AgentRequestStockPage() {
               onSubmit={handleSubmit}
               className="flex flex-col gap-6"
             >
-              {/* Bag stepper */}
+              {submitError && (
+                <p
+                  className="rounded-xl px-4 py-3 text-sm"
+                  style={{
+                    backgroundColor: "var(--status-cancelled-bg)",
+                    color: "var(--status-cancelled-text)",
+                  }}
+                >
+                  {submitError}
+                </p>
+              )}
+
               <div className="flex flex-col items-center gap-3">
                 <p
                   className="font-syne text-base font-semibold"
                   style={{ color: "var(--heading-colour)" }}
                 >
-                  How many bags do you need?
+                  How many packs do you need?
                 </p>
                 <p className="text-sm" style={{ color: "var(--text-colour)" }}>
-                  Choose how many bags of beans to sell this week
+                  Each pack costs ₦1,300 (to remit after sale)
                 </p>
 
                 <div
@@ -157,7 +176,7 @@ export default function AgentRequestStockPage() {
                 >
                   <button
                     type="button"
-                    onClick={decrement}
+                    onClick={() => setBags((b) => Math.max(1, b - 1))}
                     className="flex h-9 w-9 items-center justify-center rounded-full border transition-colors"
                     style={{
                       borderColor: "var(--border-gray)",
@@ -179,13 +198,13 @@ export default function AgentRequestStockPage() {
                       className="text-xs"
                       style={{ color: "var(--text-colour)" }}
                     >
-                      bags of beans
+                      packs
                     </span>
                   </div>
 
                   <button
                     type="button"
-                    onClick={increment}
+                    onClick={() => setBags((b) => b + 1)}
                     className="flex h-9 w-9 items-center justify-center rounded-full border transition-colors"
                     style={{
                       borderColor: "var(--border-gray)",
@@ -198,9 +217,8 @@ export default function AgentRequestStockPage() {
                 </div>
               </div>
 
-              {/* Summary row */}
               <div
-                className="grid grid-cols-3 gap-4 rounded-xl p-4"
+                className="grid grid-cols-2 gap-4 rounded-xl p-4"
                 style={{ backgroundColor: "var(--bg-light)" }}
               >
                 <div className="flex flex-col gap-0.5">
@@ -208,7 +226,7 @@ export default function AgentRequestStockPage() {
                     className="text-xs"
                     style={{ color: "var(--text-colour)" }}
                   >
-                    Bags
+                    Packs
                   </p>
                   <p
                     className="font-syne text-lg font-bold"
@@ -222,86 +240,17 @@ export default function AgentRequestStockPage() {
                     className="text-xs"
                     style={{ color: "var(--text-colour)" }}
                   >
-                    Est. value
+                    Amount to remit
                   </p>
                   <p
                     className="font-syne text-lg font-bold"
                     style={{ color: "var(--heading-colour)" }}
                   >
-                    {fmt(bags * PRICE_PER_BAG)}
-                  </p>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <p
-                    className="text-xs"
-                    style={{ color: "var(--text-colour)" }}
-                  >
-                    Commission
-                  </p>
-                  <p
-                    className="font-syne text-lg font-bold"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
-                    {fmt(bags * COMMISSION_PER_BAG)}
+                    {fmt(bags * PRICE_PER_PACK_KOBO)}
                   </p>
                 </div>
               </div>
 
-              {/* Delivery address */}
-              <div className="flex flex-col gap-1.5">
-                <label
-                  className="text-xs font-semibold tracking-wider uppercase"
-                  style={{ color: "var(--text-colour)" }}
-                >
-                  Delivery Address
-                </label>
-                <input
-                  type="text"
-                  value={deliveryAddress}
-                  onChange={(e) => setDeliveryAddress(e.target.value)}
-                  className="w-full rounded-xl border px-4 py-3 text-sm transition-all outline-none"
-                  style={{
-                    borderColor: "var(--border-gray)",
-                    backgroundColor: "var(--bg-light)",
-                    color: "var(--heading-colour)",
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "var(--primary-color)";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = "var(--border-gray)";
-                  }}
-                />
-              </div>
-
-              {/* Preferred delivery time */}
-              <div className="flex flex-col gap-1.5">
-                <label
-                  className="text-xs font-semibold tracking-wider uppercase"
-                  style={{ color: "var(--text-colour)" }}
-                >
-                  Preferred Delivery Time
-                </label>
-                <input
-                  type="text"
-                  value={deliveryTime}
-                  onChange={(e) => setDeliveryTime(e.target.value)}
-                  className="w-full rounded-xl border px-4 py-3 text-sm transition-all outline-none"
-                  style={{
-                    borderColor: "var(--border-gray)",
-                    backgroundColor: "var(--bg-light)",
-                    color: "var(--heading-colour)",
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "var(--primary-color)";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = "var(--border-gray)";
-                  }}
-                />
-              </div>
-
-              {/* Submit */}
               <button
                 type="submit"
                 disabled={loading}
@@ -327,47 +276,72 @@ export default function AgentRequestStockPage() {
           className="font-syne font-semibold"
           style={{ color: "var(--heading-colour)" }}
         >
-          Request new stock
+          Past Requests
         </h3>
-        <div className="flex flex-col gap-2">
-          {MOCK_PAST_REQUESTS.map((req, i) => {
-            const s = statusStyles[req.status];
-            return (
-              <motion.div
-                key={req.id}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.06 }}
-                className="flex items-center justify-between rounded-xl border px-4 py-3"
-                style={{
-                  borderColor: "var(--border-gray)",
-                  backgroundColor: "var(--bg-light)",
-                }}
-              >
-                <div className="flex flex-col gap-0.5">
-                  <p
-                    className="text-sm font-semibold"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
-                    {req.description}
-                  </p>
-                  <p
-                    className="text-xs"
-                    style={{ color: "var(--text-colour)" }}
-                  >
-                    {req.date}
-                  </p>
-                </div>
-                <span
-                  className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                  style={{ backgroundColor: s.bg, color: s.text }}
+
+        {loadingRequests ? (
+          <div className="flex flex-col gap-2">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="h-16 animate-pulse rounded-xl"
+                style={{ backgroundColor: "var(--bg-light)" }}
+              />
+            ))}
+          </div>
+        ) : pastRequests.length === 0 ? (
+          <p
+            className="py-4 text-center text-sm"
+            style={{ color: "var(--text-colour)" }}
+          >
+            No stock requests yet.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {pastRequests.map((req, i) => {
+              const s = statusStyles[req.status] ?? statusStyles.pending;
+              return (
+                <motion.div
+                  key={req.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.06 }}
+                  className="flex items-center justify-between rounded-xl border px-4 py-3"
+                  style={{
+                    borderColor: "var(--border-gray)",
+                    backgroundColor: "var(--bg-light)",
+                  }}
                 >
-                  {s.label}
-                </span>
-              </motion.div>
-            );
-          })}
-        </div>
+                  <div className="flex flex-col gap-0.5">
+                    <p
+                      className="text-sm font-semibold"
+                      style={{ color: "var(--heading-colour)" }}
+                    >
+                      {req.quantity} pack{req.quantity !== 1 ? "s" : ""}
+                    </p>
+                    <p
+                      className="text-xs"
+                      style={{ color: "var(--text-colour)" }}
+                    >
+                      {new Date(req.created_at).toLocaleDateString("en-NG", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                      {" · "}
+                      {fmt(req.amount_to_remit)}
+                    </p>
+                  </div>
+                  <span
+                    className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                    style={{ backgroundColor: s.bg, color: s.text }}
+                  >
+                    {s.label}
+                  </span>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

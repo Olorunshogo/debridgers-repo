@@ -42,6 +42,7 @@ export class AuthGuard implements CanActivate {
 
       // Explicitly map payload properties to user
       req.user = {
+        sub: payload.sub,
         id: payload.sub,
         email: payload.email,
         role: payload.role,

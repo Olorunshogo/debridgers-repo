@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
+import { apiFetch } from "../../../utils/apiFetch";
 
 export function meta() {
   return [{ title: "My Orders | Debridgers" }];
@@ -18,72 +19,35 @@ interface Order {
   status: OrderStatus;
 }
 
-const MOCK_ORDERS: Order[] = [
-  {
-    id: "1",
-    orderId: "#AGL-0024",
-    items: "Rice, Beans, Yam, Oil",
-    date: "Mar 24, 2026",
-    amount: "₦6,800",
-    status: "active",
-  },
-  {
-    id: "2",
-    orderId: "#AGL-0024",
-    items: "Rice, Beans, Yam, Oil",
-    date: "Mar 24, 2026",
-    amount: "₦5,300",
-    status: "delivered",
-  },
-  {
-    id: "3",
-    orderId: "#AGL-0024",
-    items: "Rice, Beans, Yam, Oil",
-    date: "Mar 24, 2026",
-    amount: "₦8,800",
-    status: "delivered",
-  },
-  {
-    id: "4",
-    orderId: "#AGL-0024",
-    items: "Rice, Beans, Yam, Oil",
-    date: "Mar 24, 2026",
-    amount: "₦9,800",
-    status: "cancelled",
-  },
-  {
-    id: "5",
-    orderId: "#AGL-0024",
-    items: "Rice, Beans, Yam, Oil",
-    date: "Mar 24, 2026",
-    amount: "₦9,200",
-    status: "delivered",
-  },
-  {
-    id: "6",
-    orderId: "#AGL-0024",
-    items: "Rice, Beans, Yam, Oil",
-    date: "Mar 24, 2026",
-    amount: "₦1,900",
-    status: "pending",
-  },
-  {
-    id: "7",
-    orderId: "#AGL-0024",
-    items: "Rice, Beans, Yam, Oil",
-    date: "Mar 24, 2026",
-    amount: "₦9,800",
-    status: "cancelled",
-  },
-  {
-    id: "8",
-    orderId: "#AGL-0024",
-    items: "Rice, Beans, Yam, Oil",
-    date: "Mar 24, 2026",
-    amount: "₦3,500",
-    status: "delivered",
-  },
-];
+interface ApiOrder {
+  id: number;
+  status: string;
+  total_amount: number;
+  quantity: number;
+  delivery_address: string;
+  created_at: string;
+}
+
+function mapApiOrder(o: ApiOrder): Order {
+  const dbToUi = (s: string): OrderStatus => {
+    if (s === "confirmed" || s === "out_for_delivery") return "active";
+    if (s === "pending") return "pending";
+    if (s === "delivered") return "delivered";
+    return "cancelled";
+  };
+  return {
+    id: String(o.id),
+    orderId: `#DBR-${String(o.id).padStart(4, "0")}`,
+    items: `${o.quantity} pack${o.quantity !== 1 ? "s" : ""}`,
+    date: new Date(o.created_at).toLocaleDateString("en-NG", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
+    amount: `₦${(o.total_amount / 100).toLocaleString("en-NG", { minimumFractionDigits: 0 })}`,
+    status: dbToUi(o.status),
+  };
+}
 
 const tabs: { key: Tab; label: string }[] = [
   { key: "all", label: "All" },
@@ -125,18 +89,10 @@ export default function BuyerOrders() {
   const [selected, setSelected] = useState<Order | null>(null);
 
   useEffect(() => {
-    // PRODUCTION
-    // fetch(`${BASE_BACKEND_URL}/buyer/orders`, { credentials: "include" })
-    //   .then((r) => r.json())
-    //   .then((json) => setOrders(json.data))
-    //   .finally(() => setLoading(false));
-
-    // === MOCK
-    const t = setTimeout(() => {
-      setOrders(MOCK_ORDERS);
-      setLoading(false);
-    }, 500);
-    return () => clearTimeout(t);
+    apiFetch<ApiOrder[]>("/buyer/orders")
+      .then((rows) => setOrders(rows.map(mapApiOrder)))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
   const filtered = useMemo(

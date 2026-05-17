@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { apiFetch } from "../../../utils/apiFetch";
 
 export function meta() {
   return [{ title: "Notification | Debridgers" }];
@@ -13,77 +14,65 @@ interface Notification {
   read: boolean;
 }
 
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: "1",
-    title: "Your order is on the way!",
-    description:
-      "Order #AGL-0024 (Rice, Beans, Palm oil) has been picked up and is heading to Barnaw. Est. arrival: today by 5pm.",
-    timestamp: "Just now",
-    read: false,
-  },
-  {
-    id: "2",
-    title: "Order #AGL - 0023 Confirmed",
-    description:
-      "Your order has been received and is being packed. You'll be notified once it's picked up.",
-    timestamp: "2 hours ago",
-    read: false,
-  },
-  {
-    id: "3",
-    title: "Fresh beans back in stock",
-    description:
-      "Fresh beans are available this week at ₦1200/kg. Order now before they sell out.",
-    timestamp: "Yesterday",
-    read: true,
-  },
-  {
-    id: "4",
-    title: "Order #AGL-0021 delivered",
-    description:
-      "Your order was successfully delivered. Enjoy! Let us know if anything was off.",
-    timestamp: "Mar 30, 2026",
-    read: true,
-  },
-  {
-    id: "5",
-    title: "Wallet topped up - ₦10,000",
-    description:
-      "Your wallet has been credited with ₦10,000 via bank transfer. Now balance ₦15,250.",
-    timestamp: "Mar 26, 2026",
-    read: true,
-  },
-];
+const READ_IDS_KEY = "debridgers_read_notif_ids";
+
+function getReadIds(): Set<string> {
+  try {
+    const stored = localStorage.getItem(READ_IDS_KEY);
+    return new Set(stored ? (JSON.parse(stored) as string[]) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveReadIds(ids: Set<string>) {
+  localStorage.setItem(READ_IDS_KEY, JSON.stringify([...ids]));
+}
 
 export default function BuyerNotification() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // ── PRODUCTION ────────────────────────────────────────────────────────────
-    // fetch(`${BASE_BACKEND_URL}/buyer/notifications`, { credentials: "include" })
-    //   .then((r) => r.json())
-    //   .then((json) => setNotifications(json.data))
-    //   .finally(() => setLoading(false));
-
-    // ── MOCK ──────────────────────────────────────────────────────────────────
-    const t = setTimeout(() => {
-      setNotifications(MOCK_NOTIFICATIONS);
-      setLoading(false);
-    }, 400);
-    return () => clearTimeout(t);
+    apiFetch<Notification[]>("/buyer/notifications")
+      .then((rows) => {
+        const readIds = getReadIds();
+        setNotifications(
+          rows.map((n) => ({ ...n, read: n.read || readIds.has(n.id) })),
+        );
+      })
+      .catch(() => setNotifications([]))
+      .finally(() => setLoading(false));
   }, []);
 
   function markAllRead() {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    saveReadIds(new Set(notifications.map((n) => n.id)));
+    localStorage.setItem("debridgers_has_unread", "false");
+  }
+
+  function markOneRead(id: string) {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    );
+    const ids = getReadIds();
+    ids.add(id);
+    saveReadIds(ids);
   }
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  useEffect(() => {
+    if (!loading) {
+      localStorage.setItem(
+        "debridgers_has_unread",
+        unreadCount > 0 ? "true" : "false",
+      );
+    }
+  }, [unreadCount, loading]);
+
   return (
     <div className="flex flex-col gap-4">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h2
@@ -112,7 +101,6 @@ export default function BuyerNotification() {
         )}
       </div>
 
-      {/* List */}
       <div
         className="overflow-hidden rounded-2xl border"
         style={{
@@ -130,6 +118,13 @@ export default function BuyerNotification() {
               />
             ))}
           </div>
+        ) : notifications.length === 0 ? (
+          <p
+            className="py-12 text-center text-sm"
+            style={{ color: "var(--text-colour)" }}
+          >
+            No notifications yet. You'll be notified about your orders here.
+          </p>
         ) : (
           <AnimatePresence>
             {notifications.map((n, i) => (
@@ -138,7 +133,8 @@ export default function BuyerNotification() {
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="flex gap-4 border-b px-6 py-5 last:border-0"
+                onClick={() => markOneRead(n.id)}
+                className="flex cursor-pointer gap-4 border-b px-6 py-5 last:border-0"
                 style={{
                   borderColor: "var(--border-gray)",
                   backgroundColor: n.read
@@ -146,7 +142,6 @@ export default function BuyerNotification() {
                     : "var(--dash-quick-action-hover)",
                 }}
               >
-                {/* Unread dot */}
                 <div className="mt-1.5 flex w-3 shrink-0 items-start justify-center">
                   {!n.read && (
                     <span

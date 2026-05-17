@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { apiFetch } from "../../../utils/apiFetch";
 
 export function meta() {
   return [{ title: "Notifications | Debridgers" }];
@@ -13,77 +14,65 @@ interface AgentNotification {
   read: boolean;
 }
 
-const MOCK_NOTIFICATIONS: AgentNotification[] = [
-  {
-    id: "n1",
-    title: "Your order is on the way!",
-    description:
-      "Order #AGL-0024 (Rice, Beans, Palm oil) has been picked up and is heading to Barnaw. Est. arrival: today by 5pm.",
-    timestamp: "Just now",
-    read: false,
-  },
-  {
-    id: "n2",
-    title: "Order #AGL - 0023 Confirmed",
-    description:
-      "Your order has been received and is being packed. You'll be notified once it's picked up.",
-    timestamp: "2 hours ago",
-    read: false,
-  },
-  {
-    id: "n3",
-    title: "Fresh beans back in stock",
-    description:
-      "Fresh beans are available this week at ₦1200/kg. Order now before they sell out.",
-    timestamp: "Just now",
-    read: true,
-  },
-  {
-    id: "n4",
-    title: "Order #AGL-0021 delivered",
-    description:
-      "Your order was successfully delivered. Enjoy! Let us know if anything was off.",
-    timestamp: "Just now",
-    read: true,
-  },
-  {
-    id: "n5",
-    title: "Your order is on the way!",
-    description:
-      "Order #AGL-0024 (Rice, Beans, Palm oil) has been picked up and is heading to Barnaw. Est. arrival: today by 5pm.",
-    timestamp: "Just now",
-    read: true,
-  },
-];
+const READ_IDS_KEY = "debridgers_read_notif_ids";
+
+function getReadIds(): Set<string> {
+  try {
+    const stored = localStorage.getItem(READ_IDS_KEY);
+    return new Set(stored ? (JSON.parse(stored) as string[]) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveReadIds(ids: Set<string>) {
+  localStorage.setItem(READ_IDS_KEY, JSON.stringify([...ids]));
+}
 
 export default function AgentNotificationPage() {
   const [notifications, setNotifications] = useState<AgentNotification[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // ── PRODUCTION ────────────────────────────────────────────────────────────
-    // fetch(`${BASE_BACKEND_URL}/agent/notifications`, { credentials: "include" })
-    //   .then((r) => r.json())
-    //   .then((json) => setNotifications(json.data))
-    //   .finally(() => setLoading(false));
-
-    // ── MOCK ──────────────────────────────────────────────────────────────────
-    const t = setTimeout(() => {
-      setNotifications(MOCK_NOTIFICATIONS);
-      setLoading(false);
-    }, 400);
-    return () => clearTimeout(t);
+    apiFetch<AgentNotification[]>("/agent/notifications")
+      .then((rows) => {
+        const readIds = getReadIds();
+        setNotifications(
+          rows.map((n) => ({ ...n, read: n.read || readIds.has(n.id) })),
+        );
+      })
+      .catch(() => setNotifications([]))
+      .finally(() => setLoading(false));
   }, []);
 
   function markAllRead() {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    saveReadIds(new Set(notifications.map((n) => n.id)));
+    localStorage.setItem("debridgers_has_unread", "false");
+  }
+
+  function markOneRead(id: string) {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    );
+    const ids = getReadIds();
+    ids.add(id);
+    saveReadIds(ids);
   }
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  useEffect(() => {
+    if (!loading) {
+      localStorage.setItem(
+        "debridgers_has_unread",
+        unreadCount > 0 ? "true" : "false",
+      );
+    }
+  }, [unreadCount, loading]);
+
   return (
     <div className="flex flex-col gap-4">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h2
@@ -112,7 +101,6 @@ export default function AgentNotificationPage() {
         )}
       </div>
 
-      {/* List */}
       <div
         className="overflow-hidden rounded-2xl border"
         style={{
@@ -130,6 +118,13 @@ export default function AgentNotificationPage() {
               />
             ))}
           </div>
+        ) : notifications.length === 0 ? (
+          <p
+            className="py-12 text-center text-sm"
+            style={{ color: "var(--text-colour)" }}
+          >
+            No notifications yet. You'll be notified about your activity here.
+          </p>
         ) : (
           <AnimatePresence>
             {notifications.map((n, i) => (
@@ -138,7 +133,8 @@ export default function AgentNotificationPage() {
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="flex gap-4 border-b px-6 py-5 last:border-0"
+                onClick={() => markOneRead(n.id)}
+                className="flex cursor-pointer gap-4 border-b px-6 py-5 last:border-0"
                 style={{
                   borderColor: "var(--border-gray)",
                   backgroundColor: n.read
@@ -146,7 +142,6 @@ export default function AgentNotificationPage() {
                     : "var(--dash-quick-action-hover)",
                 }}
               >
-                {/* Unread dot */}
                 <div className="mt-1.5 flex w-3 shrink-0 items-start justify-center">
                   {!n.read && (
                     <span

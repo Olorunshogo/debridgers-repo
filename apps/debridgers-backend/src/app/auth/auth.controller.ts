@@ -26,6 +26,11 @@ import {
   resetPasswordSchema,
   ResetPasswordDto,
 } from "./dto/reset-password.dto";
+import { verifyEmailSchema, VerifyEmailDto } from "./dto/verify-email.dto";
+import {
+  resendVerificationSchema,
+  ResendVerificationDto,
+} from "./dto/resend-verification.dto";
 import { RefreshGuard } from "./guards/refresh.guard";
 import { AuthGuard } from "./guards/auth.guard";
 import { CurrentUser } from "./decorators/current-user.decorator";
@@ -37,7 +42,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post("register")
-  @ApiOperation({ summary: "Register a new user account" })
+  @ApiOperation({ summary: "Register a new buyer account" })
   @ApiBody({
     schema: {
       type: "object",
@@ -48,10 +53,10 @@ export class AuthController {
         email: { type: "string", example: "fatima@example.com" },
         phone: { type: "string", example: "08098765432" },
         password: { type: "string", example: "SecurePass@123" },
-        role: {
+        role: { type: "string", enum: ["buyer"], example: "buyer" },
+        referred_by_agent_code: {
           type: "string",
-          enum: ["admin", "agent", "buyer", "company"],
-          example: "buyer",
+          example: "DEBRIDGERS-DEFAULT",
         },
       },
     },
@@ -74,8 +79,6 @@ export class AuthController {
             is_email_verified: false,
             created_at: "2026-04-07T10:00:00.000Z",
           },
-          accessToken: "eyJhbGciOiJIUzI1NiIs...",
-          refreshToken: "eyJhbGciOiJIUzI1NiIs...",
         },
         timestamp: "2026-04-07T10:00:00.000Z",
         version: "v1",
@@ -130,7 +133,8 @@ export class AuthController {
   })
   @ApiResponse({
     status: 401,
-    description: "Invalid credentials or agent not yet approved",
+    description:
+      "Invalid credentials, email not verified, or agent not yet approved",
     schema: {
       example: {
         statusCode: 401,
@@ -141,6 +145,46 @@ export class AuthController {
   @UsePipes(new ZodValidationPipe(loginSchema))
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Post("admin/login")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Admin login with email and password" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["email", "password"],
+      properties: {
+        email: { type: "string", example: "admin@debridgers.com" },
+        password: { type: "string", example: "Admin@2026!" },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Admin login successful",
+    schema: {
+      example: {
+        statusCode: 200,
+        message: "Admin login successful",
+        data: {
+          user: {
+            id: 1,
+            first_name: "Debridgers",
+            last_name: "Admin",
+            email: "admin@debridgers.com",
+            role: "admin",
+          },
+          accessToken: "eyJhbGciOiJIUzI1NiIs...",
+          refreshToken: "eyJhbGciOiJIUzI1NiIs...",
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: "Invalid admin credentials" })
+  @UsePipes(new ZodValidationPipe(loginSchema))
+  adminLogin(@Body() dto: LoginDto) {
+    return this.authService.loginAdmin(dto);
   }
 
   @Post("refresh")
@@ -253,5 +297,95 @@ export class AuthController {
   @UsePipes(new ZodValidationPipe(resetPasswordSchema))
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.password);
+  }
+
+  @Post("verify-email")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Verify account email address using OTP" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["email", "otp"],
+      properties: {
+        email: { type: "string", example: "fatima@example.com" },
+        otp: { type: "string", example: "a3f8c2d1e9b74f2a..." },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Email verified",
+    schema: {
+      example: {
+        statusCode: 200,
+        message: "Email verified successfully",
+        data: null,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: "Invalid, expired, or already verified OTP",
+  })
+  @ApiResponse({ status: 404, description: "Account not found" })
+  @UsePipes(new ZodValidationPipe(verifyEmailSchema))
+  verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.authService.verifyEmail(dto.email, dto.otp);
+  }
+
+  @Post("resend-otp")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Resend verification OTP" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["email"],
+      properties: {
+        email: { type: "string", example: "fatima@example.com" },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Resent OTP response",
+    schema: {
+      example: {
+        statusCode: 200,
+        message: "Verification email sent if the account exists",
+        data: null,
+      },
+    },
+  })
+  @UsePipes(new ZodValidationPipe(resendVerificationSchema))
+  resendOtp(@Body() dto: ResendVerificationDto) {
+    return this.authService.resendVerification(dto.email);
+  }
+
+  @Post("resend-verification")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Resend verification email (legacy route)" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["email"],
+      properties: {
+        email: { type: "string", example: "fatima@example.com" },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Verification mail response",
+    schema: {
+      example: {
+        statusCode: 200,
+        message: "Verification email sent if the account exists",
+        data: null,
+      },
+    },
+  })
+  @UsePipes(new ZodValidationPipe(resendVerificationSchema))
+  resendVerification(@Body() dto: ResendVerificationDto) {
+    return this.authService.resendVerification(dto.email);
   }
 }
