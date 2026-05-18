@@ -118,11 +118,13 @@ export default function BuyerSettings() {
         last_name: string;
         email: string;
         phone?: string | null;
+        delivery_address?: string | null;
       }>("/buyer/me");
       setForm((p) => ({
         ...p,
         userName: `${profile.first_name} ${profile.last_name}`.trim(),
         email: profile.email,
+        deliveryAddress: profile.delivery_address ?? "",
       }));
     } catch {
       // silently fail — form stays blank
@@ -184,6 +186,7 @@ export default function BuyerSettings() {
         body: JSON.stringify({
           first_name: firstName,
           last_name: rest.join(" ") || undefined,
+          delivery_address: result.data.deliveryAddress.trim() || undefined,
         }),
       });
       setForm((p) => ({ ...p, oldPassword: "", newPassword: "" }));

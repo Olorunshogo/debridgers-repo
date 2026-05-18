@@ -5,6 +5,7 @@ import { RefreshCw } from "lucide-react";
 import { AppLogo, SubmitButton } from "@debridgers/ui-web";
 import AuthSuccessModal from "../../components/auth/AuthSuccessModal";
 import { BASE_BACKEND_URL } from "../../utils/api";
+import { storeTokens } from "../../lib/auth";
 
 export function meta() {
   return [
@@ -68,6 +69,13 @@ export default function VerifyEmailPage() {
         if (!res.ok) {
           setApiError(json.message ?? "Verification failed. Please try again.");
           return;
+        }
+        const { accessToken, refreshToken } = (json.data ?? {}) as {
+          accessToken?: string;
+          refreshToken?: string;
+        };
+        if (accessToken && refreshToken) {
+          storeTokens(accessToken, refreshToken);
         }
         setShowSuccess(true);
       } catch {

@@ -14,6 +14,8 @@ import { USER_EVENTS } from "../../events/event-types/user.event.types";
 import { UpdateAgentStatusDto } from "./dto/update-agent-status.dto";
 import { PromoteManagerDto } from "./dto/promote-manager.dto";
 import { ReviewKycDto } from "./dto/review-kyc.dto";
+import { CreateProductDto } from "./dto/create-product.dto";
+import { UpdateProductDto } from "./dto/update-product.dto";
 
 @Injectable()
 export class AdminService {
@@ -22,6 +24,22 @@ export class AdminService {
     private readonly db: NodePgDatabase<typeof schema>,
     private readonly eventEmitter: EventEmitter2,
   ) {}
+
+  async getAdminMe(userId: number) {
+    const [user] = await this.db
+      .select({
+        id: schema.users.id,
+        first_name: schema.users.first_name,
+        last_name: schema.users.last_name,
+        email: schema.users.email,
+        role: schema.users.role,
+      })
+      .from(schema.users)
+      .where(eq(schema.users.id, userId))
+      .limit(1);
+
+    return { message: "Admin profile retrieved", data: user ?? null };
+  }
 
   // ─── Dashboard ──────────────────────────────────────────────────────────────
 
@@ -542,5 +560,78 @@ export class AdminService {
       .where(eq(schema.commissions.id, commissionId));
 
     return { message: "Commission marked as paid", data: null };
+  }
+
+  // ─── Products ────────────────────────────────────────────────────────────────
+
+  async createProduct(dto: CreateProductDto) {
+    const [product] = await this.db
+      .insert(schema.products)
+      .values({
+        name: dto.name,
+        unit: dto.unit,
+        price_kobo: dto.price_kobo,
+        description: dto.description ?? null,
+        image_url: dto.image_url ?? null,
+        sort_order: dto.sort_order ?? 0,
+      })
+      .returning();
+
+    return { message: "Product created", data: product };
+  }
+
+  async listProducts() {
+    const rows = await this.db
+      .select()
+      .from(schema.products)
+      .orderBy(schema.products.sort_order, schema.products.name);
+
+    return { message: "Products retrieved", data: rows };
+  }
+
+  async updateProduct(id: number, dto: UpdateProductDto) {
+    const updates: Partial<typeof schema.products.$inferInsert> = {};
+    if (dto.name !== undefined) updates.name = dto.name;
+    if (dto.unit !== undefined) updates.unit = dto.unit;
+    if (dto.price_kobo !== undefined) updates.price_kobo = dto.price_kobo;
+    if (dto.description !== undefined) updates.description = dto.description;
+    if (dto.image_url !== undefined) updates.image_url = dto.image_url;
+    if (dto.is_active !== undefined) updates.is_active = dto.is_active;
+    if (dto.sort_order !== undefined) updates.sort_order = dto.sort_order;
+
+    if (Object.keys(updates).length === 0) {
+      throw new BadRequestException("No fields to update");
+    }
+
+    const [updated] = await this.db
+      .update(schema.products)
+      .set(updates)
+      .where(eq(schema.products.id, id))
+      .returning();
+
+    if (!updated) throw new NotFoundException("Product not found");
+
+    return { message: "Product updated", data: updated };
+  }
+
+  async deleteProduct(id: number) {
+    const [deleted] = await this.db
+      .delete(schema.products)
+      .where(eq(schema.products.id, id))
+      .returning();
+
+    if (!deleted) throw new NotFoundException("Product not found");
+
+    return { message: "Product deleted", data: null };
+  }
+
+  async listActiveProducts() {
+    const rows = await this.db
+      .select()
+      .from(schema.products)
+      .where(eq(schema.products.is_active, true))
+      .orderBy(schema.products.sort_order, schema.products.name);
+
+    return { message: "Products retrieved", data: rows };
   }
 }

@@ -578,29 +578,51 @@ export default function AgentOverviewPage() {
           className="flex flex-col gap-3 rounded-2xl p-5"
           style={{ backgroundColor: "var(--primary-color)" }}
         >
-          <p className="text-xs text-white/60">Next Payout in</p>
-          <p className="font-syne text-4xl font-extrabold text-white">
-            {data.nextPayout.daysLeft} Days
-          </p>
-          <p className="text-xs text-white/70">{data.nextPayout.date}</p>
-          <p
-            className="text-sm font-semibold"
-            style={{ color: "var(--secondary-color)" }}
-          >
-            {data.nextPayout.amountPending} pending
-          </p>
-          <div className="mt-1 flex flex-col gap-1.5">
-            <div className="relative h-1.5 w-full rounded-full bg-white/20">
-              <div
-                className="absolute top-0 left-0 h-full rounded-full"
-                style={{
-                  width: `${(data.nextPayout.weekProgress / 7) * 100}%`,
-                  backgroundColor: "var(--secondary-color)",
-                }}
-              />
-            </div>
-            <p className="text-xs text-white/60">{data.nextPayout.weekLabel}</p>
-          </div>
+          {data.nextPayout.amountPending === "₦0" ? (
+            <>
+              <p className="text-xs text-white/60">Next Payout</p>
+              <p className="font-syne text-2xl font-extrabold text-white">
+                No pending earnings
+              </p>
+              <p className="text-xs text-white/70">
+                Sell stock to earn your first commission
+              </p>
+              <p
+                className="text-sm font-semibold"
+                style={{ color: "var(--secondary-color)" }}
+              >
+                ₦0 pending
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-xs text-white/60">Next Payout in</p>
+              <p className="font-syne text-4xl font-extrabold text-white">
+                {data.nextPayout.daysLeft} Days
+              </p>
+              <p className="text-xs text-white/70">{data.nextPayout.date}</p>
+              <p
+                className="text-sm font-semibold"
+                style={{ color: "var(--secondary-color)" }}
+              >
+                {data.nextPayout.amountPending} pending
+              </p>
+              <div className="mt-1 flex flex-col gap-1.5">
+                <div className="relative h-1.5 w-full rounded-full bg-white/20">
+                  <div
+                    className="absolute top-0 left-0 h-full rounded-full"
+                    style={{
+                      width: `${(data.nextPayout.weekProgress / 7) * 100}%`,
+                      backgroundColor: "var(--secondary-color)",
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-white/60">
+                  {data.nextPayout.weekLabel}
+                </p>
+              </div>
+            </>
+          )}
         </motion.div>
       </div>
     </div>

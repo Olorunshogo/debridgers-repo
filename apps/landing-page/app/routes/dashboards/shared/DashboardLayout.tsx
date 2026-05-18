@@ -4,7 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Bell, LogOut } from "lucide-react";
 import { AppLogo, DashSearchInput, PrimaryButton } from "@debridgers/ui-web";
 import { useDashboardNav } from "../../../hooks/useDashboardNav";
-import { logout } from "../../../lib/auth";
+import { logout, getAccessToken } from "../../../lib/auth";
+import { apiFetch } from "../../../utils/apiFetch";
+import { decodeJwtPayload } from "../../../utils/auth-cookies";
 
 const titleMaps: Record<string, Record<string, string>> = {
   "/agent-dashboard": {
@@ -29,31 +31,54 @@ const titleMaps: Record<string, Record<string, string>> = {
     "/admin-dashboard": "Overview",
     "/admin-dashboard/agents": "Agents",
     "/admin-dashboard/buyers": "Buyers",
+    "/admin-dashboard/products": "Products",
     "/admin-dashboard/settings": "Settings",
   },
 };
 
-const userInfo = {
-  "/agent-dashboard": {
-    initials: "AA",
-    name: "Abdul-Malik",
-    sub: "Kaduna South",
-  },
-  "/buyer-dashboard": {
-    initials: "AA",
-    name: "Abdul-Malik",
-    sub: "Kaduna South",
-  },
-  "/admin-dashboard": { initials: "AD", name: "Admin", sub: "Debridgers HQ" },
-};
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return (parts[0]?.[0] ?? "?").toUpperCase();
+  return (
+    (parts[0]?.[0] ?? "") + (parts[parts.length - 1]?.[0] ?? "")
+  ).toUpperCase();
+}
 
 export default function DashboardLayout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { groups, isActive, basePath, isAgent, isBuyer } = useDashboardNav();
+  const { groups, isActive, basePath, isAgent, isBuyer, isAdmin } =
+    useDashboardNav();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [hasUnread, setHasUnread] = useState(false);
+  const [userProfile, setUserProfile] = useState<{
+    name: string;
+    sub: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (isAdmin) {
+      const token = getAccessToken();
+      const payload = token ? decodeJwtPayload<{ email: string }>(token) : null;
+      setUserProfile({ name: "Debridgers Admin", sub: payload?.email ?? "" });
+      return;
+    }
+    const endpoint = isAgent ? "/agent/me" : isBuyer ? "/buyer/me" : null;
+    if (!endpoint) return;
+    apiFetch<{
+      first_name: string;
+      last_name: string;
+      lga?: string | null;
+      email?: string;
+    }>(endpoint)
+      .then((p) => {
+        const name = `${p.first_name} ${p.last_name}`.trim();
+        const sub = isAgent ? (p.lga ?? "") : (p.email ?? "");
+        setUserProfile({ name, sub });
+      })
+      .catch(() => {});
+  }, [isAgent, isBuyer, isAdmin]);
 
   const notifPath = `${basePath}/notification`;
 
@@ -78,7 +103,6 @@ export default function DashboardLayout() {
 
   const titleMap = titleMaps[basePath] ?? {};
   const pageTitle = titleMap[pathname] ?? "Dashboard";
-  const user = userInfo[basePath as keyof typeof userInfo];
 
   async function handleLogout() {
     await logout();
@@ -176,20 +200,20 @@ export default function DashboardLayout() {
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
               style={{ backgroundColor: "var(--primary-color)" }}
             >
-              {user?.initials}
+              {userProfile ? getInitials(userProfile.name) : "—"}
             </div>
             <div className="flex min-w-0 flex-col">
               <span
                 className="truncate text-sm font-semibold"
                 style={{ color: "var(--heading-colour)" }}
               >
-                {user?.name}
+                {userProfile?.name ?? "…"}
               </span>
               <span
                 className="truncate text-xs"
                 style={{ color: "var(--text-colour)" }}
               >
-                {user?.sub}
+                {userProfile?.sub ?? ""}
               </span>
             </div>
           </div>

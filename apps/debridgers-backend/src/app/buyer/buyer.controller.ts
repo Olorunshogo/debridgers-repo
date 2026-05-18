@@ -84,4 +84,11 @@ export class BuyerController {
   getWeeklySpending(@CurrentUser() user: JwtPayload) {
     return this.buyerService.getWeeklySpending(user);
   }
+
+  @Get("products")
+  @ApiOperation({ summary: "List active products available to order" })
+  @ApiResponse({ status: 200, description: "Products retrieved" })
+  getProducts() {
+    return this.buyerService.getProducts();
+  }
 }

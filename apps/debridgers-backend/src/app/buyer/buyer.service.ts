@@ -30,6 +30,7 @@ export class BuyerService {
         role: schema.users.role,
         is_email_verified: schema.users.is_email_verified,
         zone_id: schema.users.zone_id,
+        delivery_address: schema.users.delivery_address,
       })
       .from(schema.users)
       .where(eq(schema.users.id, user.sub))
@@ -45,6 +46,8 @@ export class BuyerService {
     if (dto.first_name !== undefined) updates.first_name = dto.first_name;
     if (dto.last_name !== undefined) updates.last_name = dto.last_name;
     if (dto.phone !== undefined) updates.phone = dto.phone;
+    if (dto.delivery_address !== undefined)
+      updates.delivery_address = dto.delivery_address;
 
     if (Object.keys(updates).length > 0) {
       await this.db
@@ -209,6 +212,16 @@ export class BuyerService {
         spending_chart: [] as { week: string; amount_kobo: number }[],
       },
     };
+  }
+
+  async getProducts() {
+    const rows = await this.db
+      .select()
+      .from(schema.products)
+      .where(eq(schema.products.is_active, true))
+      .orderBy(schema.products.sort_order, schema.products.name);
+
+    return { message: "Products retrieved", data: rows };
   }
 
   async getWeeklySpending(user: JwtPayload) {
