@@ -273,7 +273,10 @@ export class AuthService {
       .delete(schema.email_verification)
       .where(eq(schema.email_verification.user_id, record.user_id));
 
-    return { message: "Email verified successfully", data: null };
+    const tokens = await this.generateTokens(user);
+    await this.saveRefreshToken(user.id, tokens.refreshToken);
+
+    return { message: "Email verified successfully", data: tokens };
   }
 
   async resendVerification(email: string) {

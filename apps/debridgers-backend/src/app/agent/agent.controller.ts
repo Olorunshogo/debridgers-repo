@@ -356,6 +356,15 @@ export class AgentController {
 
   // ─── Stock ───────────────────────────────────────────────────────────────────
 
+  @Get("products")
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("agent")
+  @ApiBearerAuth("access-token")
+  @ApiOperation({ summary: "List active products available to request" })
+  getProducts() {
+    return this.stockService.getProducts();
+  }
+
   @Post("stock/request")
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(AuthGuard, RolesGuard)

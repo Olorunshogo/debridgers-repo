@@ -35,6 +35,7 @@ export const users = pgTable(
     is_blocked: boolean().notNull().default(false),
     // zone assigned from delivery address (buyers) or LGA (agents)
     zone_id: integer(),
+    delivery_address: text(),
     // agent who referred this buyer (permanent link)
     referred_by_agent_id: integer(),
     mailtrap_contact_id: text(),

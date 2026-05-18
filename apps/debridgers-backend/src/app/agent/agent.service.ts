@@ -139,6 +139,7 @@ export class AgentService {
         target: schema.agent_profiles.target,
         cv_url: schema.agent_profiles.cv_url,
         address: schema.agent_profiles.address,
+        lga: schema.agent_profiles.lga,
       })
       .from(schema.users)
       .leftJoin(

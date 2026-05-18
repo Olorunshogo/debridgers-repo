@@ -12,7 +12,6 @@ import {
 } from "@debridgers/ui-web";
 import AuthSuccessModal from "../../components/auth/AuthSuccessModal";
 import { BASE_BACKEND_URL } from "../../utils/api";
-import { storeTokens } from "../../lib/auth";
 import { kadunaStateLgas } from "../../models/models";
 
 export function meta() {
@@ -38,12 +37,12 @@ const buyerSchema = z
 const agentSchema = z
   .object({
     fullName: z.string().min(3, "Full name must be at least 3 characters"),
-    state: z.string().min(1, "State is required"),
     phone: z
       .string()
       .min(10, "Phone must be at least 10 digits")
       .regex(/^\d+$/, "Digits only"),
     area: z.string().min(1, "Please select an area"),
+    address: z.string().min(5, "Enter your home address"),
     email: z.string().email("Enter a valid email address"),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
@@ -87,9 +86,9 @@ export default function SignupPage() {
   // Agent form state
   const [agentForm, setAgentForm] = useState<AgentFormData>({
     fullName: "",
-    state: "",
     phone: "",
     area: "",
+    address: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -183,7 +182,6 @@ export default function SignupPage() {
         return;
       }
 
-      storeTokens(json.data?.accessToken ?? "", json.data?.refreshToken ?? "");
       setRegisteredEmail(result.data.email);
       setShowSuccess(true);
     } catch {
@@ -208,22 +206,22 @@ export default function SignupPage() {
     }
 
     const { first_name, last_name } = splitFullName(result.data.fullName);
-    const payload = {
-      first_name,
-      last_name,
-      email: result.data.email,
-      phone: result.data.phone,
-      password: result.data.password,
-      role: "agent",
-    };
+    const formData = new FormData();
+    formData.append("first_name", first_name);
+    if (last_name) formData.append("last_name", last_name);
+    formData.append("email", result.data.email);
+    formData.append("phone", result.data.phone);
+    formData.append("lga", result.data.area);
+    formData.append("address", result.data.address);
+    formData.append("password", result.data.password);
+    formData.append("confirm_password", result.data.confirmPassword);
 
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_BACKEND_URL}/auth/register`, {
+      const res = await fetch(`${BASE_BACKEND_URL}/agent/apply`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(payload),
+        body: formData,
       });
       const json = await res.json();
 
@@ -242,11 +240,10 @@ export default function SignupPage() {
         return;
       }
       if (!res.ok) {
-        setApiError(json.message ?? "Registration failed.");
+        setApiError(json.message ?? "Application failed. Please try again.");
         return;
       }
 
-      storeTokens(json.data?.accessToken ?? "", json.data?.refreshToken ?? "");
       setRegisteredEmail(result.data.email);
       setShowSuccess(true);
     } catch {
@@ -262,8 +259,16 @@ export default function SignupPage() {
       <AnimatePresence>
         {showSuccess && (
           <AuthSuccessModal
-            title="Account Created"
-            description="Check your email for the verification code."
+            title={
+              activeTab === "agent"
+                ? "Application Submitted"
+                : "Account Created"
+            }
+            description={
+              activeTab === "agent"
+                ? "Check your email for a verification code. We'll review your application within 48 hours."
+                : "Check your email for the verification code."
+            }
             submitButtonText="Verify Email"
             redirectUrl="/verify-email"
             navigateState={{ email: registeredEmail, role: activeTab }}
@@ -448,11 +453,11 @@ export default function SignupPage() {
                       />
                     </div>
                     <DashTextInput
-                      label="State"
-                      placeholder="Kaduna"
-                      value={agentForm.state}
-                      onChange={handleAgentChange("state")}
-                      error={agentErrors.state}
+                      label="Home Address"
+                      placeholder="No. 12 Kaura Street, Kaduna"
+                      value={agentForm.address}
+                      onChange={handleAgentChange("address")}
+                      error={agentErrors.address}
                       required
                     />
                     <DashEmailInput
