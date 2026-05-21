@@ -436,7 +436,7 @@ export default function Home() {
                   {/* Heading and Paragraph */}
                   <div className="gap-lg flex flex-col">
                     {/* Heading */}
-                    <h1 className="flex flex-col text-4xl leading-tight font-bold text-white sm:text-6xl lg:text-7xl">
+                    <h1 className="flex flex-col text-4xl leading-tight font-bold text-white sm:text-5xl md:text-6xl lg:text-7xl">
                       <span>Market Prices.</span>
                       <span className="flex flex-wrap items-baseline gap-x-3">
                         {/* Curved Underlined Zero */}
@@ -502,7 +502,7 @@ export default function Home() {
                         <span className="text-white/60">
                           {renderIcon(trustItems[activeTrustIndex].icon)}
                         </span>
-                        <span className="text-xs whitespace-nowrap">
+                        <span className="text-sm whitespace-nowrap">
                           {trustItems[activeTrustIndex].label}
                         </span>
                       </motion.div>
@@ -519,7 +519,7 @@ export default function Home() {
                         <span className="text-[#FCFDFD]">
                           {renderIcon(item.icon)}
                         </span>
-                        <span className="text-[14px] font-semibold whitespace-nowrap">
+                        <span className="text-sm font-semibold whitespace-nowrap">
                           {item.label}
                         </span>
                       </div>
@@ -548,10 +548,8 @@ export default function Home() {
               className="gap-3xl flex flex-col"
             >
               <div className="gap-md flex flex-col">
-                <p className="text-text text-[14px] font-semibold">
-                  How it works
-                </p>
-                <h2 className="text-primary text-xl leading-tight font-bold sm:text-3xl lg:text-5xl">
+                <p className="text-text text-sm font-semibold">How it works</p>
+                <h2 className="text-primary text-2xl leading-tight font-bold sm:text-3xl lg:text-5xl">
                   From market to your door in two steps
                 </h2>
               </div>
@@ -566,7 +564,7 @@ export default function Home() {
                     <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
                       Send us your order
                     </h3>
-                    <p className="font-open-sans text-[14px] leading-relaxed lg:text-base">
+                    <p className="font-open-sans text-sm leading-relaxed sm:text-base">
                       Chat on WhatsApp, call, or browse our catalog. Tell us
                       what you need — rice, beans, palm oil, anything.
                     </p>
@@ -583,7 +581,7 @@ export default function Home() {
                     <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
                       Delivered to you
                     </h3>
-                    <p className="font-open-sans text-[14px] leading-relaxed lg:text-base">
+                    <p className="font-open-sans text-sm leading-relaxed sm:text-base">
                       Your order arrives at your home or shop at the market
                       price you agreed. No surprises, no hidden fees.
                     </p>
@@ -608,10 +606,10 @@ export default function Home() {
                 />
                 {/* Delivery Info Card */}
                 <div className="bg-primary-light border-primary-light absolute right-[10px] bottom-[10px] left-[10px] flex flex-col gap-[10px] rounded-3xl border px-[24px] py-[12px] text-white shadow-md">
-                  <div className="flex items-center gap-[10px] text-[14px] lg:text-base">
+                  <div className="flex items-center gap-[10px] text-sm sm:text-base">
                     Next Delivery
                   </div>
-                  <p className="text-[14px] font-semibold lg:text-lg">
+                  <p className="text-sm font-semibold sm:text-base lg:text-lg">
                     Kaduna South • Today
                   </p>
                   <p className="text-sm lg:text-base">
@@ -734,7 +732,7 @@ export default function Home() {
               Get started
             </p>
 
-            <h2 className="text-primary font-syne mx-auto w-full max-w-[257px] text-center text-4xl leading-tight font-extrabold sm:max-w-[500px] lg:max-w-[831px] lg:text-5xl">
+            <h2 className="text-primary font-syne mx-auto w-full max-w-[257px] text-center text-4xl leading-tight font-extrabold sm:max-w-[500px] sm:text-5xl lg:max-w-207.75 lg:text-6xl">
               Your first delivery is on us.
             </h2>
 
