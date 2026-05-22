@@ -210,17 +210,22 @@ export default function ContactPage() {
     setErrors({});
 
     try {
-      // Production-ready: replace with your actual API endpoint
-      const res = await fetch("/api/contact", {
+      const { BASE_BACKEND_URL } = await import("../../utils/api");
+      const res = await fetch(`${BASE_BACKEND_URL}/contact`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          full_name: form.fullName,
+          email: form.email,
+          message: form.message,
+        }),
       });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(
-          data?.message ?? "Something went wrong. Please try again.",
+          (data as { message?: string })?.message ??
+            "Something went wrong. Please try again.",
         );
       }
 

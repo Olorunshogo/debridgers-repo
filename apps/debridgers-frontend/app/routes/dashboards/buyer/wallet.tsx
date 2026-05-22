@@ -1,19 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, ArrowDownLeft, Plus } from "lucide-react";
+import { apiFetch } from "../../../utils/apiFetch";
 
 export function meta() {
-  return [
-    { title: "Wallet and Payment | Debridgers" },
-    {
-      name: "description",
-      content:
-        "Manage your Debridgers wallet balance and payment history for food orders.",
-    },
-    // === Author and Robots
-    { name: "author", content: "Debridgers Team" },
-    { name: "robots", content: "noindex, nofollow" },
-  ];
+  return [{ title: "Wallet & Payment | Debridgers" }];
 }
 
 type TransactionType = "credit" | "debit";
@@ -33,55 +24,44 @@ interface WalletData {
   transactions: Transaction[];
 }
 
-const MOCK_DATA: WalletData = {
-  balance: 15250,
-  totalSpent: 42500,
-  totalFunded: 57750,
-  transactions: [
-    {
-      id: "t1",
-      description: "Wallet top-up via bank transfer",
-      amount: 10000,
-      type: "credit",
-      date: "Mar 26, 2026",
-    },
-    {
-      id: "t2",
-      description: "Order #AGL-0024 - Rice, Beans, Palm Oil",
-      amount: 6800,
-      type: "debit",
-      date: "Mar 24, 2026",
-    },
-    {
-      id: "t3",
-      description: "Order #AGL-0023 - Beans, Yam",
-      amount: 5300,
-      type: "debit",
-      date: "Mar 22, 2026",
-    },
-    {
-      id: "t4",
-      description: "Wallet top-up via bank transfer",
-      amount: 20000,
-      type: "credit",
-      date: "Mar 20, 2026",
-    },
-    {
-      id: "t5",
-      description: "Order #AGL-0022 - Rice, Gari",
-      amount: 3200,
-      type: "debit",
-      date: "Mar 18, 2026",
-    },
-    {
-      id: "t6",
-      description: "Order #AGL-0021 - Rice, Yam, Palm Oil",
-      amount: 8800,
-      type: "debit",
-      date: "Mar 15, 2026",
-    },
-  ],
-};
+interface ApiOrder {
+  id: number;
+  status: string;
+  total_amount: number;
+  quantity: number;
+  created_at: string;
+}
+
+interface ApiDashStats {
+  stats: {
+    total_spent_kobo: number;
+    total_orders: number;
+  };
+}
+
+function buildWalletData(stats: ApiDashStats, orders: ApiOrder[]): WalletData {
+  const totalSpentKobo = stats.stats.total_spent_kobo;
+  const totalSpentNaira = Math.round(totalSpentKobo / 100);
+
+  const transactions: Transaction[] = orders.map((o) => ({
+    id: String(o.id),
+    description: `Order #DBR-${String(o.id).padStart(4, "0")} — ${o.quantity} pack${o.quantity !== 1 ? "s" : ""}`,
+    amount: Math.round(o.total_amount / 100),
+    type: "debit" as const,
+    date: new Date(o.created_at).toLocaleDateString("en-NG", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
+  }));
+
+  return {
+    balance: 0,
+    totalSpent: totalSpentNaira,
+    totalFunded: 0,
+    transactions,
+  };
+}
 
 function fmt(n: number) {
   return "₦" + n.toLocaleString();
@@ -96,11 +76,13 @@ export default function BuyerWallet() {
   const [funded, setFunded] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setData(MOCK_DATA);
-      setLoading(false);
-    }, 500);
-    return () => clearTimeout(t);
+    Promise.all([
+      apiFetch<ApiDashStats>("/buyer/dashboard"),
+      apiFetch<ApiOrder[]>("/buyer/orders"),
+    ])
+      .then(([stats, orders]) => setData(buildWalletData(stats, orders)))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
   async function handleFund(e: React.FormEvent) {
@@ -142,9 +124,11 @@ export default function BuyerWallet() {
       >
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-col gap-1">
-            <p className="text-sm text-white/60">Wallet Balance</p>
+            <p className="text-sm text-white/60">
+              Total Spent (delivered orders)
+            </p>
             <p className="font-syne text-4xl font-extrabold text-white">
-              {fmt(data.balance)}
+              {fmt(data.totalSpent)}
             </p>
           </div>
           <div className="flex gap-3">
@@ -152,33 +136,34 @@ export default function BuyerWallet() {
               className="flex min-w-[130px] flex-col gap-1 rounded-xl border border-white/20 p-4"
               style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
             >
-              <p className="text-xs text-white/60">Total Funded</p>
+              <p className="text-xs text-white/60">Total Orders</p>
               <p className="font-syne text-lg font-bold text-white">
-                {fmt(data.totalFunded)}
+                {data.transactions.length}
               </p>
             </div>
             <div
               className="flex min-w-[130px] flex-col gap-1 rounded-xl border border-white/20 p-4"
               style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
             >
-              <p className="text-xs text-white/60">Total Spent</p>
-              <p className="font-syne text-lg font-bold text-white">
-                {fmt(data.totalSpent)}
+              <p className="text-xs text-white/60">Wallet Top-up</p>
+              <p className="font-syne text-base font-bold text-white/60">
+                Coming soon
               </p>
             </div>
           </div>
         </div>
         <div className="mt-6">
           <button
-            onClick={() => setShowFundModal(true)}
-            className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-opacity hover:opacity-90"
+            disabled
+            className="inline-flex cursor-not-allowed items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold opacity-50"
             style={{
               backgroundColor: "var(--secondary-color)",
               color: "var(--heading-colour)",
             }}
+            title="Wallet top-up coming soon"
           >
             <Plus size={16} />
-            Add Funds
+            Add Funds (coming soon)
           </button>
         </div>
         <div className="pointer-events-none absolute -top-12 -right-12 h-40 w-40 rounded-full border-2 border-white/10" />
@@ -199,6 +184,14 @@ export default function BuyerWallet() {
           Transaction History
         </h3>
         <div className="flex flex-col">
+          {data.transactions.length === 0 && (
+            <p
+              className="py-8 text-center text-sm"
+              style={{ color: "var(--text-colour)" }}
+            >
+              No orders yet. Your order history will appear here.
+            </p>
+          )}
           {data.transactions.map((tx, i) => (
             <motion.div
               key={tx.id}

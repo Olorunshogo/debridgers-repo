@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
 import { CheckCircle2 } from "lucide-react";
@@ -10,7 +10,7 @@ import {
   DashSwitchInput,
   SubmitButton,
 } from "@debridgers/ui-web";
-import { BASE_BACKEND_URL } from "../../../utils/api";
+import { apiFetch } from "../../../utils/apiFetch";
 
 export function meta() {
   return [
@@ -106,8 +106,8 @@ export default function BuyerSettings() {
     "/images/settings-avatar.png",
   );
   const [form, setForm] = useState<SettingsForm>({
-    userName: "Abdul-Malik",
-    email: "abdulmalik@example.com",
+    userName: "",
+    email: "",
     currency: "NGN",
     country: "NG",
     deliveryAddress: "",
@@ -120,6 +120,30 @@ export default function BuyerSettings() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  const loadProfile = useCallback(async () => {
+    try {
+      const profile = await apiFetch<{
+        first_name: string;
+        last_name: string;
+        email: string;
+        phone?: string | null;
+        delivery_address?: string | null;
+      }>("/buyer/me");
+      setForm((p) => ({
+        ...p,
+        userName: `${profile.first_name} ${profile.last_name}`.trim(),
+        email: profile.email,
+        deliveryAddress: profile.delivery_address ?? "",
+      }));
+    } catch {
+      // silently fail — form stays blank
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadProfile();
+  }, [loadProfile]);
 
   useEffect(() => {
     return () => {
@@ -166,18 +190,15 @@ export default function BuyerSettings() {
 
     setLoading(true);
     try {
-      // === PRODUCTION
-      // const fd = new FormData();
-      // Object.entries(form).forEach(([k, v]) => fd.append(k, String(v)));
-      // const res = await fetch(`${BASE_BACKEND_URL}/buyer/settings`, {
-      //   method: "POST",
-      //   credentials: "include",
-      //   body: fd,
-      // });
-      // if (!res.ok) throw new Error("Save failed");
-
-      // === MOCK
-      await new Promise<void>((r) => setTimeout(r, 900));
+      const [firstName, ...rest] = result.data.userName.trim().split(" ");
+      await apiFetch("/buyer/profile", {
+        method: "PATCH",
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: rest.join(" ") || undefined,
+          delivery_address: result.data.deliveryAddress.trim() || undefined,
+        }),
+      });
       setForm((p) => ({ ...p, oldPassword: "", newPassword: "" }));
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
