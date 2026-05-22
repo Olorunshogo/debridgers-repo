@@ -132,15 +132,15 @@
 
 @layer components {
   .default-max-width {
-    @apply mx-auto w-full max-w-[1400px];
+    @apply mx-auto w-full max-w-350;
   }
 
   .layout-max-width {
-    @apply mx-auto w-full max-w-[1600px];
+    @apply mx-auto w-full max-w-500;
   }
 
   .dashboard-max-width {
-    @apply mx-auto w-full max-w-[1420px];
+    @apply mx-auto w-full max-w-355;
   }
 }
 

@@ -29,7 +29,7 @@ export function EmailInput({
     <div className="flex flex-col gap-2">
       <label
         htmlFor={inputId}
-        className="font-syne text-heading text-[14px] font-medium"
+        className="font-syne text-heading text-body-sm font-medium"
       >
         {label}
         {required && <span className="text-error-red ml-0.5">*</span>}

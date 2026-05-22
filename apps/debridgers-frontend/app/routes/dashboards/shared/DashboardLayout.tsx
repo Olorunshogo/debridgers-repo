@@ -304,7 +304,7 @@ export default function DashboardLayout() {
                 placeholder="Search..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="hidden w-full max-w-[500px] md:inline-flex"
+                className="hidden w-full max-w-125 md:inline-flex"
               />
 
               <div className="flex shrink-0 items-center gap-3">

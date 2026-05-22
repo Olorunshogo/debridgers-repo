@@ -62,7 +62,7 @@ export function HeroSection({
   const activeTrustIndex = useTrustCycle(trustItems.length);
 
   return (
-    <section className="font-syne relative mx-auto flex h-full h-screen max-h-[800px] w-full flex-col overflow-hidden xl:max-h-[900px]">
+    <section className="font-syne relative mx-auto flex h-full w-full flex-col overflow-hidden">
       {/* Background layer */}
       <div className="absolute inset-0 z-0">
         <AnimatePresence mode="sync">
@@ -75,49 +75,28 @@ export function HeroSection({
               animate={{ x: "0%" }}
               exit={{ x: "-100%" }}
               transition={{ duration: 0.1, ease: "easeInOut" }}
-              className="absolute inset-0 h-full w-full bg-red-900 object-contain object-cover"
+              className="absolute inset-0 h-full w-full object-cover"
             />
           )}
-
-          {/* Inset */}
-          <div className="absolute inset-0 h-full w-full bg-linear-to-b from-[40BF4F]/20 from-0% via-[#23682B]/70 via-23% to-[#061107] to-100%"></div>
-          <div className="absolute inset-0 h-full w-full bg-linear-to-b from-[40BF4F]/20 from-0% to-[#061107] to-100%"></div>
         </AnimatePresence>
+
+        {/* Gradient overlays - static, outside AnimatePresence */}
+        <div className="absolute inset-0 h-full w-full bg-linear-to-b from-[40BF4F]/20 from-0% via-[#23682B]/70 via-23% to-[#061107] to-100%" />
+        <div className="absolute inset-0 h-full w-full bg-linear-to-b from-[40BF4F]/20 from-0% to-[#061107] to-100%" />
       </div>
 
       {/* Content Wrapper */}
-      <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-screen max-h-[800px] w-full flex-col justify-between gap-[48px] xl:max-h-[900px]">
+      <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex h-screen w-full flex-col justify-between gap-[48px]">
         <div className="relative flex flex-1 flex-col pt-20 sm:pt-24 lg:pt-32">
           <div className="gap-2xl lg:gap-4xl flex flex-1 flex-col justify-center">
             {/* Location badge */}
-            <div className="text-primary border-primary font-open-sans p-sm inline-flex w-fit items-center gap-1 rounded-full border border-white/30 bg-[#A5BDA8] text-sm font-semibold shadow-[50px] backdrop-blur-lg">
+            <div className="text-primary border-primary font-open-sans p-sm inline-flex w-fit items-center gap-1 rounded-full border bg-[#A5BDA8] text-sm font-semibold shadow-[50px] backdrop-blur-lg">
               <span className="bg-primary h-1.5 w-1.5 rounded-full" />
               {servingLocation}
             </div>
 
             {/* Heading and Paragraph */}
             <div className="flex flex-col gap-6">
-              {/* Heading */}
-              {/* <h1 className="flex flex-col text-4xl leading-tight font-bold text-white sm:text-6xl lg:text-7xl">
-                <span>Market Prices.</span>
-                <span className="flex flex-wrap items-baseline gap-x-3">
-                  {/* Curved Underlined Zero *
-              <div className="relative inline-block">
-                <span>Zero</span>
-                <img
-                  src="/images/curved-underline.png"
-                  className="absolute -mt-2 w-fit"
-                />
-              </div>
-              {/* Highlighted Market *
-              <div className="relative inline-block">
-                <span style={{ color: "var(--secondary-color)" }}>Market</span>
-              </div>
-              {/* White Zero *
-                  <span>Stress.</span>
-                </span>
-              </h1> */}
-
               {/* Heading */}
               <h1 className="flex flex-col text-4xl leading-tight font-bold text-white sm:text-5xl md:text-6xl lg:text-7xl">
                 {/* Top line */}
@@ -135,7 +114,7 @@ export function HeroSection({
                       return (
                         <div key={index} className="relative inline-block">
                           <span style={{ color: "var(--secondary-color)" }}>
-                            {part.text}sss
+                            {part.text}
                           </span>
                           <img
                             src="/images/curved-underline.jpg"
@@ -166,17 +145,17 @@ export function HeroSection({
               </h1>
 
               {/* Subtext */}
-              <p className="w-full max-w-[360px] text-lg leading-relaxed font-semibold text-white lg:max-w-[574px] lg:text-xl">
+              <p className="w-full max-w-90 text-lg leading-relaxed font-semibold text-white lg:max-w-144 lg:text-xl">
                 {subtext}
               </p>
             </div>
 
             {/* CTAs */}
-            <div className="flex flex-col items-center justify-center gap-4 lg:flex-row lg:justify-baseline lg:justify-start lg:gap-[74px]">
+            <div className="flex flex-col items-center justify-center gap-4 lg:flex-row lg:justify-start lg:gap-18">
               <WhatsAppButton className="w-auto" />
               <a
                 href={secondaryCta.href}
-                className="font-open-sans flex items-center gap-1 text-base text-white transition-all duration-300 ease-in-out hover:text-white lg:gap-[10px] lg:text-lg lg:text-xl"
+                className="font-open-sans flex items-center gap-1 text-base text-white transition-all duration-300 ease-in-out hover:text-white lg:gap-2.5 lg:text-lg"
               >
                 {secondaryCta.label}
                 <div className="h-4 w-4 shrink-0 lg:h-5 lg:w-5">
@@ -187,68 +166,42 @@ export function HeroSection({
           </div>
         </div>
 
-        <div className="gap-4xl relative flex w-full flex-col lg:gap-4">
-          {/* Progress bar + SCROLL label */}
-          {/* {images.length > 0 && (
-            <div className="gap-3 flex items-center justify-center lg:justify-end">
-              <div className="h-px w-16 overflow-hidden bg-white/30">
-                <motion.div
-                  key={currentIndex}
-                  className="h-full"
-                  style={{ backgroundColor: "var(--secondary-color)" }}
-                  initial={{ width: "0%" }}
-                  animate={{ width: "100%" }}
-                  transition={{ duration: 6, ease: "linear" }}
-                />
-              </div>
-              <span
-                className="text-[14px] font-semibold tracking-widest capitalize lg:text-xl"
-                style={{ color: "var(--white)" }}
+        {/* Trust bar */}
+        <div className="bg-primary py-xl px-base relative mx-auto w-full shadow-md">
+          {/* Mobile: slideshow, one item at a time */}
+          <div className="relative flex h-6 items-center justify-center truncate overflow-hidden lg:hidden">
+            <AnimatePresence mode="sync">
+              <motion.div
+                key={activeTrustIndex}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.4 }}
+                className="absolute flex items-center gap-2 text-white/80"
               >
-                SCROLL
-              </span>
-            </div>
-          )} */}
+                <span className="text-white/60">
+                  {renderIcon(trustItems[activeTrustIndex].icon)}
+                </span>
+                <span className="text-sm whitespace-nowrap">
+                  {trustItems[activeTrustIndex].label}
+                </span>
+              </motion.div>
+            </AnimatePresence>
+          </div>
 
-          {/* Trust bar */}
-          <div className="bg-primary py-xl px-base mx-auto w-full shadow-md">
-            {/* Mobile: slideshow, one item at a time */}
-            <div className="relative flex h-6 items-center justify-center truncate overflow-hidden lg:hidden">
-              <AnimatePresence mode="sync">
-                <motion.div
-                  key={activeTrustIndex}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.4 }}
-                  className="absolute flex items-center gap-2 text-white/80"
-                >
-                  <span className="text-white/60">
-                    {renderIcon(trustItems[activeTrustIndex].icon)}
-                  </span>
-                  <span className="text-sm whitespace-nowrap">
-                    {trustItems[activeTrustIndex].label}
-                  </span>
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            {/* Desktop: all items in a row */}
-            <div className="hidden truncate lg:flex lg:items-center lg:justify-around">
-              {trustItems.map((item, i) => (
-                <div
-                  key={item.label}
-                  className={`gap-xl px-base flex shrink-0 items-center text-white ${i < trustItems.length - 1 ? "border-r border-[#FCFDFD]" : ""}`}
-                >
-                  <span className="text-[#FCFDFD]">
-                    {renderIcon(item.icon)}
-                  </span>
-                  <span className="text-sm font-semibold whitespace-nowrap">
-                    {item.label}
-                  </span>
-                </div>
-              ))}
-            </div>
+          {/* Desktop: all items in a row */}
+          <div className="hidden truncate lg:flex lg:items-center lg:justify-around">
+            {trustItems.map((item, i) => (
+              <div
+                key={item.label}
+                className={`gap-xl px-base flex shrink-0 items-center text-white ${i < trustItems.length - 1 ? "border-r border-[#FCFDFD]" : ""}`}
+              >
+                <span className="text-[#FCFDFD]">{renderIcon(item.icon)}</span>
+                <span className="text-sm font-semibold whitespace-nowrap">
+                  {item.label}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </div>

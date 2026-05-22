@@ -165,18 +165,18 @@ function SplitEntryWithDrop() {
 }
 
 // === Progress bar: fills linearly over TOTAL_DURATION_MS
-function ProgressBar() {
-  return (
-    <div className="bg-primary/15 mt-8 h-[3px] w-full max-w-[400px] overflow-hidden rounded-full">
-      <motion.div
-        className="bg-primary h-full rounded-full"
-        initial={{ width: "0%" }}
-        animate={{ width: "100%" }}
-        transition={{ duration: TOTAL_DURATION_MS / 1000, ease: "linear" }}
-      />
-    </div>
-  );
-}
+// function ProgressBar() {
+//   return (
+//     <div className="bg-primary/15 mt-8 h-[3px] w-full max-w-100 overflow-hidden rounded-full">
+//       <motion.div
+//         className="bg-primary h-full rounded-full"
+//         initial={{ width: "0%" }}
+//         animate={{ width: "100%" }}
+//         transition={{ duration: TOTAL_DURATION_MS / 1000, ease: "linear" }}
+//       />
+//     </div>
+//   );
+// }
 
 // === Main IntroAnimation component
 export function IntroAnimation() {

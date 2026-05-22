@@ -188,29 +188,31 @@ export default function AgentsPage() {
       <div className="relative flex w-full flex-col">
         <div className="-mt-navbar-h flex min-h-0 w-full flex-1">
           <div className="from-primary -mt-navbar-h via-primary to-primary absolute inset-0 z-0 overflow-hidden bg-linear-to-b" />
-          <HeroSection
-            images={["/images/hero-1.jpg"]}
-            servingLocation="Now Hiring in Kaduna"
-            headingParts={{
-              top: [{ text: "Earn While You" }],
-              bottom: [
-                { text: "Serve Your " },
-                { text: "Community", highlight: true },
-                { text: "." },
-              ],
-            }}
-            subtext="Become a Debridgers field agent. Source fresh foodstuff, manage deliveries, and earn 30% commission on every sale - on your own schedule."
-            secondaryCta={{ label: "Apply Now", href: "#apply-now" }}
-            trustItems={[
-              { icon: "lucide:wallet", label: "30% commission per sale" },
-              { icon: "lucide:clock", label: "Flexible working hours" },
-              {
-                icon: "lucide:graduation-cap",
-                label: "Free onboarding & training",
-              },
-              { icon: "lucide:map-pin", label: "Kaduna - local routes" },
-            ]}
-          />
+          <section className="font-syne relative mx-auto flex h-full min-h-screen w-full flex-col overflow-hidden">
+            <HeroSection
+              images={["/images/hero-1.jpg"]}
+              servingLocation="Now Hiring in Kaduna"
+              headingParts={{
+                top: [{ text: "Earn While You" }],
+                bottom: [
+                  { text: "Serve Your " },
+                  { text: "Community", highlight: true },
+                  { text: "." },
+                ],
+              }}
+              subtext="Become a Debridgers field agent. Source fresh foodstuff, manage deliveries, and earn 30% commission on every sale - on your own schedule."
+              secondaryCta={{ label: "Apply Now", href: "#apply-now" }}
+              trustItems={[
+                { icon: "lucide:wallet", label: "30% commission per sale" },
+                { icon: "lucide:clock", label: "Flexible working hours" },
+                {
+                  icon: "lucide:graduation-cap",
+                  label: "Free onboarding & training",
+                },
+                { icon: "lucide:map-pin", label: "Kaduna - local routes" },
+              ]}
+            />
+          </section>
         </div>
       </div>
 

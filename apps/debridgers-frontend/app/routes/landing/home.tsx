@@ -175,7 +175,7 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
       }}
       whileHover={{ scale: 1.04 }}
       transition={{ duration: 0.3 }}
-      className="group relative h-95 w-[260px] shrink-0 cursor-default overflow-hidden rounded-3xl shadow-lg"
+      className="group relative h-95 w-65 shrink-0 cursor-default overflow-hidden rounded-3xl shadow-lg"
     >
       {/* Images - static until hover, then swipe right-to-left */}
       {category.images.map((src, idx) => (
@@ -229,7 +229,7 @@ function WhatWeDeliver() {
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const autoScrollRef = useRef<NodeJS.Timeout | null>(null);
 
-  const cardWidth = 260; // w-[260px]
+  const cardWidth = 260; // w-65
   const gap = 24; // gap-6 = 24px
   const step = cardWidth + gap;
   const totalCards = deliverCategories.length;
@@ -266,55 +266,53 @@ function WhatWeDeliver() {
   return (
     <section
       id="what-we-deliver"
-      className="font-syne py-section-py sm:py-section-py-sm lg:py-section-py-lg relative w-full bg-white"
+      className="font-syne gap-3xl px-section-px sm:px-section-px-sm lg:px-section-px-lg py-section-py sm:py-section-py-sm lg:py-section-py-lg relative mx-auto flex w-full flex-col bg-white"
     >
-      <div className="gap-3xl px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto flex w-full flex-col">
-        {/* Header */}
-        <div className="lg:gap-xl flex flex-col gap-3">
-          <p className="text-primary-light text-xl tracking-widest">
-            What we deliver
-          </p>
+      {/* Header */}
+      <div className="lg:gap-xl flex flex-col gap-3">
+        <p className="text-primary-light text-xl tracking-widest">
+          What we deliver
+        </p>
 
-          <div className="gap-xl flex w-full flex-wrap items-start justify-between">
-            <h2 className="text-primary font-syne max-w-[751px] text-3xl leading-tight font-extrabold sm:text-4xl lg:text-[50px] lg:font-bold">
-              Everything you spend on at the market.
-            </h2>
+        <div className="gap-xl flex w-full flex-wrap items-start justify-between">
+          <h2 className="text-primary font-syne max-w-188 text-3xl leading-tight font-extrabold sm:text-4xl lg:text-[50px] lg:font-bold">
+            Everything you spend on at the market.
+          </h2>
 
-            <PrimaryLink
-              href="https://wa.me/+2348167042797"
-              className="font-syne py-md px-xl text-xl font-bold sm:text-2xl lg:text-3xl"
-            >
-              Send Order
-            </PrimaryLink>
-          </div>
-        </div>
-
-        {/* Carousel - overflow-hidden clips cards beyond 4 on lg */}
-        <div
-          className="overflow-hidden"
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-        >
-          <motion.div
-            className="flex gap-6"
-            animate={{ x: `-${offset * step}px` }}
-            transition={
-              isAnimating
-                ? { type: "spring", stiffness: 300, damping: 30 }
-                : { duration: 0 }
-            }
-            style={{
-              width: `${doubled.length * (cardWidth + gap) - gap}px`,
-            }}
+          <PrimaryLink
+            href="https://wa.me/+2348167042797"
+            className="font-syne py-md px-xl text-xl font-bold sm:text-2xl lg:text-3xl"
           >
-            {doubled.map((category, index) => (
-              <DeliverCard
-                key={`${category.title}-${index}`}
-                category={category}
-              />
-            ))}
-          </motion.div>
+            Send Order
+          </PrimaryLink>
         </div>
+      </div>
+
+      {/* Carousel - overflow-hidden clips cards beyond 4 on lg */}
+      <div
+        className="overflow-hidden"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <motion.div
+          className="flex gap-6"
+          animate={{ x: `-${offset * step}px` }}
+          transition={
+            isAnimating
+              ? { type: "spring", stiffness: 300, damping: 30 }
+              : { duration: 0 }
+          }
+          style={{
+            width: `${doubled.length * (cardWidth + gap) - gap}px`,
+          }}
+        >
+          {doubled.map((category, index) => (
+            <DeliverCard
+              key={`${category.title}-${index}`}
+              category={category}
+            />
+          ))}
+        </motion.div>
       </div>
     </section>
   );
@@ -397,11 +395,11 @@ export default function Home() {
 
       {/* Hero Section */}
       <div className="relative flex w-full flex-col">
-        <div className="-mt-navbar-h flex max-h-[800px] min-h-0 w-full flex-1 xl:max-h-[900px]">
+        <div className="-mt-navbar-h flex min-h-0 w-full flex-1">
           <div className="font-syne -mt-navbar-h bg-primary absolute inset-0 z-0 overflow-hidden" />
           <section
             id="hero-section"
-            className="font-syne relative mx-auto flex h-full min-h-screen w-full max-w-[1840px] flex-col overflow-hidden"
+            className="font-syne relative mx-auto flex h-full min-h-screen w-full flex-col overflow-hidden"
           >
             {/* Background layer */}
             <div className="absolute inset-0 z-0 h-full w-full">
@@ -415,7 +413,7 @@ export default function Home() {
                     animate={{ x: "0%" }}
                     exit={{ x: "-100%" }}
                     transition={{ duration: 0.1, ease: "easeInOut" }}
-                    className="absolute inset-0 h-full w-full object-contain object-cover"
+                    className="absolute inset-0 h-full w-full object-cover"
                   />
                 )}
               </AnimatePresence>
@@ -424,11 +422,11 @@ export default function Home() {
             </div>
 
             {/* Content Wrapper */}
-            <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-screen max-h-[800px] w-full flex-col justify-between gap-[48px] xl:max-h-[900px]">
+            <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex h-screen w-full flex-col justify-between gap-8 md:gap-6 xl:gap-10">
               <div className="relative flex flex-1 flex-col pt-20 sm:pt-24 lg:pt-32">
-                <div className="gap-2xl lg:gap-4xl flex flex-1 flex-col justify-center">
+                <div className="gap-xl lg:gap-3xl flex flex-1 flex-col justify-center">
                   {/* Location badge */}
-                  <div className="text-primary font-open-sans p-sm inline-flex w-fit items-center gap-1 rounded-full border border-white/30 bg-[#A5BDA8] text-sm font-semibold shadow-[50px] backdrop-blur-lg">
+                  <div className="text-primary font-open-sans p-sm border-primary inline-flex w-fit items-center gap-1 rounded-full border bg-[#A5BDA8] text-sm font-semibold shadow-[50px] backdrop-blur-lg">
                     <span className="bg-primary h-1.5 w-1.5 rounded-full" />
                     Now Serving in Kaduna
                   </div>
@@ -459,18 +457,18 @@ export default function Home() {
                     </h1>
 
                     {/* Subtext */}
-                    <p className="w-full max-w-[360px] text-base leading-relaxed font-semibold text-white sm:text-lg lg:max-w-[574px] lg:text-xl">
+                    <p className="w-full max-w-90 text-base leading-relaxed font-semibold text-white sm:text-lg lg:max-w-144 lg:text-xl">
                       Fresh foodstuff delivered straight to your door step. At
                       the same price you&apos;d pay at Central Market.
                     </p>
                   </div>
 
                   {/* CTAs */}
-                  <div className="flex flex-col items-center justify-center gap-4 lg:flex-row lg:justify-start lg:gap-[74px]">
+                  <div className="flex flex-col items-center justify-center gap-4 lg:flex-row lg:justify-start lg:gap-18.5">
                     <WhatsAppButton className="w-auto" />
                     <a
                       href="#how-it-works"
-                      className="font-open-sans flex items-center gap-1 text-base text-white transition-all duration-300 ease-in-out hover:text-white sm:text-lg lg:gap-[10px] lg:text-xl"
+                      className="font-open-sans flex items-center gap-1 text-base text-white transition-all duration-300 ease-in-out hover:text-white sm:text-lg lg:gap-2.5 lg:text-xl"
                     >
                       See how it works
                       <div className="h-4 w-4 shrink-0 lg:h-5 lg:w-5">
@@ -535,118 +533,114 @@ export default function Home() {
       {/* How It Works */}
       <section
         id="how-it-works"
-        className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative bg-white"
+        className="py-section-py px-section-px sm:px-section-px-sm lg:px-section-px-lg sm:py-section-py-sm lg:py-section-py-lg relative mx-auto w-full bg-white"
       >
-        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto">
-          <div className="gap-4xl grid items-center lg:grid-cols-2">
-            {/* Left Content */}
-            <motion.div
-              initial={{ opacity: 0, x: -24 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="gap-3xl flex flex-col"
-            >
-              <div className="flex flex-col gap-3">
-                <p className="text-text text-sm font-semibold">How it works</p>
-                <h2 className="text-primary text-2xl leading-tight font-bold sm:text-3xl lg:text-5xl">
-                  From market to your door in two steps
-                </h2>
-              </div>
+        <div className="gap-4xl grid items-center lg:grid-cols-2">
+          {/* Left Content */}
+          <motion.div
+            initial={{ opacity: 0, x: -24 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="gap-3xl flex flex-col"
+          >
+            <div className="flex flex-col gap-3">
+              <p className="text-text text-sm font-semibold">How it works</p>
+              <h2 className="text-primary text-2xl leading-tight font-bold sm:text-3xl lg:text-5xl">
+                From market to your door in two steps
+              </h2>
+            </div>
 
-              <div className="flex flex-col">
-                {/* Step 1 */}
-                <div className="py-base text-text flex gap-6 border-b border-[#E5E7EB]">
-                  <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
-                    01
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
-                      Send us your order
-                    </h3>
-                    <p className="font-open-sans text-sm leading-relaxed sm:text-base">
-                      Chat on WhatsApp, call, or browse our catalog. Tell us
-                      what you need: rice, beans, palm oil, etc.
-                    </p>
-                  </div>
+            <div className="flex flex-col">
+              {/* Step 1 */}
+              <div className="py-base text-text flex gap-6 border-b border-[#E5E7EB]">
+                <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
+                  01
                 </div>
-
-                {/* Step 2 */}
-
-                <div className="py-base text-text flex gap-6">
-                  <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
-                    02
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
-                      Delivered to you
-                    </h3>
-                    <p className="font-open-sans text-sm leading-relaxed sm:text-base">
-                      Your order arrives at your home or shop at the market
-                      price you agreed. No surprises, no hidden fees.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Right Image + Market woman Card */}
-            <motion.div
-              initial={{ opacity: 0, x: 24 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="relative"
-            >
-              <div className="group relative overflow-hidden rounded-3xl shadow-2xl">
-                <img
-                  src="/images/market-lady.jpg"
-                  alt="Smiling Nigerian woman at fresh produce market"
-                  className="h-full max-h-[516px] w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-105 lg:max-h-[530px]"
-                />
-                {/* Delivery Info Card */}
-                <div className="bg-primary-light border-primary-light absolute right-[10px] bottom-[10px] left-[10px] flex flex-col gap-[10px] rounded-3xl border px-[24px] py-[12px] text-white shadow-md">
-                  <div className="flex items-center gap-[10px] text-sm sm:text-base">
-                    Next Delivery
-                  </div>
-                  <p className="text-sm font-semibold sm:text-base lg:text-lg">
-                    Kaduna South • Today
-                  </p>
-                  <p className="text-sm lg:text-base">
-                    Order before 12pm to experience same day delivery
+                <div className="flex flex-col gap-2">
+                  <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
+                    Send us your order
+                  </h3>
+                  <p className="font-open-sans text-sm leading-relaxed sm:text-base">
+                    Chat on WhatsApp, call, or browse our catalog. Tell us what
+                    you need: rice, beans, palm oil, etc.
                   </p>
                 </div>
               </div>
-            </motion.div>
-          </div>
+
+              {/* Step 2 */}
+
+              <div className="py-base text-text flex gap-6">
+                <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
+                  02
+                </div>
+                <div className="flex flex-col gap-2">
+                  <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
+                    Delivered to you
+                  </h3>
+                  <p className="font-open-sans text-sm leading-relaxed sm:text-base">
+                    Your order arrives at your home or shop at the market price
+                    you agreed. No surprises, no hidden fees.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Right Image + Market woman Card */}
+          <motion.div
+            initial={{ opacity: 0, x: 24 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="relative"
+          >
+            <div className="group relative overflow-hidden rounded-3xl shadow-2xl">
+              <img
+                src="/images/market-lady.jpg"
+                alt="Smiling Nigerian woman at fresh produce market"
+                className="h-full max-h-130 w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-105 lg:max-h-132"
+              />
+              {/* Delivery Info Card */}
+              <div className="bg-primary-light border-primary-light absolute right-2.5 bottom-2.5 left-2.5 flex flex-col gap-2.5 rounded-3xl border px-[24px] py-[12px] text-white shadow-md">
+                <div className="flex items-center gap-2.5 text-sm sm:text-base">
+                  Next Delivery
+                </div>
+                <p className="text-sm font-semibold sm:text-base lg:text-lg">
+                  Kaduna South • Today
+                </p>
+                <p className="text-sm lg:text-base">
+                  Order before 12pm to experience same day delivery
+                </p>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Why Debridgers */}
       <section
         id="why-debridgers"
-        className="py-section-py sm:py-section-py-sm lg:py-section-py-lg font-syne relative bg-[#F6F3F3]"
+        className="py-section-py px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-3xl sm:py-section-py-sm lg:py-section-py-lg font-syne relative mx-auto flex w-full flex-col bg-[#F6F3F3]"
       >
-        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-3xl default-max-width mx-auto flex w-full flex-col">
-          <div className="lg:gap-xl flex flex-col gap-3">
-            <p className="text-primary-light text-xl tracking-widest">
-              Why Debridgers
-            </p>
-            <h2 className="text-primary w-full max-w-[730px] text-3xl font-bold sm:text-4xl lg:text-5xl lg:font-bold">
-              We solve what the market can&apos;t.
-            </h2>
-          </div>
+        <div className="lg:gap-xl flex flex-col gap-3">
+          <p className="text-primary-light text-xl tracking-widest">
+            Why Debridgers
+          </p>
+          <h2 className="text-primary w-full text-3xl font-bold sm:text-4xl lg:text-5xl lg:font-bold">
+            We solve what the market can&apos;t.
+          </h2>
+        </div>
 
-          <div className="font-syne grid gap-6 lg:grid-cols-3">
-            {whyCardsData.map((card, index) => (
-              <WhyCard
-                key={card.title}
-                card={card}
-                isActive={index === activeWhyCardIndex}
-                onHover={() => setActiveWhyCardIndex(index)}
-              />
-            ))}
-          </div>
+        <div className="font-syne grid gap-6 lg:grid-cols-3">
+          {whyCardsData.map((card, index) => (
+            <WhyCard
+              key={card.title}
+              card={card}
+              isActive={index === activeWhyCardIndex}
+              onHover={() => setActiveWhyCardIndex(index)}
+            />
+          ))}
         </div>
       </section>
 
@@ -658,52 +652,50 @@ export default function Home() {
         id="stats"
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg font-syne bg-primary relative overflow-hidden text-white"
       >
-        <div className="default-max-width relative">
-          {/* Blur Dot */}
-          <div className="pointer-events-none absolute inset-0 z-1">
-            <BlurDot className="absolute bottom-[0%] left-[12%] h-[115px] w-[110px]" />
-            <BlurDot className="absolute bottom-[50%] left-[40%] h-[115px] w-[110px]" />
-            <BlurDot className="absolute bottom-[70%] left-[90%] h-[115px] w-[110px] lg:left-[70%]" />
+        {/* Blur Dot */}
+        <div className="pointer-events-none absolute inset-0 z-1">
+          <BlurDot className="absolute bottom-[0%] left-[12%] h-30 w-28" />
+          <BlurDot className="absolute bottom-[50%] left-[40%] h-30 w-28" />
+          <BlurDot className="absolute bottom-[70%] left-[90%] h-30 w-28 lg:left-[70%]" />
+        </div>
+
+        {/* Stats */}
+        <div className="px-section-px px sm:px-section-px-sm lg:px-section-px-lg lg:gap-4xl relative z-10 mx-auto flex w-full flex-col">
+          <div className="font-syne pb-2xl flex flex-col gap-3">
+            <p className="text-text2 text-xl tracking-[3px] uppercase">
+              Early Numbers
+            </p>
+            <h2 className="w-full text-3xl leading-tight font-bold sm:text-4xl lg:text-5xl lg:font-extrabold">
+              People are already excited.
+            </h2>
           </div>
 
-          {/* Stats */}
-          <div className="px-section-px px sm:px-section-px-sm lg:px-section-px-lg lg:gap-4xl default-max-width relative z-10 mx-auto flex flex-col">
-            <div className="font-syne pb-2xl flex flex-col gap-3">
-              <p className="text-text2 text-xl tracking-[3px] uppercase">
-                Early Numbers
-              </p>
-              <h2 className="w-full max-w-[831px] text-3xl leading-tight font-bold sm:text-4xl lg:text-5xl lg:font-extrabold">
-                People are already excited.
-              </h2>
-            </div>
-
-            <div className="sm:gap-3xl grid grid-cols-3 gap-4">
-              {stats.map((stat, i) => {
-                const displayValue = statsFormatters[i](stat.value);
-                return (
-                  <motion.div
-                    key={stat.label}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: i * 0.1 }}
-                    className="flex flex-col gap-2 lg:w-[236px]"
-                  >
-                    <div className="text-secondary font-syne text-2xl leading-none font-extrabold sm:text-4xl lg:text-5xl">
-                      {displayValue}
-                    </div>
-                    <p className="font-open-sans text-[14px] text-white sm:text-base lg:text-lg">
-                      {stat.label}
-                    </p>
-                  </motion.div>
-                );
-              })}
-            </div>
+          <div className="sm:gap-3xl grid grid-cols-3 gap-4">
+            {stats.map((stat, i) => {
+              const displayValue = statsFormatters[i](stat.value);
+              return (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: i * 0.1 }}
+                  className="lg:w-w-60 flex flex-col gap-2"
+                >
+                  <div className="text-secondary font-syne text-2xl leading-none font-extrabold sm:text-4xl lg:text-5xl">
+                    {displayValue}
+                  </div>
+                  <p className="font-open-sans text-body-sm text-white sm:text-base lg:text-lg">
+                    {stat.label}
+                  </p>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
 
         {/* Concentric Circles */}
-        <div className="absolute top-[-320px] right-[-320px] z-2 h-[400px] w-[500px] rotate-127 sm:top-[-180px] sm:right-[-120px] sm:h-[400px] sm:w-[400px] lg:top-[-270px] lg:right-[-380px] lg:h-[700px] lg:w-[700px]">
+        <div className="absolute -top-80 -right-80 z-2 h-100 w-125 rotate-127 sm:-top-45 sm:-right-30 sm:h-100 sm:w-100 lg:-top-68 lg:-right-95 lg:h-175 lg:w-175">
           {/* Outer */}
           <div className="pointer-events-none absolute inset-0 rounded-full border-20 border-[#A5BDA8]/40" />
 
@@ -711,7 +703,7 @@ export default function Home() {
           <div className="pointer-events-none absolute inset-[40px] rounded-full border-20 border-[#A5BDA8]/40" />
 
           {/* Inner */}
-          <div className="pointer-events-none absolute inset-[80px] rounded-full border-20 border-[#A5BDA8]/40" />
+          <div className="pointer-events-none absolute inset-20 rounded-full border-20 border-[#A5BDA8]/40" />
         </div>
       </section>
 
@@ -721,22 +713,22 @@ export default function Home() {
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative overflow-hidden bg-white"
       >
         <div className="pointer-events-none absolute inset-0 z-1">
-          <BlurDot className="absolute bottom-[40%] left-[12%] h-[115px] w-[110px]" />
-          <BlurDot className="absolute bottom-[50%] left-[50%] h-[115px] w-[110px]" />
-          <BlurDot className="absolute bottom-[70%] left-[90%] h-[115px] w-[110px] lg:left-[70%]" />
+          <BlurDot className="absolute bottom-[40%] left-[12%] h-30 w-28" />
+          <BlurDot className="absolute bottom-[50%] left-[50%] h-30 w-28" />
+          <BlurDot className="absolute bottom-[70%] left-[90%] h-30 w-28 lg:left-[70%]" />
         </div>
 
-        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-xl default-max-width lg:gap-3xl relative mx-auto flex w-full flex-col items-center justify-center text-center">
+        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-xl lg:gap-3xl relative mx-auto flex w-full flex-col items-center justify-center text-center">
           <div className="flex flex-col gap-3">
             <p className="text-primary-light font-open-sans text-center text-lg font-semibold tracking-widest lg:text-xl">
               Get started
             </p>
 
-            <h2 className="text-primary font-syne mx-auto w-full max-w-[257px] text-center text-4xl leading-tight font-extrabold sm:max-w-[500px] sm:text-5xl lg:max-w-207.75 lg:text-6xl">
+            <h2 className="text-primary font-syne mx-auto w-full max-w-64 text-center text-4xl leading-tight font-extrabold sm:max-w-125 sm:text-5xl lg:max-w-208 lg:text-6xl">
               Your first delivery is on us.
             </h2>
 
-            <p className="text-primary font-open-sans mx-auto w-full max-w-[256px] max-w-[831px] text-base sm:max-w-[500px] lg:text-lg">
+            <p className="text-primary font-open-sans mx-auto w-full max-w-64 text-base sm:max-w-125 lg:max-w-208 lg:text-lg">
               Join early and get free delivery on your first order. Just send us
               a WhatsApp and we&apos;ll take it from there.
             </p>
@@ -751,7 +743,7 @@ export default function Home() {
         id="partnership"
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative bg-[#F6F3F3]"
       >
-        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto w-full">
+        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto w-full">
           <div className="gap-4xl grid lg:grid-cols-2">
             {/* Left Content *
             <motion.div
@@ -771,7 +763,7 @@ export default function Home() {
                 </p>
               </div>
 
-              <h2 className="text-text w-full text-xl leading-tight font-extrabold sm:max-w-[500px] sm:text-2xl lg:max-w-[601px] lg:text-3xl">
+              <h2 className="text-text w-full text-xl leading-tight font-extrabold sm:max-w-125 sm:text-2xl lg:max-w-[601px] lg:text-3xl">
                 Backed by those who&apos;ve been doing this longest.
               </h2>
 
