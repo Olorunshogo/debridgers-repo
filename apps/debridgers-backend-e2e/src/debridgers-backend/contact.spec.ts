@@ -1,4 +1,4 @@
-const BASE = process.env.API_URL || "http://localhost:4000/api/v1";
+const BASE = process.env.VITE_API_URL || "http://localhost:4000/api/v1";
 
 describe("Contact", () => {
   it("POST /contact should save lead and return 201", async () => {

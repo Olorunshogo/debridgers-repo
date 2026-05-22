@@ -1,53 +1,59 @@
 import { useState } from "react";
 import { Link } from "react-router";
 
+// === Footer Woodmark component
+type FooterWordmarkProps = {
+  position?: "top" | "bottom";
+  className?: string;
+};
+
+function FooterWordmark({
+  position = "top",
+  className = "",
+}: FooterWordmarkProps) {
+  const isTop = position === "top";
+
+  return (
+    <div
+      aria-hidden="true"
+      className={`pointer-events-none absolute inset-x-0 flex justify-center overflow-hidden select-none ${
+        isTop ? "top-0" : "bottom-0 items-end"
+      } ${className}`}
+    >
+      <span
+        className="font-syne text-[50px] leading-none font-extrabold tracking-normal whitespace-nowrap sm:text-[90px] lg:text-[160px]"
+        style={{
+          background: isTop
+            ? "linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(16, 17, 16, 0.01) 60%)"
+            : "linear-gradient(180deg, rgba(16, 17, 16, 0.01) 48.38%, rgba(255, 255, 255, 0.2) 69.91%)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text",
+        }}
+      >
+        Debridgers
+      </span>
+    </div>
+  );
+}
+
 export default function Footer() {
   const [email, setEmail] = useState<string>("");
 
   return (
     <footer className="bg-primary relative overflow-hidden text-white">
-      {/* Background "Debridgers" wordmark - top */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 flex justify-center overflow-hidden select-none"
-      >
-        <span
-          className="font-syne text-[50px] leading-none font-extrabold tracking-normal whitespace-nowrap sm:text-[90px] lg:text-[160px]"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(16, 17, 16, 0.01) 60%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-          }}
-        >
-          Debridgers
-        </span>
-      </div>
+      <FooterWordmark position="top" />
 
-      {/* Background "Debridgers" wordmark - bottom */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-center overflow-hidden select-none"
-      >
-        <span
-          className="font-syne text-[50px] leading-none font-extrabold tracking-normal whitespace-nowrap sm:text-[90px] lg:text-[160px]"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(16, 17, 16, 0.01) 48.38%, rgba(255, 255, 255, 0.2) 69.91%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-          }}
-        >
-          Debridgers
-        </span>
-      </div>
+      <FooterWordmark position="bottom" />
+
+      {/* <FooterWordmark position="top" className="-translate-y-10" />
+
+      <FooterWordmark position="bottom" className="opacity-50" /> */}
 
       {/* Main footer content */}
-      <div className="gap-2xl px-section-px lg:gap-2xl sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex w-full flex-col">
+      <div className="gap-2xl px-section-px py-section-py lg:py-section-py-lg sm:py-section-py-sm lg:gap-2xl sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex w-full flex-col">
         {/* Top section: tagline + columns */}
-        <div className="py-section-py lg:py-section-py-lg sm:py-section-py-sm grid grid-cols-1 gap-6 lg:grid-cols-[repeat(auto-fit,minmax(280px,1fr))] lg:items-start">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[repeat(auto-fit,minmax(280px,1fr))] lg:items-start">
           {/* Tagline */}
           <h1 className="font-syne flex flex-col text-4xl leading-tight font-medium text-white sm:text-5xl lg:text-6xl">
             <span>Market Prices.</span>

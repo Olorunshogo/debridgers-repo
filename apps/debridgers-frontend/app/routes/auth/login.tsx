@@ -118,7 +118,7 @@ export default function LoginPage() {
 
       {/* Form panel */}
       <div className="flex min-h-screen flex-1 flex-col items-center justify-center bg-white px-6 lg:px-16">
-        <div className="flex w-full max-w-[500px] flex-col gap-6">
+        <div className="flex w-full max-w-125 flex-col gap-6">
           <div className="flex justify-center lg:hidden">
             <AppLogo />
           </div>

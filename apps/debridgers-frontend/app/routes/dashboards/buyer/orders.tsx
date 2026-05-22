@@ -259,7 +259,7 @@ export default function BuyerOrders() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ duration: 0.2 }}
-              className="fixed top-1/2 left-1/2 z-50 w-full max-w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-2xl p-6 shadow-2xl"
+              className="fixed top-1/2 left-1/2 z-50 w-full max-w-175 -translate-x-1/2 -translate-y-1/2 rounded-2xl p-6 shadow-2xl"
               style={{ backgroundColor: "var(--white)" }}
             >
               <div className="flex items-start justify-between">

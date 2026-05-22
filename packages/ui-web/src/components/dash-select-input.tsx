@@ -146,7 +146,7 @@ export function DashSelectInput({
         {isOpen && (
           <div
             role="listbox"
-            className="border-border-gray absolute top-[calc(100%+4px)] left-0 z-50 max-h-[360px] w-full overflow-hidden overflow-y-auto rounded-2xl border bg-white py-1 shadow-lg"
+            className="border-border-gray absolute top-[calc(100%+4px)] left-0 z-50 max-h-90 w-full overflow-hidden overflow-y-auto rounded-2xl border bg-white py-1 shadow-lg"
           >
             {placeholder && (
               <div className="text-text-placeholder cursor-default px-4 py-2.5 text-sm">

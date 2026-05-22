@@ -24,10 +24,17 @@ export function meta() {
 // === Schemas
 const buyerSchema = z
   .object({
+    role: z.literal("buyer"),
     fullName: z.string().min(3, "Full name must be at least 3 characters"),
     email: z.string().email("Enter a valid email address"),
+    phone: z
+      .string()
+      .min(10, "Phone must be at least 10 digits")
+      .regex(/^\d+$/, "Digits only")
+      .optional(),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
+    referred_by_agent_code: z.string().optional(),
   })
   .refine((d) => d.password === d.confirmPassword, {
     message: "Passwords do not match",
@@ -36,6 +43,7 @@ const buyerSchema = z
 
 const agentSchema = z
   .object({
+    role: z.literal("agent"),
     fullName: z.string().min(3, "Full name must be at least 3 characters"),
     phone: z
       .string()
@@ -76,15 +84,19 @@ export default function SignupPage() {
 
   // === Buyer form state
   const [buyerForm, setBuyerForm] = useState<BuyerFormData>({
+    role: "buyer",
     fullName: "",
     email: "",
+    phone: "",
     password: "",
     confirmPassword: "",
+    referred_by_agent_code: "",
   });
   const [buyerErrors, setBuyerErrors] = useState<FormErrors<BuyerFormData>>({});
 
   // Agent form state
   const [agentForm, setAgentForm] = useState<AgentFormData>({
+    role: "agent",
     fullName: "",
     phone: "",
     area: "",
@@ -149,8 +161,10 @@ export default function SignupPage() {
       first_name,
       last_name,
       email: result.data.email,
+      phone: result.data.phone || undefined,
       password: result.data.password,
-      role: "buyer",
+      role: result.data.role,
+      referred_by_agent_code: result.data.referred_by_agent_code || undefined,
     };
 
     setLoading(true);
@@ -292,7 +306,7 @@ export default function SignupPage() {
               <br />
               <span className="text-secondary">delivered.</span>
             </h2>
-            <p className="max-w-[500px] text-lg leading-relaxed text-white">
+            <p className="max-w-125 text-lg leading-relaxed text-white">
               Join thousands of buyers and agents building a better food supply
               chain across Kaduna.
             </p>
@@ -301,7 +315,7 @@ export default function SignupPage() {
 
         {/* Right form panel */}
         <div className="flex flex-1 flex-col items-center justify-center bg-white px-6 py-12 lg:px-16">
-          <div className="flex w-full max-w-[480px] flex-col gap-6">
+          <div className="flex w-full max-w-120 flex-col gap-6">
             {/* Logo */}
             <Link to="/" className="flex justify-center">
               <AppLogo />

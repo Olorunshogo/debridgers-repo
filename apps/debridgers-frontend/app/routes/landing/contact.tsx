@@ -1,7 +1,7 @@
 import type { Route } from "./+types/contact";
 import { useState, useEffect, useRef } from "react";
 import { Header } from "../../components/Header";
-import { HeroSection } from "@/components/HeroSection";
+import { HeroSection } from "../../components/HeroSection";
 import { Phone, Mail, Clock, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -258,33 +258,34 @@ export default function ContactPage() {
       </div>
 
       {/* Hero Section */}
-      <div className="relative flex max-h-[800px] w-full flex-col xl:max-h-[900px]">
-        {/* Hero Section */}
-        <div className="-mt-navbar-h flex min-h-0 w-full">
+      <div className="relative flex w-full flex-col">
+        <div className="-mt-navbar-h flex min-h-0 w-full flex-1">
           <div className="from-primary -mt-navbar-h via-primary to-primary absolute inset-0 z-0 overflow-hidden bg-linear-to-b" />
-          <HeroSection
-            images={["/images/hero-1.jpg"]}
-            servingLocation="Now Serving in Kaduna"
-            headingParts={{
-              top: [{ text: "Market Prices." }],
-              bottom: [
-                { text: "Zero " },
-                { text: "Market", highlight: true },
-                { text: " Stress." },
-              ],
-            }}
-            subtext="Fresh foodstuff delivered straight to your door at the same price you'd pay at Central Market."
-            secondaryCta={{ label: "Contact Us ", href: "#contact-us" }}
-            trustItems={[
-              { icon: "lucide:check", label: "Guarantee fresh produce" },
-              {
-                icon: "lucide:map-pin",
-                label: "Sarbon Tasha &middot; Narayi&middot; Kakuri",
-              },
-              { icon: "lucide:tag", label: "Transparent, fixed pricing" },
-              { icon: "lucide:truck", label: "Fast Delivery" },
-            ]}
-          />
+          <section className="font-syne relative mx-auto flex h-full min-h-screen w-full flex-col overflow-hidden">
+            <HeroSection
+              images={["/images/hero-1.jpg"]}
+              servingLocation="Now Serving in Kaduna"
+              headingParts={{
+                top: [{ text: "Get In" }],
+                bottom: [
+                  { text: "Touch" },
+                  { text: " With Us", highlight: true },
+                  { text: "." },
+                ],
+              }}
+              subtext="Reach out for orders, partnership inquiries or support. We're available 24 hours a day."
+              secondaryCta={{ label: "Contact Us", href: "#contact-us" }}
+              trustItems={[
+                { icon: "lucide:phone", label: "+234 701 228 8798" },
+                {
+                  icon: "lucide:mail",
+                  label: "support@debridgers.com",
+                },
+                { icon: "lucide:clock", label: "Active 24hrs" },
+                { icon: "lucide:map-pin", label: "Kaduna, Nigeria" },
+              ]}
+            />
+          </section>
         </div>
       </div>
 
@@ -292,10 +293,10 @@ export default function ContactPage() {
         <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg py-section-py sm:py-section-py-sm lg:py-section-py-lg default-max-width mx-auto flex flex-col gap-10">
           {/* Contact Heading */}
           <div className="flex flex-col items-center gap-4 text-center">
-            <h2 className="font-open-sans text-2xl text-[14px] font-semibold sm:text-3xl sm:text-xl lg:text-4xl">
+            <h2 className="font-open-sans text-2xl font-semibold sm:text-3xl lg:text-4xl">
               Contact Debridgers
             </h2>
-            <p className="text-text text-xl text-[10px] lg:text-2xl">
+            <p className="text-text text-2.5 text-xl lg:text-2xl">
               We&apos;re here to help you reach out with any question or
               partnership inquires{" "}
             </p>
@@ -307,7 +308,7 @@ export default function ContactPage() {
             className="grid grid-cols-1 gap-7 lg:grid-cols-2 lg:gap-10"
           >
             {/* Form */}
-            <div className="border-primary flex flex-col gap-7 rounded-2xl border bg-white px-[18px] py-[20px] lg:border-0">
+            <div className="border-primary flex flex-col gap-7 rounded-2xl border bg-white px-4.5 py-[20px] lg:border-0">
               <h2 className="font-open-sans text-2xl font-semibold text-black">
                 Send Us A Message
               </h2>
@@ -348,7 +349,7 @@ export default function ContactPage() {
                     exit={{ opacity: 0 }}
                     onSubmit={handleSubmit}
                     noValidate
-                    className="flex flex-col gap-10 pb-[120px] lg:pb-0"
+                    className="flex flex-col gap-10 pb-30 lg:pb-0"
                   >
                     <TextInput
                       label="Full Name"
@@ -387,7 +388,7 @@ export default function ContactPage() {
                     <SubmitButton
                       loading={loading}
                       loadingText="Sending..."
-                      className="mx-auto w-full max-w-[500px]"
+                      className="mx-auto w-full max-w-125"
                     >
                       Send Message
                     </SubmitButton>
@@ -402,7 +403,7 @@ export default function ContactPage() {
               <div className="flex flex-col gap-3">
                 {contactItems.map(({ icon: Icon, label, value, href }) => {
                   const inner = (
-                    <div className="border-gray flex w-full items-center gap-[14px] rounded-2xl border p-5 lg:border-0">
+                    <div className="border-gray gap-md flex w-full items-center rounded-2xl border p-5 lg:border-0">
                       <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-[#A7E8BF]">
                         <Icon className="text-primary h-8 w-8" />
                       </span>

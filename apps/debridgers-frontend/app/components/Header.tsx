@@ -99,7 +99,7 @@ export function Header({
                 <a
                   key={link.href}
                   href={link.href}
-                  className={`font-open-sans p-[10px] text-sm font-semibold transition-colors duration-300 ease-in-out hover:opacity-70 ${linkColor}`}
+                  className={`font-open-sans p-2.5 text-sm font-semibold transition-colors duration-300 ease-in-out hover:opacity-70 ${linkColor}`}
                 >
                   {link.label}
                 </a>
@@ -110,7 +110,7 @@ export function Header({
                 key={link.href}
                 to={link.href}
                 className={({ isActive }) =>
-                  `font-open-sans p-[10px] text-sm font-semibold transition-colors duration-300 ease-in-out ${
+                  `font-open-sans p-2.5 text-sm font-semibold transition-colors duration-300 ease-in-out ${
                     isActive
                       ? `${linkColor} underline decoration-2 underline-offset-4`
                       : `${linkColor} hover:opacity-70`
