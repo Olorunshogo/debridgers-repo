@@ -119,7 +119,7 @@ export function HeroSection({
               </h1> */}
 
               {/* Heading */}
-              <h1 className="flex flex-col text-5xl leading-tight font-bold text-white sm:text-6xl lg:text-7xl">
+              <h1 className="flex flex-col text-4xl leading-tight font-bold text-white sm:text-5xl md:text-6xl lg:text-7xl">
                 {/* Top line */}
                 <span>
                   {headingParts.top.map((part) => part.text).join("")}
@@ -226,7 +226,7 @@ export function HeroSection({
                   <span className="text-white/60">
                     {renderIcon(trustItems[activeTrustIndex].icon)}
                   </span>
-                  <span className="text-xs whitespace-nowrap">
+                  <span className="text-sm whitespace-nowrap">
                     {trustItems[activeTrustIndex].label}
                   </span>
                 </motion.div>
@@ -243,7 +243,7 @@ export function HeroSection({
                   <span className="text-[#FCFDFD]">
                     {renderIcon(item.icon)}
                   </span>
-                  <span className="text-[14px] font-semibold whitespace-nowrap">
+                  <span className="text-sm font-semibold whitespace-nowrap">
                     {item.label}
                   </span>
                 </div>

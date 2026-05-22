@@ -31,9 +31,9 @@ export class KycService {
 
     if (!profile) throw new NotFoundException("Agent profile not found");
 
-    if (profile.status !== "approved") {
+    if (profile.status === "rejected" || profile.status === "suspended") {
       throw new BadRequestException(
-        "Your application must be approved before submitting KYC",
+        "Your application is not eligible for KYC submission",
       );
     }
 

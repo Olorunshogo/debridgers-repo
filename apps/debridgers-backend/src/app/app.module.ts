@@ -28,6 +28,7 @@ import { accessJwtConfig } from "./auth/config/access-jwt";
 import { refreshJwtConfig } from "./auth/config/refresh-jwt";
 import { ContactModule } from "./contact/contact.module";
 import { AgentModule } from "./agent/agent.module";
+import { BuyerModule } from "./buyer/buyer.module";
 import { AdminModule } from "./admin/admin.module";
 import { PaymentModule } from "./payment/payment.module";
 import { CommissionModule } from "./commission/commission.module";
@@ -56,6 +57,7 @@ import { CommissionModule } from "./commission/commission.module";
     AuthModule,
     ContactModule,
     AgentModule,
+    BuyerModule,
     AdminModule,
     PaymentModule,
     CommissionModule,

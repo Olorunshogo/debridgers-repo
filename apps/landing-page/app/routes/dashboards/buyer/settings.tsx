@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
 import { CheckCircle2 } from "lucide-react";
@@ -10,7 +10,7 @@ import {
   DashSwitchInput,
   SubmitButton,
 } from "@debridgers/ui-web";
-import { BASE_BACKEND_URL } from "../../../utils/api";
+import { apiFetch } from "../../../utils/apiFetch";
 
 export function meta() {
   return [{ title: "Settings | Debridgers" }];
@@ -60,14 +60,44 @@ const countryOptions = [
   { value: "GB", label: "United Kingdom" },
 ];
 
+// === Section
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="flex flex-col gap-5 rounded-2xl border p-6"
+      style={{
+        borderColor: "var(--border-gray)",
+        backgroundColor: "var(--white)",
+      }}
+    >
+      <h3
+        className="font-syne border-b pb-3 text-lg font-semibold"
+        style={{
+          borderColor: "var(--border-gray)",
+          color: "var(--heading-colour)",
+        }}
+      >
+        {title}
+      </h3>
+      {children}
+    </div>
+  );
+}
+
 export default function BuyerSettings() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [avatarPreview, setAvatarPreview] = useState(
-    "/images/avatar-placeholder.jpg",
+    "/images/settings-avatar.jpg",
   );
   const [form, setForm] = useState<SettingsForm>({
-    userName: "Abdul-Malik",
-    email: "abdulmalik@example.com",
+    userName: "",
+    email: "",
     currency: "NGN",
     country: "NG",
     deliveryAddress: "",
@@ -80,6 +110,30 @@ export default function BuyerSettings() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  const loadProfile = useCallback(async () => {
+    try {
+      const profile = await apiFetch<{
+        first_name: string;
+        last_name: string;
+        email: string;
+        phone?: string | null;
+        delivery_address?: string | null;
+      }>("/buyer/me");
+      setForm((p) => ({
+        ...p,
+        userName: `${profile.first_name} ${profile.last_name}`.trim(),
+        email: profile.email,
+        deliveryAddress: profile.delivery_address ?? "",
+      }));
+    } catch {
+      // silently fail — form stays blank
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadProfile();
+  }, [loadProfile]);
 
   useEffect(() => {
     return () => {
@@ -126,18 +180,15 @@ export default function BuyerSettings() {
 
     setLoading(true);
     try {
-      // ── PRODUCTION ──────────────────────────────────────────────────────────
-      // const fd = new FormData();
-      // Object.entries(form).forEach(([k, v]) => fd.append(k, String(v)));
-      // const res = await fetch(`${BASE_BACKEND_URL}/buyer/settings`, {
-      //   method: "POST",
-      //   credentials: "include",
-      //   body: fd,
-      // });
-      // if (!res.ok) throw new Error("Save failed");
-
-      // ── MOCK ────────────────────────────────────────────────────────────────
-      await new Promise<void>((r) => setTimeout(r, 900));
+      const [firstName, ...rest] = result.data.userName.trim().split(" ");
+      await apiFetch("/buyer/profile", {
+        method: "PATCH",
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: rest.join(" ") || undefined,
+          delivery_address: result.data.deliveryAddress.trim() || undefined,
+        }),
+      });
       setForm((p) => ({ ...p, oldPassword: "", newPassword: "" }));
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -152,7 +203,7 @@ export default function BuyerSettings() {
     <form
       onSubmit={handleSubmit}
       noValidate
-      className="flex max-w-3xl flex-col gap-6"
+      className="mx-auto flex w-full max-w-[800px] flex-col gap-6"
     >
       {/* Success toast */}
       <AnimatePresence>
@@ -228,7 +279,7 @@ export default function BuyerSettings() {
 
       {/* Preference */}
       <Section title="Preference">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
           <DashSelectInput
             label="Currency"
             options={currencyOptions}
@@ -311,34 +362,5 @@ export default function BuyerSettings() {
         </SubmitButton>
       </div>
     </form>
-  );
-}
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      className="flex flex-col gap-5 rounded-2xl border p-6"
-      style={{
-        borderColor: "var(--border-gray)",
-        backgroundColor: "var(--white)",
-      }}
-    >
-      <h3
-        className="font-syne border-b pb-3 text-lg font-semibold"
-        style={{
-          borderColor: "var(--border-gray)",
-          color: "var(--heading-colour)",
-        }}
-      >
-        {title}
-      </h3>
-      {children}
-    </div>
   );
 }

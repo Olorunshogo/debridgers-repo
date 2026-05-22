@@ -76,3 +76,4 @@ test-output
 
 .nx/polygraph
 .vercel
+.claude/
