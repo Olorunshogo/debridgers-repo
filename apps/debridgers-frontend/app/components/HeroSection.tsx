@@ -96,7 +96,7 @@ export function HeroSection({
             </div>
 
             {/* Heading and Paragraph */}
-            <div className="gap-lg flex flex-col">
+            <div className="flex flex-col gap-6">
               {/* Heading */}
               {/* <h1 className="flex flex-col text-4xl leading-tight font-bold text-white sm:text-6xl lg:text-7xl">
                 <span>Market Prices.</span>
@@ -172,7 +172,7 @@ export function HeroSection({
             </div>
 
             {/* CTAs */}
-            <div className="gap-base flex flex-col items-center justify-center lg:flex-row lg:justify-baseline lg:justify-start lg:gap-[74px]">
+            <div className="flex flex-col items-center justify-center gap-4 lg:flex-row lg:justify-baseline lg:justify-start lg:gap-[74px]">
               <WhatsAppButton className="w-auto" />
               <a
                 href={secondaryCta.href}
@@ -187,10 +187,10 @@ export function HeroSection({
           </div>
         </div>
 
-        <div className="gap-4xl lg:gap-base relative flex w-full flex-col">
+        <div className="gap-4xl relative flex w-full flex-col lg:gap-4">
           {/* Progress bar + SCROLL label */}
           {/* {images.length > 0 && (
-            <div className="gap-md flex items-center justify-center lg:justify-end">
+            <div className="gap-3 flex items-center justify-center lg:justify-end">
               <div className="h-px w-16 overflow-hidden bg-white/30">
                 <motion.div
                   key={currentIndex}
@@ -221,7 +221,7 @@ export function HeroSection({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.4 }}
-                  className="gap-sm absolute flex items-center text-white/80"
+                  className="absolute flex items-center gap-2 text-white/80"
                 >
                   <span className="text-white/60">
                     {renderIcon(trustItems[activeTrustIndex].icon)}

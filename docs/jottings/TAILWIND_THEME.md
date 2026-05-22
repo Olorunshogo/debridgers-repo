@@ -16,7 +16,7 @@ tokens.css  →  styles.css (@theme)  →  Tailwind utility classes
 
 ## Spacing
 
-**Use Tailwind's default numeric scale.** The custom `--space-*` tokens and their named class aliases (`gap-base`, `p-xl`, etc.) have been removed. Use numeric classes directly.
+**Use Tailwind's default numeric scale.** The custom `--space-*` tokens and their named class aliases (`gap-4`, `p-xl`, etc.) have been removed. Use numeric classes directly.
 
 | Value | Tailwind class                |
 | ----- | ----------------------------- |
@@ -199,7 +199,7 @@ import { colors } from "@debridgers/shared-theme";
 | Problem                                    | Fix                                                               |
 | ------------------------------------------ | ----------------------------------------------------------------- |
 | Heading looks too small on mobile          | Use `text-hero` / `text-h2` etc. — they clamp automatically       |
-| `gap-base` / `p-xl` class not working      | Those tokens are gone — use `gap-4` / `p-6` instead               |
+| `gap-4` / `p-xl` class not working         | Those tokens are gone — use `gap-4` / `p-6` instead               |
 | Color not applying                         | Check `@theme inline` in `styles.css` has the `--color-*` mapping |
 | Font not loading                           | `@import url(...)` must be before `@import "tailwindcss"`         |
 | `tailwind.config.ts` missing               | Intentionally deleted — v4 uses `@theme` in CSS only              |

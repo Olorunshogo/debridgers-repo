@@ -42,7 +42,7 @@ export function DashSelectInput({
   const [internalValue, setInternalValue] = useState<string>(
     defaultValue ?? "",
   );
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState<boolean>(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   const currentValue = isControlled ? value : internalValue;

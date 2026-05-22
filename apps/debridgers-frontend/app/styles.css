@@ -95,6 +95,18 @@
   --text-body-lg: clamp(1rem, 1vw + 0.125rem, 1.25rem); /* 16px → 20px */
   --text-body-sm: 0.875rem; /* 14px fixed  */
 
+  /* Spacing scale → gap-xs, p-sm, mt-base, gap-4xl … */
+  --spacing-xs: 0.25rem; /* 4px  */
+  --spacing-sm: 0.5rem; /* 8px  */
+  --spacing-md: 0.75rem; /* 12px */
+  --spacing-base: 1rem; /* 16px */
+  --spacing-lg: 1.25rem; /* 20px */
+  --spacing-xl: 1.5rem; /* 24px */
+  --spacing-2xl: 2rem; /* 32px */
+  --spacing-3xl: 2.5rem; /* 40px */
+  --spacing-4xl: 3rem; /* 48px */
+  --spacing-5xl: 4rem; /* 64px */
+
   /* Layout tokens → mt-navbar-h, px-section-px-lg, py-section-py … */
   --spacing-navbar-h: var(--navbar-h);
   --spacing-section-px: var(--section-px);

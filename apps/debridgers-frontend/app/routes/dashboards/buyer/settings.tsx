@@ -10,7 +10,7 @@ import {
   DashSwitchInput,
   SubmitButton,
 } from "@debridgers/ui-web";
-import { apiFetch } from "../../../utils/apiFetch";
+import { apiFetch } from "@debridgers/api-client";
 
 export function meta() {
   return [
@@ -118,8 +118,8 @@ export default function BuyerSettings() {
     twoFactor: false,
   });
   const [errors, setErrors] = useState<FormErrors>({});
-  const [loading, setLoading] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [saved, setSaved] = useState<boolean>(false);
 
   const loadProfile = useCallback(async () => {
     try {

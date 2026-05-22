@@ -8,11 +8,13 @@ import {
   DashPasswordInput,
   SubmitButton,
 } from "@debridgers/ui-web";
-import { BASE_BACKEND_URL } from "../../utils/api";
-import { decodeJwtPayload } from "../../utils/auth-cookies";
+import {
+  BASE_BACKEND_URL,
+  decodeJwtPayload,
+  storeTokens,
+} from "@debridgers/api-client";
+import type { JwtPayload } from "@debridgers/api-client";
 import { redirectAfterAuth } from "../../utils/auth-redirect";
-import { storeTokens } from "../../lib/auth";
-import type { JwtPayload } from "../../types/auth";
 
 export function meta() {
   return [

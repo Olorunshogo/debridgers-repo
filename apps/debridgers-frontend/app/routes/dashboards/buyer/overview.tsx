@@ -20,7 +20,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { HeroGreetingCard } from "../shared/HeroGreetingCard";
-import { apiFetch } from "../../../utils/apiFetch";
+import { apiFetch } from "@debridgers/api-client";
 
 export function meta() {
   return [

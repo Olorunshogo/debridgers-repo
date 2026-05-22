@@ -19,7 +19,7 @@ export const DashPasswordInput = forwardRef<
   HTMLInputElement,
   DashPasswordInputProps
 >(({ label, error, id, name, required, className = "", ...props }, ref) => {
-  const [show, setShow] = useState(false);
+  const [show, setShow] = useState<boolean>(false);
   const inputId = id ?? name ?? label.toLowerCase().replace(/\s+/g, "-");
 
   return (

@@ -215,8 +215,8 @@ export default function AgentDailyReportPage() {
     feedback: "",
     unsoldReason: "",
   });
-  const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   function handleChange(field: keyof ReportForm) {
     return (

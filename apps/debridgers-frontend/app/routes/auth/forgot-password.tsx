@@ -10,7 +10,7 @@ import {
   SubmitButton,
 } from "@debridgers/ui-web";
 import AuthSuccessModal from "../../components/auth/AuthSuccessModal";
-import { BASE_BACKEND_URL } from "../../utils/api";
+import { BASE_BACKEND_URL } from "@debridgers/api-client";
 
 export function meta() {
   return [
@@ -49,7 +49,7 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState<string | undefined>();
   const [step1ApiError, setStep1ApiError] = useState<string | null>(null);
-  const [step1Loading, setStep1Loading] = useState(false);
+  const [step1Loading, setStep1Loading] = useState<boolean>(false);
 
   // Step 2 state
   const [tokenReceivedAt, setTokenReceivedAt] = useState<number>(0);
@@ -61,10 +61,10 @@ export default function ForgotPasswordPage() {
   const [confirmPasswordError, setConfirmPasswordError] = useState<
     string | undefined
   >();
-  const [showPasswordFields, setShowPasswordFields] = useState(false);
+  const [showPasswordFields, setShowPasswordFields] = useState<boolean>(false);
   const [step2ApiError, setStep2ApiError] = useState<string | null>(null);
-  const [step2Loading, setStep2Loading] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [step2Loading, setStep2Loading] = useState<boolean>(false);
+  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
 
   async function handleStep1Submit(e: React.FormEvent) {
     e.preventDefault();
