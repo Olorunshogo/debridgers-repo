@@ -49,7 +49,7 @@ export default function Footer() {
         {/* Top section: tagline + columns */}
         <div className="py-section-py lg:py-section-py-lg sm:py-section-py-sm grid grid-cols-1 gap-6 lg:grid-cols-[repeat(auto-fit,minmax(280px,1fr))] lg:items-start">
           {/* Tagline */}
-          <h1 className="font-syne flex flex-col text-4xl leading-tight font-medium text-white">
+          <h1 className="font-syne flex flex-col text-4xl leading-tight font-medium text-white sm:text-5xl lg:text-6xl">
             <span>Market Prices.</span>
             <div className="flex flex-wrap items-baseline gap-x-3">
               <div className="relative inline-block">
@@ -70,7 +70,7 @@ export default function Footer() {
           <div className="gap-2xl grid grid-cols-2 items-center">
             {/* Support */}
             <div className="gap-2xl font-open-sans flex flex-col">
-              <h2 className="font-open-sans text-[14px] font-semibold tracking-widest text-white uppercase">
+              <h2 className="font-open-sans text-sm font-semibold tracking-widest text-white uppercase">
                 Support
               </h2>
               <nav className="gap-md flex flex-col text-sm">
@@ -92,7 +92,7 @@ export default function Footer() {
 
             {/* Need Help */}
             <div className="gap-2xl font-open-sans flex flex-col lg:gap-[44px]">
-              <h3 className="font-open-sans text-[14px] font-semibold tracking-widest text-white uppercase">
+              <h3 className="font-open-sans text-sm font-semibold tracking-widest text-white uppercase">
                 Need Help?
               </h3>
               <div className="gap-md flex flex-col">
@@ -113,13 +113,13 @@ export default function Footer() {
                   </h3>
                   <a
                     href="mailto:support@debridgers.com"
-                    className="text-[14px] text-white underline decoration-white decoration-1 underline-offset-4 transition-colors duration-300 ease-in-out hover:text-white"
+                    className="text-sm text-white underline decoration-white decoration-1 underline-offset-4 transition-colors duration-300 ease-in-out hover:text-white"
                   >
                     support@debridgers.com
                   </a>
                   <a
                     href="mailto:partner@debridgers.com"
-                    className="text-[14px] text-white underline decoration-white decoration-1 underline-offset-4 transition-colors duration-300 ease-in-out hover:text-white"
+                    className="text-sm text-white underline decoration-white decoration-1 underline-offset-4 transition-colors duration-300 ease-in-out hover:text-white"
                   >
                     partner@debridgers.com
                   </a>
@@ -130,7 +130,7 @@ export default function Footer() {
 
           {/* Keep in Touch — always full width */}
           <div className="font-open-sans flex w-full flex-col gap-5">
-            <h3 className="font-open-sans text-[14px] font-semibold tracking-widest text-white uppercase">
+            <h3 className="font-open-sans text-sm font-semibold tracking-widest text-white uppercase">
               Keep in Touch
             </h3>
             <div className="p-md flex w-full overflow-hidden rounded-full bg-white shadow-[0px_4px_32px_5px_#FAF2F23B]">
@@ -139,11 +139,11 @@ export default function Footer() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email address"
-                className="text-primary placeholder:text-primary min-w-0 flex-1 bg-transparent text-[14px] focus:outline-none"
+                className="text-primary placeholder:text-primary min-w-0 flex-1 bg-transparent text-sm focus:outline-none"
               />
               <button
                 type="button"
-                className="px-2xl bg-primary cursor-pointer rounded-full py-2.5 text-[14px] text-white transition-opacity duration-300 hover:opacity-90"
+                className="px-2xl bg-primary cursor-pointer rounded-full py-2.5 text-sm text-white transition-opacity duration-300 hover:opacity-90"
               >
                 Submit
               </button>

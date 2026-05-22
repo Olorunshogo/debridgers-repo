@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -9,8 +10,12 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { CloudinaryService } from "../../infrastructure/cloudinary/cloudinary.service";
 import {
   ApiTags,
   ApiOperation,
@@ -40,6 +45,14 @@ import {
   RecordInventoryDto,
 } from "./dto/record-inventory.dto";
 import { reviewKycSchema, ReviewKycDto } from "./dto/review-kyc.dto";
+import {
+  createProductSchema,
+  CreateProductDto,
+} from "./dto/create-product.dto";
+import {
+  updateProductSchema,
+  UpdateProductDto,
+} from "./dto/update-product.dto";
 
 @ApiTags("Admin")
 @ApiBearerAuth("access-token")
@@ -47,7 +60,27 @@ import { reviewKycSchema, ReviewKycDto } from "./dto/review-kyc.dto";
 @UseGuards(AuthGuard, RolesGuard)
 @Roles("admin")
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
+
+  @Get("me")
+  @ApiOperation({ summary: "Get the current admin's profile" })
+  getMe(@CurrentUser() user: JwtPayload) {
+    return this.adminService.getAdminMe(user.sub);
+  }
+
+  @Post("upload")
+  @UseInterceptors(FileInterceptor("file"))
+  @ApiOperation({ summary: "Upload a product image to Cloudinary" })
+  async uploadImage(@UploadedFile() file: Express.Multer.File) {
+    const url = await this.cloudinaryService.uploadBuffer(
+      file.buffer,
+      "debridgers/products",
+    );
+    return { message: "Image uploaded", data: { url } };
+  }
 
   // ─── Dashboard ──────────────────────────────────────────────────────────────
 
@@ -610,5 +643,37 @@ export class AdminController {
   })
   markCommissionPaid(@Param("id", ParseIntPipe) id: number) {
     return this.adminService.markCommissionPaid(id);
+  }
+
+  // ─── Products ────────────────────────────────────────────────────────────────
+
+  @Post("products")
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Add a product to the catalog" })
+  createProduct(
+    @Body(new ZodValidationPipe(createProductSchema)) dto: CreateProductDto,
+  ) {
+    return this.adminService.createProduct(dto);
+  }
+
+  @Get("products")
+  @ApiOperation({ summary: "List all products (including inactive)" })
+  listProducts() {
+    return this.adminService.listProducts();
+  }
+
+  @Patch("products/:id")
+  @ApiOperation({ summary: "Update a product (price, name, active status)" })
+  updateProduct(
+    @Param("id", ParseIntPipe) id: number,
+    @Body(new ZodValidationPipe(updateProductSchema)) dto: UpdateProductDto,
+  ) {
+    return this.adminService.updateProduct(id, dto);
+  }
+
+  @Delete("products/:id")
+  @ApiOperation({ summary: "Delete a product" })
+  deleteProduct(@Param("id", ParseIntPipe) id: number) {
+    return this.adminService.deleteProduct(id);
   }
 }

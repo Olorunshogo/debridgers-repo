@@ -33,6 +33,15 @@ async function bootstrap() {
       { type: "http", scheme: "bearer", bearerFormat: "JWT" },
       "access-token",
     )
+    .addApiKey(
+      {
+        type: "apiKey",
+        name: "Authorization",
+        in: "header",
+        description: "Enter: Refresh <token>",
+      },
+      "refresh-token",
+    )
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

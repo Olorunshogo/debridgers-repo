@@ -12,14 +12,22 @@ import { JwtPayload } from "../../interfaces/users/jwt.type";
 import { StockRequestDto } from "./dto/stock-request.dto";
 import { RemitStockDto } from "./dto/remit-stock.dto";
 
-const COST_PER_MODU_KOBO = 130000; // ₦1,300 in kobo — what agent remits back
-
 @Injectable()
 export class StockService {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
   ) {}
+
+  async getProducts() {
+    const rows = await this.db
+      .select()
+      .from(schema.products)
+      .where(eq(schema.products.is_active, true))
+      .orderBy(schema.products.sort_order, schema.products.name);
+
+    return { message: "Products retrieved", data: rows };
+  }
 
   async requestStock(dto: StockRequestDto, user: JwtPayload) {
     const [profile] = await this.db
@@ -42,12 +50,27 @@ export class StockService {
       );
     }
 
-    const amountToRemit = dto.quantity * COST_PER_MODU_KOBO;
+    const [product] = await this.db
+      .select()
+      .from(schema.products)
+      .where(
+        and(
+          eq(schema.products.id, dto.product_id),
+          eq(schema.products.is_active, true),
+        ),
+      )
+      .limit(1);
+
+    if (!product)
+      throw new BadRequestException("Product not found or inactive");
+
+    const amountToRemit = dto.quantity * product.price_kobo;
 
     const [request] = await this.db
       .insert(schema.stock_requests)
       .values({
         agent_id: user.sub,
+        product_id: dto.product_id,
         quantity: dto.quantity,
         amount_to_remit: amountToRemit,
         status: "pending",
@@ -58,6 +81,8 @@ export class StockService {
       message: "Stock request submitted",
       data: {
         id: request.id,
+        product_name: product.name,
+        product_unit: product.unit,
         quantity: request.quantity,
         amount_to_remit: request.amount_to_remit,
         status: request.status,

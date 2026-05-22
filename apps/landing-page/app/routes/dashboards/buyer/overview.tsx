@@ -19,6 +19,8 @@ import {
   Headphones,
   ArrowUpRight,
 } from "lucide-react";
+import { HeroGreetingCard } from "../shared/HeroGreetingCard";
+import { apiFetch } from "../../../utils/apiFetch";
 
 export function meta() {
   return [{ title: "Overview | Debridgers" }];
@@ -77,96 +79,130 @@ interface DashboardData {
   };
 }
 
-const MOCK_DATA: DashboardData = {
-  userName: "Abdul-malik Ajadi",
-  greeting: "Good Morning 🌤",
-  subtitle: "Your next delivery is on the way. Kaduna South route are active",
-  nextDelivery: { time: "Today, 4pm", orderId: "AGL-0024", itemCount: 3 },
-  stats: [
-    {
-      label: "Total Order",
-      value: "18",
-      trend: "↑ 3 this month",
-      icon: "lucide:shopping-bag",
-    },
-    {
-      label: "Total Spent",
-      value: "₦42,500",
-      trend: "↑ 3 this month",
-      icon: "lucide:banknote",
-    },
-    {
-      label: "Active Order",
-      value: "04",
-      trend: "↑ 3 this month",
-      icon: "lucide:refresh-cw",
-    },
-    {
-      label: "Money Saved",
-      value: "18",
-      trend: "↑ 3 this month",
-      icon: "lucide:piggy-bank",
-    },
-  ],
-  recentOrders: [
-    {
-      id: "1",
-      items: "Rice, Beans, Palm Oil, Yam",
-      orderId: "#AGL-0024",
-      time: "Today 9:14am",
-      amount: "₦6,800",
-      status: "on-the-way",
-    },
-    {
-      id: "2",
-      items: "Beans, Yam, Palm Oil.",
-      orderId: "#AGL-0024",
-      time: "Today 9:14am",
-      amount: "₦123,800",
-      status: "delivered",
-    },
-    {
-      id: "3",
-      items: "Rice, Gari",
-      orderId: "#AGL-0024",
-      time: "Today 9:14am",
-      amount: "₦16,800",
-      status: "delivered",
-    },
-    {
-      id: "4",
-      items: "Rice, Yam.",
-      orderId: "#AGL-0024",
-      time: "Today 9:14am",
-      amount: "₦166,800",
-      status: "cancelled",
-    },
-  ],
-  tracking: {
-    orderId: "AGL - 0024",
-    eta: "45 mins",
-    steps: [
-      { label: "Ordered", done: true },
-      { label: "Packed", done: true },
-      { label: "On route", done: true },
-      { label: "Delivered", done: false },
+interface ApiDashboard {
+  user_name: string;
+  greeting: string;
+  stats: {
+    total_orders: number;
+    active_orders: number;
+    total_spent_kobo: number;
+    total_spent_naira: number;
+  };
+  recent_orders: Array<{
+    id: number;
+    status: string;
+    total_amount: number;
+    quantity: number;
+    delivery_address: string;
+    created_at: string;
+  }>;
+  next_delivery: {
+    id: number;
+    status: string;
+    quantity: number;
+    created_at: string;
+  } | null;
+}
+
+function mapApiToDashboard(api: ApiDashboard): DashboardData {
+  const formatKobo = (kobo: number) =>
+    `₦${(kobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+
+  const dbStatusToUi = (s: string): RecentOrder["status"] => {
+    if (s === "out_for_delivery" || s === "confirmed") return "on-the-way";
+    if (s === "delivered") return "delivered";
+    if (s === "cancelled") return "cancelled";
+    return "on-the-way";
+  };
+
+  const recentOrders: RecentOrder[] = api.recent_orders.map((o) => ({
+    id: String(o.id),
+    items: `${o.quantity} pack${o.quantity !== 1 ? "s" : ""}`,
+    orderId: `#DBR-${String(o.id).padStart(4, "0")}`,
+    time: new Date(o.created_at).toLocaleString("en-NG", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+    amount: formatKobo(o.total_amount),
+    status: dbStatusToUi(o.status),
+  }));
+
+  const nd = api.next_delivery;
+  const nextDelivery = nd
+    ? {
+        time: "In transit",
+        orderId: `DBR-${String(nd.id).padStart(4, "0")}`,
+        itemCount: nd.quantity,
+      }
+    : { time: "—", orderId: "—", itemCount: 0 };
+
+  const trackingSteps: TrackingStep[] = nd
+    ? [
+        { label: "Ordered", done: true },
+        { label: "Packed", done: nd.status !== "pending" },
+        {
+          label: "On route",
+          done: nd.status === "out_for_delivery" || nd.status === "delivered",
+        },
+        { label: "Delivered", done: nd.status === "delivered" },
+      ]
+    : [
+        { label: "Ordered", done: false },
+        { label: "Packed", done: false },
+        { label: "On route", done: false },
+        { label: "Delivered", done: false },
+      ];
+
+  return {
+    userName: api.user_name,
+    greeting: api.greeting,
+    subtitle: nd
+      ? "Your next delivery is on the way. Track it below."
+      : "No active deliveries right now. Place a new order!",
+    nextDelivery,
+    stats: [
+      {
+        label: "Total Order",
+        value: String(api.stats.total_orders),
+        trend: `${api.stats.total_orders} total`,
+        icon: "lucide:shopping-bag",
+      },
+      {
+        label: "Total Spent",
+        value: formatKobo(api.stats.total_spent_kobo),
+        trend: "All time",
+        icon: "lucide:banknote",
+      },
+      {
+        label: "Active Order",
+        value: String(api.stats.active_orders).padStart(2, "0"),
+        trend: `${api.stats.active_orders} in progress`,
+        icon: "lucide:refresh-cw",
+      },
+      {
+        label: "Money Saved",
+        value: "—",
+        trend: "Coming soon",
+        icon: "lucide:piggy-bank",
+      },
     ],
-    items: ["1kg Rice", "2kg Beans", "1L Palm oil", "3kg Yam"],
-  },
-  spending: {
-    weeks: [
-      { week: "W3 Feb", amount: 4200 },
-      { week: "W4 Feb", amount: 5800 },
-      { week: "W1 Mar", amount: 3100 },
-      { week: "W2 Mar", amount: 7200 },
-      { week: "W3 Mar", amount: 4900 },
-      { week: "This week", amount: 6800 },
-    ],
-    thisWeek: "₦6,800",
-    thisMonth: "₦18,200",
-    avgPerWeek: "₦5,400",
-  },
-};
+    recentOrders,
+    tracking: {
+      orderId: nd ? `DBR-${String(nd.id).padStart(4, "0")}` : "—",
+      eta: "—",
+      steps: trackingSteps,
+      items: nd ? [`${nd.quantity} pack${nd.quantity !== 1 ? "s" : ""}`] : [],
+    },
+    spending: {
+      weeks: [],
+      thisWeek: "—",
+      thisMonth: "—",
+      avgPerWeek: "—",
+    },
+  };
+}
 
 const quickActions: QuickAction[] = [
   { label: "New Order", icon: ShoppingCart, href: "/buyer-dashboard/shop" },
@@ -285,22 +321,10 @@ export default function BuyerOverview() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // ── PRODUCTION ────────────────────────────────────────────────────────────
-    // fetch(`${BASE_BACKEND_URL}/buyer/dashboard`, {
-    //   credentials: "include",
-    //   headers: { Authorization: `Bearer ${getAccessToken()}` },
-    // })
-    //   .then((r) => r.json())
-    //   .then((json) => setData(json.data))
-    //   .catch(console.error)
-    //   .finally(() => setLoading(false));
-
-    // ── MOCK ──────────────────────────────────────────────────────────────────
-    const t = setTimeout(() => {
-      setData(MOCK_DATA);
-      setLoading(false);
-    }, 600);
-    return () => clearTimeout(t);
+    apiFetch<ApiDashboard>("/buyer/dashboard")
+      .then((api) => setData(mapApiToDashboard(api)))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading || !data) {
@@ -326,45 +350,34 @@ export default function BuyerOverview() {
   return (
     <div className="flex flex-col gap-6">
       {/* Hero greeting card */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="relative overflow-hidden rounded-2xl p-6 lg:p-8"
-        style={{ backgroundColor: "var(--primary-color)" }}
-      >
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-col gap-2">
-            <p className="text-sm text-white/70">{data.greeting}</p>
-            <h2 className="font-syne text-2xl font-bold text-white lg:text-3xl">
-              {data.userName}
-            </h2>
-            <p className="max-w-[350px] text-sm text-white/70">
-              {data.subtitle}
-            </p>
-            <div className="mt-2 flex flex-wrap gap-3">
-              <a
-                href="https://wa.me/+2348167042797"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
-                style={{
-                  backgroundColor: "var(--secondary-color)",
-                  color: "var(--heading-colour)",
-                }}
-              >
-                <Icon icon="lucide:message-circle" className="h-4 w-4" />
-                Order On WhatsApp
-              </a>
-              <Link
-                to="/buyer-dashboard/shop"
-                className="inline-flex items-center gap-1 text-sm font-medium text-white/80 transition-colors hover:text-white"
-              >
-                Browse catalog →
-              </Link>
-            </div>
-          </div>
-
+      <HeroGreetingCard
+        greeting={data.greeting}
+        userName={data.userName}
+        subtitle={<p className="max-w-[350px]">{data.subtitle}</p>}
+        actions={
+          <>
+            <a
+              href="https://wa.me/+2348167042797"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
+              style={{
+                backgroundColor: "var(--secondary-color)",
+                color: "var(--heading-colour)",
+              }}
+            >
+              <Icon icon="lucide:message-circle" className="h-4 w-4" />
+              Order On WhatsApp
+            </a>
+            <Link
+              to="/buyer-dashboard/shop"
+              className="inline-flex items-center gap-1 text-sm font-medium text-white/80 transition-colors hover:text-white"
+            >
+              Browse catalog →
+            </Link>
+          </>
+        }
+        infoBox={
           <div
             className="flex flex-col gap-1 rounded-xl border border-white/20 p-4 lg:min-w-[200px]"
             style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
@@ -378,11 +391,8 @@ export default function BuyerOverview() {
               items
             </p>
           </div>
-        </div>
-
-        <div className="pointer-events-none absolute -top-12 -right-12 h-40 w-40 rounded-full border-2 border-white/10" />
-        <div className="pointer-events-none absolute -top-6 -right-6 h-24 w-24 rounded-full border-2 border-white/10" />
-      </motion.div>
+        }
+      />
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -399,7 +409,7 @@ export default function BuyerOverview() {
       </div>
 
       {/* Recent orders + Quick actions */}
-      <div className="grid gap-6 lg:grid-cols-[1fr_auto]">
+      <div className="grid grid-cols-1 gap-6">
         <div
           className="flex flex-col gap-4 rounded-2xl border p-5"
           style={{
@@ -430,7 +440,7 @@ export default function BuyerOverview() {
         </div>
 
         {/* Quick actions */}
-        <div className="grid grid-cols-2 gap-3 lg:w-48 lg:grid-cols-1">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {quickActions.map((action) => (
             <motion.div
               key={action.label}

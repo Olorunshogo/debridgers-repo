@@ -1,3 +1,4 @@
+import { Request } from "express";
 import { UserRole } from "./roles.type";
 
 export interface JwtPayload {
@@ -8,6 +9,18 @@ export interface JwtPayload {
   exp?: number;
 }
 
-export interface JwtRefreshPayload extends JwtPayload {
+export interface JwtUser extends JwtPayload {
+  id: number;
+}
+
+export interface JwtRefreshPayload extends JwtUser {
   refreshToken: string;
+}
+
+export interface AuthRequest extends Request {
+  user: JwtUser;
+}
+
+export interface RefreshAuthRequest extends Request {
+  user: JwtRefreshPayload;
 }
