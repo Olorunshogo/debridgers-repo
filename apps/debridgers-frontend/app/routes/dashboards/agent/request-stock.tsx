@@ -296,7 +296,7 @@ export default function AgentRequestStockPage() {
                     className="text-sm"
                     style={{ color: "var(--text-colour)" }}
                   >
-                    {selectedProduct.name} — {selectedProduct.unit} ·{" "}
+                    {selectedProduct.name} - {selectedProduct.unit} ·{" "}
                     {fmt(selectedProduct.price_kobo)} each (to remit after sale)
                   </p>
 

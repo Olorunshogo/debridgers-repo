@@ -19,11 +19,11 @@ export const redisProvider = {
         logger.log("Redis cache connected (Upstash)");
         return keyv;
       } catch {
-        logger.warn("Redis unavailable — falling back to in-memory cache");
+        logger.warn("Redis unavailable - falling back to in-memory cache");
       }
     }
 
-    logger.warn("No UPSTASH_REDIS_URL set — using in-memory cache");
+    logger.warn("No UPSTASH_REDIS_URL set - using in-memory cache");
     return new Keyv({ store: new CacheableMemory({ ttl: 60000 }) });
   },
 };

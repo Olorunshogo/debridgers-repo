@@ -176,7 +176,7 @@ export function FileUploadField({
               className="font-syne text-sm"
               style={{ color: "var(--text-placeholder)" }}
             >
-              {formattedTypes} — up to {maxSizeMB}MB
+              {formattedTypes}: up to {maxSizeMB}MB
             </span>
             <div
               className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-semibold transition-all duration-300 ease-in-out"

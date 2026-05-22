@@ -1,6 +1,6 @@
 # Debridgers Monorepo
 
-A pnpm monorepo for Debridgers — a marketplace connecting farmers directly with buyers for fresh farm produce. The repo contains the web app, NestJS backend, shared packages, and support tooling.
+A pnpm monorepo for Debridgers, a marketplace connecting farmers directly with buyers for fresh farm produce. The repo contains the web app, NestJS backend, shared packages, and support tooling.
 
 ---
 
@@ -30,12 +30,12 @@ debridgers-repo/
 │   ├── debridgers-backend/       # NestJS REST backend
 │   └── debridgers-backend-e2e/   # Backend E2E test suite (Jest)
 ├── packages/
-│   ├── ui-web/                   # @debridgers/ui-web — shared web UI components
-│   ├── ui-app/                   # @debridgers/ui-app — shared mobile UI components
-│   └── api-client/               # @debridgers/api-client — shared API client
+│   ├── ui-web/                   # @debridgers/ui-web - shared web UI components
+│   ├── ui-app/                   # @debridgers/ui-app - shared mobile UI components
+│   └── api-client/               # @debridgers/api-client - shared API client
 ├── libs/
-│   ├── shared-theme/             # @debridgers/shared-theme — Tailwind tokens + preset
-│   └── shared-utils/             # @debridgers/shared-utils — shared helper utilities
+│   ├── shared-theme/             # @debridgers/shared-theme - Tailwind tokens + preset
+│   └── shared-utils/             # @debridgers/shared-utils - shared helper utilities
 ├── docker/                      # Docker Compose and Dockerfiles
 ├── docs/                        # Project documentation and research notes
 ├── package.json                 # Root workspace scripts and dependency versions

@@ -62,7 +62,7 @@ export default function AgentLeaderboard() {
             Leaderboard
           </h2>
           <p className="text-sm" style={{ color: "var(--text-colour)" }}>
-            Top performing agents — all time
+            Top performing agents - all time
           </p>
         </div>
       </div>

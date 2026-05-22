@@ -77,7 +77,7 @@ export class CommissionService {
       );
     }
 
-    // State manager overrides — 2% from all agents in their managed state
+    // State manager overrides - 2% from all agents in their managed state
     const stateManagers = await this.db
       .select({
         manager_id: schema.agent_profiles.user_id,

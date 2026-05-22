@@ -21,8 +21,8 @@ export const orderStatusEnum = pgEnum("order_status", [
 ]);
 
 export const orderModeEnum = pgEnum("order_mode", [
-  "field", // Mode 1 — agent submits, Debridgers delivers
-  "referral", // Mode 3 — buyer ordered via referral link
+  "field", // Mode 1 - agent submits, Debridgers delivers
+  "referral", // Mode 3 - buyer ordered via referral link
 ]);
 
 export const orders = pgTable("orders", {

@@ -10,7 +10,7 @@ export const applyAgentSchema = z
     address: z.string().min(5, "Home address is required"),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirm_password: z.string(),
-    // optional fields — can be collected later by admin or in a second step
+    // optional fields - can be collected later by admin or in a second step
     referred_by_agent_code: z.string().optional(),
   })
   .refine((data) => data.password === data.confirm_password, {

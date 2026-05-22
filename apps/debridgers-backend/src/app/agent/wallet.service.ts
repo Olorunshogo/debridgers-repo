@@ -36,7 +36,7 @@ export class WalletService {
     return { message: "Wallet retrieved", data: wallet };
   }
 
-  // Internal — called by other services to credit the wallet
+  // Internal - called by other services to credit the wallet
   async credit(
     agentId: number,
     amount: number, // in kobo
@@ -71,7 +71,7 @@ export class WalletService {
     }
   }
 
-  // Internal — move amount from pending to available (on delivery confirmation)
+  // Internal - move amount from pending to available (on delivery confirmation)
   async confirmPending(agentId: number, amount: number) {
     const [existing] = await this.db
       .select()
@@ -91,7 +91,7 @@ export class WalletService {
       .where(eq(schema.wallets.agent_id, agentId));
   }
 
-  // Internal — debit available balance (on withdrawal)
+  // Internal - debit available balance (on withdrawal)
   async debit(agentId: number, amount: number) {
     const [existing] = await this.db
       .select()

@@ -22,7 +22,7 @@ export class CoreEmailService {
     const token = this.config.get<string>("MailtrapConfig.token") ?? "";
 
     if (!token) {
-      this.logger.warn("MAILTRAP_TOKEN is not set — emails will fail to send");
+      this.logger.warn("MAILTRAP_TOKEN is not set - emails will fail to send");
     } else {
       this.logger.log("Mailtrap client initialized");
     }
@@ -45,7 +45,7 @@ export class CoreEmailService {
         text: options.text ?? options.subject,
         category: options.category,
       });
-      this.logger.log(`Email sent to ${options.to} — "${options.subject}"`);
+      this.logger.log(`Email sent to ${options.to} - "${options.subject}"`);
     } catch (err) {
       this.logger.error(`Failed to send email to ${options.to}`, err);
       throw err;

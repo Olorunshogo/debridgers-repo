@@ -202,7 +202,7 @@ export default function DashboardLayout() {
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
               style={{ backgroundColor: "var(--primary-color)" }}
             >
-              {userProfile ? getInitials(userProfile.name) : "—"}
+              {userProfile ? getInitials(userProfile.name) : "-"}
             </div>
             <div className="flex min-w-0 flex-col">
               <span
@@ -221,7 +221,7 @@ export default function DashboardLayout() {
           </div>
         </div>
 
-        {/* Logout — always anchored at bottom, never scrolls away */}
+        {/* Logout - always anchored at bottom, never scrolls away */}
         <button
           onClick={handleLogout}
           className="font-open-sans text-text z-10 flex w-full shrink-0 cursor-pointer items-center gap-3 rounded-[16px] p-4 text-base transition-all duration-300 ease-in-out"

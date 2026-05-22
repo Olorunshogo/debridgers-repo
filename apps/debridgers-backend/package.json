@@ -1,7 +1,7 @@
 {
   "name": "@debridgers/debridgers-backend",
   "version": "1.0.0",
-  "description": "Debridgers backend API — NestJS + Drizzle",
+  "description": "Debridgers backend API: NestJS + Drizzle",
   "main": "dist/main.js",
   "scripts": {
     "dev": "nest start --watch",

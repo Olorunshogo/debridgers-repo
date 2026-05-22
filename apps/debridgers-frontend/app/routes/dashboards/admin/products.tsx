@@ -437,7 +437,7 @@ export default function AdminProductsPage() {
                     className="text-xs"
                     style={{ color: "var(--text-colour)" }}
                   >
-                    JPG, PNG or WebP — max 5 MB
+                    JPG, PNG or WebP: max 5 MB
                   </p>
                 </div>
               </div>
