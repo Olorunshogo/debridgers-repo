@@ -1,4 +1,4 @@
-# Tailwind v4 Shared Theme — How to Use
+# Tailwind v4 Shared Theme - How to Use
 
 ## The Big Picture
 
@@ -6,9 +6,9 @@
 tokens.css  →  styles.css (@theme)  →  Tailwind utility classes
 ```
 
-- `libs/shared-theme/src/tokens.css` — raw CSS variables. **Source of truth.** Edit here first.
-- `apps/debridgers-frontend/app/styles.css` — maps those vars into Tailwind via `@theme inline`.
-- `libs/shared-theme/src/index.ts` — JS/TS colour exports that reference the same CSS vars. Use in inline styles or non-Tailwind code.
+- `libs/shared-theme/src/tokens.css` - raw CSS variables. **Source of truth.** Edit here first.
+- `apps/debridgers-frontend/app/styles.css` - maps those vars into Tailwind via `@theme inline`.
+- `libs/shared-theme/src/index.ts` - JS/TS colour exports that reference the same CSS vars. Use in inline styles or non-Tailwind code.
 
 > `tailwind.config.ts` has been deleted. Tailwind v4 is configured entirely through CSS (`@theme` in `styles.css`). There is no JS config file.
 
@@ -42,7 +42,7 @@ The numeric scale works on **every** spacing utility: `gap`, `p`, `m`, `top`, `l
 
 ## Typography
 
-Headings use a **fluid clamp-based scale** defined in `@theme`. These scale automatically between mobile and desktop — no breakpoint classes needed.
+Headings use a **fluid clamp-based scale** defined in `@theme`. These scale automatically between mobile and desktop - no breakpoint classes needed.
 
 | Token            | Class          | Range       | Use for                       |
 | ---------------- | -------------- | ----------- | ----------------------------- |
@@ -63,7 +63,7 @@ Headings use a **fluid clamp-based scale** defined in `@theme`. These scale auto
 <p className="text-body-lg text-white">Fresh foodstuff delivered...</p>
 ```
 
-> Do NOT write `text-3xl sm:text-5xl lg:text-7xl` on headings. Use the semantic token instead — it handles the fluid scaling for you.
+> Do NOT write `text-3xl sm:text-5xl lg:text-7xl` on headings. Use the semantic token instead - it handles the fluid scaling for you.
 
 For body copy that doesn't need to scale, Tailwind's standard text utilities are fine:
 
@@ -186,9 +186,9 @@ import { colors } from "@debridgers/shared-theme";
 
 ## Rules Going Forward
 
-- Never hardcode hex values in components — always use a CSS var or Tailwind token class.
+- Never hardcode hex values in components - always use a CSS var or Tailwind token class.
 - Use Tailwind's numeric spacing scale (`gap-4`, `p-6`, `mt-8`). Do not invent named spacing aliases.
-- Use semantic typography tokens (`text-hero`, `text-h2`, etc.) for headings — never write responsive chains like `text-3xl sm:text-5xl lg:text-7xl`.
+- Use semantic typography tokens (`text-hero`, `text-h2`, etc.) for headings - never write responsive chains like `text-3xl sm:text-5xl lg:text-7xl`.
 - Add new shared tokens to `tokens.css` first, then map in `styles.css @theme`.
 - App-specific layout vars (navbar height, section padding) stay in `styles.css :root`.
 
@@ -198,9 +198,9 @@ import { colors } from "@debridgers/shared-theme";
 
 | Problem                                    | Fix                                                               |
 | ------------------------------------------ | ----------------------------------------------------------------- |
-| Heading looks too small on mobile          | Use `text-hero` / `text-h2` etc. — they clamp automatically       |
-| `gap-4` / `p-xl` class not working         | Those tokens are gone — use `gap-4` / `p-6` instead               |
+| Heading looks too small on mobile          | Use `text-hero` / `text-h2` etc. - they clamp automatically       |
+| `gap-4` / `p-xl` class not working         | Those tokens are gone - use `gap-4` / `p-6` instead               |
 | Color not applying                         | Check `@theme inline` in `styles.css` has the `--color-*` mapping |
 | Font not loading                           | `@import url(...)` must be before `@import "tailwindcss"`         |
-| `tailwind.config.ts` missing               | Intentionally deleted — v4 uses `@theme` in CSS only              |
-| `spacing` import from shared-theme missing | Removed — use Tailwind numeric classes directly                   |
+| `tailwind.config.ts` missing               | Intentionally deleted - v4 uses `@theme` in CSS only              |
+| `spacing` import from shared-theme missing | Removed - use Tailwind numeric classes directly                   |

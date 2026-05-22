@@ -137,7 +137,7 @@ export default function BuyerSettings() {
         deliveryAddress: profile.delivery_address ?? "",
       }));
     } catch {
-      // silently fail — form stays blank
+      // silently fail - form stays blank
     }
   }, []);
 

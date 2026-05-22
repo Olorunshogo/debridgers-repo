@@ -39,7 +39,7 @@ export default function AgentSettingsPage() {
         address: p.address ?? "",
       });
     } catch {
-      // silently fail — form stays blank
+      // silently fail - form stays blank
     } finally {
       setLoadingProfile(false);
     }
@@ -263,7 +263,7 @@ export default function AgentSettingsPage() {
         </AnimatePresence>
       </motion.div>
 
-      {/* Password — coming soon */}
+      {/* Password - coming soon */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}

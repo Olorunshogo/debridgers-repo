@@ -239,7 +239,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Request a password reset email",
-    description: "Always returns 200 — prevents email enumeration.",
+    description: "Always returns 200 - prevents email enumeration.",
   })
   @ApiBody({
     schema: {

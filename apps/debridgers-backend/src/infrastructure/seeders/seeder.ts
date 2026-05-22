@@ -29,7 +29,7 @@ async function seed() {
     .limit(1);
 
   if (existing.length > 0) {
-    console.log("Admin already exists — skipping seed");
+    console.log("Admin already exists - skipping seed");
     await pool.end();
     return;
   }

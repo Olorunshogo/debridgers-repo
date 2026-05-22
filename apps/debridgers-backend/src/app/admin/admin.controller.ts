@@ -112,7 +112,7 @@ export class AdminController {
   // ─── Agents ─────────────────────────────────────────────────────────────────
 
   @Get("agents")
-  @ApiOperation({ summary: "List all agents — filter by status" })
+  @ApiOperation({ summary: "List all agents - filter by status" })
   @ApiQuery({
     name: "status",
     required: false,
@@ -210,7 +210,7 @@ export class AdminController {
   @ApiResponse({
     status: 200,
     description:
-      "Status updated — referral codes and wallet created on approval",
+      "Status updated: referral codes and wallet created on approval",
     schema: {
       example: {
         statusCode: 200,

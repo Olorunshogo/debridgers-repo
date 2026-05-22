@@ -14,7 +14,7 @@ export function meta() {
     {
       name: "description",
       content:
-        "Get help with your Debridgers agent account — FAQs, guides, and support.",
+        "Get help with your Debridgers agent account: FAQs, guides, and support.",
     },
     // === Author and Robots
     { name: "author", content: "Debridgers Team" },

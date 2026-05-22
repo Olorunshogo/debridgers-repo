@@ -34,7 +34,7 @@ check_heavy_files() {
     fi
   done
   if [ -s "$_tmp" ]; then
-    echo "❌ Heavy media files detected (over 100KB). Host them on a CDN — do not commit binaries to git:"
+    echo "❌ Heavy media files detected (over 100KB). Host them on a CDN; do not commit binaries to git:"
     cat "$_tmp"
     rm -f "$_tmp"
     exit 1

@@ -279,7 +279,7 @@ export class AgentService {
     const leaderboard = rows.map((r, i) => ({
       rank: i + 1,
       name: `${r.first_name} ${r.last_name}`.trim(),
-      location: r.lga ?? r.address ?? "—",
+      location: r.lga ?? r.address ?? "Unknown",
       bags_sold: Number(r.total_pages_sold ?? 0),
     }));
 

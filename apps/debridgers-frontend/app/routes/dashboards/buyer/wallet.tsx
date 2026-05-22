@@ -45,7 +45,7 @@ function buildWalletData(stats: ApiDashStats, orders: ApiOrder[]): WalletData {
 
   const transactions: Transaction[] = orders.map((o) => ({
     id: String(o.id),
-    description: `Order #DBR-${String(o.id).padStart(4, "0")} — ${o.quantity} pack${o.quantity !== 1 ? "s" : ""}`,
+    description: `Order #DBR-${String(o.id).padStart(4, "0")}: ${o.quantity} pack${o.quantity !== 1 ? "s" : ""}`,
     amount: Math.round(o.total_amount / 100),
     type: "debit" as const,
     date: new Date(o.created_at).toLocaleDateString("en-NG", {

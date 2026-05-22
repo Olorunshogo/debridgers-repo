@@ -137,7 +137,7 @@ export class PaymentService {
         settlement_bank: "058",
         account_number: "0000000000",
         percentage_charge: this.commissionRate * 100,
-        description: `Debridgers agent — ${user.email}`,
+        description: `Debridgers agent - ${user.email}`,
       }),
     });
 

@@ -26,7 +26,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle("Debridgers API")
     .setDescription(
-      "Farm-to-door commodity delivery platform — agent, admin, auth, and buyer endpoints",
+      "Farm-to-door commodity delivery platform: agent, admin, auth, and buyer endpoints",
     )
     .setVersion("1.0")
     .addBearerAuth(

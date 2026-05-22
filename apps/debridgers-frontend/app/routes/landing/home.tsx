@@ -22,7 +22,7 @@ const whyCardsData: WhyCardData[] = [
     icon: "lucide:lock-keyhole",
     title: "Fixed, fair prices",
     description:
-      "No more guessing what rice costs today. Our prices are set weekly and always reflect real market rates — nothing more.",
+      "No more guessing what rice costs today. Our prices are set weekly and always reflect real market rates, nothing more.",
   },
   {
     icon: "lucide:check",
@@ -34,7 +34,7 @@ const whyCardsData: WhyCardData[] = [
     icon: "lucide:smartphone",
     title: "Order your way",
     description:
-      "WhatsApp, phone call, or app — whatever is easiest for you. No complex platforms, no downloads required to get started.",
+      "WhatsApp, phone call, or app, whatever is easiest for you. No complex platforms, no downloads required to get started.",
   },
 ];
 
@@ -175,9 +175,9 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
       }}
       whileHover={{ scale: 1.04 }}
       transition={{ duration: 0.3 }}
-      className="group relative h-[380px] w-[260px] shrink-0 cursor-default overflow-hidden rounded-3xl shadow-lg"
+      className="group relative h-95 w-[260px] shrink-0 cursor-default overflow-hidden rounded-3xl shadow-lg"
     >
-      {/* Images — static until hover, then swipe right-to-left */}
+      {/* Images - static until hover, then swipe right-to-left */}
       {category.images.map((src, idx) => (
         <motion.img
           key={src}
@@ -200,12 +200,12 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
       <div className="absolute inset-0 bg-linear-to-t from-black/60 via-[#666666]/30 to-transparent" />
 
       {/* Label */}
-      <div className="font-open-sans px-base absolute right-0 bottom-0 left-0 flex flex-col gap-1 pb-(--space-base) text-white">
+      <div className="font-open-sans p-base bottom-base absolute right-0 left-0 flex flex-col gap-1 pb-(--space-base) text-white">
         <p className="text-lg font-semibold">{category.title}</p>
         <p className="text-base">{category.subtitle}</p>
       </div>
 
-      {/* Image dots — visible on hover */}
+      {/* Image dots - visible on hover */}
       {isHovered && category.images.length > 1 && (
         <div className="absolute bottom-20 left-1/2 flex -translate-x-1/2 gap-1.5">
           {category.images.map((_, i) => (
@@ -289,7 +289,7 @@ function WhatWeDeliver() {
           </div>
         </div>
 
-        {/* Carousel — overflow-hidden clips cards beyond 4 on lg */}
+        {/* Carousel - overflow-hidden clips cards beyond 4 on lg */}
         <div
           className="overflow-hidden"
           onMouseEnter={() => setIsHovered(true)}
@@ -347,7 +347,7 @@ interface Stat {
 const stats: Stat[] = [
   { value: 92, label: "resident of Kaduna are using us." },
   { value: 1000, label: "areas in Kaduna South we serve" },
-  { value: 0, label: "hidden fees — ever" },
+  { value: 0, label: "no hidden fees ever" },
 ];
 
 const statsFormatters: Array<(v: number) => string> = [
@@ -428,7 +428,7 @@ export default function Home() {
               <div className="relative flex flex-1 flex-col pt-20 sm:pt-24 lg:pt-32">
                 <div className="gap-2xl lg:gap-4xl flex flex-1 flex-col justify-center">
                   {/* Location badge */}
-                  <div className="text-primary border-primary font-open-sans p-sm inline-flex w-fit items-center gap-1 rounded-full border border-white/30 bg-[#A5BDA8] text-sm font-semibold shadow-[50px] backdrop-blur-lg">
+                  <div className="text-primary font-open-sans p-sm inline-flex w-fit items-center gap-1 rounded-full border border-white/30 bg-[#A5BDA8] text-sm font-semibold shadow-[50px] backdrop-blur-lg">
                     <span className="bg-primary h-1.5 w-1.5 rounded-full" />
                     Now Serving in Kaduna
                   </div>
@@ -566,7 +566,7 @@ export default function Home() {
                     </h3>
                     <p className="font-open-sans text-sm leading-relaxed sm:text-base">
                       Chat on WhatsApp, call, or browse our catalog. Tell us
-                      what you need — rice, beans, palm oil, anything.
+                      what you need: rice, beans, palm oil, etc.
                     </p>
                   </div>
                 </div>
@@ -838,8 +838,8 @@ export default function Home() {
                 <ul className="gap-4 flex flex-col text-sm text-green-100">
                   {[
                     "Access to a larger, verified network of food directly from farm",
-                    "More consistent stock — even during off-season period",
-                    "Two teams, one mission — fresh food at honest prices",
+                    "More consistent stock, even during off-season period",
+                    "Two teams, one mission: fresh food at honest prices",
                   ].map((item) => (
                     <li
                       key={item}

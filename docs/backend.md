@@ -158,16 +158,16 @@ cp apps/debridgers-backend/.env.example apps/debridgers-backend/.env
 
 The example already has `DATABASE_URL` set to the local Docker Postgres connection string. Fill in the remaining required variables:
 
-- **JWT secrets** — generate strong random strings for `ACCESS_TOKEN_SECRET` and `REFRESH_TOKEN_SECRET`
-- **Cloudinary** — get credentials from your Cloudinary dashboard
-- **Mailtrap** — get your API token from Mailtrap
-- **Paystack** — get your secret and public keys from Paystack
-- **Admin seed** — set `ADMIN_PASSWORD` (email defaults to `admin@debridgers.com`)
+- **JWT secrets** - generate strong random strings for `ACCESS_TOKEN_SECRET` and `REFRESH_TOKEN_SECRET`
+- **Cloudinary** - get credentials from your Cloudinary dashboard
+- **Mailtrap** - get your API token from Mailtrap
+- **Paystack** - get your secret and public keys from Paystack
+- **Admin seed** - set `ADMIN_PASSWORD` (email defaults to `admin@debridgers.com`)
 
 Optional:
 
-- **Redis** — set `UPSTASH_REDIS_URL` if you want persistent caching (otherwise uses in-memory)
-- **App URL** — defaults to `http://localhost:3000`, change if your frontend runs elsewhere
+- **Redis** - set `UPSTASH_REDIS_URL` if you want persistent caching (otherwise uses in-memory)
+- **App URL** - defaults to `http://localhost:3000`, change if your frontend runs elsewhere
 
 **2. Start Postgres and run migrations**
 
@@ -201,7 +201,7 @@ Swagger UI at `http://localhost:4000/api/docs`.
 
 ### Day-to-day workflow
 
-On subsequent runs, Postgres persists data in a named Docker volume — you only need to start the container:
+On subsequent runs, Postgres persists data in a named Docker volume; you only need to start the container:
 
 ```bash
 pnpm docker:up      # Start
@@ -247,7 +247,7 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5432/debridgers
 DATABASE_URL=postgresql://user:pass@ep-xxx.neon.tech/debridgers?sslmode=require
 ```
 
-SSL is handled automatically — the database provider and seeder detect `localhost`/`127.0.0.1` and disable SSL for local connections.
+SSL is handled automatically: the database provider and seeder detect `localhost`/`127.0.0.1` and disable SSL for local connections.
 
 ---
 

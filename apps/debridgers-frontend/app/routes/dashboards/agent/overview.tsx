@@ -133,7 +133,7 @@ function mapToDashboard(
 
   return {
     name: `${profile.first_name} ${profile.last_name}`.trim(),
-    location: profile.address ?? "—",
+    location: profile.address ?? "Unknown",
     ninVerified: profile.status === "approved",
     greeting,
     weekEarning: fmtNaira(stats.total_earned),
@@ -156,7 +156,7 @@ function mapToDashboard(
       },
       {
         label: "Current rank",
-        value: stats.rank != null ? String(stats.rank).padStart(2, "0") : "—",
+        value: stats.rank != null ? String(stats.rank).padStart(2, "0") : "-",
         icon: "lucide:trophy",
         trend: "Overall",
       },
@@ -522,7 +522,7 @@ export default function AgentOverviewPage() {
             className="font-syne font-semibold"
             style={{ color: "var(--heading-colour)" }}
           >
-            Bag sold — this week
+            Bag sold - this week
           </h3>
           <ResponsiveContainer width="100%" height={160}>
             <BarChart

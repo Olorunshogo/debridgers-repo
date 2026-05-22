@@ -14,7 +14,7 @@ export function meta() {
     {
       name: "description",
       content:
-        "Get help with your Debridgers buyer account — FAQs, order support, and more.",
+        "Get help with your Debridgers buyer account: FAQs, order support, and more.",
     },
     // === Author and Robots
     { name: "author", content: "Debridgers Team" },
@@ -53,7 +53,7 @@ const faqs: FaqItem[] = [
   {
     question: "How do I track my order?",
     answer:
-      "Go to My Orders in the sidebar to see the current status of all your orders — pending, in transit, or delivered.",
+      "Go to My Orders in the sidebar to see the current status of all your orders - pending, in transit, or delivered.",
   },
   {
     question: "What if I receive the wrong item or quantity?",

@@ -146,7 +146,7 @@ function mapApiToDashboard(api: ApiDashboard): DashboardData {
         orderId: `DBR-${String(nd.id).padStart(4, "0")}`,
         itemCount: nd.quantity,
       }
-    : { time: "—", orderId: "—", itemCount: 0 };
+    : { time: "-", orderId: "-", itemCount: 0 };
 
   const trackingSteps: TrackingStep[] = nd
     ? [
@@ -193,23 +193,23 @@ function mapApiToDashboard(api: ApiDashboard): DashboardData {
       },
       {
         label: "Money Saved",
-        value: "—",
+        value: "-",
         trend: "Coming soon",
         icon: "lucide:piggy-bank",
       },
     ],
     recentOrders,
     tracking: {
-      orderId: nd ? `DBR-${String(nd.id).padStart(4, "0")}` : "—",
-      eta: "—",
+      orderId: nd ? `DBR-${String(nd.id).padStart(4, "0")}` : "N/A",
+      eta: "N/A",
       steps: trackingSteps,
       items: nd ? [`${nd.quantity} pack${nd.quantity !== 1 ? "s" : ""}`] : [],
     },
     spending: {
       weeks: [],
-      thisWeek: "—",
-      thisMonth: "—",
-      avgPerWeek: "—",
+      thisWeek: "N/A",
+      thisMonth: "N/A",
+      avgPerWeek: "N/A",
     },
   };
 }

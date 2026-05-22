@@ -235,7 +235,7 @@ export class EmailService {
     await this.core.send({
       to,
       toName: name,
-      subject: "Agent Application Received — Debridgers",
+      subject: "Agent Application Received - Debridgers",
       html,
     });
   }
@@ -281,7 +281,7 @@ export class EmailService {
     await this.core.send({
       to,
       toName: name,
-      subject: "Your Agent Application is Approved — Debridgers",
+      subject: "Your Agent Application is Approved - Debridgers",
       html,
     });
   }
@@ -331,7 +331,7 @@ export class EmailService {
     await this.core.send({
       to,
       toName: name,
-      subject: "Agent Application Update — Debridgers",
+      subject: "Agent Application Update - Debridgers",
       html,
     });
   }
@@ -342,7 +342,7 @@ export class EmailService {
     const html = layout({
       headerBg: BRAND_GREEN,
       outerBg: "#f6f9f7",
-      title: "Message Received — Debridgers",
+      title: "Message Received - Debridgers",
       preheader:
         "We received your message and will get back to you within 24 hours.",
       body: `
@@ -371,7 +371,7 @@ export class EmailService {
     await this.core.send({
       to,
       toName: name,
-      subject: "We received your message — Debridgers",
+      subject: "We received your message - Debridgers",
       html,
     });
   }
@@ -395,7 +395,7 @@ export class EmailService {
     const html = layout({
       headerBg,
       outerBg,
-      title: "Verify Your Email — Debridgers",
+      title: "Verify Your Email - Debridgers",
       preheader: `Your Debridgers verification code is ${otp}. Valid for 24 hours.`,
       body: `
         <tr>
@@ -432,7 +432,7 @@ export class EmailService {
     await this.core.send({
       to,
       toName: name,
-      subject: "Your verification OTP — Debridgers",
+      subject: "Your verification OTP - Debridgers",
       category: "verification",
       html,
     });
@@ -444,7 +444,7 @@ export class EmailService {
     const html = layout({
       headerBg: BRAND_GREEN,
       outerBg: "#f6f9f7",
-      title: "Sign-in Confirmed — Debridgers",
+      title: "Sign-in Confirmed - Debridgers",
       preheader: `${name}, you have successfully signed in to your Debridgers account.`,
       body: `
         <tr>
@@ -479,7 +479,7 @@ export class EmailService {
     await this.core.send({
       to,
       toName: name,
-      subject: "You are safely signed in — Debridgers",
+      subject: "You are safely signed in - Debridgers",
       html,
     });
   }
@@ -490,7 +490,7 @@ export class EmailService {
     const html = layout({
       headerBg: BRAND_ORANGE,
       outerBg: "#fff8ed",
-      title: "Agent Sign-in Confirmed — Debridgers",
+      title: "Agent Sign-in Confirmed - Debridgers",
       preheader: `${name}, your Debridgers agent account has been accessed.`,
       body: `
         <tr>
@@ -522,7 +522,7 @@ export class EmailService {
     await this.core.send({
       to,
       toName: name,
-      subject: "Agent sign-in confirmed — Debridgers",
+      subject: "Agent sign-in confirmed - Debridgers",
       html,
     });
   }
@@ -539,7 +539,7 @@ export class EmailService {
     const html = layout({
       headerBg: BRAND_GREEN,
       outerBg: "#f6f9f7",
-      title: "Reset Your Password — Debridgers",
+      title: "Reset Your Password - Debridgers",
       preheader:
         "We received a request to reset your Debridgers password. The link expires in 1 hour.",
       body: `
@@ -582,7 +582,7 @@ export class EmailService {
     const html = layout({
       headerBg: BRAND_GREEN,
       outerBg: "#f6f9f7",
-      title: "Password Changed — Debridgers",
+      title: "Password Changed - Debridgers",
       preheader: "Your Debridgers password has been changed successfully.",
       body: `
         <tr>
@@ -614,7 +614,7 @@ export class EmailService {
     await this.core.send({
       to,
       toName: name,
-      subject: "Your password has been changed — Debridgers",
+      subject: "Your password has been changed - Debridgers",
       html,
     });
   }
