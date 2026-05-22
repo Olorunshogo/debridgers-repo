@@ -10,7 +10,7 @@ import {
   Package,
   Search,
 } from "lucide-react";
-import { apiFetch } from "../../../utils/apiFetch";
+import { apiFetch } from "@debridgers/api-client";
 
 export function meta() {
   return [
@@ -52,7 +52,7 @@ export default function BuyerShop() {
   const [products, setProducts] = useState<ApiProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [cartOpen, setCartOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState<boolean>(false);
   const [qtys, setQtys] = useState<Record<number, number>>({});
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");

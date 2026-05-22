@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, ArrowDownLeft, Plus } from "lucide-react";
-import { apiFetch } from "../../../utils/apiFetch";
+import { apiFetch } from "@debridgers/api-client";
 
 export function meta() {
   return [{ title: "Wallet & Payment | Debridgers" }];
@@ -70,10 +70,10 @@ function fmt(n: number) {
 export default function BuyerWallet() {
   const [data, setData] = useState<WalletData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showFundModal, setShowFundModal] = useState(false);
+  const [showFundModal, setShowFundModal] = useState<boolean>(false);
   const [fundAmount, setFundAmount] = useState("");
-  const [funding, setFunding] = useState(false);
-  const [funded, setFunded] = useState(false);
+  const [funding, setFunding] = useState<boolean>(false);
+  const [funded, setFunded] = useState<boolean>(false);
 
   useEffect(() => {
     Promise.all([

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Trophy, Medal, Star } from "lucide-react";
-import { apiFetch } from "../../../utils/apiFetch";
+import { apiFetch } from "@debridgers/api-client";
 
 export function meta() {
   return [

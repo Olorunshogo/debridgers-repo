@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Minus, Plus, CheckCircle2, Package } from "lucide-react";
-import { apiFetch, ApiError } from "../../../utils/apiFetch";
+import { apiFetch, ApiError } from "@debridgers/api-client";
 
 export function meta() {
   return [{ title: "Request Stock | Debridgers" }];
@@ -66,9 +66,9 @@ export default function AgentRequestStockPage() {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [qty, setQty] = useState(1);
-  const [submitted, setSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [pastRequests, setPastRequests] = useState<StockRequest[]>([]);
   const [loadingRequests, setLoadingRequests] = useState(true);
   const [productMap, setProductMap] = useState<Record<number, Product>>({});

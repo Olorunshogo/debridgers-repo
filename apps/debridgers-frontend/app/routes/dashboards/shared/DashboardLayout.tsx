@@ -4,9 +4,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Bell, LogOut } from "lucide-react";
 import { AppLogo, DashSearchInput, PrimaryButton } from "@debridgers/ui-web";
 import { useDashboardNav } from "../../../hooks/useDashboardNav";
-import { logout, getAccessToken } from "../../../lib/auth";
-import { apiFetch } from "../../../utils/apiFetch";
-import { decodeJwtPayload } from "../../../utils/auth-cookies";
+import {
+  logout,
+  getAccessToken,
+  apiFetch,
+  decodeJwtPayload,
+} from "@debridgers/api-client";
 
 const titleMaps: Record<string, Record<string, string>> = {
   "/agent-dashboard": {
@@ -51,9 +54,9 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const { groups, isActive, basePath, isAgent, isBuyer, isAdmin } =
     useDashboardNav();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState<boolean>(false);
   const [search, setSearch] = useState("");
-  const [hasUnread, setHasUnread] = useState(false);
+  const [hasUnread, setHasUnread] = useState<boolean>(false);
   const [userProfile, setUserProfile] = useState<{
     name: string;
     sub: string;

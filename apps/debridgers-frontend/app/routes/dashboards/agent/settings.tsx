@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, Lock, CheckCircle } from "lucide-react";
-import { apiFetch, ApiError } from "../../../utils/apiFetch";
+import { apiFetch, ApiError } from "@debridgers/api-client";
 
 export function meta() {
   return [{ title: "Settings | Debridgers" }];
@@ -24,9 +24,9 @@ export default function AgentSettingsPage() {
     address: "",
   });
   const [loadingProfile, setLoadingProfile] = useState(true);
-  const [profileSaved, setProfileSaved] = useState(false);
+  const [profileSaved, setProfileSaved] = useState<boolean>(false);
   const [profileError, setProfileError] = useState<string | null>(null);
-  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingProfile, setSavingProfile] = useState<boolean>(false);
 
   const loadProfile = useCallback(async () => {
     try {

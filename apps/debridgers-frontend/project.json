@@ -1,0 +1,46 @@
+{
+  "name": "debridgers-frontend",
+  "root": "apps/debridgers-frontend",
+  "sourceRoot": "apps/debridgers-frontend/app",
+  "projectType": "application",
+  "tags": ["scope:frontend", "type:app"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "outputs": ["{projectRoot}/build"],
+      "options": {
+        "command": "pnpm run build",
+        "cwd": "apps/debridgers-frontend"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run dev",
+        "cwd": "apps/debridgers-frontend"
+      }
+    },
+    "start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run start",
+        "cwd": "apps/debridgers-frontend"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run lint",
+        "cwd": "apps/debridgers-frontend"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run typecheck",
+        "cwd": "apps/debridgers-frontend"
+      }
+    }
+  }
+}

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
 import { CheckCircle2 } from "lucide-react";
 import { AppLogo, DashPasswordInput, SubmitButton } from "@debridgers/ui-web";
-import { BASE_BACKEND_URL } from "../../utils/api";
+import { BASE_BACKEND_URL } from "@debridgers/api-client";
 
 export function meta() {
   return [

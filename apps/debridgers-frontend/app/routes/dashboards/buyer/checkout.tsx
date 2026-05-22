@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { motion } from "framer-motion";
 import { CheckCircle2 } from "lucide-react";
-import { apiFetch } from "../../../utils/apiFetch";
+import { apiFetch } from "@debridgers/api-client";
 
 export function meta() {
   return [{ title: "Checkout | Debridgers" }];
@@ -34,7 +34,7 @@ export default function BuyerCheckout() {
     "today",
   );
   const [note, setNote] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 

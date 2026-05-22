@@ -30,6 +30,10 @@ export default defineConfig({
     alias: {
       "@debridgers/ui-app": resolve(__dirname, "../../packages/ui-app/src"),
       "@debridgers/ui-web": resolve(__dirname, "../../packages/ui-web/src"),
+      "@debridgers/api-client": resolve(
+        __dirname,
+        "../../packages/api-client/src",
+      ),
     },
   },
   server: {

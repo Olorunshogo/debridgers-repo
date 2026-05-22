@@ -1,0 +1,17 @@
+{
+  "name": "debridgers-backend-e2e",
+  "root": "apps/debridgers-backend-e2e",
+  "sourceRoot": "apps/debridgers-backend-e2e/src",
+  "projectType": "application",
+  "tags": ["scope:backend", "type:e2e"],
+  "implicitDependencies": ["debridgers-backend"],
+  "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run test",
+        "cwd": "apps/debridgers-backend-e2e"
+      }
+    }
+  }
+}

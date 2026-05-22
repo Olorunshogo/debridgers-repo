@@ -27,8 +27,9 @@ export function HydrationAnimationProvider({
   animationDuration = 8000, // 8 seconds
 }: HydrationAnimationProviderProps) {
   const [isHydrating, setIsHydrating] = useState(true);
-  const [isInitialLoad, setIsInitialLoad] = useState(false);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState<boolean>(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] =
+    useState<boolean>(false);
 
   useEffect(() => {
     // === Check if user prefers reduced motion

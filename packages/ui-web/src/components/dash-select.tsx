@@ -35,7 +35,7 @@ export const DashSelect = forwardRef<HTMLDivElement, DashSelectProps>(
     },
     ref,
   ) => {
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState<boolean>(false);
     const [selectedLabel, setSelectedLabel] = useState<string>("");
     const containerRef = useRef<HTMLDivElement>(null);
 

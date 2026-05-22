@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw } from "lucide-react";
 import { AppLogo, SubmitButton } from "@debridgers/ui-web";
 import AuthSuccessModal from "../../components/auth/AuthSuccessModal";
-import { BASE_BACKEND_URL } from "../../utils/api";
-import { storeTokens } from "../../lib/auth";
+import { BASE_BACKEND_URL } from "@debridgers/api-client";
+import { storeTokens } from "@debridgers/api-client";
 
 export function meta() {
   return [

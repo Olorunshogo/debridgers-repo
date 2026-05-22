@@ -11,7 +11,7 @@ import {
   SubmitButton,
 } from "@debridgers/ui-web";
 import AuthSuccessModal from "../../components/auth/AuthSuccessModal";
-import { BASE_BACKEND_URL } from "../../utils/api";
+import { BASE_BACKEND_URL } from "@debridgers/api-client";
 import { kadunaStateLgas } from "../../models/models";
 
 export function meta() {
@@ -95,9 +95,9 @@ export default function SignupPage() {
   });
   const [agentErrors, setAgentErrors] = useState<FormErrors<AgentFormData>>({});
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [showSuccess, setShowSuccess] = useState<boolean>(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
 
   // === Derived validity

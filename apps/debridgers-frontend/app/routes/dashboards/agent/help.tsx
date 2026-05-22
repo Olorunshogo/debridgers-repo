@@ -64,7 +64,7 @@ const faqs: FaqItem[] = [
 
 // === FAQ item component
 function FaqRow({ item, index }: { item: FaqItem; index: number }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState<boolean>(false);
 
   return (
     <motion.div

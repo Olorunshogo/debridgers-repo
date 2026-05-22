@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { motion } from "framer-motion";
 import { Users, UserCheck, ShoppingBag, TrendingUp } from "lucide-react";
-import { apiFetch } from "../../../utils/apiFetch";
+import { apiFetch } from "@debridgers/api-client";
 
 export function meta() {
   return [{ title: "Admin Overview | Debridgers" }];

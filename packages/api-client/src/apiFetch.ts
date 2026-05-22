@@ -1,5 +1,5 @@
 import { BASE_BACKEND_URL } from "./api";
-import { getAccessToken, refreshTokens, clearTokens } from "../lib/auth";
+import { getAccessToken, refreshTokens, clearTokens } from "./auth";
 
 export class ApiError extends Error {
   constructor(
@@ -15,7 +15,7 @@ export class ApiError extends Error {
  * Authenticated fetch with automatic token refresh.
  * Throws ApiError on non-2xx responses.
  * On 401, attempts one silent refresh then retries.
- * On second 401, clears tokens and throws — caller should redirect to /login.
+ * On second 401, clears tokens and throws - caller should redirect to /login.
  */
 export async function apiFetch<T = unknown>(
   path: string,

@@ -51,7 +51,7 @@ function WhyCard({ card, isActive, onHover }: WhyCardProps) {
       onClick={onHover}
       whileHover={{ y: -10 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`group font-syne gap-base lg:gap-xl py-base px-3xl flex h-full flex-col rounded-3xl transition-all duration-300 ease-in-out ${
+      className={`group font-syne lg:gap-xl py-base px-3xl flex h-full flex-col gap-4 rounded-3xl transition-all duration-300 ease-in-out ${
         isActive
           ? "bg-primary text-white"
           : "border-gray hover:border-primary border bg-white"
@@ -270,7 +270,7 @@ function WhatWeDeliver() {
     >
       <div className="gap-3xl px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto flex w-full flex-col">
         {/* Header */}
-        <div className="gap-md lg:gap-xl flex flex-col">
+        <div className="lg:gap-xl flex flex-col gap-3">
           <p className="text-primary-light text-xl tracking-widest">
             What we deliver
           </p>
@@ -434,7 +434,7 @@ export default function Home() {
                   </div>
 
                   {/* Heading and Paragraph */}
-                  <div className="gap-lg flex flex-col">
+                  <div className="flex flex-col gap-6">
                     {/* Heading */}
                     <h1 className="flex flex-col text-4xl leading-tight font-bold text-white sm:text-5xl md:text-6xl lg:text-7xl">
                       <span>Market Prices.</span>
@@ -466,7 +466,7 @@ export default function Home() {
                   </div>
 
                   {/* CTAs */}
-                  <div className="gap-base flex flex-col items-center justify-center lg:flex-row lg:justify-start lg:gap-[74px]">
+                  <div className="flex flex-col items-center justify-center gap-4 lg:flex-row lg:justify-start lg:gap-[74px]">
                     <WhatsAppButton className="w-auto" />
                     <a
                       href="#how-it-works"
@@ -485,7 +485,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="gap-4xl lg:gap-base relative flex w-full flex-col">
+              <div className="gap-4xl relative flex w-full flex-col lg:gap-4">
                 {/* Trust bar */}
                 <div className="bg-primary py-xl px-base mx-auto w-full shadow-md">
                   {/* Mobile: slideshow */}
@@ -497,7 +497,7 @@ export default function Home() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.4 }}
-                        className="gap-sm absolute flex items-center text-white/80"
+                        className="absolute flex items-center gap-2 text-white/80"
                       >
                         <span className="text-white/60">
                           {renderIcon(trustItems[activeTrustIndex].icon)}
@@ -547,7 +547,7 @@ export default function Home() {
               transition={{ duration: 0.6 }}
               className="gap-3xl flex flex-col"
             >
-              <div className="gap-md flex flex-col">
+              <div className="flex flex-col gap-3">
                 <p className="text-text text-sm font-semibold">How it works</p>
                 <h2 className="text-primary text-2xl leading-tight font-bold sm:text-3xl lg:text-5xl">
                   From market to your door in two steps
@@ -556,11 +556,11 @@ export default function Home() {
 
               <div className="flex flex-col">
                 {/* Step 1 */}
-                <div className="py-base text-text gap-lg flex border-b border-[#E5E7EB]">
+                <div className="py-base text-text flex gap-6 border-b border-[#E5E7EB]">
                   <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
                     01
                   </div>
-                  <div className="gap-sm flex flex-col">
+                  <div className="flex flex-col gap-2">
                     <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
                       Send us your order
                     </h3>
@@ -573,11 +573,11 @@ export default function Home() {
 
                 {/* Step 2 */}
 
-                <div className="py-base text-text gap-lg flex">
+                <div className="py-base text-text flex gap-6">
                   <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
                     02
                   </div>
-                  <div className="gap-sm flex flex-col">
+                  <div className="flex flex-col gap-2">
                     <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
                       Delivered to you
                     </h3>
@@ -628,7 +628,7 @@ export default function Home() {
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg font-syne relative bg-[#F6F3F3]"
       >
         <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-3xl default-max-width mx-auto flex w-full flex-col">
-          <div className="lg:gap-xl gap-md flex flex-col">
+          <div className="lg:gap-xl flex flex-col gap-3">
             <p className="text-primary-light text-xl tracking-widest">
               Why Debridgers
             </p>
@@ -668,7 +668,7 @@ export default function Home() {
 
           {/* Stats */}
           <div className="px-section-px px sm:px-section-px-sm lg:px-section-px-lg lg:gap-4xl default-max-width relative z-10 mx-auto flex flex-col">
-            <div className="font-syne pb-2xl gap-md flex flex-col">
+            <div className="font-syne pb-2xl flex flex-col gap-3">
               <p className="text-text2 text-xl tracking-[3px] uppercase">
                 Early Numbers
               </p>
@@ -677,7 +677,7 @@ export default function Home() {
               </h2>
             </div>
 
-            <div className="gap-base sm:gap-3xl grid grid-cols-3">
+            <div className="sm:gap-3xl grid grid-cols-3 gap-4">
               {stats.map((stat, i) => {
                 const displayValue = statsFormatters[i](stat.value);
                 return (
@@ -687,7 +687,7 @@ export default function Home() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: i * 0.1 }}
-                    className="gap-sm flex flex-col lg:w-[236px]"
+                    className="flex flex-col gap-2 lg:w-[236px]"
                   >
                     <div className="text-secondary font-syne text-2xl leading-none font-extrabold sm:text-4xl lg:text-5xl">
                       {displayValue}
@@ -727,7 +727,7 @@ export default function Home() {
         </div>
 
         <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-xl default-max-width lg:gap-3xl relative mx-auto flex w-full flex-col items-center justify-center text-center">
-          <div className="gap-md flex flex-col">
+          <div className="flex flex-col gap-3">
             <p className="text-primary-light font-open-sans text-center text-lg font-semibold tracking-widest lg:text-xl">
               Get started
             </p>
@@ -762,7 +762,7 @@ export default function Home() {
               className="lg:gap-3xl gap-xl flex flex-col"
             >
               <div className="gap-xl flex flex-col">
-                <div className="bg-primary-light/80 text-primary font-open-sans border-primary gap-sm px-base inline-flex w-fit items-center rounded-full border py-1.5 text-base tracking-widest uppercase lg:text-lg">
+                <div className="bg-primary-light/80 text-primary font-open-sans border-primary gap-2 px-base inline-flex w-fit items-center rounded-full border py-1.5 text-base tracking-widest uppercase lg:text-lg">
                   Official Partnership
                 </div>
 
@@ -786,7 +786,7 @@ export default function Home() {
                 href="https://agrolinking.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group text-secondary hover:gap-base gap-sm inline-flex w-fit cursor-pointer items-center text-lg transition-all duration-300 ease-in-out sm:text-xl lg:text-2xl"
+                className="group text-secondary hover:gap-4 gap-2 inline-flex w-fit cursor-pointer items-center text-lg transition-all duration-300 ease-in-out sm:text-xl lg:text-2xl"
               >
                 See what Agrolinking does
                 <Icon
@@ -804,7 +804,7 @@ export default function Home() {
               transition={{ duration: 0.6, delay: 0.15 }}
               className="bg-primary-light/80 flex h-fit flex-col gap-[32px] rounded-3xl px-8 py-12 text-white"
             >
-              <div className="gap-base flex items-center justify-between">
+              <div className="gap-4 flex items-center justify-between">
                 <div className="flex flex-1 flex-col truncate">
                   <div className="h-[30px] w-[130px]">
                     <img
@@ -821,7 +821,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="bg-primary gap-sm flex shrink-0 items-center rounded-full px-(--space-md) py-1 text-base lg:text-lg">
+                <div className="bg-primary gap-2 flex shrink-0 items-center rounded-full px-(--space-md) py-1 text-base lg:text-lg">
                   <Icon
                     icon="lucide:check"
                     className="h-3.5 w-3.5 text-white"
@@ -835,7 +835,7 @@ export default function Home() {
                   What this means for you
                 </p>
 
-                <ul className="gap-base flex flex-col text-sm text-green-100">
+                <ul className="gap-4 flex flex-col text-sm text-green-100">
                   {[
                     "Access to a larger, verified network of food directly from farm",
                     "More consistent stock — even during off-season period",
@@ -843,7 +843,7 @@ export default function Home() {
                   ].map((item) => (
                     <li
                       key={item}
-                      className="font-open-sans gap-md flex items-start"
+                      className="font-open-sans gap-3 flex items-start"
                     >
                       <span
                         className="shrink-0 text-xl font-bold"

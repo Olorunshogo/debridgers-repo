@@ -23,8 +23,8 @@ export interface ApiFieldError {
   message: string;
 }
 
-/** Error shape thrown when a request fails */
-export interface ApiError {
+/** Error shape returned by failed API responses */
+export interface ApiResponseError {
   statusCode: number;
   message: string;
   errors?: ApiFieldError[];

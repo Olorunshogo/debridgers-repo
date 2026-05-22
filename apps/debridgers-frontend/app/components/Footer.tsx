@@ -73,7 +73,7 @@ export default function Footer() {
               <h2 className="font-open-sans text-sm font-semibold tracking-widest text-white uppercase">
                 Support
               </h2>
-              <nav className="gap-md flex flex-col text-sm">
+              <nav className="flex flex-col gap-3 text-sm">
                 {[
                   { label: "Home", to: "/" },
                   { label: "Agents", to: "/agents" },
@@ -91,11 +91,11 @@ export default function Footer() {
             </div>
 
             {/* Need Help */}
-            <div className="gap-2xl font-open-sans flex flex-col lg:gap-[44px]">
+            <div className="gap-2xl font-open-sans flex flex-col lg:gap-11">
               <h3 className="font-open-sans text-sm font-semibold tracking-widest text-white uppercase">
                 Need Help?
               </h3>
-              <div className="gap-md flex flex-col">
+              <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1 text-sm text-white">
                   <p className="text-sm tracking-widest text-white uppercase">
                     Call us directly

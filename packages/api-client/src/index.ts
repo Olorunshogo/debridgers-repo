@@ -1,6 +1,14 @@
-const BASE_URL = import.meta.env?.VITE_API_URL || "http://localhost:4000";
+// === API config and types
+export * from "./api";
 
-export async function getHealth() {
-  const res = await fetch(`${BASE_URL}/health`);
-  return res.json();
-}
+// === Auth cookie helpers
+export * from "./auth-cookies";
+
+// === Auth token management
+export * from "./auth";
+
+// === Authenticated fetch
+export * from "./apiFetch";
+
+// === Shared types
+export * from "./types/auth";

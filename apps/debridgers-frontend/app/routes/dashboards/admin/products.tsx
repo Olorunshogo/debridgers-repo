@@ -10,9 +10,12 @@ import {
   ImagePlus,
   Loader2,
 } from "lucide-react";
-import { apiFetch, ApiError } from "../../../utils/apiFetch";
-import { getAccessToken } from "../../../lib/auth";
-import { BASE_BACKEND_URL } from "../../../utils/api";
+import {
+  apiFetch,
+  ApiError,
+  getAccessToken,
+  BASE_BACKEND_URL,
+} from "@debridgers/api-client";
 
 export function meta() {
   return [{ title: "Products | Debridgers Admin" }];
@@ -54,13 +57,13 @@ function fmt(kobo: number) {
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState<boolean>(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function load() {

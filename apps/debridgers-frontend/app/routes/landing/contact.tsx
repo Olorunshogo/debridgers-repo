@@ -10,6 +10,7 @@ import {
   TextareaInput,
   SubmitButton,
 } from "@debridgers/ui-web";
+import { BASE_BACKEND_URL } from "@debridgers/api-client";
 
 // === Metadata
 export function meta({}: Route.MetaArgs) {
@@ -184,8 +185,8 @@ export default function ContactPage() {
     message: "",
   });
   const [errors, setErrors] = useState<FormErrors>({});
-  const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [submitted, setSubmitted] = useState<boolean>(false);
 
   function handleChange(field: keyof ContactForm) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -210,7 +211,6 @@ export default function ContactPage() {
     setErrors({});
 
     try {
-      const { BASE_BACKEND_URL } = await import("../../utils/api");
       const res = await fetch(`${BASE_BACKEND_URL}/contact`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -319,7 +319,7 @@ export default function ContactPage() {
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
-                    className="flex flex-col items-center gap-(--gap-base) py-12 text-center"
+                    className="flex flex-col items-center gap-(--gap-4) py-12 text-center"
                   >
                     <CheckCircle2
                       className="h-14 w-14"

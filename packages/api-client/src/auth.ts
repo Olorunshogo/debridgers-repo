@@ -1,11 +1,11 @@
-import type { AuthTokens } from "../types/auth";
+import type { AuthTokens } from "./types/auth";
 import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
   buildClearCookieHeaders,
   parseCookie,
-} from "../utils/auth-cookies";
-import { BASE_BACKEND_URL } from "../utils/api";
+} from "./auth-cookies";
+import { BASE_BACKEND_URL } from "./api";
 
 /**
  * Store access and refresh tokens as browser cookies.
