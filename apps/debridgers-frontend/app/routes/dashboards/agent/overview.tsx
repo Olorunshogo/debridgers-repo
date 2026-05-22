@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { Icon } from "@iconify/react";
 import { Link } from "react-router";
-import { YellowPrimaryLink } from "@debridgers/ui-web";
+import { apiFetch } from "../../../utils/apiFetch";
 import {
   BarChart,
   Bar,
@@ -16,17 +16,7 @@ import {
 import { HeroGreetingCard } from "../shared/HeroGreetingCard";
 
 export function meta() {
-  return [
-    { title: "Agent Overview | Debridgers" },
-    {
-      name: "description",
-      content:
-        "Track your sales, commissions and delivery activity from your Debridgers agent dashboard.",
-    },
-    // === Author and Robots
-    { name: "author", content: "Debridgers Team" },
-    { name: "robots", content: "noindex, nofollow" },
-  ];
+  return [{ title: "Agent Overview | Debridgers" }];
 }
 
 // === Types
@@ -81,89 +71,132 @@ interface AgentDashData {
   };
 }
 
-// === Mock data
-const MOCK_DATA: AgentDashData = {
-  name: "Abdul-malik Ajadi",
-  location: "Barnawa · Narayi",
-  ninVerified: true,
-  greeting: "Good Morning 🌤",
-  weekEarning: "₦18,400",
-  bagsInHand: 7,
-  bagsSold: 5,
-  bagsRemaining: 2,
-  paymentCycle: "Paid every Friday",
-  stats: [
-    {
-      label: "Total bags sold",
-      value: "18",
-      icon: "lucide:box",
-      trend: "↑ 7 this week",
+interface ApiProfile {
+  first_name: string;
+  last_name: string;
+  role: string;
+  status: string;
+  address?: string | null;
+  total_earnings: string;
+}
+
+interface ApiDashStats {
+  total_bags_sold: number;
+  total_earned: string;
+  rank: number | null;
+  days_reported: number;
+  commission_pending: string;
+}
+
+interface ApiLeaderEntry {
+  rank: number;
+  name: string;
+  location: string;
+  bags_sold: number;
+}
+
+function mapToDashboard(
+  profile: ApiProfile,
+  stats: ApiDashStats,
+  leaderTop3: ApiLeaderEntry[],
+): AgentDashData {
+  const now = new Date();
+  const hour = now.getHours();
+  const greeting =
+    hour < 12
+      ? "Good Morning 🌤"
+      : hour < 17
+        ? "Good Afternoon ☀️"
+        : "Good Evening 🌙";
+
+  const fmtNaira = (val: string | number) => {
+    const n = typeof val === "string" ? parseFloat(val) : val;
+    return `₦${n.toLocaleString("en-NG", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  };
+
+  const pendingNaira = parseFloat(stats.commission_pending);
+
+  const nextFriday = (() => {
+    const d = new Date();
+    const day = d.getDay();
+    const diff = (5 - day + 7) % 7 || 7;
+    d.setDate(d.getDate() + diff);
+    return {
+      daysLeft: diff,
+      label: d.toLocaleDateString("en-NG", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      }),
+    };
+  })();
+
+  return {
+    name: `${profile.first_name} ${profile.last_name}`.trim(),
+    location: profile.address ?? "—",
+    ninVerified: profile.status === "approved",
+    greeting,
+    weekEarning: fmtNaira(stats.total_earned),
+    bagsInHand: 0,
+    bagsSold: stats.total_bags_sold,
+    bagsRemaining: 0,
+    paymentCycle: "Paid every Friday",
+    stats: [
+      {
+        label: "Total bags sold",
+        value: String(stats.total_bags_sold),
+        icon: "lucide:shopping-bag",
+        trend: "All time",
+      },
+      {
+        label: "Total earned",
+        value: fmtNaira(stats.total_earned),
+        icon: "lucide:banknote",
+        trend: `${fmtNaira(stats.commission_pending)} pending`,
+      },
+      {
+        label: "Current rank",
+        value: stats.rank != null ? String(stats.rank).padStart(2, "0") : "—",
+        icon: "lucide:trophy",
+        trend: "Overall",
+      },
+      {
+        label: "Days reported",
+        value: String(stats.days_reported),
+        icon: "lucide:calendar-check",
+        trend: "↑ Report today",
+      },
+    ],
+    checklist: [
+      {
+        id: "c1",
+        label: "Submit daily report",
+        status: "action",
+        actionLabel: "Do it →",
+      },
+      {
+        id: "c2",
+        label: "Request next batch of stock",
+        status: "request",
+        actionLabel: "Request →",
+      },
+    ],
+    leaderboard: leaderTop3.map((e) => ({
+      rank: e.rank,
+      name: e.name,
+      location: e.location,
+      bags: e.bags_sold,
+    })),
+    monthlySales: [],
+    nextPayout: {
+      daysLeft: nextFriday.daysLeft,
+      date: nextFriday.label,
+      amountPending: pendingNaira > 0 ? fmtNaira(pendingNaira) : "₦0",
+      weekProgress: new Date().getDay() || 7,
+      weekLabel: `${nextFriday.daysLeft} day${nextFriday.daysLeft !== 1 ? "s" : ""} until payout`,
     },
-    {
-      label: "Total earned",
-      value: "₦42,500",
-      icon: "lucide:banknote",
-      trend: "↑ ₦18,400 pending",
-    },
-    {
-      label: "Current rank",
-      value: "04",
-      icon: "lucide:trophy",
-      trend: "↑ 2 spots this week",
-    },
-    {
-      label: "Days reported",
-      value: "18/21",
-      icon: "lucide:calendar-check",
-      trend: "↑ Report today",
-    },
-  ],
-  checklist: [
-    {
-      id: "c1",
-      label: "Pick up two bags of beans from depot",
-      status: "done",
-      actionLabel: "Done",
-    },
-    {
-      id: "c2",
-      label: "Submit daily report",
-      status: "action",
-      actionLabel: "Do it →",
-    },
-    {
-      id: "c3",
-      label: "Collect money from Alh Musa (₦2,500)",
-      status: "pending",
-      actionLabel: "Pending",
-    },
-    {
-      id: "c4",
-      label: "Request next batch of stock",
-      status: "request",
-      actionLabel: "Request →",
-    },
-  ],
-  leaderboard: [
-    { rank: 1, name: "Fatima Kabir", location: "Sabon Tasha", bags: 12 },
-    { rank: 2, name: "Usman Ibrahim", location: "Kakuri", bags: 12 },
-    { rank: 3, name: "Fatima Kabir", location: "Barnawa, Narayi", bags: 12 },
-  ],
-  monthlySales: [
-    { month: "Jan", bags: 120 },
-    { month: "Feb", bags: 80 },
-    { month: "Mar", bags: 200 },
-    { month: "Apr", bags: 100 },
-    { month: "May", bags: 140 },
-  ],
-  nextPayout: {
-    daysLeft: 3,
-    date: "Friday, April 4",
-    amountPending: "₦8,400",
-    weekProgress: 5,
-    weekLabel: "Mon–Thu complete (5/7 days)",
-  },
-};
+  };
+}
 
 // === Status styles
 const checklistStyles: Record<
@@ -205,20 +238,38 @@ function StatCard({ stat, index }: { stat: AgentStatCard; index: number }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: index * 0.07 }}
-      className="flex flex-col gap-2 rounded-2xl bg-white p-3 sm:p-4"
+      className="flex flex-col gap-3 rounded-2xl border p-4"
+      style={{
+        borderColor: "var(--border-gray)",
+        backgroundColor: "var(--white)",
+      }}
     >
       <div className="flex items-center justify-between">
-        <span className="text-text font-open-sans flex-1 text-base sm:text-base xl:text-xl">
+        <span className="text-sm" style={{ color: "var(--text-colour)" }}>
           {stat.label}
         </span>
-        <span className="flex h-8 w-8 items-center justify-center rounded-full">
-          <Icon icon={stat.icon} className="text-text h-4 w-4" />
+        <span
+          className="flex h-8 w-8 items-center justify-center rounded-full"
+          style={{ backgroundColor: "var(--bg-light)" }}
+        >
+          <Icon
+            icon={stat.icon}
+            className="h-4 w-4"
+            style={{ color: "var(--primary-color)" }}
+          />
         </span>
       </div>
-      <p className="font-syne text-primary text-2xl font-bold sm:text-3xl lg:text-4xl">
+      <p
+        className="font-syne text-2xl font-bold"
+        style={{ color: "var(--heading-colour)" }}
+      >
         {stat.value}
       </p>
-      <p className="text-primary font-open-sans flex items-center gap-1 text-[14px]">
+      <p
+        className="flex items-center gap-1 text-xs"
+        style={{ color: "var(--primary-color)" }}
+      >
+        <ArrowUpRight size={12} />
         {stat.trend}
       </p>
     </motion.div>
@@ -231,11 +282,16 @@ export default function AgentOverviewPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setData(MOCK_DATA);
-      setLoading(false);
-    }, 600);
-    return () => clearTimeout(t);
+    Promise.all([
+      apiFetch<ApiProfile>("/agent/me"),
+      apiFetch<ApiDashStats>("/agent/dashboard"),
+      apiFetch<ApiLeaderEntry[]>("/agent/leaderboard"),
+    ])
+      .then(([profile, stats, leaderboard]) => {
+        setData(mapToDashboard(profile, stats, leaderboard.slice(0, 3)));
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading || !data) {
@@ -259,7 +315,7 @@ export default function AgentOverviewPage() {
   }
 
   return (
-    <div className="py-section-py flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
       {/* Hero */}
       <HeroGreetingCard
         greeting={data.greeting}
@@ -282,45 +338,46 @@ export default function AgentOverviewPage() {
         }
         actions={
           <>
-            <YellowPrimaryLink
+            <Link
               to="/agent-dashboard/daily-report"
-              icon="lucide:chart-line"
+              className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
+              style={{
+                backgroundColor: "var(--secondary-color)",
+                color: "var(--heading-colour)",
+              }}
             >
+              <Icon icon="lucide:clipboard-pen-line" className="h-4 w-4" />
               Submit today&apos;s report
-            </YellowPrimaryLink>
+            </Link>
             <Link
               to="/agent-dashboard/leaderboard"
-              className="font-open-sans flex items-center gap-2.5 text-base text-[#E8EEE9] transition-all hover:text-white sm:text-lg lg:text-xl"
+              className="inline-flex items-center gap-1 text-sm font-medium text-white/80 transition-colors hover:text-white"
             >
-              View leader board
-              <ArrowRight size={18} strokeWidth={2} />
+              View leader board →
             </Link>
           </>
         }
         infoBox={
           <>
-            {/* This Week Earning */}
-            <div className="border-secondary bg-secondary/20 flex min-w-[200px] flex-col gap-1 rounded-xl border-[1.5px] px-4 py-1 backdrop-blur-sm">
-              <p className="font-open-sans text-base text-[#E8EEE9] lg:text-lg">
-                This week earning
-              </p>
-              <p className="font-syne text-xl font-bold text-white sm:text-2xl lg:text-3xl">
+            <div
+              className="flex min-w-[140px] flex-col gap-1 rounded-xl border border-white/20 p-4"
+              style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
+            >
+              <p className="text-xs text-white/60">This week earning</p>
+              <p className="font-syne text-xl font-bold text-white">
                 {data.weekEarning}
               </p>
-              <p className="font-open-sans text-base text-[#E8EEE9] lg:text-lg">
-                {data.paymentCycle}
-              </p>
+              <p className="text-xs text-white/60">{data.paymentCycle}</p>
             </div>
-
-            {/* Bags In Hand */}
-            <div className="border-secondary bg-secondary/20 flex min-w-[200px] flex-col gap-1 rounded-xl border-[1.5px] px-4 py-1 backdrop-blur-sm">
-              <p className="font-open-sans text-base text-[#E8EEE9] lg:text-lg">
-                Bags in hand
-              </p>
-              <p className="font-syne text-xl font-bold text-white sm:text-2xl lg:text-3xl">
+            <div
+              className="flex min-w-[130px] flex-col gap-1 rounded-xl border border-white/20 p-4"
+              style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
+            >
+              <p className="text-xs text-white/60">Bags in hand</p>
+              <p className="font-syne text-xl font-bold text-white">
                 {data.bagsInHand} bags
               </p>
-              <p className="font-open-sans text-base text-[#E8EEE9] lg:text-lg">
+              <p className="text-xs text-white/60">
                 {data.bagsSold} sold · {data.bagsRemaining} remaining
               </p>
             </div>
@@ -338,21 +395,32 @@ export default function AgentOverviewPage() {
       {/* Checklist + Leaderboard */}
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
         {/* Checklist */}
-        <div className="flex flex-col gap-3 rounded-[12px] bg-[#FEFEFE] p-5 lg:gap-[39px]">
-          <h3 className="font-syne text-base font-semibold text-black lg:text-lg">
+        <div
+          className="flex flex-col gap-3 rounded-2xl border p-5"
+          style={{
+            borderColor: "var(--border-gray)",
+            backgroundColor: "var(--white)",
+          }}
+        >
+          <h3
+            className="font-syne font-semibold"
+            style={{ color: "var(--heading-colour)" }}
+          >
             Today&apos;s checklist
           </h3>
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-2">
             {data.checklist.map((item) => {
               const s = checklistStyles[item.status];
               return (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between rounded-[12px] bg-[#E8EEE9] px-4 py-3"
+                  className="flex items-center justify-between rounded-xl px-4 py-3"
+                  style={{ backgroundColor: s.bg }}
                 >
                   <p
-                    className="text-text text-base lg:text-lg"
+                    className="text-sm"
                     style={{
+                      color: "var(--heading-colour)",
                       textDecoration: s.strikethrough ? "line-through" : "none",
                       opacity: s.strikethrough ? 0.6 : 1,
                     }}
@@ -373,14 +441,24 @@ export default function AgentOverviewPage() {
         </div>
 
         {/* Leaderboard preview */}
-        <div className="border-border-gray flex flex-col gap-3 rounded-2xl border bg-white p-5">
+        <div
+          className="flex flex-col gap-3 rounded-2xl border p-5"
+          style={{
+            borderColor: "var(--border-gray)",
+            backgroundColor: "var(--white)",
+          }}
+        >
           <div className="flex items-center justify-between">
-            <h3 className="font-open-sans text-heading text-base lg:text-lg">
+            <h3
+              className="font-syne font-semibold"
+              style={{ color: "var(--heading-colour)" }}
+            >
               Today&apos;s checklist
             </h3>
             <a
               href="/agent-dashboard/leaderboard"
-              className="text-primary text-xs font-medium underline underline-offset-2"
+              className="text-xs font-medium underline underline-offset-2"
+              style={{ color: "var(--primary-color)" }}
             >
               Full Board
             </a>
@@ -433,9 +511,18 @@ export default function AgentOverviewPage() {
       {/* Chart + Next payout */}
       <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
         {/* Bags sold chart */}
-        <div className="border-border-gray flex flex-col gap-4 rounded-2xl border bg-white p-5">
-          <h3 className="font-syne text-heading font-semibold">
-            Bag sold - this week
+        <div
+          className="flex flex-col gap-4 rounded-2xl border p-5"
+          style={{
+            borderColor: "var(--border-gray)",
+            backgroundColor: "var(--white)",
+          }}
+        >
+          <h3
+            className="font-syne font-semibold"
+            style={{ color: "var(--heading-colour)" }}
+          >
+            Bag sold — this week
           </h3>
           <ResponsiveContainer width="100%" height={160}>
             <BarChart
@@ -446,7 +533,7 @@ export default function AgentOverviewPage() {
             >
               <XAxis
                 type="number"
-                tick={{ fontSize: 12, fill: "var(--text-colour)" }}
+                tick={{ fontSize: 11, fill: "var(--text-colour)" }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(v: number) => `${v}k`}
@@ -454,7 +541,7 @@ export default function AgentOverviewPage() {
               <YAxis
                 type="category"
                 dataKey="month"
-                tick={{ fontSize: 12, fill: "var(--text-colour)" }}
+                tick={{ fontSize: 11, fill: "var(--text-colour)" }}
                 axisLine={false}
                 tickLine={false}
                 width={32}
@@ -462,12 +549,12 @@ export default function AgentOverviewPage() {
               <Tooltip
                 formatter={(v: number) => [`${v} bags`, "Sold"]}
                 contentStyle={{
-                  borderRadius: 2,
+                  borderRadius: 8,
                   border: "1px solid var(--border-gray)",
                   fontSize: 12,
                 }}
               />
-              <Bar dataKey="bags" radius={[0, 2, 2, 0]}>
+              <Bar dataKey="bags" radius={[0, 4, 4, 0]}>
                 {data.monthlySales.map((entry, i) => (
                   <Cell
                     key={entry.month}
@@ -488,31 +575,54 @@ export default function AgentOverviewPage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.2 }}
-          className="bg-primary flex flex-col gap-3 rounded-2xl p-5"
+          className="flex flex-col gap-3 rounded-2xl p-5"
+          style={{ backgroundColor: "var(--primary-color)" }}
         >
-          <p className="text-xs text-white/60">Next Payout in</p>
-          <p className="font-syne text-4xl font-extrabold text-white">
-            {data.nextPayout.daysLeft} Days
-          </p>
-          <p className="text-xs text-white/70">{data.nextPayout.date}</p>
-          <p
-            className="text-sm font-semibold"
-            style={{ color: "var(--secondary-color)" }}
-          >
-            {data.nextPayout.amountPending} pending
-          </p>
-          <div className="mt-1 flex flex-col gap-1.5">
-            <div className="relative h-1.5 w-full rounded-full bg-white/20">
-              <div
-                className="absolute top-0 left-0 h-full rounded-full"
-                style={{
-                  width: `${(data.nextPayout.weekProgress / 7) * 100}%`,
-                  backgroundColor: "var(--secondary-color)",
-                }}
-              />
-            </div>
-            <p className="text-xs text-white/60">{data.nextPayout.weekLabel}</p>
-          </div>
+          {data.nextPayout.amountPending === "₦0" ? (
+            <>
+              <p className="text-xs text-white/60">Next Payout</p>
+              <p className="font-syne text-2xl font-extrabold text-white">
+                No pending earnings
+              </p>
+              <p className="text-xs text-white/70">
+                Sell stock to earn your first commission
+              </p>
+              <p
+                className="text-sm font-semibold"
+                style={{ color: "var(--secondary-color)" }}
+              >
+                ₦0 pending
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-xs text-white/60">Next Payout in</p>
+              <p className="font-syne text-4xl font-extrabold text-white">
+                {data.nextPayout.daysLeft} Days
+              </p>
+              <p className="text-xs text-white/70">{data.nextPayout.date}</p>
+              <p
+                className="text-sm font-semibold"
+                style={{ color: "var(--secondary-color)" }}
+              >
+                {data.nextPayout.amountPending} pending
+              </p>
+              <div className="mt-1 flex flex-col gap-1.5">
+                <div className="relative h-1.5 w-full rounded-full bg-white/20">
+                  <div
+                    className="absolute top-0 left-0 h-full rounded-full"
+                    style={{
+                      width: `${(data.nextPayout.weekProgress / 7) * 100}%`,
+                      backgroundColor: "var(--secondary-color)",
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-white/60">
+                  {data.nextPayout.weekLabel}
+                </p>
+              </div>
+            </>
+          )}
         </motion.div>
       </div>
     </div>

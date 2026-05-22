@@ -5,12 +5,10 @@ import {
   useImageCycle,
   useTrustCycle,
 } from "../../components/HeroSection";
-import { HeroSection } from "../../components/HeroSection";
 import { Icon } from "@iconify/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 import { PrimaryLink, WhatsAppButton } from "@debridgers/ui-web";
-import { ArrowRight, Dot } from "lucide-react";
 
 // === Why Debridgers
 interface WhyCardData {
@@ -24,7 +22,7 @@ const whyCardsData: WhyCardData[] = [
     icon: "lucide:lock-keyhole",
     title: "Fixed, fair prices",
     description:
-      "No more guessing what rice costs today. Our prices are set weekly and always reflect real market rates - nothing more.",
+      "No more guessing what rice costs today. Our prices are set weekly and always reflect real market rates — nothing more.",
   },
   {
     icon: "lucide:check",
@@ -36,7 +34,7 @@ const whyCardsData: WhyCardData[] = [
     icon: "lucide:smartphone",
     title: "Order your way",
     description:
-      "WhatsApp, phone call, or app - whatever is easiest for you. No complex platforms, no downloads required to get started.",
+      "WhatsApp, phone call, or app — whatever is easiest for you. No complex platforms, no downloads required to get started.",
   },
 ];
 
@@ -53,7 +51,7 @@ function WhyCard({ card, isActive, onHover }: WhyCardProps) {
       onClick={onHover}
       whileHover={{ y: -10 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`group font-syne flex h-full flex-col gap-4 rounded-3xl px-8 py-4 transition-all duration-300 ease-in-out lg:gap-6 ${
+      className={`group font-syne gap-base lg:gap-xl py-base px-3xl flex h-full flex-col rounded-3xl transition-all duration-300 ease-in-out ${
         isActive
           ? "bg-primary text-white"
           : "border-gray hover:border-primary border bg-white"
@@ -73,14 +71,14 @@ function WhyCard({ card, isActive, onHover }: WhyCardProps) {
       {/* Content */}
       <div className="flex flex-col gap-4">
         <h3
-          className={`text-h3 font-bold transition-colors duration-300 ${
+          className={`text-xl font-bold transition-colors duration-300 lg:text-2xl ${
             isActive ? "text-white" : "text-heading group-hover:text-white"
           }`}
         >
           {card.title}
         </h3>
         <p
-          className={`font-open-sans flex-1 text-sm leading-relaxed transition-colors duration-300 sm:text-base lg:text-lg ${
+          className={`font-open-sans flex-1 text-base leading-relaxed transition-colors duration-300 lg:text-lg ${
             isActive ? "text-white" : "text-text group-hover:text-emerald-100"
           }`}
         >
@@ -179,12 +177,12 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
       transition={{ duration: 0.3 }}
       className="group relative h-[380px] w-[260px] shrink-0 cursor-default overflow-hidden rounded-3xl shadow-lg"
     >
-      {/* Images - static until hover, then swipe right-to-left */}
+      {/* Images — static until hover, then swipe right-to-left */}
       {category.images.map((src, idx) => (
         <motion.img
           key={src}
           src={src}
-          alt={`${category.title} – ${category.subtitle}, image ${idx + 1}`}
+          alt={`${category.title} - image ${idx + 1}`}
           className="absolute inset-0 h-full w-full object-cover"
           animate={{
             x:
@@ -202,12 +200,12 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
       <div className="absolute inset-0 bg-linear-to-t from-black/60 via-[#666666]/30 to-transparent" />
 
       {/* Label */}
-      <div className="font-open-sans absolute right-0 bottom-0 left-0 flex flex-col gap-1 px-4 pb-(--space-base) text-white">
+      <div className="font-open-sans px-base absolute right-0 bottom-0 left-0 flex flex-col gap-1 pb-(--space-base) text-white">
         <p className="text-lg font-semibold">{category.title}</p>
         <p className="text-base">{category.subtitle}</p>
       </div>
 
-      {/* Image dots - visible on hover */}
+      {/* Image dots — visible on hover */}
       {isHovered && category.images.length > 1 && (
         <div className="absolute bottom-20 left-1/2 flex -translate-x-1/2 gap-1.5">
           {category.images.map((_, i) => (
@@ -270,28 +268,28 @@ function WhatWeDeliver() {
       id="what-we-deliver"
       className="font-syne py-section-py sm:py-section-py-sm lg:py-section-py-lg relative w-full bg-white"
     >
-      <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto flex w-full flex-col gap-8">
+      <div className="gap-3xl px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto flex w-full flex-col">
         {/* Header */}
-        <div className="flex flex-col gap-3 lg:gap-6">
-          <p className="text-primary-light text-body-lg tracking-widest">
+        <div className="gap-md lg:gap-xl flex flex-col">
+          <p className="text-primary-light text-xl tracking-widest">
             What we deliver
           </p>
 
-          <div className="flex w-full flex-wrap items-start justify-between gap-6">
-            <h2 className="text-primary font-syne max-w-[751px] text-2xl leading-tight font-extrabold sm:text-3xl lg:text-[50px] lg:font-bold">
+          <div className="gap-xl flex w-full flex-wrap items-start justify-between">
+            <h2 className="text-primary font-syne max-w-[751px] text-3xl leading-tight font-extrabold sm:text-4xl lg:text-[50px] lg:font-bold">
               Everything you spend on at the market.
             </h2>
 
             <PrimaryLink
               href="https://wa.me/+2348167042797"
-              className="font-syne px-6 py-3 text-base font-bold sm:text-xl lg:text-3xl"
+              className="font-syne py-md px-xl text-xl font-bold sm:text-2xl lg:text-3xl"
             >
               Send Order
             </PrimaryLink>
           </div>
         </div>
 
-        {/* Carousel - overflow-hidden clips cards beyond 4 on lg */}
+        {/* Carousel — overflow-hidden clips cards beyond 4 on lg */}
         <div
           className="overflow-hidden"
           onMouseEnter={() => setIsHovered(true)}
@@ -348,8 +346,8 @@ interface Stat {
 
 const stats: Stat[] = [
   { value: 92, label: "resident of Kaduna are using us." },
-  { value: 1000, label: "areas in Kaduna we serve" },
-  { value: 0, label: "hidden fees - ever" },
+  { value: 1000, label: "areas in Kaduna South we serve" },
+  { value: 0, label: "hidden fees — ever" },
 ];
 
 const statsFormatters: Array<(v: number) => string> = [
@@ -365,49 +363,8 @@ export function meta({}: Route.MetaArgs) {
     {
       name: "description",
       content:
-        "Debridgers delivers fresh foodstuff straight to your door or shop at the exact price you would pay at Central Market. Rice, beans, palm oil, garri and more. Now serving Kaduna.",
+        "Fresh foodstuff delivered straight to your door or shop at market prices.",
     },
-    {
-      name: "keywords",
-      content:
-        "fresh foodstuff delivery Kaduna, market price food delivery Nigeria, rice beans delivery Kaduna, affordable food delivery Nigeria, Debridgers, fresh produce delivery, zero hidden fees food delivery",
-    },
-
-    // === Open Graph
-    { property: "og:type", content: "website" },
-    { property: "og:url", content: "https://debridgers.com/" },
-    { property: "og:site_name", content: "Debridgers" },
-    {
-      property: "og:title",
-      content: "Debridgers | Market Prices. Zero Market Stress.",
-    },
-    {
-      property: "og:description",
-      content:
-        "Fresh foodstuff delivered to your door at the same price you would pay at Central Market. No hidden fees. No middlemen. Just fresh food, fast.",
-    },
-    { property: "og:image", content: "https://debridgers.com/og-image.png" },
-    { property: "og:image:width", content: "1200" },
-    { property: "og:image:height", content: "630" },
-    { property: "og:locale", content: "en_NG" },
-
-    // === Twitter
-    { name: "twitter:card", content: "summary_large_image" },
-    { name: "twitter:url", content: "https://debridgers.com/" },
-    {
-      name: "twitter:title",
-      content: "Debridgers | Market Prices. Zero Market Stress.",
-    },
-    {
-      name: "twitter:description",
-      content:
-        "Fresh foodstuff delivered to your door at the same price you would pay at Central Market. No hidden fees. No middlemen. Just fresh food, fast.",
-    },
-    { name: "twitter:image", content: "https://debridgers.com/og-image.png" },
-
-    // === Author and Robots
-    { name: "author", content: "Debridgers Team" },
-    { name: "robots", content: "index, follow" },
   ];
 }
 
@@ -419,10 +376,7 @@ export default function Home() {
 
   const trustItems = [
     { icon: "lucide:check", label: "Guarantee fresh produce" },
-    {
-      icon: "lucide:map-pin",
-      label: "Sarbon Tasha &middot; Narayi&middot; Kakuri",
-    },
+    { icon: "lucide:map-pin", label: "Sarbon Tasha • Narayi• Kakuri" },
     { icon: "lucide:tag", label: "Transparent, fixed pricing" },
     { icon: "lucide:truck", label: "Fast Delivery" },
   ];
@@ -443,11 +397,11 @@ export default function Home() {
 
       {/* Hero Section */}
       <div className="relative flex w-full flex-col">
-        <div className="-mt-navbar-h flex max-h-[1100px] min-h-0 w-full flex-1 sm:max-h-[1000px] lg:max-h-[900px]">
+        <div className="-mt-navbar-h flex max-h-[800px] min-h-0 w-full flex-1 xl:max-h-[900px]">
           <div className="font-syne -mt-navbar-h bg-primary absolute inset-0 z-0 overflow-hidden" />
           <section
             id="hero-section"
-            className="font-syne relative mx-auto flex h-full min-h-screen w-full flex-col overflow-hidden"
+            className="font-syne relative mx-auto flex h-full min-h-screen w-full max-w-[1840px] flex-col overflow-hidden"
           >
             {/* Background layer */}
             <div className="absolute inset-0 z-0 h-full w-full">
@@ -456,12 +410,12 @@ export default function Home() {
                   <motion.img
                     key={`hero-img-${currentIndex}`}
                     src={images[currentIndex]}
-                    alt="Fresh foodstuff market scene"
+                    alt=""
                     initial={{ x: "100%" }}
                     animate={{ x: "0%" }}
                     exit={{ x: "-100%" }}
                     transition={{ duration: 0.1, ease: "easeInOut" }}
-                    className="absolute inset-0 h-full w-full object-cover"
+                    className="absolute inset-0 h-full w-full object-contain object-cover"
                   />
                 )}
               </AnimatePresence>
@@ -470,19 +424,19 @@ export default function Home() {
             </div>
 
             {/* Content Wrapper */}
-            <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-screen max-h-[1100px] w-full flex-col justify-between gap-[48px] sm:max-h-[1000px] lg:max-h-[900px] xl:max-h-[900px]">
+            <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex h-screen max-h-[800px] w-full flex-col justify-between gap-[48px] xl:max-h-[900px]">
               <div className="relative flex flex-1 flex-col pt-20 sm:pt-24 lg:pt-32">
-                <div className="flex flex-1 flex-col justify-center gap-7 lg:gap-10">
+                <div className="gap-2xl lg:gap-4xl flex flex-1 flex-col justify-center">
                   {/* Location badge */}
-                  <div className="text-primary font-open-sans inline-flex w-fit items-center gap-1 rounded-full border border-white/30 bg-[#A5BDA8] p-2 text-sm font-semibold shadow-[50px] backdrop-blur-lg">
+                  <div className="text-primary border-primary font-open-sans p-sm inline-flex w-fit items-center gap-1 rounded-full border border-white/30 bg-[#A5BDA8] text-sm font-semibold shadow-[50px] backdrop-blur-lg">
                     <span className="bg-primary h-1.5 w-1.5 rounded-full" />
                     Now Serving in Kaduna
                   </div>
 
                   {/* Heading and Paragraph */}
-                  <div className="flex flex-col gap-5">
+                  <div className="gap-lg flex flex-col">
                     {/* Heading */}
-                    <h1 className="text-hero flex flex-col leading-tight font-bold text-white">
+                    <h1 className="flex flex-col text-4xl leading-tight font-bold text-white sm:text-5xl md:text-6xl lg:text-7xl">
                       <span>Market Prices.</span>
                       <span className="flex flex-wrap items-baseline gap-x-3">
                         {/* Curved Underlined Zero */}
@@ -490,8 +444,6 @@ export default function Home() {
                           <span>Zero</span>
                           <img
                             src="/images/curved-underline.png"
-                            alt=""
-                            aria-hidden="true"
                             className="absolute -mt-2 w-fit"
                           />
                         </div>
@@ -507,29 +459,35 @@ export default function Home() {
                     </h1>
 
                     {/* Subtext */}
-                    <p className="text-body-lg w-full leading-relaxed font-semibold text-white sm:max-w-[360px] lg:max-w-[574px]">
+                    <p className="w-full max-w-[360px] text-base leading-relaxed font-semibold text-white sm:text-lg lg:max-w-[574px] lg:text-xl">
                       Fresh foodstuff delivered straight to your door step. At
                       the same price you&apos;d pay at Central Market.
                     </p>
                   </div>
 
                   {/* CTAs */}
-                  <div className="flex flex-col items-center justify-center gap-4 lg:flex-row lg:justify-start lg:gap-[74px]">
+                  <div className="gap-base flex flex-col items-center justify-center lg:flex-row lg:justify-start lg:gap-[74px]">
                     <WhatsAppButton className="w-auto" />
                     <a
                       href="#how-it-works"
-                      className="font-open-sans flex items-center gap-1 text-sm text-white transition-all duration-300 ease-in-out hover:text-white sm:text-base lg:gap-[10px] lg:text-xl"
+                      className="font-open-sans flex items-center gap-1 text-base text-white transition-all duration-300 ease-in-out hover:text-white sm:text-lg lg:gap-[10px] lg:text-xl"
                     >
                       See how it works
-                      <ArrowRight size={18} />
+                      <div className="h-4 w-4 shrink-0 lg:h-5 lg:w-5">
+                        <Icon
+                          icon="lucide:arrow-right"
+                          width={18}
+                          height={18}
+                        />
+                      </div>
                     </a>
                   </div>
                 </div>
               </div>
 
-              <div className="relative flex w-full flex-col gap-10 lg:gap-4">
+              <div className="gap-4xl lg:gap-base relative flex w-full flex-col">
                 {/* Trust bar */}
-                <div className="bg-primary mx-auto w-full px-4 py-6 shadow-md">
+                <div className="bg-primary py-xl px-base mx-auto w-full shadow-md">
                   {/* Mobile: slideshow */}
                   <div className="relative flex h-6 items-center justify-center overflow-hidden lg:hidden">
                     <AnimatePresence mode="sync">
@@ -539,12 +497,12 @@ export default function Home() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.4 }}
-                        className="absolute flex items-center gap-2 text-white/80"
+                        className="gap-sm absolute flex items-center text-white/80"
                       >
                         <span className="text-white/60">
                           {renderIcon(trustItems[activeTrustIndex].icon)}
                         </span>
-                        <span className="text-xs whitespace-nowrap">
+                        <span className="text-sm whitespace-nowrap">
                           {trustItems[activeTrustIndex].label}
                         </span>
                       </motion.div>
@@ -556,12 +514,12 @@ export default function Home() {
                     {trustItems.map((item, i) => (
                       <div
                         key={item.label}
-                        className={`flex shrink-0 items-center gap-6 px-4 text-white ${i < trustItems.length - 1 ? "border-r border-[#FCFDFD]" : ""}`}
+                        className={`gap-xl px-base flex shrink-0 items-center text-white ${i < trustItems.length - 1 ? "border-r border-[#FCFDFD]" : ""}`}
                       >
                         <span className="text-[#FCFDFD]">
                           {renderIcon(item.icon)}
                         </span>
-                        <span className="text-[14px] font-semibold whitespace-nowrap lg:text-base">
+                        <span className="text-sm font-semibold whitespace-nowrap">
                           {item.label}
                         </span>
                       </div>
@@ -580,51 +538,50 @@ export default function Home() {
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative bg-white"
       >
         <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto">
-          <div className="grid items-center gap-10 lg:grid-cols-2">
+          <div className="gap-4xl grid items-center lg:grid-cols-2">
             {/* Left Content */}
             <motion.div
               initial={{ opacity: 0, x: -24 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="flex flex-col gap-8"
+              className="gap-3xl flex flex-col"
             >
-              <div className="flex flex-col gap-3">
-                <p className="text-text text-body-sm font-semibold">
-                  How it works
-                </p>
-                <h2 className="text-primary text-xl leading-tight font-bold sm:text-3xl lg:text-5xl">
+              <div className="gap-md flex flex-col">
+                <p className="text-text text-sm font-semibold">How it works</p>
+                <h2 className="text-primary text-2xl leading-tight font-bold sm:text-3xl lg:text-5xl">
                   From market to your door in two steps
                 </h2>
               </div>
 
               <div className="flex flex-col">
                 {/* Step 1 */}
-                <div className="text-text flex gap-5 border-b border-[#E5E7EB] py-4">
+                <div className="py-base text-text gap-lg flex border-b border-[#E5E7EB]">
                   <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
                     01
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <h3 className="font-syne text-h3 font-bold">
+                  <div className="gap-sm flex flex-col">
+                    <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
                       Send us your order
                     </h3>
-                    <p className="font-open-sans text-body-sm leading-relaxed">
+                    <p className="font-open-sans text-sm leading-relaxed sm:text-base">
                       Chat on WhatsApp, call, or browse our catalog. Tell us
-                      what you need like rice, beans, palm oil, anything.
+                      what you need — rice, beans, palm oil, anything.
                     </p>
                   </div>
                 </div>
 
                 {/* Step 2 */}
-                <div className="text-text flex gap-5 py-4">
+
+                <div className="py-base text-text gap-lg flex">
                   <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
                     02
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <h3 className="font-syne text-h3 font-bold">
+                  <div className="gap-sm flex flex-col">
+                    <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
                       Delivered to you
                     </h3>
-                    <p className="font-open-sans text-body-sm leading-relaxed">
+                    <p className="font-open-sans text-sm leading-relaxed sm:text-base">
                       Your order arrives at your home or shop at the market
                       price you agreed. No surprises, no hidden fees.
                     </p>
@@ -649,11 +606,11 @@ export default function Home() {
                 />
                 {/* Delivery Info Card */}
                 <div className="bg-primary-light border-primary-light absolute right-[10px] bottom-[10px] left-[10px] flex flex-col gap-[10px] rounded-3xl border px-[24px] py-[12px] text-white shadow-md">
-                  <div className="flex items-center gap-[10px] text-[14px] lg:text-base">
+                  <div className="flex items-center gap-[10px] text-sm sm:text-base">
                     Next Delivery
                   </div>
-                  <p className="text-[14px] font-semibold lg:text-lg">
-                    Kaduna <Dot /> Today
+                  <p className="text-sm font-semibold sm:text-base lg:text-lg">
+                    Kaduna South • Today
                   </p>
                   <p className="text-sm lg:text-base">
                     Order before 12pm to experience same day delivery
@@ -670,12 +627,12 @@ export default function Home() {
         id="why-debridgers"
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg font-syne relative bg-[#F6F3F3]"
       >
-        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width mx-auto flex w-full flex-col gap-8">
-          <div className="flex flex-col gap-3 lg:gap-6">
-            <p className="text-primary-light text-body-lg tracking-widest">
+        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-3xl default-max-width mx-auto flex w-full flex-col">
+          <div className="lg:gap-xl gap-md flex flex-col">
+            <p className="text-primary-light text-xl tracking-widest">
               Why Debridgers
             </p>
-            <h2 className="text-primary text-h2 w-full max-w-[730px] font-bold lg:font-bold">
+            <h2 className="text-primary w-full max-w-[730px] text-3xl font-bold sm:text-4xl lg:text-5xl lg:font-bold">
               We solve what the market can&apos;t.
             </h2>
           </div>
@@ -710,17 +667,17 @@ export default function Home() {
           </div>
 
           {/* Stats */}
-          <div className="px-section-px px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative z-10 mx-auto flex flex-col lg:gap-10">
-            <div className="font-syne flex flex-col gap-3 pb-7">
-              <p className="text-text2 text-body-lg tracking-[3px] uppercase">
+          <div className="px-section-px px sm:px-section-px-sm lg:px-section-px-lg lg:gap-4xl default-max-width relative z-10 mx-auto flex flex-col">
+            <div className="font-syne pb-2xl gap-md flex flex-col">
+              <p className="text-text2 text-xl tracking-[3px] uppercase">
                 Early Numbers
               </p>
-              <h2 className="text-h2 w-full max-w-[831px] leading-tight font-bold lg:font-extrabold">
+              <h2 className="w-full max-w-[831px] text-3xl leading-tight font-bold sm:text-4xl lg:text-5xl lg:font-extrabold">
                 People are already excited.
               </h2>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 sm:gap-8">
+            <div className="gap-base sm:gap-3xl grid grid-cols-3">
               {stats.map((stat, i) => {
                 const displayValue = statsFormatters[i](stat.value);
                 return (
@@ -730,9 +687,9 @@ export default function Home() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: i * 0.1 }}
-                    className="flex flex-col gap-2 lg:w-[236px]"
+                    className="gap-sm flex flex-col lg:w-[236px]"
                   >
-                    <div className="text-secondary font-syne text-xl leading-none font-extrabold sm:text-3xl lg:text-5xl">
+                    <div className="text-secondary font-syne text-2xl leading-none font-extrabold sm:text-4xl lg:text-5xl">
                       {displayValue}
                     </div>
                     <p className="font-open-sans text-[14px] text-white sm:text-base lg:text-lg">
@@ -769,17 +726,17 @@ export default function Home() {
           <BlurDot className="absolute bottom-[70%] left-[90%] h-[115px] w-[110px] lg:left-[70%]" />
         </div>
 
-        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg default-max-width relative mx-auto flex w-full flex-col items-center justify-center gap-6 text-center lg:gap-8">
-          <div className="flex flex-col gap-3">
-            <p className="text-primary-light font-open-sans text-body-lg text-center font-semibold tracking-widest lg:text-xl">
+        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-xl default-max-width lg:gap-3xl relative mx-auto flex w-full flex-col items-center justify-center text-center">
+          <div className="gap-md flex flex-col">
+            <p className="text-primary-light font-open-sans text-center text-lg font-semibold tracking-widest lg:text-xl">
               Get started
             </p>
 
-            <h2 className="text-primary font-syne text-h2 mx-auto w-full max-w-[257px] text-center leading-tight font-extrabold sm:max-w-[500px] lg:max-w-[831px]">
+            <h2 className="text-primary font-syne mx-auto w-full max-w-[257px] text-center text-4xl leading-tight font-extrabold sm:max-w-[500px] sm:text-5xl lg:max-w-207.75 lg:text-6xl">
               Your first delivery is on us.
             </h2>
 
-            <p className="text-primary font-open-sans text-body-lg mx-auto w-full max-w-[256px] sm:max-w-[500px]">
+            <p className="text-primary font-open-sans mx-auto w-full max-w-[256px] max-w-[831px] text-base sm:max-w-[500px] lg:text-lg">
               Join early and get free delivery on your first order. Just send us
               a WhatsApp and we&apos;ll take it from there.
             </p>
@@ -881,8 +838,8 @@ export default function Home() {
                 <ul className="gap-base flex flex-col text-sm text-green-100">
                   {[
                     "Access to a larger, verified network of food directly from farm",
-                    "More consistent stock - even during off-season period",
-                    "Two teams, one mission - fresh food at honest prices",
+                    "More consistent stock — even during off-season period",
+                    "Two teams, one mission — fresh food at honest prices",
                   ].map((item) => (
                     <li
                       key={item}

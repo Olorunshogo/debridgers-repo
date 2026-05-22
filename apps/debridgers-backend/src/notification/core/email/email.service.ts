@@ -8,6 +8,7 @@ export interface SendEmailOptions {
   subject: string;
   html: string;
   text?: string;
+  category?: string;
 }
 
 @Injectable()
@@ -42,6 +43,7 @@ export class CoreEmailService {
         subject: options.subject,
         html: options.html,
         text: options.text ?? options.subject,
+        category: options.category,
       });
       this.logger.log(`Email sent to ${options.to} — "${options.subject}"`);
     } catch (err) {

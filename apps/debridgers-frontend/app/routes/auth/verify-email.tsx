@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useLocation, useNavigate, Link } from "react-router";
+import { useLocation, Link } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw } from "lucide-react";
 import { AppLogo, SubmitButton } from "@debridgers/ui-web";
 import AuthSuccessModal from "../../components/auth/AuthSuccessModal";
 import { BASE_BACKEND_URL } from "../../utils/api";
+import { storeTokens } from "../../lib/auth";
 
 export function meta() {
   return [
@@ -26,9 +27,11 @@ const OTP_LENGTH = 6;
 
 export default function VerifyEmailPage() {
   const location = useLocation();
-  const navigate = useNavigate();
   const state = location.state as { email?: string; role?: string } | null;
-  const email = state?.email ?? "";
+  const queryParams = new URLSearchParams(location.search);
+  const queryEmail = queryParams.get("email") ?? "";
+  const queryOtp = queryParams.get("otp") ?? "";
+  const email = state?.email ?? queryEmail;
   const role = state?.role ?? "buyer";
 
   const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(""));
@@ -44,11 +47,59 @@ export default function VerifyEmailPage() {
   const [maxResendReached, setMaxResendReached] = useState<boolean>(false);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const autoVerifyAttempted = useRef(false);
 
   // Auto-focus first slot on mount
   useEffect(() => {
     inputRefs.current[0]?.focus();
   }, []);
+
+  useEffect(() => {
+    if (queryOtp.length === OTP_LENGTH) {
+      setDigits(queryOtp.split(""));
+    }
+  }, [queryOtp]);
+
+  const verifyOtp = useCallback(
+    async (emailValue: string, otpValue: string) => {
+      if (!emailValue || otpValue.length !== OTP_LENGTH || loading) return;
+      setApiError(null);
+      setLoading(true);
+      try {
+        const res = await fetch(`${BASE_BACKEND_URL}/auth/verify-email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email: emailValue, otp: otpValue }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          setApiError(json.message ?? "Verification failed. Please try again.");
+          return;
+        }
+        const { accessToken, refreshToken } = (json.data ?? {}) as {
+          accessToken?: string;
+          refreshToken?: string;
+        };
+        if (accessToken && refreshToken) {
+          storeTokens(accessToken, refreshToken);
+        }
+        setShowSuccess(true);
+      } catch {
+        setApiError("Network error. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [loading],
+  );
+
+  useEffect(() => {
+    if (autoVerifyAttempted.current) return;
+    if (!queryEmail || queryOtp.length !== OTP_LENGTH) return;
+    autoVerifyAttempted.current = true;
+    void verifyOtp(queryEmail, queryOtp);
+  }, [queryEmail, queryOtp, verifyOtp]);
 
   // Countdown timer
   useEffect(() => {
@@ -72,7 +123,7 @@ export default function VerifyEmailPage() {
       ? "/agent-dashboard"
       : role === "admin"
         ? "/admin-dashboard"
-        : "/dashboard";
+        : "/buyer-dashboard";
 
   const handleDigitChange = useCallback(
     (index: number, value: string) => {
@@ -129,26 +180,7 @@ export default function VerifyEmailPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!allFilled || loading) return;
-    setApiError(null);
-    setLoading(true);
-    try {
-      const res = await fetch(`${BASE_BACKEND_URL}/auth/verify-email`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email, otp: digits.join("") }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        setApiError(json.message ?? "Verification failed. Please try again.");
-        return;
-      }
-      setShowSuccess(true);
-    } catch {
-      setApiError("Network error. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    await verifyOtp(email, digits.join(""));
   }
 
   // ── Resend ────────────────────────────────────────────────────────────────
@@ -235,7 +267,7 @@ export default function VerifyEmailPage() {
 
         {/* Form panel */}
         <div className="flex flex-1 flex-col items-center justify-center bg-white px-6 py-12 lg:px-16">
-          <div className="flex w-full max-w-[480px] flex-col gap-6">
+          <div className="flex w-full max-w-120 flex-col gap-6">
             {/* Logo */}
             <div className="flex justify-center">
               <AppLogo />

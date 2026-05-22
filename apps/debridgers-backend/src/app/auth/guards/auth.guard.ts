@@ -6,8 +6,7 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
-import { Request } from "express";
-import { JwtPayload } from "../../../interfaces/users/jwt.type";
+import { AuthRequest, JwtPayload } from "../../../interfaces/users/jwt.type";
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -17,28 +16,47 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const req = context
-      .switchToHttp()
-      .getRequest<Request & { user: JwtPayload }>();
-    const token = this.extractToken(req);
+    const req = context.switchToHttp().getRequest<AuthRequest>();
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+      throw new UnauthorizedException("Missing Authorization header");
+    }
+
+    const [type, token] = authHeader.split(" ");
+
+    if (type !== "Bearer") {
+      throw new UnauthorizedException(
+        "Invalid token type - expected 'Bearer <token>'",
+      );
+    }
 
     if (!token) {
-      throw new UnauthorizedException("No token provided");
+      throw new UnauthorizedException("No access token provided");
     }
 
     try {
       const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
         secret: this.config.get<string>("AccessJwt.secret"),
       });
-      req.user = payload;
-      return true;
-    } catch {
-      throw new UnauthorizedException("Invalid or expired token");
-    }
-  }
 
-  private extractToken(req: Request): string | undefined {
-    const [type, token] = req.headers.authorization?.split(" ") ?? [];
-    return type === "Bearer" ? token : undefined;
+      // Explicitly map payload properties to user
+      req.user = {
+        sub: payload.sub,
+        id: payload.sub,
+        email: payload.email,
+        role: payload.role,
+        iat: payload.iat,
+        exp: payload.exp,
+      };
+
+      return true;
+    } catch (error) {
+      let message = "Invalid access token";
+      if (error instanceof Error && error.name === "TokenExpiredError") {
+        message = "Access token has expired";
+      }
+      throw new UnauthorizedException(message);
+    }
   }
 }

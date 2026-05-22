@@ -1,57 +1,25 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
+import { Link } from "react-router";
+import { motion } from "framer-motion";
 import { CheckCircle2 } from "lucide-react";
-import { BASE_BACKEND_URL } from "../../../utils/api";
+import { apiFetch } from "../../../utils/apiFetch";
 
 export function meta() {
-  return [
-    { title: "Checkout | Debridgers" },
-    {
-      name: "description",
-      content:
-        "Complete your Debridgers food order. Review your cart and confirm delivery details.",
-    },
-    // === Author and Robots
-    { name: "author", content: "Debridgers Team" },
-    { name: "robots", content: "noindex, nofollow" },
-  ];
+  return [{ title: "Checkout | Debridgers" }];
 }
 
-type Step = "cart" | "delivery" | "payment" | "confirmed";
+type Step = "delivery" | "confirmed";
 
-interface Address {
+interface CartItem {
   id: string;
-  label: string;
-  full: string;
-  isDefault: boolean;
+  name: string;
+  price: number;
+  unit: string;
+  qty: number;
 }
-
-const MOCK_ADDRESSES: Address[] = [
-  {
-    id: "1",
-    label: "Home - Default",
-    full: "10 Barnawa Close, off Rabah Road, Barnawa, Kaduna",
-    isDefault: true,
-  },
-  {
-    id: "2",
-    label: "Shop - Backup",
-    full: "14 Business Drive, off Rabah Road, Barnawa, Kaduna",
-    isDefault: false,
-  },
-];
-
-const MOCK_ITEMS = [
-  { name: "Parboiled Rice", qty: 2, unit: "kg", price: 2400 },
-  { name: "Parboiled Rice", qty: 3, unit: "kg", price: 3600 },
-  { name: "Parboiled Rice", qty: 2, unit: "kg", price: 2400 },
-];
 
 const steps: { key: Step; label: string }[] = [
-  { key: "cart", label: "Cart" },
   { key: "delivery", label: "Delivery" },
-  { key: "payment", label: "Payment" },
   { key: "confirmed", label: "Confirmed" },
 ];
 
@@ -60,34 +28,52 @@ function formatNaira(n: number) {
 }
 
 export default function BuyerCheckout() {
-  const navigate = useNavigate();
   const [step, setStep] = useState<Step>("delivery");
-  const [selectedAddress, setSelectedAddress] = useState("1");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryTime, setDeliveryTime] = useState<"today" | "tomorrow">(
     "today",
   );
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
-  const subtotal = MOCK_ITEMS.reduce((s, i) => s + i.price, 0);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("debridgers_cart");
+      if (saved) setCartItems(JSON.parse(saved) as CartItem[]);
+    } catch {
+      setCartItems([]);
+    }
+    apiFetch<{ first_name: string; last_name: string; email: string }>(
+      "/buyer/me",
+    )
+      .then(() => {})
+      .catch(() => {});
+  }, []);
 
-  async function handleContinue() {
+  const subtotal = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
+
+  async function handleContinue(e: React.FormEvent) {
+    e.preventDefault();
+    if (cartItems.length === 0 || !deliveryAddress.trim()) return;
+    setError(null);
     setLoading(true);
     try {
-      // === PRODUCTION
-      // const res = await fetch(`${BASE_BACKEND_URL}/buyer/orders`, {
-      //   method: "POST",
-      //   credentials: "include",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ addressId: selectedAddress, deliveryTime, note }),
-      // });
-      // if (!res.ok) throw new Error("Order failed");
-
-      // === MOCK
-      await new Promise<void>((r) => setTimeout(r, 1000));
+      const totalQty = cartItems.reduce((s, i) => s + i.qty, 0);
+      await apiFetch("/buyer/orders", {
+        method: "POST",
+        body: JSON.stringify({
+          quantity: totalQty,
+          total_amount_kobo: subtotal * 100,
+          delivery_address: deliveryAddress.trim(),
+          notes: note.trim() || undefined,
+        }),
+      });
+      localStorage.removeItem("debridgers_cart");
       setStep("confirmed");
     } catch {
-      // handle error
+      setError("Failed to place order. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -101,19 +87,25 @@ export default function BuyerCheckout() {
         className="flex flex-col items-center gap-6 py-16 text-center"
       >
         <CheckCircle2 size={64} style={{ color: "var(--primary-color)" }} />
-        <h2 className="font-syne text-heading text-2xl font-bold">
+        <h2
+          className="font-syne text-2xl font-bold"
+          style={{ color: "var(--heading-colour)" }}
+        >
           Order Confirmed!
         </h2>
-        <p className="text-text max-w-[350px] text-sm">
+        <p
+          className="max-w-[350px] text-sm"
+          style={{ color: "var(--text-colour)" }}
+        >
           Your order has been placed. We&apos;ll notify you when it&apos;s
           picked up.
         </p>
         <Link
-          to="/buyer-dashboard"
+          to="/buyer-dashboard/orders"
           className="rounded-full px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
           style={{ backgroundColor: "var(--primary-color)" }}
         >
-          Back to Dashboard
+          View My Orders
         </Link>
       </motion.div>
     );
@@ -121,7 +113,7 @@ export default function BuyerCheckout() {
 
   return (
     <div className="flex max-w-4xl flex-col gap-6">
-      {/* Progress steps */}
+      {/* Progress */}
       <div className="flex items-center gap-2">
         {steps.map((s, i) => (
           <div key={s.key} className="flex items-center gap-2">
@@ -148,76 +140,12 @@ export default function BuyerCheckout() {
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <form
+        onSubmit={handleContinue}
+        className="grid gap-6 lg:grid-cols-[1fr_320px]"
+      >
         {/* Left: Delivery form */}
         <div className="flex flex-col gap-5">
-          {/* Delivery Address */}
-          <div
-            className="flex flex-col gap-4 rounded-2xl border p-5"
-            style={{
-              borderColor: "var(--border-gray)",
-              backgroundColor: "var(--white)",
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <h3
-                className="font-syne font-semibold"
-                style={{ color: "var(--heading-colour)" }}
-              >
-                Delivery Address
-              </h3>
-              <button
-                className="text-sm underline underline-offset-2"
-                style={{ color: "var(--primary-color)" }}
-              >
-                New address +
-              </button>
-            </div>
-            <div className="flex flex-col gap-3">
-              {MOCK_ADDRESSES.map((addr) => (
-                <label
-                  key={addr.id}
-                  className="flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors"
-                  style={{
-                    borderColor:
-                      selectedAddress === addr.id
-                        ? "var(--primary-color)"
-                        : "var(--border-gray)",
-                    backgroundColor:
-                      selectedAddress === addr.id
-                        ? "var(--dash-quick-action-hover)"
-                        : "transparent",
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="address"
-                    value={addr.id}
-                    checked={selectedAddress === addr.id}
-                    onChange={() => setSelectedAddress(addr.id)}
-                    className="mt-0.5"
-                    style={{ accentColor: "var(--primary-color)" }}
-                  />
-                  <div className="flex flex-col gap-0.5">
-                    <p
-                      className="text-sm font-semibold"
-                      style={{ color: "var(--heading-colour)" }}
-                    >
-                      {addr.label}
-                    </p>
-                    <p
-                      className="text-xs"
-                      style={{ color: "var(--text-colour)" }}
-                    >
-                      {addr.full}
-                    </p>
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Delivery Time */}
           <div
             className="flex flex-col gap-4 rounded-2xl border p-5"
             style={{
@@ -229,15 +157,58 @@ export default function BuyerCheckout() {
               className="font-syne font-semibold"
               style={{ color: "var(--heading-colour)" }}
             >
-              Delivery Delivery Time
+              Delivery Address
+            </h3>
+            <div className="flex flex-col gap-1.5">
+              <label
+                className="text-sm font-medium"
+                style={{ color: "var(--heading-colour)" }}
+              >
+                Full delivery address{" "}
+                <span style={{ color: "var(--error-red)" }}>*</span>
+              </label>
+              <textarea
+                value={deliveryAddress}
+                onChange={(e) => setDeliveryAddress(e.target.value)}
+                placeholder="Enter your full delivery address..."
+                rows={3}
+                required
+                className="w-full resize-none rounded-xl border px-4 py-3 text-sm transition-all duration-200 outline-none"
+                style={{
+                  borderColor: "var(--border-gray)",
+                  backgroundColor: "var(--input-bg)",
+                  color: "var(--heading-colour)",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "var(--primary-color)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "var(--border-gray)";
+                }}
+              />
+            </div>
+          </div>
+
+          <div
+            className="flex flex-col gap-4 rounded-2xl border p-5"
+            style={{
+              borderColor: "var(--border-gray)",
+              backgroundColor: "var(--white)",
+            }}
+          >
+            <h3
+              className="font-syne font-semibold"
+              style={{ color: "var(--heading-colour)" }}
+            >
+              Delivery Time
             </h3>
             <div className="flex gap-3">
               {[
-                { key: "today" as const, label: "Today", sub: "Before 12 Pm" },
+                { key: "today" as const, label: "Today", sub: "Before 12pm" },
                 {
                   key: "tomorrow" as const,
                   label: "Tomorrow",
-                  sub: "Between 9 - 5",
+                  sub: "Between 9am – 5pm",
                 },
               ].map((opt) => (
                 <label
@@ -290,8 +261,8 @@ export default function BuyerCheckout() {
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Eg: Call me when you arrive, Please..."
-                rows={3}
+                placeholder="E.g. Call me when you arrive..."
+                rows={2}
                 className="w-full resize-none rounded-xl border px-4 py-3 text-sm transition-all duration-200 outline-none"
                 style={{
                   borderColor: "var(--border-gray)",
@@ -299,8 +270,7 @@ export default function BuyerCheckout() {
                   color: "var(--heading-colour)",
                 }}
                 onFocus={(e) => {
-                  e.currentTarget.style.borderColor =
-                    "var(--input-border-focus)";
+                  e.currentTarget.style.borderColor = "var(--primary-color)";
                 }}
                 onBlur={(e) => {
                   e.currentTarget.style.borderColor = "var(--border-gray)";
@@ -318,77 +288,98 @@ export default function BuyerCheckout() {
             backgroundColor: "var(--white)",
           }}
         >
-          <div className="flex items-center justify-between">
-            <h3
-              className="font-syne font-semibold"
-              style={{ color: "var(--heading-colour)" }}
-            >
-              Order summary
-            </h3>
-            <button
-              className="text-xs underline underline-offset-2"
-              style={{ color: "var(--primary-color)" }}
-            >
-              Edit
-            </button>
-          </div>
+          <h3
+            className="font-syne font-semibold"
+            style={{ color: "var(--heading-colour)" }}
+          >
+            Order Summary
+          </h3>
 
           <div className="flex flex-col gap-3">
-            {MOCK_ITEMS.map((item, i) => (
+            {cartItems.length === 0 ? (
+              <p className="text-sm" style={{ color: "var(--text-colour)" }}>
+                Your cart is empty.{" "}
+                <Link
+                  to="/buyer-dashboard/shop"
+                  className="underline underline-offset-2"
+                  style={{ color: "var(--primary-color)" }}
+                >
+                  Go back to shop
+                </Link>
+              </p>
+            ) : (
+              cartItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between text-sm"
+                >
+                  <span style={{ color: "var(--text-colour)" }}>
+                    {item.name} {item.qty}
+                    {item.unit.replace("per ", "")}
+                  </span>
+                  <span style={{ color: "var(--heading-colour)" }}>
+                    {formatNaira(item.price * item.qty)}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+
+          {cartItems.length > 0 && (
+            <div
+              className="flex flex-col gap-2 border-t pt-3"
+              style={{ borderColor: "var(--border-gray)" }}
+            >
               <div
-                key={i}
-                className="flex items-center justify-between text-sm"
+                className="flex justify-between text-sm"
+                style={{ color: "var(--text-colour)" }}
               >
-                <span style={{ color: "var(--text-colour)" }}>
-                  {item.name} {item.qty}
-                  {item.unit}
-                </span>
-                <span style={{ color: "var(--heading-colour)" }}>
-                  {formatNaira(item.price)}
+                <span>Subtotal</span>
+                <span>{formatNaira(subtotal)}</span>
+              </div>
+              <div
+                className="flex justify-between text-sm"
+                style={{ color: "var(--text-colour)" }}
+              >
+                <span>Delivery</span>
+                <span style={{ color: "var(--status-delivered-text)" }}>
+                  Free
                 </span>
               </div>
-            ))}
-          </div>
+              <div
+                className="font-syne flex justify-between text-lg font-bold"
+                style={{ color: "var(--heading-colour)" }}
+              >
+                <span>Total</span>
+                <span>{formatNaira(subtotal)}</span>
+              </div>
+            </div>
+          )}
 
-          <div
-            className="flex flex-col gap-2 border-t pt-3"
-            style={{ borderColor: "var(--border-gray)" }}
-          >
-            <div
-              className="flex justify-between text-sm"
-              style={{ color: "var(--text-colour)" }}
+          {error && (
+            <p
+              className="rounded-xl px-4 py-3 text-sm"
+              style={{
+                backgroundColor: "var(--status-cancelled-bg)",
+                color: "var(--status-cancelled-text)",
+              }}
             >
-              <span>Subtotal</span>
-              <span>{formatNaira(subtotal)}</span>
-            </div>
-            <div
-              className="flex justify-between text-sm"
-              style={{ color: "var(--text-colour)" }}
-            >
-              <span>Delivery</span>
-              <span style={{ color: "var(--status-delivered-text)" }}>
-                Free
-              </span>
-            </div>
-            <div
-              className="font-syne flex justify-between text-lg font-bold"
-              style={{ color: "var(--heading-colour)" }}
-            >
-              <span>Total</span>
-              <span>{formatNaira(subtotal)}</span>
-            </div>
-          </div>
+              {error}
+            </p>
+          )}
 
           <button
-            onClick={handleContinue}
-            disabled={loading}
+            type="submit"
+            disabled={
+              loading || cartItems.length === 0 || !deliveryAddress.trim()
+            }
             className="flex items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
             style={{ backgroundColor: "var(--primary-color)" }}
           >
-            {loading ? "Processing..." : "Continue to payment →"}
+            {loading ? "Placing order..." : "Place Order →"}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }
