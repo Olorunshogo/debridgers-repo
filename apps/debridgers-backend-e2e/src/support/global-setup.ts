@@ -10,7 +10,7 @@ const HEALTH_URL = `${BASE_URL}/health`;
 const MAX_WAIT_MS = 45_000;
 const POLL_INTERVAL_MS = 500;
 
-const backendRoot = resolve(__dirname, "../../../../debridgers-backend");
+const backendRoot = resolve(__dirname, "../../../debridgers-backend");
 const distMain = resolve(backendRoot, "dist/main.js");
 
 declare global {
