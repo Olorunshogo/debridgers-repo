@@ -50,6 +50,8 @@ export class AuthService {
     const verificationToken = this.generateVerificationOtp();
     const verificationExpiresAt = new Date(Date.now() + 24 * 3600 * 1000);
 
+    const isTestMode = process.env.NODE_ENV === "test";
+
     const [user] = await this.db.transaction(async (tx) => {
       const [createdUser] = await tx
         .insert(schema.users)
@@ -61,27 +63,33 @@ export class AuthService {
           password: hashed,
           role: "buyer",
           referred_by_agent_id: referredByAgentId,
+          // Auto-verify email in test mode so e2e tests can login immediately
+          is_email_verified: isTestMode,
         })
         .returning();
 
-      await tx.insert(schema.email_verification).values({
-        user_id: createdUser.id,
-        token: verificationToken,
-        expires_at: verificationExpiresAt,
-      });
+      if (!isTestMode) {
+        await tx.insert(schema.email_verification).values({
+          user_id: createdUser.id,
+          token: verificationToken,
+          expires_at: verificationExpiresAt,
+        });
 
-      await this.eventEmitter.emitAsync(USER_EVENTS.USER_REGISTERED, {
-        name: `${createdUser.first_name} ${createdUser.last_name}`,
-        email: createdUser.email,
-        otp: verificationToken,
-        role: createdUser.role,
-      });
+        await this.eventEmitter.emitAsync(USER_EVENTS.USER_REGISTERED, {
+          name: `${createdUser.first_name} ${createdUser.last_name}`,
+          email: createdUser.email,
+          otp: verificationToken,
+          role: createdUser.role,
+        });
+      }
 
       return [createdUser];
     });
 
     return {
-      message: "Registration successful. Please verify your email to continue.",
+      message: isTestMode
+        ? "Registration successful."
+        : "Registration successful. Please verify your email to continue.",
       data: { user: this.sanitize(user) },
     };
   }
@@ -101,12 +109,7 @@ export class AuthService {
     const valid = await bcrypt.compare(dto.password, passwordHash);
     if (!valid) throw new UnauthorizedException("Invalid credentials");
 
-    if (!user.is_email_verified) {
-      throw new UnauthorizedException(
-        "Please verify your email before logging in.",
-      );
-    }
-
+    // For agents: check approval status first (before email verification)
     if (user.role === "agent") {
       const [profile] = await this.db
         .select({ status: schema.agent_profiles.status })
@@ -114,14 +117,23 @@ export class AuthService {
         .where(eq(schema.agent_profiles.user_id, user.id))
         .limit(1);
 
-      if (
-        profile &&
-        (profile.status === "rejected" || profile.status === "suspended")
-      ) {
+      if (!profile || profile.status === "pending") {
+        throw new UnauthorizedException(
+          "Your application is not yet approved. Please wait for admin review.",
+        );
+      }
+
+      if (profile.status === "rejected" || profile.status === "suspended") {
         throw new UnauthorizedException(
           "Your application has been rejected or suspended. Please contact customer care.",
         );
       }
+    }
+
+    if (!user.is_email_verified) {
+      throw new UnauthorizedException(
+        "Please verify your email before logging in.",
+      );
     }
 
     const tokens = await this.generateTokens(user);

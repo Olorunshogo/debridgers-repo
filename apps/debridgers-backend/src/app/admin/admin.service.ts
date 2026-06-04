@@ -216,6 +216,12 @@ export class AdminService {
     const name = `${user.first_name} ${user.last_name}`;
 
     if (dto.status === "approved") {
+      // Auto-verify email on approval — admin has vetted the agent
+      await this.db
+        .update(schema.users)
+        .set({ is_email_verified: true })
+        .where(eq(schema.users.id, agentId));
+
       // Generate unique referral codes
       const code = crypto.randomBytes(4).toString("hex").toUpperCase(); // e.g. A3F2B1C9
       const buyerCode = `BUYER-${code}`;
