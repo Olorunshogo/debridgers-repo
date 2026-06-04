@@ -9,4 +9,5 @@ export default {
   },
   moduleFileExtensions: ["ts", "js", "html"],
   testTimeout: 30000,
+  forceExit: true,
 };
