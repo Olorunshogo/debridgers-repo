@@ -198,37 +198,38 @@ pnpm watch:ui-web
 
 ### Root workspace scripts
 
-| Script                    | Purpose                              |
-| ------------------------- | ------------------------------------ |
-| `pnpm dev`                | Run frontend and backend in parallel |
-| `pnpm build`              | Build all workspace targets          |
-| `pnpm start`              | Serve all production builds          |
-| `pnpm typecheck`          | Type check all projects              |
-| `pnpm lint`               | Lint all projects                    |
-| `pnpm lint:fix`           | Lint + auto-fix all projects         |
-| `pnpm analyze`            | Run bundle analysis for frontend     |
-| `pnpm dev:frontend`       | Run frontend dev server              |
-| `pnpm build:frontend`     | Build frontend                       |
-| `pnpm start:frontend`     | Serve frontend production build      |
-| `pnpm typecheck:frontend` | Frontend type check                  |
-| `pnpm lint:frontend`      | Frontend lint                        |
-| `pnpm lint:fix:frontend`  | Frontend lint + fix                  |
-| `pnpm dev:backend`        | Run backend dev server               |
-| `pnpm build:backend`      | Build backend                        |
-| `pnpm start:backend`      | Serve backend production build       |
-| `pnpm typecheck:backend`  | Backend type check                   |
-| `pnpm lint:backend`       | Backend lint                         |
-| `pnpm lint:fix:backend`   | Backend lint + fix                   |
-| `pnpm db:migrate`         | Run backend migrations               |
-| `pnpm db:generate`        | Generate a migration file            |
-| `pnpm db:seed`            | Seed database                        |
-| `pnpm docker:up`          | Start local Postgres container       |
-| `pnpm docker:down`        | Stop local Postgres container        |
-| `pnpm docker:migrate`     | Start Postgres + run migrations      |
-| `pnpm test:e2e`           | Run backend e2e tests                |
-| `pnpm dev:ui-web`         | Run ui-web watch mode                |
-| `pnpm build:ui-web`       | Build ui-web package                 |
-| `pnpm watch:ui-web`       | Alias for ui-web watch mode          |
+| Script                                  | Purpose                                             |
+| --------------------------------------- | --------------------------------------------------- |
+| `pnpm dev`                              | Run frontend and backend in parallel                |
+| `pnpm build`                            | Build all workspace targets                         |
+| `pnpm start`                            | Serve all production builds                         |
+| `pnpm typecheck`                        | Type check all projects                             |
+| `pnpm lint`                             | Lint all projects                                   |
+| `pnpm lint:fix`                         | Lint + auto-fix all projects                        |
+| `pnpm analyze`                          | Run bundle analysis for frontend                    |
+| `pnpm dev:frontend`                     | Run frontend dev server                             |
+| `pnpm build:frontend`                   | Build frontend                                      |
+| `pnpm start:frontend`                   | Serve frontend production build                     |
+| `pnpm typecheck:frontend`               | Frontend type check                                 |
+| `pnpm lint:frontend`                    | Frontend lint                                       |
+| `pnpm lint:fix:frontend`                | Frontend lint + fix                                 |
+| `pnpm dev:backend`                      | Run backend dev server                              |
+| `pnpm build:backend`                    | Build backend                                       |
+| `pnpm start:backend`                    | Serve backend production build                      |
+| `pnpm typecheck:backend`                | Backend type check                                  |
+| `pnpm lint:backend`                     | Backend lint                                        |
+| `pnpm lint:fix:backend`                 | Backend lint + fix                                  |
+| `pnpm db:migrate`                       | Run backend migrations                              |
+| `pnpm db:generate`                      | Generate a migration file                           |
+| `pnpm db:seed`                          | Seed database                                       |
+| `pnpm docker:up`                        | Start local Postgres container                      |
+| `pnpm docker:down`                      | Stop local Postgres container                       |
+| `pnpm docker:migrate`                   | Start Postgres + run migrations                     |
+| `pnpm nx run debridgers-backend:docker` | Start Postgres, migrate, and run backend dev server |
+| `pnpm test:e2e`                         | Run backend e2e tests                               |
+| `pnpm dev:ui-web`                       | Run ui-web watch mode                               |
+| `pnpm build:ui-web`                     | Build ui-web package                                |
+| `pnpm watch:ui-web`                     | Alias for ui-web watch mode                         |
 
 ---
 
