@@ -38,6 +38,7 @@ export const users = pgTable(
     delivery_address: text(),
     // agent who referred this buyer (permanent link)
     referred_by_agent_id: integer(),
+    avatar_url: text(),
     mailtrap_contact_id: text(),
     refresh_token: text(),
     ...timestamps,

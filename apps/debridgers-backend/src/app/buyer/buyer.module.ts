@@ -1,12 +1,14 @@
 import { Module } from "@nestjs/common";
+import { MulterModule } from "@nestjs/platform-express";
 import { BuyerController } from "./buyer.controller";
 import { BuyerService } from "./buyer.service";
 import { DatabaseModule } from "../../infrastructure/database/database.module";
 import { AuthModule } from "../auth/auth.module";
+import { CloudinaryService } from "../../infrastructure/cloudinary/cloudinary.service";
 
 @Module({
-  imports: [DatabaseModule, AuthModule],
+  imports: [DatabaseModule, AuthModule, MulterModule.register()],
   controllers: [BuyerController],
-  providers: [BuyerService],
+  providers: [BuyerService, CloudinaryService],
 })
 export class BuyerModule {}

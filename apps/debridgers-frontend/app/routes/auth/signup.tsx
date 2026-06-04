@@ -87,7 +87,7 @@ export default function SignupPage() {
     role: "buyer",
     fullName: "",
     email: "",
-    phone: "",
+    phone: undefined,
     password: "",
     confirmPassword: "",
     referred_by_agent_code: "",

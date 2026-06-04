@@ -257,24 +257,59 @@ export class AdminService {
 
   async suspendAgent(agentId: number) {
     const [profile] = await this.db
-      .select()
+      .select({ user_id: schema.agent_profiles.user_id })
       .from(schema.agent_profiles)
       .where(eq(schema.agent_profiles.user_id, agentId))
       .limit(1);
 
     if (!profile) throw new NotFoundException("Agent not found");
 
+    // Suspend the agent
     await this.db
       .update(schema.agent_profiles)
       .set({ status: "suspended" })
       .where(eq(schema.agent_profiles.user_id, agentId));
 
-    return { message: "Agent suspended", data: null };
+    // Get agent name for the notification message
+    const [agentUser] = await this.db
+      .select({
+        first_name: schema.users.first_name,
+        last_name: schema.users.last_name,
+      })
+      .from(schema.users)
+      .where(eq(schema.users.id, agentId))
+      .limit(1);
+
+    const agentName = agentUser
+      ? `${agentUser.first_name} ${agentUser.last_name}`.trim()
+      : "Your agent";
+
+    // Broadcast to all buyers referred by this agent
+    const affectedBuyers = await this.db
+      .select({ id: schema.users.id })
+      .from(schema.users)
+      .where(eq(schema.users.referred_by_agent_id, agentId));
+
+    if (affectedBuyers.length > 0) {
+      await this.db.insert(schema.notifications).values(
+        affectedBuyers.map((b) => ({
+          user_id: b.id,
+          title: "Agent Account Suspended",
+          description: `Your agent ${agentName} has been temporarily suspended. Your orders are not affected. Please contact support for assistance.`,
+          read: false,
+        })),
+      );
+    }
+
+    return {
+      message: "Agent suspended",
+      data: { notified: affectedBuyers.length },
+    };
   }
 
   async unsuspendAgent(agentId: number) {
     const [profile] = await this.db
-      .select()
+      .select({ user_id: schema.agent_profiles.user_id })
       .from(schema.agent_profiles)
       .where(eq(schema.agent_profiles.user_id, agentId))
       .limit(1);
@@ -286,7 +321,40 @@ export class AdminService {
       .set({ status: "approved" })
       .where(eq(schema.agent_profiles.user_id, agentId));
 
-    return { message: "Agent unsuspended", data: null };
+    // Notify buyers that agent is back
+    const agentUser = await this.db
+      .select({
+        first_name: schema.users.first_name,
+        last_name: schema.users.last_name,
+      })
+      .from(schema.users)
+      .where(eq(schema.users.id, agentId))
+      .limit(1);
+
+    const agentName = agentUser[0]
+      ? `${agentUser[0].first_name} ${agentUser[0].last_name}`.trim()
+      : "Your agent";
+
+    const affectedBuyers = await this.db
+      .select({ id: schema.users.id })
+      .from(schema.users)
+      .where(eq(schema.users.referred_by_agent_id, agentId));
+
+    if (affectedBuyers.length > 0) {
+      await this.db.insert(schema.notifications).values(
+        affectedBuyers.map((b) => ({
+          user_id: b.id,
+          title: "Agent Account Restored",
+          description: `Good news! Your agent ${agentName} has been reinstated and is now active again.`,
+          read: false,
+        })),
+      );
+    }
+
+    return {
+      message: "Agent unsuspended",
+      data: { notified: affectedBuyers.length },
+    };
   }
 
   async promoteToStateManager(agentId: number, dto: PromoteManagerDto) {
@@ -633,5 +701,41 @@ export class AdminService {
       .orderBy(schema.products.sort_order, schema.products.name);
 
     return { message: "Products retrieved", data: rows };
+  }
+
+  // ─── Outreach ────────────────────────────────────────────────────────────────
+
+  async createOutreachRecord(dto: {
+    shop_name: string;
+    owner_name?: string;
+    phone?: string;
+    lga?: string;
+    address?: string;
+    product_interest?: string;
+    quantity?: number;
+    notes?: string;
+    collected_by?: string;
+    visit_date: string;
+  }) {
+    const [record] = await this.db
+      .insert(schema.outreach_records)
+      .values(dto)
+      .returning();
+    return { message: "Outreach record saved", data: record };
+  }
+
+  async listOutreachRecords() {
+    const rows = await this.db
+      .select()
+      .from(schema.outreach_records)
+      .orderBy(desc(schema.outreach_records.created_at));
+    return { message: "Outreach records retrieved", data: rows };
+  }
+
+  async deleteOutreachRecord(id: number) {
+    await this.db
+      .delete(schema.outreach_records)
+      .where(eq(schema.outreach_records.id, id));
+    return { message: "Record deleted", data: null };
   }
 }

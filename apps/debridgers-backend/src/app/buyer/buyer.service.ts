@@ -31,6 +31,7 @@ export class BuyerService {
         is_email_verified: schema.users.is_email_verified,
         zone_id: schema.users.zone_id,
         delivery_address: schema.users.delivery_address,
+        avatar_url: schema.users.avatar_url,
       })
       .from(schema.users)
       .where(eq(schema.users.id, user.sub))
@@ -57,6 +58,45 @@ export class BuyerService {
     }
 
     return { message: "Profile updated", data: null };
+  }
+
+  async updateAvatar(url: string, user: JwtPayload) {
+    await this.db
+      .update(schema.users)
+      .set({ avatar_url: url })
+      .where(eq(schema.users.id, user.sub));
+  }
+
+  async getNotifications(user: JwtPayload) {
+    const rows = await this.db
+      .select()
+      .from(schema.notifications)
+      .where(eq(schema.notifications.user_id, user.sub))
+      .orderBy(desc(schema.notifications.created_at));
+
+    return {
+      message: "Notifications retrieved",
+      data: rows.map((n) => ({
+        id: String(n.id),
+        title: n.title,
+        description: n.description,
+        timestamp: n.created_at?.toISOString() ?? new Date().toISOString(),
+        read: n.read,
+      })),
+    };
+  }
+
+  async markNotificationRead(notifId: number, user: JwtPayload) {
+    await this.db
+      .update(schema.notifications)
+      .set({ read: true })
+      .where(
+        and(
+          eq(schema.notifications.id, notifId),
+          eq(schema.notifications.user_id, user.sub),
+        ),
+      );
+    return { message: "Notification marked as read", data: null };
   }
 
   async createOrder(dto: CreateOrderDto, user: JwtPayload) {
