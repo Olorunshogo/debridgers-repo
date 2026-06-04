@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, Search } from "lucide-react";
+import { apiFetch } from "@debridgers/api-client";
 
 export function meta() {
   return [
@@ -10,7 +11,6 @@ export function meta() {
       content:
         "View and manage all Debridgers buyer accounts. Track orders, activity and account details.",
     },
-    // === Author and Robots
     { name: "author", content: "Debridgers Team" },
     { name: "robots", content: "noindex, nofollow" },
   ];
@@ -19,68 +19,41 @@ export function meta() {
 type BuyerStatus = "active" | "inactive";
 
 interface BuyerRow {
-  id: string;
+  id: number;
   name: string;
   email: string;
-  location: string;
-  totalOrders: number;
-  totalSpent: string;
+  phone: string;
+  verified: boolean;
   status: BuyerStatus;
   joinedDate: string;
 }
 
-const MOCK_BUYERS: BuyerRow[] = [
-  {
-    id: "b1",
-    name: "Halima Suleiman",
-    email: "halima@example.com",
-    location: "Barnawa",
-    totalOrders: 8,
-    totalSpent: "₦96,000",
-    status: "active",
-    joinedDate: "Feb 5, 2026",
-  },
-  {
-    id: "b2",
-    name: "Musa Aliyu",
-    email: "musa@example.com",
-    location: "Kakuri",
-    totalOrders: 5,
-    totalSpent: "₦60,000",
-    status: "active",
-    joinedDate: "Feb 18, 2026",
-  },
-  {
-    id: "b3",
-    name: "Aisha Bello",
-    email: "aisha@example.com",
-    location: "Narayi",
-    totalOrders: 12,
-    totalSpent: "₦144,000",
-    status: "active",
-    joinedDate: "Jan 30, 2026",
-  },
-  {
-    id: "b4",
-    name: "Tunde Adeyemi",
-    email: "tunde@example.com",
-    location: "Zaria",
-    totalOrders: 2,
-    totalSpent: "₦24,000",
-    status: "inactive",
-    joinedDate: "Mar 10, 2026",
-  },
-  {
-    id: "b5",
-    name: "Ngozi Eze",
-    email: "ngozi@example.com",
-    location: "Kaduna South",
-    totalOrders: 7,
-    totalSpent: "₦84,000",
-    status: "active",
-    joinedDate: "Mar 1, 2026",
-  },
-];
+interface ApiBuyer {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  is_email_verified: boolean;
+  is_blocked: boolean;
+  joined_at: string;
+}
+
+function mapBuyer(b: ApiBuyer): BuyerRow {
+  return {
+    id: b.id,
+    name: `${b.first_name} ${b.last_name}`.trim(),
+    email: b.email,
+    phone: b.phone ?? "—",
+    verified: b.is_email_verified,
+    status: b.is_blocked ? "inactive" : "active",
+    joinedDate: new Date(b.joined_at).toLocaleDateString("en-NG", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
+  };
+}
 
 const STATUS_BADGE: Record<
   BuyerStatus,
@@ -92,24 +65,36 @@ const STATUS_BADGE: Record<
     label: "Active",
   },
   inactive: {
-    bg: "var(--bg-light)",
-    text: "var(--text-colour)",
-    label: "Inactive",
+    bg: "var(--status-cancelled-bg)",
+    text: "var(--status-cancelled-text)",
+    label: "Blocked",
   },
 };
 
 export default function AdminBuyers() {
+  const [buyers, setBuyers] = useState<BuyerRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
-  const filtered = MOCK_BUYERS.filter(
-    (b) =>
-      b.name.toLowerCase().includes(search.toLowerCase()) ||
-      b.email.toLowerCase().includes(search.toLowerCase()),
+  useEffect(() => {
+    apiFetch<ApiBuyer[]>("/admin/buyers")
+      .then((rows) => setBuyers(rows.map(mapBuyer)))
+      .catch(() => setBuyers([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = useMemo(
+    () =>
+      buyers.filter(
+        (b) =>
+          b.name.toLowerCase().includes(search.toLowerCase()) ||
+          b.email.toLowerCase().includes(search.toLowerCase()),
+      ),
+    [buyers, search],
   );
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <ShoppingBag size={24} style={{ color: "var(--primary-color)" }} />
@@ -121,12 +106,11 @@ export default function AdminBuyers() {
               Buyers
             </h2>
             <p className="text-sm" style={{ color: "var(--text-colour)" }}>
-              {MOCK_BUYERS.length} registered buyers
+              {loading ? "Loading..." : `${buyers.length} registered buyers`}
             </p>
           </div>
         </div>
 
-        {/* Search */}
         <div
           className="flex items-center gap-2 rounded-full border px-4 py-2"
           style={{
@@ -146,7 +130,6 @@ export default function AdminBuyers() {
         </div>
       </div>
 
-      {/* Table */}
       <div
         className="overflow-hidden rounded-2xl border"
         style={{
@@ -154,76 +137,97 @@ export default function AdminBuyers() {
           backgroundColor: "var(--white)",
         }}
       >
-        {/* Table header */}
         <div
-          className="grid grid-cols-[1fr_1fr_80px_110px_90px] gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase"
+          className="grid grid-cols-[1fr_1fr_1fr_90px_80px] gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase"
           style={{
             borderColor: "var(--border-gray)",
             color: "var(--text-colour)",
           }}
         >
           <span>Buyer</span>
-          <span>Location</span>
-          <span>Orders</span>
-          <span>Total Spent</span>
+          <span>Email</span>
+          <span>Phone</span>
+          <span>Joined</span>
           <span>Status</span>
         </div>
 
-        {/* Rows */}
-        {filtered.map((buyer, i) => {
-          const badge = STATUS_BADGE[buyer.status];
-          return (
-            <motion.div
-              key={buyer.id}
-              initial={{ opacity: 0, x: -6 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="grid grid-cols-[1fr_1fr_80px_110px_90px] gap-4 border-b px-5 py-4 text-sm last:border-0"
-              style={{ borderColor: "var(--border-gray)" }}
-            >
-              <div className="flex flex-col gap-0.5">
-                <p
-                  className="font-semibold"
-                  style={{ color: "var(--heading-colour)" }}
-                >
-                  {buyer.name}
-                </p>
-                <p className="text-xs" style={{ color: "var(--text-colour)" }}>
-                  {buyer.email}
-                </p>
-              </div>
-              <span style={{ color: "var(--text-colour)" }}>
-                {buyer.location}
-              </span>
-              <span
-                className="font-semibold"
-                style={{ color: "var(--heading-colour)" }}
-              >
-                {buyer.totalOrders}
-              </span>
-              <span
-                className="font-semibold"
-                style={{ color: "var(--primary-color)" }}
-              >
-                {buyer.totalSpent}
-              </span>
-              <span
-                className="w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                style={{ backgroundColor: badge.bg, color: badge.text }}
-              >
-                {badge.label}
-              </span>
-            </motion.div>
-          );
-        })}
-
-        {filtered.length === 0 && (
+        {loading ? (
+          <div className="flex flex-col gap-0">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-14 animate-pulse border-b"
+                style={{
+                  borderColor: "var(--border-gray)",
+                  backgroundColor:
+                    i % 2 === 0 ? "var(--bg-light)" : "var(--white)",
+                }}
+              />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
           <p
             className="px-5 py-8 text-center text-sm"
             style={{ color: "var(--text-colour)" }}
           >
-            No buyers match your search.
+            {search
+              ? "No buyers match your search."
+              : "No buyers registered yet."}
           </p>
+        ) : (
+          <AnimatePresence>
+            {filtered.map((buyer, i) => {
+              const badge = STATUS_BADGE[buyer.status];
+              return (
+                <motion.div
+                  key={buyer.id}
+                  initial={{ opacity: 0, x: -6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.04 }}
+                  className="grid grid-cols-[1fr_1fr_1fr_90px_80px] gap-4 border-b px-5 py-4 text-sm last:border-0"
+                  style={{ borderColor: "var(--border-gray)" }}
+                >
+                  <div className="flex flex-col gap-0.5">
+                    <p
+                      className="font-semibold"
+                      style={{ color: "var(--heading-colour)" }}
+                    >
+                      {buyer.name}
+                    </p>
+                    {buyer.verified && (
+                      <p
+                        className="text-xs"
+                        style={{ color: "var(--status-active-text)" }}
+                      >
+                        ✓ Verified
+                      </p>
+                    )}
+                  </div>
+                  <span
+                    className="truncate text-xs"
+                    style={{ color: "var(--text-colour)" }}
+                  >
+                    {buyer.email}
+                  </span>
+                  <span style={{ color: "var(--text-colour)" }}>
+                    {buyer.phone}
+                  </span>
+                  <span
+                    className="text-xs"
+                    style={{ color: "var(--text-colour)" }}
+                  >
+                    {buyer.joinedDate}
+                  </span>
+                  <span
+                    className="w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                    style={{ backgroundColor: badge.bg, color: badge.text }}
+                  >
+                    {badge.label}
+                  </span>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         )}
       </div>
     </div>

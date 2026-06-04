@@ -12,6 +12,7 @@ import {
   ClipboardPenLine,
   Trophy,
   Package,
+  MapPin,
 } from "lucide-react";
 
 export interface NavItem {
@@ -138,6 +139,7 @@ const adminNavGroups: NavGroup[] = [
       { label: "Agents", icon: User, href: "/admin-dashboard/agents" },
       { label: "Buyers", icon: ShoppingCart, href: "/admin-dashboard/buyers" },
       { label: "Products", icon: Package, href: "/admin-dashboard/products" },
+      { label: "Outreach", icon: MapPin, href: "/admin-dashboard/outreach" },
     ],
   },
   {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, CheckCircle2 } from "lucide-react";
 import {
@@ -11,6 +11,7 @@ import {
   getTodayDateString,
 } from "@debridgers/ui-web";
 import { kadunaStateLgas, unsoldReasons } from "@/models/models";
+import { apiFetch, ApiError } from "@debridgers/api-client";
 
 export function meta() {
   return [
@@ -38,89 +39,29 @@ interface ReportHistoryEntry {
   status: ReportStatus;
 }
 
-// === Mock history
-const MOCK_HISTORY: ReportHistoryEntry[] = [
-  {
-    id: "h1",
-    dayLabel: "Apr 5, Sat",
-    bagsSold: 3,
-    area: "Barnawa",
-    amount: "₦200",
+interface ApiReport {
+  id: number;
+  pages_sold: number;
+  amount: string;
+  notes: string | null;
+  created_at: string;
+}
+
+function mapApiReport(r: ApiReport): ReportHistoryEntry {
+  const naira = parseFloat(r.amount);
+  return {
+    id: String(r.id),
+    dayLabel: new Date(r.created_at).toLocaleDateString("en-NG", {
+      month: "short",
+      day: "numeric",
+      weekday: "short",
+    }),
+    bagsSold: r.pages_sold,
+    area: r.notes ?? "—",
+    amount: `₦${naira.toLocaleString("en-NG", { minimumFractionDigits: 0 })}`,
     status: "approved",
-  },
-  {
-    id: "h2",
-    dayLabel: "Apr 4, Fri",
-    bagsSold: 3,
-    area: "Barnawa",
-    amount: "₦200",
-    status: "approved",
-  },
-  {
-    id: "h3",
-    dayLabel: "Apr 3, Thu",
-    bagsSold: 0,
-    area: "Day off",
-    amount: "-",
-    status: "missed",
-  },
-  {
-    id: "h4",
-    dayLabel: "Apr 2, Wed",
-    bagsSold: 3,
-    area: "Barnawa",
-    amount: "₦200",
-    status: "approved",
-  },
-  {
-    id: "h5",
-    dayLabel: "Apr 1, Tue",
-    bagsSold: 5,
-    area: "Narayi",
-    amount: "₦350",
-    status: "approved",
-  },
-  {
-    id: "h6",
-    dayLabel: "Mar 31, Mon",
-    bagsSold: 2,
-    area: "Kakuri",
-    amount: "₦140",
-    status: "pending",
-  },
-  {
-    id: "h7",
-    dayLabel: "Mar 30, Sun",
-    bagsSold: 4,
-    area: "Barnawa",
-    amount: "₦280",
-    status: "approved",
-  },
-  {
-    id: "h8",
-    dayLabel: "Mar 29, Sat",
-    bagsSold: 1,
-    area: "Narayi",
-    amount: "₦70",
-    status: "rejected",
-  },
-  {
-    id: "h9",
-    dayLabel: "Mar 28, Fri",
-    bagsSold: 6,
-    area: "Zaria",
-    amount: "₦420",
-    status: "approved",
-  },
-  {
-    id: "h10",
-    dayLabel: "Mar 27, Thu",
-    bagsSold: 3,
-    area: "Barnawa",
-    amount: "₦210",
-    status: "approved",
-  },
-];
+  };
+}
 
 // === Status styles
 const STATUS_STYLES: Record<ReportStatus, { color: string; icon: string }> = {
@@ -217,6 +158,16 @@ export default function AgentDailyReportPage() {
   });
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [history, setHistory] = useState<ReportHistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+
+  useEffect(() => {
+    apiFetch<ApiReport[]>("/agent/reports")
+      .then((rows) => setHistory(rows.map(mapApiReport)))
+      .catch(() => setHistory([]))
+      .finally(() => setHistoryLoading(false));
+  }, []);
 
   function handleChange(field: keyof ReportForm) {
     return (
@@ -234,27 +185,47 @@ export default function AgentDailyReportPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setSubmitError(null);
     setLoading(true);
-    // === PRODUCTION
-    // await fetch(`${BASE_BACKEND_URL}/agent/daily-report`, {
-    //   method: "POST",
-    //   credentials: "include",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify(form),
-    // });
-    await new Promise<void>((r) => setTimeout(r, 900));
-    setLoading(false);
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3500);
-    setForm({
-      date: getTodayDateString(),
-      bagsSold: "",
-      cashCollected: "",
-      bagsRemaining: "",
-      areaCovered: "",
-      feedback: "",
-      unsoldReason: "",
-    });
+    try {
+      const pages_sold = parseInt(form.bagsSold, 10);
+      const amount = parseFloat(form.cashCollected.replace(/,/g, ""));
+      const notesParts = [form.feedback, form.unsoldReason].filter(Boolean);
+      const notes = notesParts.join(" | ") || undefined;
+
+      if (!pages_sold || pages_sold < 1 || isNaN(amount) || amount <= 0) {
+        setSubmitError("Enter valid bags sold and cash collected.");
+        return;
+      }
+
+      await apiFetch("/agent/report", {
+        method: "POST",
+        body: JSON.stringify({ pages_sold, amount, notes }),
+      });
+
+      const rows = await apiFetch<ApiReport[]>("/agent/reports");
+      setHistory(rows.map(mapApiReport));
+
+      setSubmitted(true);
+      setTimeout(() => setSubmitted(false), 3500);
+      setForm({
+        date: getTodayDateString(),
+        bagsSold: "",
+        cashCollected: "",
+        bagsRemaining: "",
+        areaCovered: "",
+        feedback: "",
+        unsoldReason: "",
+      });
+    } catch (err) {
+      setSubmitError(
+        err instanceof ApiError
+          ? err.message
+          : "Failed to submit. Please try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -289,6 +260,17 @@ export default function AgentDailyReportPage() {
               onSubmit={handleSubmit}
               className="flex flex-col gap-6"
             >
+              {submitError && (
+                <p
+                  className="rounded-xl px-4 py-3 text-sm"
+                  style={{
+                    backgroundColor: "var(--status-cancelled-bg)",
+                    color: "var(--status-cancelled-text)",
+                  }}
+                >
+                  {submitError}
+                </p>
+              )}
               {/* Form */}
               <div className="flex flex-col gap-4">
                 {/* Row 1: Date + Bags Sold */}
@@ -374,7 +356,19 @@ export default function AgentDailyReportPage() {
       </div>
 
       {/* Right: History */}
-      <ReportHistoryCard entries={MOCK_HISTORY} />
+      {historyLoading ? (
+        <div className="border-border-gray flex flex-col gap-3 overflow-hidden rounded-2xl border bg-white p-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-12 animate-pulse rounded-xl"
+              style={{ backgroundColor: "var(--bg-light)" }}
+            />
+          ))}
+        </div>
+      ) : (
+        <ReportHistoryCard entries={history} />
+      )}
     </div>
   );
 }

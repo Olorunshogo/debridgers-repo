@@ -4,10 +4,15 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseIntPipe,
   Patch,
   Post,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import {
   ApiTags,
   ApiOperation,
@@ -15,6 +20,7 @@ import {
   ApiResponse,
 } from "@nestjs/swagger";
 import { BuyerService } from "./buyer.service";
+import { CloudinaryService } from "../../infrastructure/cloudinary/cloudinary.service";
 import { ZodValidationPipe } from "../../infrastructure/pipeline/validation.pipeline";
 import {
   updateProfileSchema,
@@ -33,7 +39,10 @@ import { JwtPayload } from "../../interfaces/users/jwt.type";
 @Roles("buyer")
 @ApiBearerAuth("access-token")
 export class BuyerController {
-  constructor(private readonly buyerService: BuyerService) {}
+  constructor(
+    private readonly buyerService: BuyerService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
 
   @Get("me")
   @ApiOperation({ summary: "Get buyer profile" })
@@ -44,13 +53,30 @@ export class BuyerController {
 
   @Patch("profile")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Update buyer profile (name, phone)" })
+  @ApiOperation({ summary: "Update buyer profile (name, phone, address)" })
   @ApiResponse({ status: 200, description: "Profile updated" })
   updateProfile(
     @Body(new ZodValidationPipe(updateProfileSchema)) dto: UpdateProfileDto,
     @CurrentUser() user: JwtPayload,
   ) {
     return this.buyerService.updateProfile(dto, user);
+  }
+
+  @Post("avatar")
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor("file"))
+  @ApiOperation({ summary: "Upload buyer profile photo" })
+  @ApiResponse({ status: 200, description: "Avatar uploaded" })
+  async uploadAvatar(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    const url = await this.cloudinaryService.uploadBuffer(
+      file.buffer,
+      "debridgers/avatars",
+    );
+    await this.buyerService.updateAvatar(url, user);
+    return { message: "Avatar updated", data: { url } };
   }
 
   @Post("orders")
@@ -90,5 +116,21 @@ export class BuyerController {
   @ApiResponse({ status: 200, description: "Products retrieved" })
   getProducts() {
     return this.buyerService.getProducts();
+  }
+
+  @Get("notifications")
+  @ApiOperation({ summary: "Get notifications for this buyer" })
+  getNotifications(@CurrentUser() user: JwtPayload) {
+    return this.buyerService.getNotifications(user);
+  }
+
+  @Patch("notifications/:id/read")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Mark a notification as read" })
+  markNotificationRead(
+    @Param("id", ParseIntPipe) id: number,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.buyerService.markNotificationRead(id, user);
   }
 }

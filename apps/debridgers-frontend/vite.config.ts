@@ -27,6 +27,7 @@ export default defineConfig({
     },
   ],
   resolve: {
+    dedupe: ["react", "react-dom", "react-router"],
     alias: {
       "@debridgers/ui-app": resolve(__dirname, "../../packages/ui-app/src"),
       "@debridgers/ui-web": resolve(__dirname, "../../packages/ui-web/src"),

@@ -68,5 +68,6 @@ export default [
     route("admin-dashboard/buyers", "routes/dashboards/admin/buyers.tsx"),
     route("admin-dashboard/settings", "routes/dashboards/admin/settings.tsx"),
     route("admin-dashboard/products", "routes/dashboards/admin/products.tsx"),
+    route("admin-dashboard/outreach", "routes/dashboards/admin/outreach.tsx"),
   ]),
 ] satisfies RouteConfig;

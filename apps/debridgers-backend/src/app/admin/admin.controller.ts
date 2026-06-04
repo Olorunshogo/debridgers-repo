@@ -548,6 +548,30 @@ export class AdminController {
     return this.adminService.getLeads();
   }
 
+  // ─── Outreach ─────────────────────────────────────────────────────────────────
+
+  @Post("outreach")
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Record a new outreach / offline customer visit" })
+  createOutreachRecord(@Body() body: Record<string, unknown>) {
+    return this.adminService.createOutreachRecord(
+      body as Parameters<typeof this.adminService.createOutreachRecord>[0],
+    );
+  }
+
+  @Get("outreach")
+  @ApiOperation({ summary: "List all outreach records" })
+  listOutreachRecords() {
+    return this.adminService.listOutreachRecords();
+  }
+
+  @Delete("outreach/:id")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Delete an outreach record" })
+  deleteOutreachRecord(@Param("id", ParseIntPipe) id: number) {
+    return this.adminService.deleteOutreachRecord(id);
+  }
+
   // ─── KYC ────────────────────────────────────────────────────────────────────
 
   @Get("kyc")

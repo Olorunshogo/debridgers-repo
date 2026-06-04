@@ -8,6 +8,16 @@ export function meta() {
   return [{ title: "Admin Overview | Debridgers" }];
 }
 
+interface ApiAdminStats {
+  total_agents: number;
+  pending_agents: number;
+  total_buyers: number;
+  total_orders: number;
+  total_revenue: string;
+  pending_commissions: string;
+  total_leads: number;
+}
+
 interface AdminStats {
   totalAgents: number;
   pendingAgents: number;
@@ -15,13 +25,23 @@ interface AdminStats {
   totalRevenue: string;
 }
 
+function mapStats(api: ApiAdminStats): AdminStats {
+  const revenue = parseFloat(api.total_revenue);
+  return {
+    totalAgents: api.total_agents,
+    pendingAgents: api.pending_agents,
+    totalBuyers: api.total_buyers,
+    totalRevenue: `₦${(revenue / 100).toLocaleString("en-NG", { minimumFractionDigits: 0 })}`,
+  };
+}
+
 export default function AdminOverview() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiFetch<AdminStats>("/admin/stats")
-      .then(setStats)
+    apiFetch<ApiAdminStats>("/admin/dashboard")
+      .then((api) => setStats(mapStats(api)))
       .catch(() => setStats(null))
       .finally(() => setLoading(false));
   }, []);

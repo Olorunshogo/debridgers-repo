@@ -15,3 +15,5 @@ export * from "./schemas/stock_requests.schema";
 export * from "./schemas/campaigns.schema";
 export * from "./schemas/audit_log.schema";
 export * from "./schemas/inventory_records.schema";
+export * from "./schemas/outreach_records.schema";
+export * from "./schemas/notifications.schema";

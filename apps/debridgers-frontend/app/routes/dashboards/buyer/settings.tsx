@@ -10,7 +10,11 @@ import {
   DashSwitchInput,
   SubmitButton,
 } from "@debridgers/ui-web";
-import { apiFetch } from "@debridgers/api-client";
+import {
+  apiFetch,
+  getAccessToken,
+  BASE_BACKEND_URL,
+} from "@debridgers/api-client";
 
 export function meta() {
   return [
@@ -32,7 +36,7 @@ const schema = z
     email: z.string().email("Invalid email"),
     currency: z.string().min(1, "Select a currency"),
     country: z.string().min(1, "Select a country"),
-    deliveryAddress: z.string().min(5, "Enter your delivery address"),
+    deliveryAddress: z.string().optional().or(z.literal("")),
     oldPassword: z.string().optional(),
     newPassword: z
       .string()
@@ -102,9 +106,8 @@ function Section({
 
 export default function BuyerSettings() {
   const fileRef = useRef<HTMLInputElement>(null);
-  const [avatarPreview, setAvatarPreview] = useState(
-    "/images/settings-avatar.png",
-  );
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const [form, setForm] = useState<SettingsForm>({
     userName: "",
     email: "",
@@ -120,6 +123,7 @@ export default function BuyerSettings() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState<boolean>(false);
   const [saved, setSaved] = useState<boolean>(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -129,6 +133,7 @@ export default function BuyerSettings() {
         email: string;
         phone?: string | null;
         delivery_address?: string | null;
+        avatar_url?: string | null;
       }>("/buyer/me");
       setForm((p) => ({
         ...p,
@@ -136,6 +141,7 @@ export default function BuyerSettings() {
         email: profile.email,
         deliveryAddress: profile.delivery_address ?? "",
       }));
+      if (profile.avatar_url) setAvatarUrl(profile.avatar_url);
     } catch {
       // silently fail - form stays blank
     }
@@ -144,12 +150,6 @@ export default function BuyerSettings() {
   useEffect(() => {
     void loadProfile();
   }, [loadProfile]);
-
-  useEffect(() => {
-    return () => {
-      if (avatarPreview.startsWith("blob:")) URL.revokeObjectURL(avatarPreview);
-    };
-  }, [avatarPreview]);
 
   function handleText(field: keyof SettingsForm) {
     return (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -169,14 +169,39 @@ export default function BuyerSettings() {
     return (checked: boolean) => setForm((p) => ({ ...p, [field]: checked }));
   }
 
-  function handleAvatar(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (file) setAvatarPreview(URL.createObjectURL(file));
+    if (!file) return;
+    setAvatarUploading(true);
+    setApiError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const token = getAccessToken();
+      const res = await fetch(`${BASE_BACKEND_URL}/buyer/avatar`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+        body: fd,
+      });
+      const json = (await res.json()) as {
+        data?: { url?: string };
+        message?: string;
+      };
+      if (!res.ok) throw new Error(json.message ?? "Upload failed");
+      if (json.data?.url) setAvatarUrl(json.data.url);
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : "Avatar upload failed.");
+    } finally {
+      setAvatarUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaved(false);
+    setApiError(null);
 
     const result = schema.safeParse(form);
     if (!result.success) {
@@ -196,14 +221,14 @@ export default function BuyerSettings() {
         body: JSON.stringify({
           first_name: firstName,
           last_name: rest.join(" ") || undefined,
-          delivery_address: result.data.deliveryAddress.trim() || undefined,
+          delivery_address: result.data.deliveryAddress?.trim() || undefined,
         }),
       });
       setForm((p) => ({ ...p, oldPassword: "", newPassword: "" }));
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch {
-      setErrors({ userName: "Failed to save. Please try again." });
+      setApiError("Failed to save changes. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -232,38 +257,67 @@ export default function BuyerSettings() {
             Settings saved successfully.
           </motion.div>
         )}
+        {apiError && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="rounded-xl px-4 py-3 text-sm"
+            style={{
+              backgroundColor: "var(--status-cancelled-bg)",
+              color: "var(--status-cancelled-text)",
+            }}
+          >
+            {apiError}
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Account Information */}
       <Section title="Account Information">
         <div className="flex items-center gap-4">
-          <img
-            src={avatarPreview}
-            alt="Avatar"
-            className="h-16 w-16 rounded-full object-cover"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src =
-                "https://ui-avatars.com/api/?name=Abdul+Malik&background=1e5925&color=fff";
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            className="hover:bg-bg-light rounded-full border px-4 py-2 text-sm font-medium transition-colors"
-            style={{
-              borderColor: "var(--border-gray)",
-              color: "var(--heading-colour)",
-            }}
-          >
-            Change
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={handleAvatar}
-          />
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt="Avatar"
+              className="h-16 w-16 rounded-full object-cover"
+            />
+          ) : (
+            <div
+              className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white"
+              style={{ backgroundColor: "var(--primary-color)" }}
+            >
+              {form.userName
+                ? form.userName
+                    .trim()
+                    .split(/\s+/)
+                    .map((w) => w[0]?.toUpperCase() ?? "")
+                    .slice(0, 2)
+                    .join("")
+                : "?"}
+            </div>
+          )}
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={avatarUploading}
+              className="rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 disabled:opacity-60"
+              style={{
+                borderColor: "var(--border-gray)",
+                color: "var(--heading-colour)",
+              }}
+            >
+              {avatarUploading ? "Uploading..." : "Change Photo"}
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={handleAvatarChange}
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -308,9 +362,9 @@ export default function BuyerSettings() {
           />
           <div className="sm:col-span-2">
             <DashTextInput
-              label="Delivery Address."
-              placeholder="Enter your Address"
-              value={form.deliveryAddress}
+              label="Delivery Address"
+              placeholder="Enter your full delivery address"
+              value={form.deliveryAddress ?? ""}
               onChange={handleText("deliveryAddress")}
               error={errors.deliveryAddress}
             />

@@ -1,6 +1,7 @@
-import { motion } from "framer-motion";
-import { Wallet } from "lucide-react";
-import { YellowPrimaryLink } from "@debridgers/ui-web";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Wallet, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import { apiFetch } from "@debridgers/api-client";
 
 export function meta() {
   return [
@@ -10,16 +11,12 @@ export function meta() {
       content:
         "View your weekly commission payouts and earnings history as a Debridgers field agent.",
     },
-    // === Author and Robots
     { name: "author", content: "Debridgers Team" },
     { name: "robots", content: "noindex, nofollow" },
   ];
 }
 
-// === Config
-
-/** Change to 6 for Saturday, 5 for Friday, etc. (0=Sun … 6=Sat) */
-const PAYOUT_DAY_OF_WEEK = 5; // Friday
+const PAYOUT_DAY_OF_WEEK = 5;
 
 function getNextPayoutDate(): string {
   const today = new Date();
@@ -33,93 +30,56 @@ function getNextPayoutDate(): string {
   });
 }
 
-function getCurrentWeekLabel(): string {
-  const today = new Date();
-  const sunday = new Date(today);
-  sunday.setDate(today.getDate() - today.getDay());
-  const saturday = new Date(sunday);
-  saturday.setDate(sunday.getDate() + 6);
-  const fmt = (d: Date) =>
-    d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  return `${fmt(sunday)} – ${fmt(saturday)}`;
+function fmt(kobo: number) {
+  return (
+    "₦" + (kobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 0 })
+  );
 }
 
-// === Types
-type PayoutStatus = "pending" | "paid";
+interface ApiWallet {
+  available_balance: number;
+  pending_balance: number;
+}
 
-interface WeekBreakdown {
+interface ApiCommission {
+  id: number;
+  type: string;
+  amount: string;
+  status: string;
+  created_at: string;
+}
+
+interface CommissionRow {
   id: string;
-  weekLabel: string;
-  bags: number;
-  agentTarget: number;
-  commission: string;
-  bonus: string;
-  total: string;
-  status: PayoutStatus;
-  isCurrent: boolean;
+  description: string;
+  amount: number;
+  status: string;
+  date: string;
+  isPaid: boolean;
 }
 
-// === Mock data
-const MOCK_BREAKDOWNS: WeekBreakdown[] = [
-  {
-    id: "w1",
-    weekLabel: getCurrentWeekLabel(),
-    bags: 7,
-    agentTarget: 10,
-    commission: "₦14,000",
-    bonus: "₦4,400",
-    total: "₦18,400",
-    status: "pending",
-    isCurrent: true,
-  },
-  {
-    id: "w2",
-    weekLabel: "Mar 21 – Mar 27",
-    bags: 10,
-    agentTarget: 10,
-    commission: "₦14,000",
-    bonus: "₦4,400",
-    total: "₦18,400",
-    status: "paid",
-    isCurrent: false,
-  },
-  {
-    id: "w3",
-    weekLabel: "Mar 14 – Mar 20",
-    bags: 8,
-    agentTarget: 10,
-    commission: "₦14,000",
-    bonus: "₦4,400",
-    total: "₦18,400",
-    status: "paid",
-    isCurrent: false,
-  },
-  {
-    id: "w4",
-    weekLabel: "Mar 7 – Mar 13",
-    bags: 13,
-    agentTarget: 10,
-    commission: "₦14,000",
-    bonus: "₦4,400",
-    total: "₦18,400",
-    status: "paid",
-    isCurrent: false,
-  },
-  {
-    id: "w5",
-    weekLabel: "Feb 28 – Mar 6",
-    bags: 9,
-    agentTarget: 10,
-    commission: "₦14,000",
-    bonus: "₦4,400",
-    total: "₦18,400",
-    status: "paid",
-    isCurrent: false,
-  },
-];
+function mapCommission(c: ApiCommission): CommissionRow {
+  const typeLabel: Record<string, string> = {
+    buyer_referral: "Buyer referral commission",
+    sales_report: "Sales report commission",
+    stock_sale: "Stock sale commission",
+  };
+  return {
+    id: String(c.id),
+    description: typeLabel[c.type] ?? c.type,
+    amount: Math.round(parseFloat(c.amount) * 100),
+    status: c.status,
+    date: new Date(c.created_at).toLocaleDateString("en-NG", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
+    isPaid: c.status === "paid",
+  };
+}
 
 const STATUS_BADGE: Record<
-  PayoutStatus,
+  string,
   { bg: string; text: string; label: string }
 > = {
   pending: { bg: "#FEF3C7", text: "#92400E", label: "Pending" },
@@ -130,109 +90,71 @@ const STATUS_BADGE: Record<
   },
 };
 
-// === In-page: Week Breakdown Card
-function WeekBreakdownCard({ week }: { week: WeekBreakdown }) {
-  const badge = STATUS_BADGE[week.status];
-  const progress = Math.min(week.bags / week.agentTarget, 1);
-
-  const statCols = [
-    { label: "Bags", value: String(week.bags), color: "var(--heading-colour)" },
-    {
-      label: "Commission",
-      value: week.commission,
-      color: "var(--heading-colour)",
-    },
-    { label: "Bonus", value: week.bonus, color: "var(--secondary-color)" },
-    { label: "Total", value: week.total, color: "var(--heading-colour)" },
-  ];
-
-  return (
-    <div className="border-border-gray flex flex-col gap-3 rounded-2xl border bg-white p-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <p className="font-syne text-heading text-sm font-semibold">
-          This week ({week.weekLabel})
-        </p>
-        <span
-          className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
-          style={{ backgroundColor: badge.bg, color: badge.text }}
-        >
-          {badge.label}
-        </span>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-2">
-        {statCols.map((col) => (
-          <div key={col.label} className="flex flex-col gap-0.5">
-            <p className="text-xs" style={{ color: "var(--text-colour)" }}>
-              {col.label}
-            </p>
-            <p
-              className="font-syne text-base font-bold"
-              style={{ color: col.color }}
-            >
-              {col.value}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      {/* Progress bar - current week only */}
-      {week.isCurrent && (
-        <div className="flex flex-col gap-1">
-          <div className="border-border-gray relative h-1.5 w-full overflow-hidden rounded-full">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progress * 100}%` }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="absolute top-0 left-0 h-full rounded-full"
-              style={{ backgroundColor: "var(--primary-color)" }}
-            />
-          </div>
-          <p className="text-xs" style={{ color: "var(--text-colour)" }}>
-            {week.bags}/{week.agentTarget} bags sold this week
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// === Page
 export default function AgentWalletPage() {
+  const [wallet, setWallet] = useState<ApiWallet | null>(null);
+  const [commissions, setCommissions] = useState<CommissionRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const nextPayoutDate = getNextPayoutDate();
 
+  useEffect(() => {
+    Promise.all([
+      apiFetch<ApiWallet>("/agent/wallet"),
+      apiFetch<ApiCommission[]>("/agent/commissions"),
+    ])
+      .then(([w, cs]) => {
+        setWallet(w);
+        setCommissions(cs.map(mapCommission));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex animate-pulse flex-col gap-6">
+        <div
+          className="h-40 rounded-2xl"
+          style={{ backgroundColor: "var(--border-gray)" }}
+        />
+        <div
+          className="h-64 rounded-2xl"
+          style={{ backgroundColor: "var(--border-gray)" }}
+        />
+      </div>
+    );
+  }
+
+  const availableBalance = wallet?.available_balance ?? 0;
+  const pendingBalance = wallet?.pending_balance ?? 0;
+
   return (
-    <div className="py-section-px flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
       {/* Hero */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="bg-primary flex flex-col gap-4 rounded-2xl p-6 sm:flex-row sm:items-center sm:justify-between"
+        className="flex flex-col gap-4 rounded-2xl p-6 sm:flex-row sm:items-center sm:justify-between"
+        style={{ backgroundColor: "var(--primary-color)" }}
       >
-        {/* Left */}
         <div className="flex flex-col gap-3">
-          <p className="text-sm text-white/70">Total earning this week</p>
+          <p className="text-sm text-white/70">Available Balance</p>
           <p className="font-syne text-4xl font-extrabold text-white">
-            ₦18,400
+            {fmt(availableBalance)}
           </p>
           <div className="flex flex-wrap gap-3">
-            <YellowPrimaryLink
-              to="/agent-dashboard/wallet"
-              icon="lucide:wallet"
+            <div
+              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold"
+              style={{
+                backgroundColor: "rgba(255,255,255,0.15)",
+                color: "var(--secondary-color)",
+              }}
             >
-              Request payout
-            </YellowPrimaryLink>
-            <button className="border-primary inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold text-white/80 transition-all hover:border-white/60 hover:text-white">
               <Wallet size={14} />
-              Update bank details
-            </button>
+              {fmt(pendingBalance)} pending
+            </div>
           </div>
         </div>
-
-        {/* Right: payout date */}
         <div className="flex flex-col gap-1 sm:items-end">
           <p className="text-xs text-white/60">Automatic payout at</p>
           <p
@@ -245,11 +167,105 @@ export default function AgentWalletPage() {
         </div>
       </motion.div>
 
-      {/* Body */}
-      <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-        {/* Weekly breakdown */}
-        <div
-          className="flex flex-col gap-4 rounded-2xl border p-5"
+      {/* Commission history */}
+      <div
+        className="flex flex-col gap-4 rounded-2xl border p-5"
+        style={{
+          borderColor: "var(--border-gray)",
+          backgroundColor: "var(--white)",
+        }}
+      >
+        <h3
+          className="font-syne font-semibold"
+          style={{ color: "var(--heading-colour)" }}
+        >
+          Commission History
+        </h3>
+
+        {commissions.length === 0 ? (
+          <p
+            className="py-8 text-center text-sm"
+            style={{ color: "var(--text-colour)" }}
+          >
+            No commissions yet. Sell stock or refer buyers to earn commission.
+          </p>
+        ) : (
+          <div className="flex flex-col">
+            {commissions.map((c, i) => {
+              const badge = STATUS_BADGE[c.status] ?? STATUS_BADGE.pending;
+              return (
+                <motion.div
+                  key={c.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="flex items-center justify-between border-b py-4 last:border-0"
+                  style={{ borderColor: "var(--border-gray)" }}
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                      style={{
+                        backgroundColor: c.isPaid
+                          ? "var(--status-delivered-bg)"
+                          : "var(--status-pending-bg)",
+                      }}
+                    >
+                      {c.isPaid ? (
+                        <ArrowDownLeft
+                          size={16}
+                          style={{ color: "var(--status-delivered-text)" }}
+                        />
+                      ) : (
+                        <ArrowUpRight
+                          size={16}
+                          style={{ color: "var(--status-pending-text)" }}
+                        />
+                      )}
+                    </span>
+                    <div className="flex flex-col gap-0.5">
+                      <p
+                        className="text-sm font-medium"
+                        style={{ color: "var(--heading-colour)" }}
+                      >
+                        {c.description}
+                      </p>
+                      <p
+                        className="text-xs"
+                        style={{ color: "var(--text-colour)" }}
+                      >
+                        {c.date}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <p
+                      className="font-syne font-semibold"
+                      style={{ color: "var(--heading-colour)" }}
+                    >
+                      {fmt(c.amount)}
+                    </p>
+                    <span
+                      className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                      style={{ backgroundColor: badge.bg, color: badge.text }}
+                    >
+                      {badge.label}
+                    </span>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Bank details placeholder */}
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="flex flex-col gap-3 rounded-2xl border p-5"
           style={{
             borderColor: "var(--border-gray)",
             backgroundColor: "var(--white)",
@@ -259,69 +275,14 @@ export default function AgentWalletPage() {
             className="font-syne font-semibold"
             style={{ color: "var(--heading-colour)" }}
           >
-            Weekly breakdown
+            Bank Details
           </h3>
-          <div className="flex flex-col gap-3">
-            {MOCK_BREAKDOWNS.map((week, i) => (
-              <motion.div
-                key={week.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.07 }}
-              >
-                <WeekBreakdownCard week={week} />
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        {/* Bank details */}
-        <div className="flex flex-col gap-4">
-          <h3
-            className="font-syne font-semibold"
-            style={{ color: "var(--heading-colour)" }}
-          >
-            Bank details
-          </h3>
-          <div
-            className="flex flex-col gap-3 rounded-2xl p-5"
-            style={{ backgroundColor: "var(--bg-light)" }}
-          >
-            <p
-              className="text-xs font-semibold tracking-wider uppercase"
-              style={{ color: "var(--text-colour)" }}
-            >
-              Bank Account
-            </p>
-            <div className="flex flex-col gap-0.5">
-              <p
-                className="text-sm font-semibold"
-                style={{ color: "var(--heading-colour)" }}
-              >
-                First Bank Nigeria
-              </p>
-              <p
-                className="font-syne text-2xl font-bold"
-                style={{ color: "var(--heading-colour)" }}
-              >
-                3047882109
-              </p>
-              <p className="text-sm" style={{ color: "var(--text-colour)" }}>
-                Abdulkadir Musa Yusuf
-              </p>
-            </div>
-            <div
-              className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold"
-              style={{
-                backgroundColor: "var(--status-active-bg)",
-                color: "var(--status-active-text)",
-              }}
-            >
-              ✓ Account verified · Payout goes here every Friday
-            </div>
-          </div>
-        </div>
-      </div>
+          <p className="text-sm" style={{ color: "var(--text-colour)" }}>
+            Bank account management coming soon. Contact admin to update your
+            payout details.
+          </p>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }
