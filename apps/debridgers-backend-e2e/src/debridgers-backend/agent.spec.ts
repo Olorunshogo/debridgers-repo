@@ -6,6 +6,7 @@ const testEmail = `agent+${Date.now()}@test.com`;
 let agentId: number;
 let adminToken: string;
 let agentToken: string;
+let productId: number;
 
 describe("Agent", () => {
   beforeAll(async () => {
@@ -102,13 +103,23 @@ describe("Agent", () => {
   });
 
   it("POST /agent/stock/request should deny agent without KYC", async () => {
+    // Fetch a product first so Zod validation passes and the KYC check runs
+    const productsRes = await fetch(`${BASE}/agent/products`, {
+      headers: { Authorization: `Bearer ${agentToken}` },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const productsData = (await productsRes.json()) as any;
+    const products: { id: number }[] = productsData.data ?? [];
+    // Use first product or fallback to 1 (Zod needs a positive int, KYC check fires after)
+    productId = products[0]?.id ?? 1;
+
     const res = await fetch(`${BASE}/agent/stock/request`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${agentToken}`,
       },
-      body: JSON.stringify({ quantity: 5 }),
+      body: JSON.stringify({ product_id: productId, quantity: 5 }),
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = (await res.json()) as any;
@@ -192,7 +203,7 @@ describe("Agent", () => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${agentToken}`,
       },
-      body: JSON.stringify({ quantity: 2 }),
+      body: JSON.stringify({ product_id: productId, quantity: 2 }),
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = (await res.json()) as any;
