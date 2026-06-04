@@ -54,7 +54,7 @@ const buyerNavGroups: NavGroup[] = [
       {
         label: "Notification",
         icon: Bell,
-        href: "/buyer-dashboard/notification",
+        href: "/buyer-dashboard/notifications",
       },
       {
         label: "Profile & Address",
@@ -69,7 +69,7 @@ const buyerNavGroups: NavGroup[] = [
       {
         label: "WhatsApp Support",
         icon: MessageCircle,
-        href: "https://wa.me/+2348167042797",
+        href: "https://wa.me/+2347012288798",
       },
       { label: "Help Center", icon: HelpCircle, href: "/buyer-dashboard/help" },
     ],
@@ -124,7 +124,7 @@ const agentNavGroups: NavGroup[] = [
       {
         label: "WhatsApp Support",
         icon: MessageCircle,
-        href: "https://wa.me/+2348167042797",
+        href: "https://wa.me/+2347012288798",
       },
       { label: "Help Center", icon: HelpCircle, href: "/agent-dashboard/help" },
     ],
@@ -154,7 +154,7 @@ const adminNavGroups: NavGroup[] = [
       {
         label: "WhatsApp Support",
         icon: MessageCircle,
-        href: "https://wa.me/+2348167042797",
+        href: "https://wa.me/+2347012288798",
       },
     ],
   },

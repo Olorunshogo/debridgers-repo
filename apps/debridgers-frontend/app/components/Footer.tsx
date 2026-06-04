@@ -107,10 +107,10 @@ export default function Footer() {
                     Call us directly
                   </p>
                   <a
-                    href="tel:+2348167042797"
+                    href="tel:+2347012288798"
                     className="text-white/90 transition-colors duration-200 hover:text-white"
                   >
-                    +2348167042797
+                    +2347012288798
                   </a>
                 </div>
                 <div className="font-open-sans flex flex-col gap-1 text-white">

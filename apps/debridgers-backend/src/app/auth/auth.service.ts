@@ -38,6 +38,21 @@ export class AuthService {
       .limit(1);
 
     if (existing.length > 0) {
+      const user = existing[0];
+      if (!user.is_email_verified) {
+        // Silently refresh their OTP and tell the frontend to redirect
+        await this.refreshVerificationOtp(
+          user.id,
+          user.first_name,
+          user.last_name,
+          user.email,
+          user.role,
+        );
+        throw new ConflictException({
+          message: "This email is registered but not yet verified.",
+          code: "UNVERIFIED_EMAIL",
+        });
+      }
       throw new ConflictException("Email already registered");
     }
 
@@ -425,6 +440,34 @@ export class AuthService {
       .limit(1);
 
     return defaultReferrer?.id ?? null;
+  }
+
+  private async refreshVerificationOtp(
+    userId: number,
+    firstName: string,
+    lastName: string,
+    email: string,
+    role: string,
+  ) {
+    const token = this.generateVerificationOtp();
+    const expiresAt = new Date(Date.now() + 24 * 3600 * 1000);
+
+    await this.db
+      .delete(schema.email_verification)
+      .where(eq(schema.email_verification.user_id, userId));
+
+    await this.db.insert(schema.email_verification).values({
+      user_id: userId,
+      token,
+      expires_at: expiresAt,
+    });
+
+    this.eventEmitter.emit(USER_EVENTS.EMAIL_VERIFICATION_REQUESTED, {
+      name: `${firstName} ${lastName}`,
+      email,
+      token,
+      role,
+    });
   }
 
   private generateVerificationOtp() {

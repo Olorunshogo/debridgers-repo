@@ -18,6 +18,7 @@ import {
   Wallet,
   Headphones,
   ArrowUpRight,
+  ArrowRight,
 } from "lucide-react";
 import { HeroGreetingCard } from "../shared/HeroGreetingCard";
 import { apiFetch } from "@debridgers/api-client";
@@ -80,6 +81,7 @@ interface DashboardData {
     eta: string;
     steps: TrackingStep[];
     items: string[];
+    hasOrder: boolean;
   };
   spending: {
     weeks: SpendingWeek[];
@@ -204,6 +206,7 @@ function mapApiToDashboard(api: ApiDashboard): DashboardData {
       eta: "N/A",
       steps: trackingSteps,
       items: nd ? [`${nd.quantity} pack${nd.quantity !== 1 ? "s" : ""}`] : [],
+      hasOrder: !!nd,
     },
     spending: {
       weeks: [],
@@ -218,7 +221,7 @@ const quickActions: QuickAction[] = [
   { label: "New Order", icon: ShoppingCart, href: "/buyer-dashboard/shop" },
   { label: "Repeat Last", icon: RefreshCcw, href: "/buyer-dashboard/shop" },
   { label: "Add Funds", icon: Wallet, href: "/buyer-dashboard/wallet" },
-  { label: "Get help", icon: Headphones, href: "https://wa.me/+2348167042797" },
+  { label: "Get help", icon: Headphones, href: "https://wa.me/+2347012288798" },
 ];
 
 const statusStyles: Record<
@@ -340,16 +343,12 @@ export default function BuyerOverview() {
   if (loading || !data) {
     return (
       <div className="flex animate-pulse flex-col gap-6">
-        <div
-          className="h-40 rounded-2xl"
-          style={{ backgroundColor: "var(--border-gray)" }}
-        />
+        <div className="border-border-gray h-40 rounded-2xl border" />
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="h-28 rounded-2xl"
-              style={{ backgroundColor: "var(--border-gray)" }}
+              className="border-border-gray h-28 rounded-2xl border"
             />
           ))}
         </div>
@@ -363,11 +362,11 @@ export default function BuyerOverview() {
       <HeroGreetingCard
         greeting={data.greeting}
         userName={data.userName}
-        subtitle={<p className="max-w-[350px]">{data.subtitle}</p>}
+        subtitle={<p className="max-w-87.5">{data.subtitle}</p>}
         actions={
           <>
             <a
-              href="https://wa.me/+2348167042797"
+              href="https://chat.whatsapp.com/GjMvQOIbO9qAFjUGR3ZYVK?s=sw&p=i&mlu=2"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
@@ -381,15 +380,15 @@ export default function BuyerOverview() {
             </a>
             <Link
               to="/buyer-dashboard/shop"
-              className="inline-flex items-center gap-1 text-sm font-medium text-white/80 transition-colors hover:text-white"
+              className="flex items-center gap-1 text-sm font-medium text-white/80 transition-colors hover:text-white"
             >
-              Browse catalog →
+              Browse catalog <ArrowRight size={16} />
             </Link>
           </>
         }
         infoBox={
           <div
-            className="flex flex-col gap-1 rounded-xl border border-white/20 p-4 lg:min-w-[200px]"
+            className="flex flex-col gap-1 rounded-xl border border-white/20 p-4 lg:min-w-50"
             style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
           >
             <p className="text-xs text-white/60">Next Delivery</p>
@@ -501,80 +500,99 @@ export default function BuyerOverview() {
         className="rounded-2xl p-6"
         style={{ backgroundColor: "var(--primary-color)" }}
       >
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-white/60">
-                Order #{data.tracking.orderId}
-              </p>
-              <p className="font-syne text-sm font-semibold text-white">
-                Live Tracking
-              </p>
-            </div>
-            <span
-              className="rounded-full px-2.5 py-1 text-xs font-medium"
-              style={{
-                backgroundColor: "var(--status-active-bg)",
-                color: "var(--status-active-text)",
-              }}
-            >
-              ● Active
-            </span>
-          </div>
-
-          <div>
-            <p className="text-xs text-white/60">Estimated arrival</p>
-            <p className="font-syne text-3xl font-extrabold text-white">
-              {data.tracking.eta}
-            </p>
-          </div>
-
-          <div className="relative h-1.5 w-full rounded-full bg-white/20">
-            <div
-              className="absolute top-0 left-0 h-full rounded-full"
-              style={{
-                width: "75%",
-                backgroundColor: "var(--secondary-color)",
-              }}
-            />
-          </div>
-
-          <div className="grid grid-cols-4 gap-2">
-            {data.tracking.steps.map((step) => (
-              <div key={step.label} className="flex items-center gap-1">
-                <span
-                  className="text-xs"
-                  style={{
-                    color: step.done
-                      ? "var(--secondary-color)"
-                      : "rgba(255,255,255,0.4)",
-                  }}
-                >
-                  {step.done ? "✓" : "○"}
-                </span>
-                <span className="text-xs text-white/70">{step.label}</span>
+        {data.tracking.hasOrder ? (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-white/60">
+                  Order #{data.tracking.orderId}
+                </p>
+                <p className="font-syne text-sm font-semibold text-white">
+                  Live Tracking
+                </p>
               </div>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <p className="w-full text-xs tracking-widest text-white/50 uppercase">
-              Items in order
-            </p>
-            {data.tracking.items.map((item) => (
               <span
-                key={item}
-                className="rounded-full px-3 py-1 text-xs font-medium"
+                className="rounded-full px-2.5 py-1 text-xs font-medium"
                 style={{
-                  backgroundColor: "rgba(255,255,255,0.15)",
-                  color: "white",
+                  backgroundColor: "var(--status-active-bg)",
+                  color: "var(--status-active-text)",
                 }}
               >
-                {item}
+                ● Active
               </span>
-            ))}
+            </div>
+
+            <div>
+              <p className="text-xs text-white/60">Estimated arrival</p>
+              <p className="font-syne text-3xl font-extrabold text-white">
+                {data.tracking.eta}
+              </p>
+            </div>
+
+            <div className="relative h-1.5 w-full rounded-full bg-white/20">
+              <div
+                className="absolute top-0 left-0 h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${(data.tracking.steps.filter((s) => s.done).length / data.tracking.steps.length) * 100}%`,
+                  backgroundColor: "var(--secondary-color)",
+                }}
+              />
+            </div>
+
+            <div className="grid grid-cols-4 gap-2">
+              {data.tracking.steps.map((step) => (
+                <div key={step.label} className="flex items-center gap-1">
+                  <span
+                    className="text-xs"
+                    style={{
+                      color: step.done
+                        ? "var(--secondary-color)"
+                        : "rgba(255,255,255,0.4)",
+                    }}
+                  >
+                    {step.done ? "✓" : "○"}
+                  </span>
+                  <span className="text-xs text-white/70">{step.label}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <p className="w-full text-xs tracking-widest text-white/50 uppercase">
+                Items in order
+              </p>
+              {data.tracking.items.map((item) => (
+                <span
+                  key={item}
+                  className="rounded-full px-3 py-1 text-xs font-medium"
+                  style={{
+                    backgroundColor: "rgba(255,255,255,0.15)",
+                    color: "white",
+                  }}
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex flex-col items-center gap-3 py-4 text-center">
+            <p className="font-syne text-sm font-semibold text-white">
+              Live Tracking
+            </p>
+            <p className="text-sm text-white/60">No active orders right now.</p>
+            <Link
+              to="/buyer-dashboard/shop"
+              className="mt-1 rounded-full px-4 py-2 text-xs font-semibold transition-opacity hover:opacity-80"
+              style={{
+                backgroundColor: "var(--secondary-color)",
+                color: "var(--heading-colour)",
+              }}
+            >
+              Place an order
+            </Link>
+          </div>
+        )}
       </motion.div>
 
       {/* Spending chart */}

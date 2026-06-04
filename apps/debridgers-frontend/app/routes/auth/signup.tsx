@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { z } from "zod";
 import {
@@ -80,6 +80,7 @@ function splitFullName(fullName: string): {
 
 // === Page
 export default function SignupPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>("buyer");
 
   // === Buyer form state
@@ -178,6 +179,12 @@ export default function SignupPage() {
       const json = await res.json();
 
       if (res.status === 409) {
+        if (json.code === "UNVERIFIED_EMAIL") {
+          navigate("/verify-email", {
+            state: { email: result.data.email, role: "buyer" },
+          });
+          return;
+        }
         setApiError("This email is already registered.");
         return;
       }
@@ -240,6 +247,12 @@ export default function SignupPage() {
       const json = await res.json();
 
       if (res.status === 409) {
+        if (json.code === "UNVERIFIED_EMAIL") {
+          navigate("/verify-email", {
+            state: { email: result.data.email, role: "agent" },
+          });
+          return;
+        }
         setApiError("This email is already registered.");
         return;
       }

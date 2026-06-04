@@ -26,7 +26,7 @@ interface HeaderProps {
 
 export function Header({
   navLinks,
-  orderNowHref = "https://wa.me/+2348167042797",
+  orderNowHref = "https://wa.me/+2347012288798",
   signUpHref,
   heroSectionId,
   logoVariant = "black",

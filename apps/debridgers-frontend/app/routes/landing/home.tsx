@@ -280,7 +280,7 @@ function WhatWeDeliver() {
           </h2>
 
           <PrimaryLink
-            href="https://wa.me/+2348167042797"
+            href="https://wa.me/+2347012288798"
             className="font-syne py-md px-xl text-xl font-bold sm:text-2xl lg:text-3xl"
           >
             Send Order
