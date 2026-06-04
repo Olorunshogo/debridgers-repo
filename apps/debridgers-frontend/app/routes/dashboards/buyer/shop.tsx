@@ -366,7 +366,7 @@ export default function BuyerShop() {
             initial={{ y: 80, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 80, opacity: 0 }}
-            className="fixed right-0 bottom-0 left-0 z-30 flex items-center justify-between border-t px-6 py-4 shadow-lg lg:left-[280px]"
+            className="lg:left-w-70 fixed right-0 bottom-0 left-0 z-30 flex items-center justify-between border-t px-6 py-4 shadow-lg"
             style={{
               backgroundColor: "var(--white)",
               borderColor: "var(--border-gray)",

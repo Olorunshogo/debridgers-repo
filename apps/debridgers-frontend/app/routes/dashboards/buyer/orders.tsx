@@ -111,7 +111,7 @@ export default function BuyerOrders() {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className="rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200"
+            className="cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200"
             style={{
               backgroundColor:
                 activeTab === tab.key

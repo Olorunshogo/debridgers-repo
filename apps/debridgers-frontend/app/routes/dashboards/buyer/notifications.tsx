@@ -29,7 +29,7 @@ function saveReadIds(ids: Set<string>) {
   localStorage.setItem(READ_IDS_KEY, JSON.stringify([...ids]));
 }
 
-export default function BuyerNotification() {
+export default function BuyerNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 

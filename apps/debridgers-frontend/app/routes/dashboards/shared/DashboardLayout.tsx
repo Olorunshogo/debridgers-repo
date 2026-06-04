@@ -27,7 +27,7 @@ const titleMaps: Record<string, Record<string, string>> = {
     "/buyer-dashboard/shop": "Shop / Catalog",
     "/buyer-dashboard/orders": "My Orders",
     "/buyer-dashboard/wallet": "Wallet & Payment",
-    "/buyer-dashboard/notification": "Notification",
+    "/buyer-dashboard/notifications": "Notifications",
     "/buyer-dashboard/settings": "Profile & Address",
     "/buyer-dashboard/checkout": "Checkout",
     "/buyer-dashboard/help": "Help Center",
@@ -119,7 +119,7 @@ export default function DashboardLayout() {
     return (
       <div className="flex h-full flex-col">
         {/* Scrollable area: logo + nav + user card */}
-        <div className="flex flex-col gap-6 overflow-y-auto rounded-xl bg-[#FCFDFD] p-4 pt-6">
+        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto rounded-xl bg-[#FCFDFD] p-4 pt-6">
           {/* Logo */}
           <div className="mx-auto flex h-16 items-center">
             <Link to={basePath} onClick={onNavClick}>
@@ -138,7 +138,7 @@ export default function DashboardLayout() {
                   const active = isActive(item.href);
                   const isExternal = item.href.startsWith("http");
                   const cls =
-                    "flex items-center gap-3 font-open-sans rounded-[16px] p-3 text-base transition-all duration-300 ease-in-out cursor-pointer";
+                    "flex items-center gap-3 font-open-sans rounded-2xl p-3 text-base transition-all duration-300 ease-in-out cursor-pointer";
                   const style = {
                     backgroundColor: active
                       ? "rgba(75,122,81,1)"
@@ -222,10 +222,10 @@ export default function DashboardLayout() {
           </div>
         </div>
 
-        {/* Logout - always anchored at bottom, never scrolls away */}
+        {/* Logout */}
         <button
           onClick={handleLogout}
-          className="font-open-sans text-text z-10 flex w-full shrink-0 cursor-pointer items-center gap-3 rounded-[16px] p-4 text-base transition-all duration-300 ease-in-out"
+          className="font-open-sans text-text z-10 flex w-full shrink-0 cursor-pointer items-center gap-3 rounded-2xl p-4 text-base transition-all duration-300 ease-in-out"
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = "#FEE2E2";
             e.currentTarget.style.color = "#DC2626";
@@ -235,7 +235,7 @@ export default function DashboardLayout() {
             e.currentTarget.style.color = "var(--text-colour)";
           }}
         >
-          <LogOut size={17} className="text-error-red" />
+          <LogOut size={18} className="text-error-red" />
           Logout
         </button>
       </div>
@@ -247,7 +247,7 @@ export default function DashboardLayout() {
       <div className="layout-max-width relative flex h-screen flex-col">
         <div className="bg-dash-page-bg px-section-px flex h-screen w-full gap-6">
           {/* Desktop sidebar */}
-          <aside className="sticky top-0 hidden h-screen w-[280px] shrink-0 rounded-[16px] lg:flex lg:flex-col">
+          <aside className="sticky top-0 hidden h-screen w-70 shrink-0 rounded-2xl lg:flex lg:flex-col">
             <Sidebar />
           </aside>
 
@@ -269,7 +269,7 @@ export default function DashboardLayout() {
                   animate={{ x: 0 }}
                   exit={{ x: "-100%" }}
                   transition={{ type: "tween", duration: 0.28 }}
-                  className="fixed top-0 left-0 z-50 h-full w-[280px] bg-[#FCFDFD] lg:hidden"
+                  className="fixed top-0 left-0 z-50 h-full w-70 bg-[#FCFDFD] lg:hidden"
                 >
                   <button
                     onClick={() => setMobileOpen(false)}
@@ -287,7 +287,7 @@ export default function DashboardLayout() {
           {/* Main area */}
           <div className="flex h-screen min-w-0 flex-1 flex-col overflow-y-auto">
             {/* Topbar */}
-            <header className="border-border-gray bg-dash-topbar-bg flex h-16 shrink-0 items-center justify-between gap-4 border-b px-4 lg:px-6">
+            <header className="border-border-gray bg-dash-topbar-bg mb-6 flex h-16 shrink-0 items-center justify-between gap-4 border-b px-4 lg:px-6">
               <div className="flex items-center gap-3">
                 <button
                   className="text-text shrink-0 cursor-pointer transition-colors lg:hidden"

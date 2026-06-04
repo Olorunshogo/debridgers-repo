@@ -137,7 +137,7 @@ export default function AgentHelpPage() {
       {/* Quick actions */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <motion.a
-          href="https://wa.me/+2348167042797"
+          href="https://wa.me/+2347012288798"
           target="_blank"
           rel="noopener noreferrer"
           initial={{ opacity: 0, y: 12 }}
