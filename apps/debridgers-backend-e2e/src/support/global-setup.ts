@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { spawn, execSync, type ChildProcess } from "child_process";
+import { spawn, spawnSync, type ChildProcess } from "child_process";
 import { resolve } from "path";
 import { existsSync } from "fs";
 
@@ -38,7 +38,14 @@ export default async function globalSetup() {
   // Build if dist doesn't exist
   if (!existsSync(distMain)) {
     console.log("\n🔨 Building backend for e2e tests...");
-    execSync("pnpm build", { cwd: backendRoot, stdio: "inherit" });
+    const build = spawnSync("pnpm", ["build"], {
+      cwd: backendRoot,
+      stdio: "inherit",
+      shell: true,
+    });
+    if (build.status !== 0) {
+      throw new Error("Backend build failed");
+    }
   }
 
   // Load backend .env so the server gets DB credentials etc.
