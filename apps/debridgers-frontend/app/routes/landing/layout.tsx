@@ -1,5 +1,5 @@
 import { Outlet } from "react-router";
-import Footer from "@/components/Footer";
+import Footer from "@/components/landing/Footer";
 
 export type LandingLayoutContext = {
   isSearchVisible: boolean;

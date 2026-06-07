@@ -3,8 +3,8 @@ import { Link } from "react-router";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import type { Variants } from "framer-motion";
-import { Header } from "../../components/Header";
-import { HeroSection } from "../../components/HeroSection";
+import { Header } from "../../components/landing/Header";
+import { HeroSection } from "../../components/landing/HeroSection";
 
 export function meta() {
   return [

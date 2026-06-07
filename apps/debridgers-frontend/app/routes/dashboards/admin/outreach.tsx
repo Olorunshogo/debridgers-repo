@@ -16,6 +16,11 @@ import { kadunaLgas, kadunaAreas, kadunaAreasByLga } from "@/models/models";
 export function meta() {
   return [
     { title: "Outreach Records | Debridgers Admin" },
+    {
+      name: "description",
+      content:
+        "View and manage outreach records — track leads, follow-ups and conversion progress.",
+    },
     { name: "robots", content: "noindex, nofollow" },
   ];
 }

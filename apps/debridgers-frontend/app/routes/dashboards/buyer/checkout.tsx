@@ -5,7 +5,15 @@ import { CheckCircle2 } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
 
 export function meta() {
-  return [{ title: "Checkout | Debridgers" }];
+  return [
+    { title: "Checkout | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Review and confirm your Debridgers order before completing your purchase.",
+    },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 type Step = "delivery" | "confirmed";
@@ -94,7 +102,7 @@ export default function BuyerCheckout() {
           Order Confirmed!
         </h2>
         <p
-          className="max-w-[350px] text-sm"
+          className="max-w-87.5 text-sm"
           style={{ color: "var(--text-colour)" }}
         >
           Your order has been placed. We&apos;ll notify you when it&apos;s

@@ -1,10 +1,10 @@
 import type { Route } from "./+types/home";
-import { Header } from "../../components/Header";
+import { Header } from "../../components/landing/Header";
 import {
   renderIcon,
   useImageCycle,
   useTrustCycle,
-} from "../../components/HeroSection";
+} from "../../components/landing/HeroSection";
 import { Icon } from "@iconify/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
@@ -90,13 +90,13 @@ function WhyCard({ card, isActive, onHover }: WhyCardProps) {
 }
 
 // === Delivery Category
-interface DeliverCategory {
+interface WhatWeDeliverCategory {
   title: string;
   subtitle: string;
   images: string[];
 }
 
-const deliverCategories: DeliverCategory[] = [
+const whatWeDeliverCategories: WhatWeDeliverCategory[] = [
   {
     title: "Grain & Staples",
     subtitle: "Rice, Beans, Garri",
@@ -137,15 +137,21 @@ const deliverCategories: DeliverCategory[] = [
 
 // === WhatWeDeliver: 4 cards visible on lg, infinite marquee through all 6
 // === DeliverCard: images static on load, cycle right-to-left only on hover
-function DeliverCard({ category }: { category: DeliverCategory }) {
+function DeliverCard({
+  whatWeDeliverCategory,
+}: {
+  whatWeDeliverCategory: WhatWeDeliverCategory;
+}) {
   const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const startCycling = () => {
-    if (category.images.length <= 1) return;
+    if (whatWeDeliverCategory.images.length <= 1) return;
     intervalRef.current = setInterval(() => {
-      setActiveImageIndex((prev) => (prev + 1) % category.images.length);
+      setActiveImageIndex(
+        (prev) => (prev + 1) % whatWeDeliverCategory.images.length,
+      );
     }, 900);
   };
 
@@ -178,11 +184,11 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
       className="group relative h-80 w-55 shrink-0 cursor-default overflow-hidden rounded-3xl shadow-lg sm:h-95 sm:w-65"
     >
       {/* Images - static until hover, then swipe right-to-left */}
-      {category.images.map((src, idx) => (
+      {whatWeDeliverCategory.images.map((src, idx) => (
         <motion.img
           key={src}
           src={src}
-          alt={`${category.title} - image ${idx + 1}`}
+          alt={`${whatWeDeliverCategory.title} - image ${idx + 1}`}
           className="absolute inset-0 h-full w-full object-cover"
           animate={{
             x:
@@ -201,14 +207,14 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
 
       {/* Label */}
       <div className="font-open-sans p-base bottom-base absolute right-0 left-0 flex flex-col gap-1 pb-(--space-base) text-white">
-        <p className="text-lg font-semibold">{category.title}</p>
-        <p className="text-base">{category.subtitle}</p>
+        <p className="text-lg font-semibold">{whatWeDeliverCategory.title}</p>
+        <p className="text-base">{whatWeDeliverCategory.subtitle}</p>
       </div>
 
       {/* Image dots - visible on hover */}
-      {isHovered && category.images.length > 1 && (
+      {isHovered && whatWeDeliverCategory.images.length > 1 && (
         <div className="absolute bottom-20 left-1/2 flex -translate-x-1/2 gap-1.5">
-          {category.images.map((_, i) => (
+          {whatWeDeliverCategory.images.map((_, i) => (
             <div
               key={i}
               className={`h-1.5 w-1.5 rounded-full transition-all ${
@@ -232,9 +238,9 @@ function WhatWeDeliver() {
   const cardWidth = 260; // w-65
   const gap = 24; // gap-6 = 24px
   const step = cardWidth + gap;
-  const totalCards = deliverCategories.length;
+  const totalCards = whatWeDeliverCategories.length;
   // === Render doubled list - when offset hits totalCards, silently snap back to 0
-  const doubled = [...deliverCategories, ...deliverCategories];
+  const doubled = [...whatWeDeliverCategories, ...whatWeDeliverCategories];
 
   useEffect(() => {
     if (isHovered) {
@@ -309,7 +315,7 @@ function WhatWeDeliver() {
           {doubled.map((category, index) => (
             <DeliverCard
               key={`${category.title}-${index}`}
-              category={category}
+              whatWeDeliverCategory={category}
             />
           ))}
         </motion.div>
@@ -848,7 +854,7 @@ export default function Home() {
             >
               <div className="flex items-center justify-between gap-4">
                 <div className="flex flex-col flex-1 truncate">
-                  <div className="h-[30px] w-[130px]">
+                  <div className="h-[30px] w-32.5">
                     <img
                       src="/logos/agrolinking.png"
                       alt="Agro-Linking Logo"

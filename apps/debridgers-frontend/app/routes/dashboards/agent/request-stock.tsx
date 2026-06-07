@@ -4,7 +4,15 @@ import { Minus, Plus, CheckCircle2, Package } from "lucide-react";
 import { apiFetch, ApiError } from "@debridgers/api-client";
 
 export function meta() {
-  return [{ title: "Request Stock | Debridgers" }];
+  return [
+    { title: "Request Stock | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Request fresh foodstuff stock from the Debridgers warehouse to fulfil your customer orders.",
+    },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 type RequestStatus = "pending" | "fulfilled" | "cancelled";
