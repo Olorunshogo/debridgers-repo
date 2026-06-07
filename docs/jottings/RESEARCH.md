@@ -63,4 +63,6 @@ Users: admins, agents, buyers, companies. Nigerian focus (Paystack, kobo, LGAs).
   3. **Insight**: Stats on agents/orders/revenue.
   4. **Simplicity**: Minimal clicks for high-impact tasks (KYC/stock).
 
-B
+Odega Okolie, Photography, content writing/writer, social media marketing, volunteering, campaigns, poetry, curator, leadership young people - young Talented Optimistic Builders - blogs - youthful personal grpowth ane development
+
+Maverick creative works

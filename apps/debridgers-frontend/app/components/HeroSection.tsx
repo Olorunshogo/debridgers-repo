@@ -145,7 +145,7 @@ export function HeroSection({
               </h1>
 
               {/* Subtext */}
-              <p className="w-full max-w-90 text-lg leading-relaxed font-semibold text-white lg:max-w-144 lg:text-xl">
+              <p className="w-full max-w-90 text-base leading-relaxed font-semibold text-white sm:text-lg lg:max-w-144 lg:text-xl">
                 {subtext}
               </p>
             </div>
