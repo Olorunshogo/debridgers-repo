@@ -33,6 +33,7 @@ export function Header({
 }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
   const [onGreenBg, setOnGreenBg] = useState<boolean>(true);
+  const [mounted, setMounted] = useState<boolean>(false);
 
   useEffect(() => {
     const updateBg = () => {
@@ -55,6 +56,10 @@ export function Header({
       window.removeEventListener("resize", updateBg);
     };
   }, [heroSectionId]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const pillBg = onGreenBg ? "rgba(255,255,255,1)" : "rgba(30,89,37,0.95)";
   const pillBlur = onGreenBg ? "blur(0px)" : "blur(14px)";
@@ -80,7 +85,7 @@ export function Header({
 
   return (
     <motion.header
-      className="font-syne h-navbar-h mx-auto flex w-9/10 max-w-[928px] rounded-full p-4 shadow-md"
+      className="font-syne h-navbar-h mx-auto flex w-9/10 max-w-232 rounded-full p-4 shadow-md"
       animate={{ backgroundColor: pillBg, backdropFilter: pillBlur }}
       transition={{ duration: 0.35, ease: "easeInOut" }}
     >
@@ -148,7 +153,7 @@ export function Header({
       </div>
 
       {/* Mobile Menu -> portalled to document.body so fixed positioning works correctly */}
-      {typeof document !== "undefined" &&
+      {mounted &&
         createPortal(
           <AnimatePresence>
             {menuOpen && (
@@ -165,7 +170,7 @@ export function Header({
                   animate={{ x: 0 }}
                   exit={{ x: "-100%" }}
                   transition={{ type: "tween", duration: 0.3 }}
-                  className="px-section-px fixed top-0 left-0 z-50 h-full w-[85%] max-w-[380px] overflow-hidden bg-white shadow-xl lg:hidden"
+                  className="px-section-px fixed top-0 left-0 z-50 h-full w-[85%] max-w-95 overflow-hidden bg-white shadow-xl lg:hidden"
                 >
                   <div className="flex h-full w-full flex-col gap-4 py-6">
                     <div className="flex w-full items-center justify-between">

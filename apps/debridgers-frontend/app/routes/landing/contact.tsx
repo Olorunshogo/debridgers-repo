@@ -40,10 +40,15 @@ export function meta({}: Route.MetaArgs) {
     { property: "og:image", content: "https://debridgers.com/og-image.png" },
     { property: "og:image:width", content: "1200" },
     { property: "og:image:height", content: "630" },
+    {
+      property: "og:image:alt",
+      content: "Debridgers — fresh foodstuff at market prices in Kaduna",
+    },
     { property: "og:locale", content: "en_NG" },
 
     // === Twitter
     { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:site", content: "@debridgers" },
     { name: "twitter:url", content: "https://debridgers.com/contact" },
     { name: "twitter:title", content: "Contact Debridgers | Get in Touch" },
     {
@@ -52,6 +57,10 @@ export function meta({}: Route.MetaArgs) {
         "Reach out to Debridgers for orders, partnership inquiries or support. We are available 24 hours a day.",
     },
     { name: "twitter:image", content: "https://debridgers.com/og-image.png" },
+    {
+      name: "twitter:image:alt",
+      content: "Debridgers — fresh foodstuff at market prices in Kaduna",
+    },
 
     // === Author and Robots
     { name: "author", content: "Debridgers Team" },
@@ -329,7 +338,7 @@ export default function ContactPage() {
                     <h3 className="text-xl font-bold text-black">
                       Message sent!
                     </h3>
-                    <p className="max-w-xs text-sm text-gray-500">
+                    <p className="max-w-100 text-sm text-gray-500">
                       Thanks for reaching out. We&apos;ll get back to you
                       shortly.
                     </p>

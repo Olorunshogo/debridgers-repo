@@ -36,10 +36,16 @@ export function meta() {
     { property: "og:image", content: "https://debridgers.com/og-image.png" },
     { property: "og:image:width", content: "1200" },
     { property: "og:image:height", content: "630" },
+    {
+      property: "og:image:alt",
+      content:
+        "Debridgers — become a field agent and earn commission in Kaduna",
+    },
     { property: "og:locale", content: "en_NG" },
 
     // === Twitter
     { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:site", content: "@debridgers" },
     { name: "twitter:url", content: "https://debridgers.com/agents" },
     {
       name: "twitter:title",
@@ -48,9 +54,14 @@ export function meta() {
     {
       name: "twitter:description",
       content:
-        "Earn 5% commission on every sale as a Debridgers field agent. Work flexibly, serve your community and get paid weekly. Apply in under 3 minutes.",
+        "Earn 30% commission on every sale as a Debridgers field agent. Work flexibly, serve your community and get paid weekly. Apply in under 3 minutes.",
     },
     { name: "twitter:image", content: "https://debridgers.com/og-image.png" },
+    {
+      name: "twitter:image:alt",
+      content:
+        "Debridgers — become a field agent and earn commission in Kaduna",
+    },
 
     // === Author and Robots
     { name: "author", content: "Debridgers Team" },

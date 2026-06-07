@@ -51,7 +51,7 @@ function WhyCard({ card, isActive, onHover }: WhyCardProps) {
       onClick={onHover}
       whileHover={{ y: -10 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`group font-syne lg:gap-xl py-base px-3xl flex h-full flex-col gap-4 rounded-3xl transition-all duration-300 ease-in-out ${
+      className={`group font-syne lg:gap-xl py-base px-base lg:px-3xl flex h-full flex-col gap-4 rounded-3xl transition-all duration-300 ease-in-out ${
         isActive
           ? "bg-primary text-white"
           : "border-gray hover:border-primary border bg-white"
@@ -175,7 +175,7 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
       }}
       whileHover={{ scale: 1.04 }}
       transition={{ duration: 0.3 }}
-      className="group relative h-95 w-65 shrink-0 cursor-default overflow-hidden rounded-3xl shadow-lg"
+      className="group relative h-80 w-55 shrink-0 cursor-default overflow-hidden rounded-3xl shadow-lg sm:h-95 sm:w-65"
     >
       {/* Images - static until hover, then swipe right-to-left */}
       {category.images.map((src, idx) => (
@@ -361,8 +361,58 @@ export function meta({}: Route.MetaArgs) {
     {
       name: "description",
       content:
-        "Fresh foodstuff delivered straight to your door or shop at market prices.",
+        "Fresh foodstuff delivered straight to your door step at the same price you'd pay at Central Market. Rice, beans, palm oil and more. Serving Kaduna.",
     },
+    {
+      name: "keywords",
+      content:
+        "fresh foodstuff delivery Kaduna, market price food delivery Nigeria, rice beans delivery Kaduna, Debridgers, affordable food delivery Kaduna, palm oil delivery Nigeria, fresh produce Kaduna",
+    },
+
+    // === Open Graph
+    { property: "og:type", content: "website" },
+    { property: "og:url", content: "https://debridgers.com" },
+    { property: "og:site_name", content: "Debridgers" },
+    {
+      property: "og:title",
+      content: "Debridgers | Market Prices. Zero Market Stress.",
+    },
+    {
+      property: "og:description",
+      content:
+        "Fresh foodstuff at Central Market prices, delivered to your door. Rice, beans, palm oil and more — serving Kaduna.",
+    },
+    { property: "og:image", content: "https://debridgers.com/og-image.png" },
+    { property: "og:image:width", content: "1200" },
+    { property: "og:image:height", content: "630" },
+    {
+      property: "og:image:alt",
+      content: "Debridgers — fresh foodstuff at market prices in Kaduna",
+    },
+    { property: "og:locale", content: "en_NG" },
+
+    // === Twitter
+    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:site", content: "@debridgers" },
+    { name: "twitter:url", content: "https://debridgers.com" },
+    {
+      name: "twitter:title",
+      content: "Debridgers | Market Prices. Zero Market Stress.",
+    },
+    {
+      name: "twitter:description",
+      content:
+        "Fresh foodstuff at Central Market prices, delivered to your door. Rice, beans, palm oil and more — serving Kaduna.",
+    },
+    { name: "twitter:image", content: "https://debridgers.com/og-image.png" },
+    {
+      name: "twitter:image:alt",
+      content: "Debridgers — fresh foodstuff at market prices in Kaduna",
+    },
+
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "index, follow" },
   ];
 }
 
@@ -426,7 +476,7 @@ export default function Home() {
               <div className="relative flex flex-1 flex-col pt-20 sm:pt-24 lg:pt-32">
                 <div className="gap-xl lg:gap-3xl flex flex-1 flex-col justify-center">
                   {/* Location badge */}
-                  <div className="text-primary font-open-sans p-sm border-primary inline-flex w-fit items-center gap-1 rounded-full border bg-[#A5BDA8] text-sm font-semibold shadow-[50px] backdrop-blur-lg">
+                  <div className="text-primary font-open-sans p-sm border-primary flex w-fit items-center gap-1 rounded-full border bg-[#A5BDA8] text-sm font-semibold shadow-[50px] backdrop-blur-lg">
                     <span className="bg-primary h-1.5 w-1.5 rounded-full" />
                     Now Serving in Kaduna
                   </div>
@@ -434,7 +484,7 @@ export default function Home() {
                   {/* Heading and Paragraph */}
                   <div className="flex flex-col gap-6">
                     {/* Heading */}
-                    <h1 className="flex flex-col text-4xl leading-tight font-bold text-white sm:text-5xl md:text-6xl lg:text-7xl">
+                    <h1 className="flex flex-col text-4xl leading-tight font-bold text-white sm:text-5xl md:text-6xl lg:text-7xl 2xl:text-8xl">
                       <span>Market Prices.</span>
                       <span className="flex flex-wrap items-baseline gap-x-3">
                         {/* Curved Underlined Zero */}
@@ -457,7 +507,7 @@ export default function Home() {
                     </h1>
 
                     {/* Subtext */}
-                    <p className="w-full max-w-90 text-base leading-relaxed font-semibold text-white sm:text-lg lg:max-w-144 lg:text-xl">
+                    <p className="w-full max-w-90 text-base leading-relaxed font-medium text-white sm:text-lg lg:max-w-144 lg:text-xl">
                       Fresh foodstuff delivered straight to your door step. At
                       the same price you&apos;d pay at Central Market.
                     </p>
@@ -685,7 +735,7 @@ export default function Home() {
                   <div className="text-secondary font-syne text-2xl leading-none font-extrabold sm:text-4xl lg:text-5xl">
                     {displayValue}
                   </div>
-                  <p className="font-open-sans text-body-sm text-white sm:text-base lg:text-lg">
+                  <p className="font-open-sans sm:text-body-sm text-xs text-white lg:text-base">
                     {stat.label}
                   </p>
                 </motion.div>
@@ -724,11 +774,11 @@ export default function Home() {
               Get started
             </p>
 
-            <h2 className="text-primary font-syne mx-auto w-full max-w-64 text-center text-4xl leading-tight font-extrabold sm:max-w-125 sm:text-5xl lg:max-w-208 lg:text-6xl">
+            <h2 className="text-primary font-syne mx-auto w-full max-w-xs text-center text-4xl leading-tight font-extrabold sm:max-w-125 sm:text-5xl lg:max-w-208 lg:text-6xl">
               Your first delivery is on us.
             </h2>
 
-            <p className="text-primary font-open-sans mx-auto w-full max-w-64 text-base sm:max-w-125 lg:max-w-208 lg:text-lg">
+            <p className="text-primary font-open-sans mx-auto w-full max-w-xs text-base sm:max-w-125 lg:max-w-208 lg:text-lg">
               Join early and get free delivery on your first order. Just send us
               a WhatsApp and we&apos;ll take it from there.
             </p>
@@ -743,22 +793,22 @@ export default function Home() {
         id="partnership"
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative bg-[#F6F3F3]"
       >
-        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto w-full">
-          <div className="gap-4xl grid lg:grid-cols-2">
+        <div className="w-full mx-auto px-section-px sm:px-section-px-sm lg:px-section-px-lg">
+          <div className="grid gap-4xl lg:grid-cols-2">
             {/* Left Content *
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="lg:gap-3xl gap-xl flex flex-col"
+              className="flex flex-col lg:gap-3xl gap-xl"
             >
-              <div className="gap-xl flex flex-col">
+              <div className="flex flex-col gap-xl">
                 <div className="bg-primary-light/80 text-primary font-open-sans border-primary gap-2 px-base inline-flex w-fit items-center rounded-full border py-1.5 text-base tracking-widest uppercase lg:text-lg">
                   Official Partnership
                 </div>
 
-                <p className="text-text font-open-sans text-base tracking-widest uppercase lg:text-lg">
+                <p className="text-base tracking-widest uppercase text-text font-open-sans lg:text-lg">
                   Stronger Together
                 </p>
               </div>
@@ -778,12 +828,12 @@ export default function Home() {
                 href="https://agrolinking.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group text-secondary hover:gap-4 gap-2 inline-flex w-fit cursor-pointer items-center text-lg transition-all duration-300 ease-in-out sm:text-xl lg:text-2xl"
+                className="inline-flex items-center gap-2 text-lg transition-all duration-300 ease-in-out cursor-pointer group text-secondary hover:gap-4 w-fit sm:text-xl lg:text-2xl"
               >
                 See what Agrolinking does
                 <Icon
                   icon="lucide:arrow-right"
-                  className="h-4 w-4 transition-transform duration-300 ease-in-out group-hover:translate-x-1"
+                  className="w-4 h-4 transition-transform duration-300 ease-in-out group-hover:translate-x-1"
                 />
               </a>
             </motion.div>
@@ -796,8 +846,8 @@ export default function Home() {
               transition={{ duration: 0.6, delay: 0.15 }}
               className="bg-primary-light/80 flex h-fit flex-col gap-[32px] rounded-3xl px-8 py-12 text-white"
             >
-              <div className="gap-4 flex items-center justify-between">
-                <div className="flex flex-1 flex-col truncate">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col flex-1 truncate">
                   <div className="h-[30px] w-[130px]">
                     <img
                       src="/logos/agrolinking.png"
@@ -806,7 +856,7 @@ export default function Home() {
                     />
                   </div>
 
-                  <div className="font-open-sans text-base text-white">
+                  <div className="text-base text-white font-open-sans">
                     Farm-to-table marketplace.
                     <br />
                     Est. Nigeria.
@@ -822,12 +872,12 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="font-open-sans gap-xl flex flex-col">
-                <p className="font-open-sans text-base tracking-widest text-white uppercase lg:text-lg">
+              <div className="flex flex-col font-open-sans gap-xl">
+                <p className="text-base tracking-widest text-white uppercase font-open-sans lg:text-lg">
                   What this means for you
                 </p>
 
-                <ul className="gap-4 flex flex-col text-sm text-green-100">
+                <ul className="flex flex-col gap-4 text-sm text-green-100">
                   {[
                     "Access to a larger, verified network of food directly from farm",
                     "More consistent stock, even during off-season period",
@@ -835,10 +885,10 @@ export default function Home() {
                   ].map((item) => (
                     <li
                       key={item}
-                      className="font-open-sans gap-3 flex items-start"
+                      className="flex items-start gap-3 font-open-sans"
                     >
                       <span
-                        className="shrink-0 text-xl font-bold"
+                        className="text-xl font-bold shrink-0"
                         style={{ color: "var(--secondary-color)" }}
                       >
                         •
