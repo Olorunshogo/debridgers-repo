@@ -4,7 +4,15 @@ import { X } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
 
 export function meta() {
-  return [{ title: "My Orders | Debridgers" }];
+  return [
+    { title: "My Orders | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Track your current and past Debridgers orders — view status, items and delivery details.",
+    },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 type OrderStatus = "active" | "pending" | "cancelled" | "delivered";

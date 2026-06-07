@@ -1,7 +1,7 @@
 import type { Route } from "./+types/contact";
 import { useState, useEffect, useRef } from "react";
-import { Header } from "../../components/Header";
-import { HeroSection } from "../../components/HeroSection";
+import { Header } from "../../components/landing/Header";
+import { HeroSection } from "../../components/landing/HeroSection";
 import { Phone, Mail, Clock, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {

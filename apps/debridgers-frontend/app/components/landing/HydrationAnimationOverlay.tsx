@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import { useHydrationAnimation } from "../contexts/HydrationAnimationContext";
+import { useHydrationAnimation } from "../../contexts/HydrationAnimationContext";
 
 const FULL_TEXT = "Debridgers";
 const SPLIT_LEFT = "Debr";
@@ -35,7 +35,7 @@ function LetterByLetterAnimation({
   }, [duration, onComplete]);
 
   // return (
-  //   <div className="font-syne text-primary flex items-center justify-center text-4xl font-semibold">
+  //   <div className="flex items-center justify-center text-4xl font-semibold font-syne text-primary">
   //     {FULL_TEXT.split("").map((letter, index) => (
   //       <motion.span
   //         key={index}
@@ -59,7 +59,7 @@ function LetterByLetterAnimation({
   //           <motion.img
   //             src="/logos/debridgers.png"
   //             alt="i in Debridgers"
-  //             className="mx-1 h-8 w-8 object-contain"
+  //             className="object-contain w-8 h-8 mx-1"
   //             initial={{ scale: 0, rotate: -180 }}
   //             animate={{
   //               scale:

@@ -5,7 +5,15 @@ import { Users, UserCheck, ShoppingBag, TrendingUp } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
 
 export function meta() {
-  return [{ title: "Admin Overview | Debridgers" }];
+  return [
+    { title: "Admin Overview | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Admin dashboard overview — monitor agents, buyers, orders and revenue at a glance.",
+    },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 interface ApiAdminStats {

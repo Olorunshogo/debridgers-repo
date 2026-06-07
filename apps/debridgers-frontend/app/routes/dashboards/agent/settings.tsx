@@ -4,7 +4,15 @@ import { User, Lock, CheckCircle } from "lucide-react";
 import { apiFetch, ApiError } from "@debridgers/api-client";
 
 export function meta() {
-  return [{ title: "Settings | Debridgers" }];
+  return [
+    { title: "Settings | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Update your agent profile, contact details and account preferences.",
+    },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 interface AgentProfile {

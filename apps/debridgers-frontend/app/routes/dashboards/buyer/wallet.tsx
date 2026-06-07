@@ -4,7 +4,15 @@ import { ArrowUpRight, ArrowDownLeft, Plus } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
 
 export function meta() {
-  return [{ title: "Wallet & Payment | Debridgers" }];
+  return [
+    { title: "Wallet & Payment | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Manage your Debridgers wallet balance, top up funds and view your payment history.",
+    },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 type TransactionType = "credit" | "debit";
@@ -133,7 +141,7 @@ export default function BuyerWallet() {
           </div>
           <div className="flex gap-3">
             <div
-              className="flex min-w-[130px] flex-col gap-1 rounded-xl border border-white/20 p-4"
+              className="flex min-w-32.5 flex-col gap-1 rounded-xl border border-white/20 p-4"
               style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
             >
               <p className="text-xs text-white/60">Total Orders</p>
@@ -142,7 +150,7 @@ export default function BuyerWallet() {
               </p>
             </div>
             <div
-              className="flex min-w-[130px] flex-col gap-1 rounded-xl border border-white/20 p-4"
+              className="flex min-w-32.5 flex-col gap-1 rounded-xl border border-white/20 p-4"
               style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
             >
               <p className="text-xs text-white/60">Wallet Top-up</p>

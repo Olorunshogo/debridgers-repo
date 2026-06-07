@@ -18,7 +18,15 @@ import {
 } from "@debridgers/api-client";
 
 export function meta() {
-  return [{ title: "Products | Debridgers Admin" }];
+  return [
+    { title: "Products | Debridgers Admin" },
+    {
+      name: "description",
+      content:
+        "Manage the Debridgers product catalogue — add, update and price fresh foodstuff items.",
+    },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 interface Product {

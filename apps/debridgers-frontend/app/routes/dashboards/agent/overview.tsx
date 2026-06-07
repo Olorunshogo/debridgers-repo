@@ -16,7 +16,15 @@ import {
 import { HeroGreetingCard } from "../shared/HeroGreetingCard";
 
 export function meta() {
-  return [{ title: "Agent Overview | Debridgers" }];
+  return [
+    { title: "Agent Overview | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Your agent dashboard — view your sales, commissions, deliveries and performance summary.",
+    },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 // === Types
@@ -360,7 +368,7 @@ export default function AgentOverviewPage() {
         infoBox={
           <>
             <div
-              className="flex min-w-[140px] flex-col gap-1 rounded-xl border border-white/20 p-4"
+              className="flex min-w-35 flex-col gap-1 rounded-xl border border-white/20 p-4"
               style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
             >
               <p className="text-xs text-white/60">This week earning</p>
@@ -370,7 +378,7 @@ export default function AgentOverviewPage() {
               <p className="text-xs text-white/60">{data.paymentCycle}</p>
             </div>
             <div
-              className="flex min-w-[130px] flex-col gap-1 rounded-xl border border-white/20 p-4"
+              className="flex min-w-32.5 flex-col gap-1 rounded-xl border border-white/20 p-4"
               style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
             >
               <p className="text-xs text-white/60">Bags in hand</p>

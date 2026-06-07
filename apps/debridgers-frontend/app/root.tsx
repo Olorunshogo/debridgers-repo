@@ -10,7 +10,7 @@ import {
 import type { Route } from "./+types/root";
 import type { MetaFunction } from "react-router";
 import "./styles.css";
-import { IntroAnimation } from "./components/IntroAnimation";
+import { IntroAnimation } from "./components/landing/IntroAnimation";
 
 export const meta: MetaFunction = () => [
   { title: "Debridgers | Fresh Foodstuff at Market Prices in Kaduna" },

@@ -3,7 +3,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { apiFetch } from "@debridgers/api-client";
 
 export function meta() {
-  return [{ title: "Notifications | Debridgers" }];
+  return [
+    { title: "Notifications | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Stay up to date with your latest alerts, order updates and messages from Debridgers.",
+    },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 interface AgentNotification {
