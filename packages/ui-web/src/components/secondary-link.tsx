@@ -14,7 +14,7 @@ export function SecondaryLink({
   style,
 }: SecondaryLinkProps) {
   const base =
-    "inline-flex items-center justify-center px-base py-2 font-syne rounded-full font-semibold text-base cursor-pointer duration-300 ease-in-out transition-all hover:opacity-90";
+    "inline-flex items-center justify-center px-4 py-2 font-syne rounded-full font-semibold text-base cursor-pointer duration-300 ease-in-out transition-all hover:opacity-90";
 
   return (
     <a

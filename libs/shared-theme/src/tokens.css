@@ -64,15 +64,5 @@
   --dash-quick-action-hover: #e8f5e9;
   --dash-sidebar-bg: #1e5925;
   --dash-topbar-bg: #ffffff;
-  --dash-page-bg: #f7f8f7;
-
-  /* ── Spacing scale (gap + padding/margin — same values, one scale) ── */
-  --space-sm: 0.5rem; /* 8px  */
-  --space-md: 0.75rem; /* 12px */
-  --space-base: 1rem; /* 16px */
-  --space-lg: 1.25rem; /* 20px */
-  --space-xl: 1.5rem; /* 24px */
-  --space-2xl: 1.75rem; /* 28px */
-  --space-3xl: 2rem; /* 32px */
-  --space-4xl: 2.5rem; /* 40px */
+  --dash-page-bg: #f3f3f3;
 }

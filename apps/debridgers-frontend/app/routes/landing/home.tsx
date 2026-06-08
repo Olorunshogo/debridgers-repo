@@ -1,0 +1,922 @@
+import type { Route } from "./+types/home";
+import { Header } from "../../components/landing/Header";
+import {
+  renderIcon,
+  useImageCycle,
+  useTrustCycle,
+} from "../../components/landing/HeroSection";
+import { Icon } from "@iconify/react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useRef, useState, useEffect } from "react";
+import { PrimaryLink, WhatsAppButton } from "@debridgers/ui-web";
+
+// === Why Debridgers
+interface WhyCardData {
+  icon: string;
+  title: string;
+  description: string;
+}
+
+const whyCardsData: WhyCardData[] = [
+  {
+    icon: "lucide:lock-keyhole",
+    title: "Fixed, fair prices",
+    description:
+      "No more guessing what rice costs today. Our prices are set weekly and always reflect real market rates, nothing more.",
+  },
+  {
+    icon: "lucide:check",
+    title: "Quality guaranteed",
+    description:
+      "If you're not satisfied, we replace the orders. No questions asked. Our reputation depends on what lands at your door.",
+  },
+  {
+    icon: "lucide:smartphone",
+    title: "Order your way",
+    description:
+      "WhatsApp, phone call, or app, whatever is easiest for you. No complex platforms, no downloads required to get started.",
+  },
+];
+
+interface WhyCardProps {
+  card: WhyCardData;
+  isActive: boolean;
+  onHover: () => void;
+}
+
+function WhyCard({ card, isActive, onHover }: WhyCardProps) {
+  return (
+    <motion.div
+      onHoverStart={onHover}
+      onClick={onHover}
+      whileHover={{ y: -10 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className={`group font-syne lg:gap-xl py-base px-base lg:px-3xl flex h-full flex-col gap-4 rounded-3xl transition-all duration-300 ease-in-out ${
+        isActive
+          ? "bg-primary text-white"
+          : "border-gray hover:border-primary border bg-white"
+      }`}
+    >
+      {/* Icon */}
+      <div
+        className={`flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-300 ${
+          isActive
+            ? "bg-[#789B7C] text-[#FCFDFD]"
+            : "bg-[#789B7C] text-[#FCFDFD] group-hover:bg-white/20 group-hover:text-white"
+        }`}
+      >
+        <Icon icon={card.icon} className="h-6 w-6" />
+      </div>
+
+      {/* Content */}
+      <div className="flex flex-col gap-4">
+        <h3
+          className={`text-xl font-bold transition-colors duration-300 lg:text-2xl ${
+            isActive ? "text-white" : "text-heading group-hover:text-white"
+          }`}
+        >
+          {card.title}
+        </h3>
+        <p
+          className={`font-open-sans flex-1 text-base leading-relaxed transition-colors duration-300 lg:text-lg ${
+            isActive ? "text-white" : "text-text group-hover:text-emerald-100"
+          }`}
+        >
+          {card.description}
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
+// === Delivery Category
+interface WhatWeDeliverCategory {
+  title: string;
+  subtitle: string;
+  images: string[];
+}
+
+const whatWeDeliverCategories: WhatWeDeliverCategory[] = [
+  {
+    title: "Grain & Staples",
+    subtitle: "Rice, Beans, Garri",
+    images: [
+      "/images/deliver-grains-staples-1.jpg",
+      "/images/deliver-grains-staples-2.jpg",
+      "/images/deliver-grains-staples-3.jpg",
+    ],
+  },
+  {
+    title: "Grains",
+    subtitle: "Beans",
+    images: [
+      "/images/deliver-grains-1.jpg",
+      "/images/deliver-grains-2.jpg",
+      "/images/deliver-grains-3.jpg",
+    ],
+  },
+  {
+    title: "Oil & Protein",
+    subtitle: "Groundnut oil, Palm Oil",
+    images: [
+      "/images/deliver-oil-protein-1.jpg",
+      "/images/deliver-oil-protein-2.jpg",
+      "/images/deliver-oil-protein-3.jpg",
+    ],
+  },
+  {
+    title: "Tubers",
+    subtitle: "Yam, Potato",
+    images: [
+      "/images/deliver-tubers-1.jpg",
+      "/images/deliver-tubers-2.jpg",
+      "/images/deliver-tubers-3.jpg",
+    ],
+  },
+];
+
+// === WhatWeDeliver: 4 cards visible on lg, infinite marquee through all 6
+// === DeliverCard: images static on load, cycle right-to-left only on hover
+function DeliverCard({
+  whatWeDeliverCategory,
+}: {
+  whatWeDeliverCategory: WhatWeDeliverCategory;
+}) {
+  const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
+  const [isHovered, setIsHovered] = useState<boolean>(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startCycling = () => {
+    if (whatWeDeliverCategory.images.length <= 1) return;
+    intervalRef.current = setInterval(() => {
+      setActiveImageIndex(
+        (prev) => (prev + 1) % whatWeDeliverCategory.images.length,
+      );
+    }, 900);
+  };
+
+  const stopCycling = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setActiveImageIndex(0);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  return (
+    <motion.div
+      onHoverStart={() => {
+        setIsHovered(true);
+        startCycling();
+      }}
+      onHoverEnd={() => {
+        setIsHovered(false);
+        stopCycling();
+      }}
+      whileHover={{ scale: 1.04 }}
+      transition={{ duration: 0.3 }}
+      className="group relative h-80 w-55 shrink-0 cursor-default overflow-hidden rounded-3xl shadow-lg sm:h-95 sm:w-65"
+    >
+      {/* Images - static until hover, then swipe right-to-left */}
+      {whatWeDeliverCategory.images.map((src, idx) => (
+        <motion.img
+          key={src}
+          src={src}
+          alt={`${whatWeDeliverCategory.title} - image ${idx + 1}`}
+          className="absolute inset-0 h-full w-full object-cover"
+          animate={{
+            x:
+              idx === activeImageIndex
+                ? "0%"
+                : idx < activeImageIndex
+                  ? "-100%"
+                  : "100%",
+          }}
+          transition={{ duration: 0.6, ease: "easeInOut" }}
+        />
+      ))}
+
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-linear-to-t from-black/60 via-[#666666]/30 to-transparent" />
+
+      {/* Label */}
+      <div className="font-open-sans p-base bottom-base absolute right-0 left-0 flex flex-col gap-1 pb-(--space-base) text-white">
+        <p className="text-lg font-semibold">{whatWeDeliverCategory.title}</p>
+        <p className="text-base">{whatWeDeliverCategory.subtitle}</p>
+      </div>
+
+      {/* Image dots - visible on hover */}
+      {isHovered && whatWeDeliverCategory.images.length > 1 && (
+        <div className="absolute bottom-20 left-1/2 flex -translate-x-1/2 gap-1.5">
+          {whatWeDeliverCategory.images.map((_, i) => (
+            <div
+              key={i}
+              className={`h-1.5 w-1.5 rounded-full transition-all ${
+                i === activeImageIndex ? "scale-110 bg-white" : "bg-white/50"
+              }`}
+            />
+          ))}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+// === WhatWeDeliver: infinite seamless loop, 4 cards visible on lg
+function WhatWeDeliver() {
+  const [offset, setOffset] = useState<number>(0);
+  const [isAnimating, setIsAnimating] = useState<boolean>(true);
+  const [isHovered, setIsHovered] = useState<boolean>(false);
+  const autoScrollRef = useRef<NodeJS.Timeout | null>(null);
+
+  const cardWidth = 260; // w-65
+  const gap = 24; // gap-6 = 24px
+  const step = cardWidth + gap;
+  const totalCards = whatWeDeliverCategories.length;
+  // === Render doubled list - when offset hits totalCards, silently snap back to 0
+  const doubled = [...whatWeDeliverCategories, ...whatWeDeliverCategories];
+
+  useEffect(() => {
+    if (isHovered) {
+      if (autoScrollRef.current) clearInterval(autoScrollRef.current);
+      return;
+    }
+    autoScrollRef.current = setInterval(() => {
+      setOffset((prev) => {
+        const next = prev + 1;
+        if (next >= totalCards) {
+          // Schedule a silent snap back to 0 after the spring animation completes
+          setTimeout(() => {
+            setIsAnimating(false);
+            setOffset(0);
+            // Re-enable animation on next tick
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => setIsAnimating(true));
+            });
+          }, 700); // matches spring duration
+        }
+        return next;
+      });
+    }, 2200);
+    return () => {
+      if (autoScrollRef.current) clearInterval(autoScrollRef.current);
+    };
+  }, [isHovered, totalCards]);
+
+  return (
+    <section
+      id="what-we-deliver"
+      className="font-syne gap-3xl px-section-px sm:px-section-px-sm lg:px-section-px-lg py-section-py sm:py-section-py-sm lg:py-section-py-lg relative mx-auto flex w-full flex-col bg-white"
+    >
+      {/* Header */}
+      <div className="lg:gap-xl flex flex-col gap-3">
+        <p className="text-primary-light text-xl tracking-widest">
+          What we deliver
+        </p>
+
+        <div className="gap-xl flex w-full flex-wrap items-start justify-between">
+          <h2 className="text-primary font-syne lg:text-50 max-w-188 text-3xl leading-tight font-extrabold sm:text-4xl lg:font-bold">
+            Everything you spend on at the market.
+          </h2>
+
+          <PrimaryLink
+            href="https://wa.me/+2347012288798"
+            className="font-syne py-md px-xl text-xl font-bold sm:text-2xl lg:text-3xl"
+          >
+            Send Order
+          </PrimaryLink>
+        </div>
+      </div>
+
+      {/* Carousel - overflow-hidden clips cards beyond 4 on lg */}
+      <div
+        className="overflow-hidden"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <motion.div
+          className="flex gap-6"
+          animate={{ x: `-${offset * step}px` }}
+          transition={
+            isAnimating
+              ? { type: "spring", stiffness: 300, damping: 30 }
+              : { duration: 0 }
+          }
+          style={{
+            width: `${doubled.length * (cardWidth + gap) - gap}px`,
+          }}
+        >
+          {doubled.map((category, index) => (
+            <DeliverCard
+              key={`${category.title}-${index}`}
+              whatWeDeliverCategory={category}
+            />
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// === BlurDot: reusable yellow radial-gradient blur dot
+function BlurDot({ className = "" }: { className?: string }) {
+  return (
+    <div
+      aria-hidden
+      className={`pointer-events-none ${className}`}
+      style={{
+        background:
+          "radial-gradient(circle at 50% 50%, rgba(255,213,79,0.9) 40%, rgba(255,213,79,0) 100%)",
+        filter: "blur(40px)",
+        width: "112px",
+        height: "74px",
+        borderRadius: "50%",
+      }}
+    />
+  );
+}
+
+// === Stats
+interface Stat {
+  value: number;
+  label: string;
+}
+
+const stats: Stat[] = [
+  { value: 92, label: "resident of Kaduna are using us." },
+  { value: 1000, label: "areas in Kaduna South we serve" },
+  { value: 0, label: "no hidden fees ever" },
+];
+
+const statsFormatters: Array<(v: number) => string> = [
+  (v) => `${v}%`,
+  (v) => `${v}+`,
+  (v) => String(Number(v) + 0),
+];
+
+// === Metadata
+export function meta({}: Route.MetaArgs) {
+  return [
+    { title: "Debridgers | Market Prices. Zero Market Stress." },
+    {
+      name: "description",
+      content:
+        "Fresh foodstuff delivered straight to your door step at the same price you'd pay at Central Market. Rice, beans, palm oil and more. Serving Kaduna.",
+    },
+    {
+      name: "keywords",
+      content:
+        "fresh foodstuff delivery Kaduna, market price food delivery Nigeria, rice beans delivery Kaduna, Debridgers, affordable food delivery Kaduna, palm oil delivery Nigeria, fresh produce Kaduna",
+    },
+
+    // === Open Graph
+    { property: "og:type", content: "website" },
+    { property: "og:url", content: "https://debridgers.com" },
+    { property: "og:site_name", content: "Debridgers" },
+    {
+      property: "og:title",
+      content: "Debridgers | Market Prices. Zero Market Stress.",
+    },
+    {
+      property: "og:description",
+      content:
+        "Fresh foodstuff at Central Market prices, delivered to your door. Rice, beans, palm oil and more — serving Kaduna.",
+    },
+    { property: "og:image", content: "https://debridgers.com/og-image.png" },
+    { property: "og:image:width", content: "1200" },
+    { property: "og:image:height", content: "630" },
+    {
+      property: "og:image:alt",
+      content: "Debridgers — fresh foodstuff at market prices in Kaduna",
+    },
+    { property: "og:locale", content: "en_NG" },
+
+    // === Twitter
+    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:site", content: "@debridgers" },
+    { name: "twitter:url", content: "https://debridgers.com" },
+    {
+      name: "twitter:title",
+      content: "Debridgers | Market Prices. Zero Market Stress.",
+    },
+    {
+      name: "twitter:description",
+      content:
+        "Fresh foodstuff at Central Market prices, delivered to your door. Rice, beans, palm oil and more — serving Kaduna.",
+    },
+    { name: "twitter:image", content: "https://debridgers.com/og-image.png" },
+    {
+      name: "twitter:image:alt",
+      content: "Debridgers — fresh foodstuff at market prices in Kaduna",
+    },
+
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "index, follow" },
+  ];
+}
+
+export default function Home() {
+  const [activeWhyCardIndex, setActiveWhyCardIndex] = useState<number>(0);
+  const currentIndex = useImageCycle(1);
+  const activeTrustIndex = useTrustCycle(4);
+  const images = ["/images/hero-1.jpg"];
+
+  const trustItems = [
+    { icon: "lucide:check", label: "Guarantee fresh produce" },
+    { icon: "lucide:map-pin", label: "Sarbon Tasha • Narayi• Kakuri" },
+    { icon: "lucide:tag", label: "Transparent, fixed pricing" },
+    { icon: "lucide:truck", label: "Fast Delivery" },
+  ];
+  return (
+    <>
+      {/* Header */}
+      <div className="top-md sticky z-50">
+        <Header
+          navLinks={[
+            { label: "Home", href: "/" },
+            { label: "Agents", href: "/agents" },
+            { label: "Contact Us", href: "/contact" },
+          ]}
+          signUpHref="/signup"
+          heroSectionId="hero-section"
+        />
+      </div>
+
+      {/* Hero Section */}
+      <div className="relative flex w-full flex-col">
+        <div className="-mt-navbar-h flex min-h-0 w-full flex-1">
+          <div className="font-syne -mt-navbar-h bg-primary absolute inset-0 z-0 overflow-hidden" />
+          <section
+            id="hero-section"
+            className="font-syne relative mx-auto flex h-full min-h-screen w-full flex-col overflow-hidden"
+          >
+            {/* Background layer */}
+            <div className="absolute inset-0 z-0 h-full w-full">
+              <AnimatePresence mode="sync">
+                {images.length > 0 && (
+                  <motion.img
+                    key={`hero-img-${currentIndex}`}
+                    src={images[currentIndex]}
+                    alt=""
+                    initial={{ x: "100%" }}
+                    animate={{ x: "0%" }}
+                    exit={{ x: "-100%" }}
+                    transition={{ duration: 0.1, ease: "easeInOut" }}
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                )}
+              </AnimatePresence>
+              <div className="absolute inset-0 h-full w-full bg-linear-to-b from-[40BF4F]/20 from-0% via-[#23682B]/70 via-23% to-[#061107] to-100%"></div>
+              <div className="absolute inset-0 h-full w-full bg-linear-to-b from-[40BF4F]/20 from-0% to-[#061107] to-100%"></div>
+            </div>
+
+            {/* Content Wrapper */}
+            <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex h-screen w-full flex-col justify-between gap-8 md:gap-6 xl:gap-10">
+              <div className="relative flex flex-1 flex-col pt-20 sm:pt-24 lg:pt-32">
+                <div className="gap-xl lg:gap-3xl flex flex-1 flex-col justify-center">
+                  {/* Location badge */}
+                  <div
+                    className="text-primary font-open-sans p-sm border-primary shadow-50 flex w-fit items-center gap-1 rounded-full border text-sm font-semibold backdrop-blur-lg"
+                    style={{ backgroundColor: "var(--text-colour2)" }}
+                  >
+                    <span className="bg-primary h-1.5 w-1.5 rounded-full" />
+                    Now Serving in Kaduna
+                  </div>
+
+                  {/* Heading and Paragraph */}
+                  <div className="flex flex-col gap-6">
+                    {/* Heading */}
+                    <h1 className="flex flex-col text-4xl leading-tight font-bold text-white sm:text-5xl md:text-6xl lg:text-7xl 2xl:text-8xl">
+                      <span>Market Prices.</span>
+                      <span className="flex flex-wrap items-baseline gap-x-3">
+                        {/* Curved Underlined Zero */}
+                        <div className="relative inline-block">
+                          <span>Zero</span>
+                          <img
+                            src="/images/curved-underline.png"
+                            className="absolute -mt-2 w-fit"
+                          />
+                        </div>
+                        {/* Highlighted Market */}
+                        <div className="relative inline-block">
+                          <span style={{ color: "var(--secondary-color)" }}>
+                            Market
+                          </span>
+                        </div>
+                        {/* White Zero */}
+                        <span>Stress.</span>
+                      </span>
+                    </h1>
+
+                    {/* Subtext */}
+                    <p className="w-full max-w-90 text-base leading-relaxed font-medium text-white sm:text-lg lg:max-w-144 lg:text-xl">
+                      Fresh foodstuff delivered straight to your door step. At
+                      the same price you&apos;d pay at Central Market.
+                    </p>
+                  </div>
+
+                  {/* CTAs */}
+                  <div className="flex flex-col items-center justify-center gap-4 lg:flex-row lg:justify-start lg:gap-18.5">
+                    <WhatsAppButton className="w-auto" />
+                    <a
+                      href="#how-it-works"
+                      className="font-open-sans flex items-center gap-1 text-base text-white transition-all duration-300 ease-in-out hover:text-white sm:text-lg lg:gap-2.5 lg:text-xl"
+                    >
+                      See how it works
+                      <div className="h-4 w-4 shrink-0 lg:h-5 lg:w-5">
+                        <Icon
+                          icon="lucide:arrow-right"
+                          width={18}
+                          height={18}
+                        />
+                      </div>
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <div className="gap-4xl relative flex w-full flex-col lg:gap-4">
+                {/* Trust bar */}
+                <div className="bg-primary py-xl px-base mx-auto w-full shadow-md">
+                  {/* Mobile: slideshow */}
+                  <div className="relative flex h-6 items-center justify-center overflow-hidden lg:hidden">
+                    <AnimatePresence mode="sync">
+                      <motion.div
+                        key={activeTrustIndex}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.4 }}
+                        className="absolute flex items-center gap-2 text-white/80"
+                      >
+                        <span className="text-white/60">
+                          {renderIcon(trustItems[activeTrustIndex].icon)}
+                        </span>
+                        <span className="text-sm whitespace-nowrap">
+                          {trustItems[activeTrustIndex].label}
+                        </span>
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Desktop: all items in a row */}
+                  <div className="hidden truncate lg:flex lg:items-center lg:justify-around">
+                    {trustItems.map((item, i) => (
+                      <div
+                        key={item.label}
+                        className={`gap-xl px-base flex shrink-0 items-center text-white ${i < trustItems.length - 1 ? "border-r border-[#FCFDFD]" : ""}`}
+                      >
+                        <span className="text-[#FCFDFD]">
+                          {renderIcon(item.icon)}
+                        </span>
+                        <span className="text-sm font-semibold whitespace-nowrap">
+                          {item.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      {/* How It Works */}
+      <section
+        id="how-it-works"
+        className="py-section-py px-section-px sm:px-section-px-sm lg:px-section-px-lg sm:py-section-py-sm lg:py-section-py-lg relative mx-auto w-full bg-white"
+      >
+        <div className="gap-4xl grid items-center lg:grid-cols-2">
+          {/* Left Content */}
+          <motion.div
+            initial={{ opacity: 0, x: -24 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="gap-3xl flex flex-col"
+          >
+            <div className="flex flex-col gap-3">
+              <p className="text-text text-sm font-semibold">How it works</p>
+              <h2 className="text-primary text-2xl leading-tight font-bold sm:text-3xl lg:text-5xl">
+                From market to your door in two steps
+              </h2>
+            </div>
+
+            <div className="flex flex-col">
+              {/* Step 1 */}
+              <div className="py-base text-text flex gap-6 border-b border-[#E5E7EB]">
+                <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
+                  01
+                </div>
+                <div className="flex flex-col gap-2">
+                  <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
+                    Send us your order
+                  </h3>
+                  <p className="font-open-sans text-sm leading-relaxed sm:text-base">
+                    Chat on WhatsApp, call, or browse our catalog. Tell us what
+                    you need: rice, beans, palm oil, etc.
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 2 */}
+
+              <div className="py-base text-text flex gap-6">
+                <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
+                  02
+                </div>
+                <div className="flex flex-col gap-2">
+                  <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
+                    Delivered to you
+                  </h3>
+                  <p className="font-open-sans text-sm leading-relaxed sm:text-base">
+                    Your order arrives at your home or shop at the market price
+                    you agreed. No surprises, no hidden fees.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Right Image + Market woman Card */}
+          <motion.div
+            initial={{ opacity: 0, x: 24 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="relative"
+          >
+            <div className="group relative overflow-hidden rounded-3xl shadow-2xl">
+              <img
+                src="/images/market-lady.jpg"
+                alt="Smiling Nigerian woman at fresh produce market"
+                className="h-full max-h-130 w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-105 lg:max-h-132"
+              />
+              {/* Delivery Info Card */}
+              <div className="bg-primary-light border-primary-light absolute right-2.5 bottom-2.5 left-2.5 flex flex-col gap-2.5 rounded-3xl border px-6 py-3 text-white shadow-md">
+                <div className="flex items-center gap-2.5 text-sm sm:text-base">
+                  Next Delivery
+                </div>
+                <p className="text-sm font-semibold sm:text-base lg:text-lg">
+                  Kaduna South • Today
+                </p>
+                <p className="text-sm lg:text-base">
+                  Order before 12pm to experience same day delivery
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Why Debridgers */}
+      <section
+        id="why-debridgers"
+        className="py-section-py px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-3xl sm:py-section-py-sm lg:py-section-py-lg font-syne relative mx-auto flex w-full flex-col bg-[#F6F3F3]"
+      >
+        <div className="lg:gap-xl flex flex-col gap-3">
+          <p className="text-primary-light text-xl tracking-widest">
+            Why Debridgers
+          </p>
+          <h2 className="text-primary w-full text-3xl font-bold sm:text-4xl lg:text-5xl lg:font-bold">
+            We solve what the market can&apos;t.
+          </h2>
+        </div>
+
+        <div className="font-syne grid gap-6 lg:grid-cols-3">
+          {whyCardsData.map((card, index) => (
+            <WhyCard
+              key={card.title}
+              card={card}
+              isActive={index === activeWhyCardIndex}
+              onHover={() => setActiveWhyCardIndex(index)}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* What We Deliver */}
+      <WhatWeDeliver />
+
+      {/* Stats Section */}
+      <section
+        id="stats"
+        className="py-section-py sm:py-section-py-sm lg:py-section-py-lg font-syne bg-primary relative overflow-hidden text-white"
+      >
+        {/* Blur Dot */}
+        <div className="pointer-events-none absolute inset-0 z-1">
+          <BlurDot className="absolute bottom-[0%] left-[12%] h-30 w-28" />
+          <BlurDot className="absolute bottom-[50%] left-[40%] h-30 w-28" />
+          <BlurDot className="absolute bottom-[70%] left-[90%] h-30 w-28 lg:left-[70%]" />
+        </div>
+
+        {/* Stats */}
+        <div className="px-section-px px sm:px-section-px-sm lg:px-section-px-lg lg:gap-4xl relative z-10 mx-auto flex w-full flex-col">
+          <div className="font-syne pb-2xl flex flex-col gap-3">
+            <p className="text-text2 text-xl tracking-wider uppercase">
+              Early Numbers
+            </p>
+            <h2 className="w-full text-3xl leading-tight font-bold sm:text-4xl lg:text-5xl lg:font-extrabold">
+              People are already excited.
+            </h2>
+          </div>
+
+          <div className="sm:gap-3xl grid grid-cols-3 gap-4">
+            {stats.map((stat, i) => {
+              const displayValue = statsFormatters[i](stat.value);
+              return (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: i * 0.1 }}
+                  className="lg:w-w-60 flex flex-col gap-2"
+                >
+                  <div className="text-secondary font-syne text-2xl leading-none font-extrabold sm:text-4xl lg:text-5xl">
+                    {displayValue}
+                  </div>
+                  <p className="font-open-sans sm:text-body-sm text-xs text-white lg:text-base">
+                    {stat.label}
+                  </p>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Concentric Circles */}
+        <div className="absolute -top-80 -right-80 z-2 h-100 w-125 rotate-127 sm:-top-45 sm:-right-30 sm:h-100 sm:w-100 lg:-top-68 lg:-right-95 lg:h-175 lg:w-175">
+          {/* Outer */}
+          <div className="pointer-events-none absolute inset-0 rounded-full border-20 border-[#A5BDA8]/40" />
+
+          {/* Middle */}
+          <div
+            className="pointer-events-none absolute inset-10 rounded-full border-20"
+            style={{
+              borderColor:
+                "color-mix(in srgb, var(--text-colour2) 40%, transparent)",
+            }}
+          />
+
+          {/* Inner */}
+          <div className="pointer-events-none absolute inset-20 rounded-full border-20 border-[#A5BDA8]/40" />
+        </div>
+      </section>
+
+      {/* GetStarted Section */}
+      <section
+        id="get-started"
+        className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative overflow-hidden bg-white"
+      >
+        <div className="pointer-events-none absolute inset-0 z-1">
+          <BlurDot className="absolute bottom-[40%] left-[12%] h-30 w-28" />
+          <BlurDot className="absolute bottom-[50%] left-[50%] h-30 w-28" />
+          <BlurDot className="absolute bottom-[70%] left-[90%] h-30 w-28 lg:left-[70%]" />
+        </div>
+
+        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-xl lg:gap-3xl relative mx-auto flex w-full flex-col items-center justify-center text-center">
+          <div className="flex flex-col gap-3">
+            <p className="text-primary-light font-open-sans text-center text-lg font-semibold tracking-widest lg:text-xl">
+              Get started
+            </p>
+
+            <h2 className="text-primary font-syne mx-auto w-full max-w-110 text-center text-4xl leading-tight font-extrabold sm:max-w-125 sm:text-5xl lg:max-w-208 lg:text-6xl">
+              Your first delivery is on us.
+            </h2>
+
+            <p className="text-primary font-open-sans mx-auto w-full max-w-120 text-base sm:max-w-125 lg:max-w-208 lg:text-lg">
+              Join early and get free delivery on your first order. Just send us
+              a WhatsApp and we&apos;ll take it from there.
+            </p>
+          </div>
+
+          <WhatsAppButton label="Chat with us on whatsApp" />
+        </div>
+      </section>
+
+      {/* Partnership Section */}
+      {/* <section
+        id="partnership"
+        className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative bg-[#F6F3F3]"
+      >
+        <div className="w-full mx-auto px-section-px sm:px-section-px-sm lg:px-section-px-lg">
+          <div className="grid gap-4xl lg:grid-cols-2">
+            {/* Left Content *
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="flex flex-col lg:gap-3xl gap-xl"
+            >
+              <div className="flex flex-col gap-xl">
+                <div className="bg-primary-light/80 text-primary font-open-sans border-primary gap-2 px-base inline-flex w-fit items-center rounded-full border py-1.5 text-base tracking-widest uppercase lg:text-lg">
+                  Official Partnership
+                </div>
+
+                <p className="text-base tracking-widest uppercase text-text font-open-sans lg:text-lg">
+                  Stronger Together
+                </p>
+              </div>
+
+              <h2 className="text-text w-full text-xl leading-tight font-extrabold sm:max-w-125 sm:text-2xl lg:max-w-150.25 lg:text-3xl">
+                Backed by those who&apos;ve been doing this longest.
+              </h2>
+
+              <p className="text-text text-base leading-relaxed lg:max-w-142.5 lg:text-lg">
+                Debridgers is proudly partnering with an established agro
+                marketplace that has been connecting Nigerian farmers directly
+                to buyers long before we launched. Together, we bring a wider
+                farmer network and deeper reach to your doorstep.
+              </p>
+
+              <a
+                href="https://agrolinking.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-lg transition-all duration-300 ease-in-out cursor-pointer group text-secondary hover:gap-4 w-fit sm:text-xl lg:text-2xl"
+              >
+                See what Agrolinking does
+                <Icon
+                  icon="lucide:arrow-right"
+                  className="w-4 h-4 transition-transform duration-300 ease-in-out group-hover:translate-x-1"
+                />
+              </a>
+            </motion.div>
+
+            {/* Right: Partner Card *
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.15 }}
+              className="bg-primary-light/80 flex h-fit flex-col gap-8 rounded-3xl px-8 py-12 text-white"
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col flex-1 truncate">
+                  <div className="h-7.5 w-32.5">
+                    <img
+                      src="/logos/agrolinking.png"
+                      alt="Agro-Linking Logo"
+                      className="block"
+                    />
+                  </div>
+
+                  <div className="text-base text-white font-open-sans">
+                    Farm-to-table marketplace.
+                    <br />
+                    Est. Nigeria.
+                  </div>
+                </div>
+
+                <div className="bg-primary gap-2 flex shrink-0 items-center rounded-full px-(--space-md) py-1 text-base lg:text-lg">
+                  <Icon
+                    icon="lucide:check"
+                    className="h-3.5 w-3.5 text-white"
+                  />
+                  Partner
+                </div>
+              </div>
+
+              <div className="flex flex-col font-open-sans gap-xl">
+                <p className="text-base tracking-widest text-white uppercase font-open-sans lg:text-lg">
+                  What this means for you
+                </p>
+
+                <ul className="flex flex-col gap-4 text-sm text-green-100">
+                  {[
+                    "Access to a larger, verified network of food directly from farm",
+                    "More consistent stock, even during off-season period",
+                    "Two teams, one mission: fresh food at honest prices",
+                  ].map((item) => (
+                    <li
+                      key={item}
+                      className="flex items-start gap-3 font-open-sans"
+                    >
+                      <span
+                        className="text-xl font-bold shrink-0"
+                        style={{ color: "var(--secondary-color)" }}
+                      >
+                        •
+                      </span>
+                      <span className="text-base text-white"> {item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section> */}
+    </>
+  );
+}

@@ -1,7 +1,7 @@
 {
   "name": "@debridgers/debridgers-backend",
   "version": "1.0.0",
-  "description": "Debridgers backend API — NestJS + Drizzle",
+  "description": "Debridgers backend API: NestJS + Drizzle",
   "main": "dist/main.js",
   "scripts": {
     "dev": "nest start --watch",
@@ -15,7 +15,10 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx src/infrastructure/seeders/seeder.ts"
+    "db:seed": "tsx src/infrastructure/seeders/seeder.ts",
+    "docker:up": "docker compose -p debridgers -f ../../docker/docker-compose.yml up postgres -d --wait",
+    "docker:down": "docker compose -p debridgers -f ../../docker/docker-compose.yml down",
+    "docker:migrate": "pnpm docker:up && pnpm db:migrate"
   },
   "dependencies": {
     "@keyv/redis": "^5.1.6",
@@ -28,6 +31,8 @@
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/mapped-types": "*",
     "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/schedule": "^6.1.1",
+    "@nestjs/swagger": "^11.2.6",
     "bcryptjs": "^3.0.3",
     "cacheable": "^2.3.2",
     "cloudinary": "^2.9.0",

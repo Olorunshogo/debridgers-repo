@@ -1,0 +1,64 @@
+{
+  "name": "debridgers-backend",
+  "root": "apps/debridgers-backend",
+  "sourceRoot": "apps/debridgers-backend/src",
+  "projectType": "application",
+  "tags": ["scope:backend", "type:app"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/dist"],
+      "options": {
+        "command": "pnpm run build",
+        "cwd": "apps/debridgers-backend"
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run dev",
+        "cwd": "apps/debridgers-backend"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run lint",
+        "cwd": "apps/debridgers-backend"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run typecheck",
+        "cwd": "apps/debridgers-backend"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run test",
+        "cwd": "apps/debridgers-backend"
+      }
+    },
+    "db": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx drizzle-kit {args}",
+        "cwd": "apps/debridgers-backend"
+      }
+    },
+    "docker": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "pnpm run docker:up",
+          "pnpm run db:migrate",
+          "pnpm run dev"
+        ],
+        "parallel": false,
+        "cwd": "apps/debridgers-backend"
+      }
+    }
+  }
+}

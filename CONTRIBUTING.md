@@ -1,6 +1,6 @@
 # Contributing to Debridgers
 
-This guide covers everything you need to work effectively in this repo — from setting up your environment to getting your PR merged.
+This guide covers everything you need to work effectively in this repo - from setting up your environment to getting your PR merged.
 
 ---
 
@@ -64,7 +64,7 @@ Use lowercase and hyphens. Keep the description short but meaningful.
 | `hotfix`   | Urgent production fix                              |
 | `release`  | Release preparation                                |
 | `conflict` | Resolving a merge conflict                         |
-| `chore`    | Maintenance — deps, config, tooling, docs, cleanup |
+| `chore`    | Maintenance - deps, config, tooling, docs, cleanup |
 
 ### Examples
 
@@ -77,9 +77,9 @@ git checkout -b refactor/simplify-auth-flow
 git checkout -b hotfix/payment-crash-on-submit
 ```
 
-> ❌ `feat/homepage` — invalid, `feat` is not an allowed prefix. Use `feature/` instead.
+> ❌ `feat/homepage` is invalid: `feat` is not an allowed prefix. Use `feature/` instead.
 
-> `main`, `develop`, and `live` are the only branches that don't need a prefix — and you should never push to them directly.
+> `main`, `develop`, and `live` are the only branches that don't need a prefix, and you should never push to them directly.
 
 ---
 
@@ -201,7 +201,7 @@ These branches represent production (`main`/`live`) and the integration branch (
 
 ## Troubleshooting
 
-**Push rejected — invalid branch name**
+**Push rejected: invalid branch name**
 
 Rename your branch to match the required format:
 
@@ -210,7 +210,7 @@ git branch -m old-name feature/new-name
 git push -u origin feature/new-name
 ```
 
-\*\*Push rejected — tests v6
+\*\*Push rejected: tests v6
 
 ```
 
@@ -220,18 +220,18 @@ git push -u origin feature/new-name
 
 | Branch    | Can you push directly? |
 | --------- | ---------------------- |
-| `main`    | No — restricted to repo owner only |
-| `develop` | No — PRs only          |
-| `live`    | No — Pommit.
+| `main`    | No - restricted to repo owner only |
+| `develop` | No - PRs only          |
+| `live`    | No - Pommit.
 
 ---
 
 ## Opening a Pull Request
 
-- Always target `develop` — never `main` or `live`
+- Always target `develop` - never `main` or `live`
 - Write a clear PR title that describes what changed
 - Add a short description explaining the why, not just the what
-- Keep PRs focused — one feature or fix per PR makes review easier
+- Keep PRs focused - one feature or fix per PR makes review easier
 - Make sure all checks pass (lint, format, tests) before requesting review
 - Request a review from at least one team member
 

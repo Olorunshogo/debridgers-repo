@@ -8,6 +8,41 @@
       "when": 1775125328857,
       "tag": "0000_outgoing_morlocks",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1775483850569,
+      "tag": "0001_same_kree",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775551528588,
+      "tag": "0002_simple_elektra",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1780567878531,
+      "tag": "0003_lonely_penance",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1780569239529,
+      "tag": "0004_lame_johnny_blaze",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1780575379931,
+      "tag": "0005_wonderful_the_hood",
+      "breakpoints": true
     }
   ]
 }

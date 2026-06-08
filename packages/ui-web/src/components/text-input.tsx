@@ -26,10 +26,10 @@ export function TextInput({
   const inputId = id ?? name ?? label.toLowerCase().replace(/\s+/g, "-");
 
   return (
-    <div className="font-syne gap-sm flex flex-col">
+    <div className="font-syne flex flex-col gap-2">
       <label
         htmlFor={inputId}
-        className="font-syne text-heading text-[14px] font-medium"
+        className="font-syne text-heading text-body-sm font-medium"
       >
         {label}
         {required && <span className="text-error-red ml-0.5">*</span>}

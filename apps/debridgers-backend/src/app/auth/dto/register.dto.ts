@@ -7,14 +7,8 @@ export const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
   phone: z.string().min(10, "Invalid phone number").optional(),
   password: z.string().min(8, "Password must be at least 8 characters"),
-  role: z
-    .enum([
-      USER_ROLES.ADMIN,
-      USER_ROLES.AGENT,
-      USER_ROLES.BUYER,
-      USER_ROLES.COMPANY,
-    ])
-    .default(USER_ROLES.AGENT),
+  role: z.literal(USER_ROLES.BUYER).default(USER_ROLES.BUYER),
+  referred_by_agent_code: z.string().optional(),
 });
 
 export type RegisterDto = z.infer<typeof registerSchema>;

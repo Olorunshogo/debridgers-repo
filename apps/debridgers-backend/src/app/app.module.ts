@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { EventEmitterModule } from "@nestjs/event-emitter";
+import { ScheduleModule } from "@nestjs/schedule";
 
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
@@ -27,8 +28,10 @@ import { accessJwtConfig } from "./auth/config/access-jwt";
 import { refreshJwtConfig } from "./auth/config/refresh-jwt";
 import { ContactModule } from "./contact/contact.module";
 import { AgentModule } from "./agent/agent.module";
+import { BuyerModule } from "./buyer/buyer.module";
 import { AdminModule } from "./admin/admin.module";
 import { PaymentModule } from "./payment/payment.module";
+import { CommissionModule } from "./commission/commission.module";
 
 @Module({
   imports: [
@@ -46,6 +49,7 @@ import { PaymentModule } from "./payment/payment.module";
       envFilePath: [".env"],
     }),
     EventEmitterModule.forRoot(),
+    ScheduleModule.forRoot(),
     DatabaseModule,
     RedisModule,
     LoggerModule,
@@ -53,8 +57,10 @@ import { PaymentModule } from "./payment/payment.module";
     AuthModule,
     ContactModule,
     AgentModule,
+    BuyerModule,
     AdminModule,
     PaymentModule,
+    CommissionModule,
   ],
   controllers: [AppController],
   providers: [AppService, UserListeners],

@@ -9,6 +9,12 @@ export const AppLogo = ({ variant = "black" }: AppLogoProps) => {
       : "/logos/debridgers-black.png";
 
   return (
-    <img src={src} alt="Debridgers Logo" className="h-8 w-auto max-w-50" />
+    <img
+      src={src}
+      alt="Debridgers Logo"
+      className="h-8 w-auto max-w-50"
+      width={248}
+      height={56}
+    />
   );
 };
