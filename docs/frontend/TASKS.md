@@ -1,5 +1,32 @@
 # Core Development Tasks
 
+## Table of Contents
+
+- [0. Shop/Catalog on Landing Page](#0-shopcatalog-on-landing-page--browse-free-login-only-at-checkout)
+- [1. Move Shop/Buyer from Dashboard to Landing Page](#1-move-shopbuyer-from-dashboard-to-landing-page)
+- [2. Shopping Cart Implementation](#2-shopping-cart-implementation)
+- [1.4 Landing Outreach / Lead Capture Page](#14-landing-outreach--lead-capture-page)
+- [2.4 Save as Favorites / Wishlist](#24-save-as-favorites--wishlist)
+- [3. Authentication Status Management](#3-authentication-status-management)
+- [4. Header Navigation Authentication Link](#4-header-navigation-authentication-link)
+- [5. Checkout Authentication Modal](#5-checkout-authentication-modal)
+- [6. Cart Preservation on Signup/Login](#6-cart-preservation-on-signuplogin)
+- [6. Checkout and Payment Flow](#6-checkout-and-payment-flow)
+- [7. Error Handling & Edge Cases](#7-error-handling--edge-cases)
+- [8. Global Auth Context Architecture](#8-global-auth-context-architecture)
+- [9. API Integration Points](#9-api-integration-points)
+- [10. Testing Scenarios](#10-testing-scenarios)
+- [11. Product Catalog Structure](#11-product-catalog-structure)
+- [12. "What We Deliver" Card Animation](#12-what-we-deliver-card-animation-hover-subtitle-reveal)
+- [Implementation Priority](#implementation-priority)
+- [Notes & Considerations](#notes--considerations)
+- [13. Buyer Settings - Unimplemented Toggles & Password Change](#13-buyer-settings--unimplemented-toggles--password-change)
+- [14. Wallet & Payment](#14-wallet--payment)
+- [15. Agent Stock Request - Hierarchical Category-Based UX](#15-agent-stock-request--hierarchical-category-based-ux)
+- [16. Admin-Controlled Commission Rate and Referral System](#16-admin-controlled-commission-rate-and-referral-system)
+
+---
+
 ## 0. Shop/Catalog on Landing Page — Browse Free, Login Only at Checkout
 
 > **Decision confirmed 2026-06-08**
@@ -956,42 +983,71 @@ The `y: 4` on exit adds a slight downward drift as it fades out, making the reve
 
 ## Implementation Priority
 
-### Phase 1: Foundation (Critical)
+### Confirmed Flow (Option A)
 
-1. Set up global auth context (`useAuth`, `isUserAuthenticated`, `user.role`)
-2. **Header Sign Up → Dashboard link** (simple, high-impact, needs auth context)
-3. Implement cart state management — localStorage for guests
-4. Create authentication modal component
-5. Move shop/buyer to landing page
-6. Add checkout trigger logic
+```
+1. Landing page → /shop (public, no auth required)
+2. Browse products, add to cart (localStorage, no API calls)
+3. Click "Checkout" → modal prompts login or signup
+4. On auth success → modal closes, cart intact, proceed to payment
+5. Header link: unauthenticated → "Sign Up" | authenticated → "Dashboard" (role-based)
+```
 
-### Phase 2: Integration (High)
+### Dependency-Ordered Implementation
 
-7. Integrate signup/login forms with auth endpoints
-8. Add backend cart endpoint (`PUT /cart`) with debounced 3s batch sync
-9. Cart merge on login (localStorage → backend)
-10. Implement checkout flow
-11. Add error handling and `beforeunload` cart flush
+**Layer 0 - Foundation (blocks everything)**
 
-### Phase 3: Favorites (Medium-High)
+- [ ] **§8** Global auth context (`useAuth`, `isAuthenticated`, `user.role`) - root-level provider, no other layer can ship without this
+- [ ] **§11** Confirm product catalog data structure and seed data - shop and agent stock request both consume this
 
-12. Add per-item favorites endpoints (`POST/DELETE /favorites/:productId`)
-13. Heart/bookmark UI on product cards (optimistic toggle)
-14. Guest favorites localStorage with merge-on-login
-15. My Favorites page or drawer
+**Layer 1 - Core user-facing surface (depends on Layer 0)**
 
-### Phase 4: Polish (Medium)
+- [ ] **§1.1** Extract shop component to landing page route - public route, no auth guard
+- [ ] **§1.2** Add shop link to landing page header/nav
+- [ ] **§2.1/2.2** Cart state: Zustand store with localStorage for guests - badge, drawer, quantity controls, totals, checkout button
+- [ ] **§4** Header link: "Sign Up" | "Dashboard" toggle based on auth context and user role
+- [ ] **§12** "What We Deliver" card animation and variant data structure update (no external deps)
 
-16. Loading states, animations, "saving..." sync indicator
-17. Implement session expiration handling
-18. Add analytics tracking
-19. Comprehensive testing
+**Layer 2 - Auth gate (depends on Layer 1 + Layer 0)**
 
-### Phase 5: Enhancement (Low)
+- [ ] **§5** Checkout auth modal - trigger on unauthenticated checkout click, login/signup tabs, state flow
+- [ ] **§6** Cart preservation on auth - keep localStorage cart through signup/login, auto-close modal on success
 
-20. Cart recovery for abandoned carts (email reminders)
-21. Add checkout history
-22. Recommendations based on favorites
+**Layer 3 - Backend integration (depends on Layer 2)**
+
+- [ ] **§9** Auth endpoints wired: `POST /auth/login`, `POST /auth/signup`, `GET /auth/profile`, token refresh
+- [ ] **§2.3** Backend cart: `PUT /cart` (full replace), `GET /cart`, debounced 3s sync for authenticated users
+- [ ] Cart merge on login: `GET /cart` from backend + merge with localStorage + `PUT /cart` + clear localStorage
+- [ ] **§14.3** Buyer payment at checkout - Paystack per-order flow (Option B): initialize → redirect → webhook → confirm order
+
+**Layer 4 - Buyer settings and wallet (depends on Layer 3)**
+
+- [ ] **§13.4** Change password: `PATCH /buyer/password` endpoint + wire into settings submit handler
+- [ ] **§13.1** Email notification toggle: add DB column, DTO, gate in `UserListeners`, hydrate toggle on load
+- [ ] **§14.2** Buyer wallet: `buyer_wallets` table, `GET /buyer/wallet`, top-up via Paystack, webhook credit handler
+
+**Layer 5 - Favorites (depends on Layer 3, independent of Layer 4)**
+
+- [ ] **§2.4** Favorites: `POST/DELETE /favorites/:productId`, heart icon on product cards (optimistic), guest localStorage with merge-on-login, My Favorites page
+
+**Layer 6 - Agent and admin features (mostly independent, can run in parallel with Layers 1-5)**
+
+- [ ] **§1.4** Landing outreach / lead capture: public `POST /outreach/submit`, `source` field in admin table - no auth deps
+- [ ] **§15** Agent stock request hierarchical UX - category row, type pills, variety drill-down, inline qty stepper
+- [ ] **§16.1** `system_settings` table + migration
+- [ ] **§16.2** `SystemSettingsService`, `GET /config/public`, `PATCH /admin/settings`, admin settings UI
+- [ ] **§16.3** Agent referral: capture `?ref=` on signup, commission on referred buyer's order
+- [ ] **§16.4** Buyer referral: `buyer_discounts` table, create discount on referee's first order, apply at checkout
+- [ ] **§16.5** Dynamic commission rate in `agents.tsx` earnings section from `/config/public`
+- [ ] **§16.6** `/refer` landing page
+
+**Layer 7 - Polish and high-complexity features (lowest urgency)**
+
+- [ ] **§13.2** SMS notifications - requires choosing and integrating an SMS provider (Africa's Talking recommended)
+- [ ] **§13.3** Two-factor authentication - full TOTP flow, login second step, setup wizard
+- [ ] **§14.4** Agent bank details self-service + payout cron job (Friday disbursement)
+- [ ] **§7** Edge cases: session expiry re-auth modal, network error retry, localStorage quota handling
+- [ ] **§10** Comprehensive testing: happy path, alternatives, error cases
 
 ---
 
@@ -1378,3 +1434,286 @@ This is a UX improvement to an existing page — not blocked by any other task. 
 | Variety list with inline quantity stepper | Medium                                         |
 | Running request list (sticky cart)        | Medium                                         |
 | Submit request to backend                 | Low (endpoint already exists or near-complete) |
+
+---
+
+## 16. Admin-Controlled Commission Rate and Referral System
+
+> **Decision confirmed: 2026-06-08**
+
+Two separate referral systems exist in this app - one for agents, one for buyers. They work differently:
+
+- **Agent referral** - an agent shares their referral link. When someone signs up as a buyer through that link and places orders, the agent earns a commission (cash, credited to their wallet).
+- **Buyer referral** - a buyer shares their referral link. When someone signs up as a buyer through that link and makes a purchase, the referring buyer gets a **discount** applied to their next order, not cash.
+
+The commission rate that governs how much agents earn per sale is set by the admin from the admin settings page - not hardcoded in code or env vars.
+
+---
+
+### 16.1 Database Changes
+
+#### 16.1.1 `system_settings` table (new)
+
+A key-value store for admin-controlled configuration. One row per setting.
+
+```
+system_settings
+  key:         varchar PRIMARY KEY     e.g. "agent_commission_rate"
+  value:       text                    e.g. "30"  (stored as string, parsed by consumer)
+  updated_at:  timestamp
+  updated_by:  integer FK -> users.id  (which admin last changed it)
+```
+
+Initial seed rows:
+
+| key                            | value   | description                                                                               |
+| ------------------------------ | ------- | ----------------------------------------------------------------------------------------- |
+| `agent_commission_rate`        | `30`    | Percentage of order value agent earns on a direct sale                                    |
+| `buyer_referral_discount_kobo` | `50000` | Flat discount (in kobo) the referring buyer gets on their next order - equivalent to ₦500 |
+| `buyer_referral_discount_type` | `flat`  | `flat` or `percent` - determines how the discount value is interpreted                    |
+
+#### 16.1.2 `users` table additions (migration)
+
+```
+referral_code:   varchar UNIQUE    Generated on agent/buyer approval. Format: "DBR-<ULID-short>"
+referred_by:     integer FK -> users.id (nullable)  The user who referred this signup
+```
+
+`referral_code` is generated for both agents and buyers when their account is activated. All users can share a referral link; the difference is what the referrer earns (see 16.2 vs 16.3).
+
+#### 16.1.3 `buyer_discounts` table (new)
+
+Stores pending discount credits owed to buyers from referrals. Separate from commissions - commissions are for agents only.
+
+```
+id:           serial PRIMARY KEY
+buyer_id:     integer FK -> users.id
+amount_kobo:  integer NOT NULL
+reason:       text                   e.g. "Referral: buyer #42 placed first order"
+status:       enum (pending, applied, expired)
+expires_at:   timestamp              Discounts expire after 90 days if unused
+order_id:     integer FK -> orders.id (nullable)   Set when the discount is applied at checkout
+created_at:   timestamp
+```
+
+---
+
+### 16.2 Agent Commission - Admin Controlled
+
+#### 16.2.1 Current problem
+
+The commission rate is currently hardcoded in two places:
+
+- `apps/debridgers-backend/src/app/payment/payment.service.ts` line 28-29: `commissionRate` defaults to `0.30`, overridable by `AGENT_COMMISSION_RATE` env var.
+- `apps/debridgers-frontend/app/routes/landing/agents.tsx` lines 165-170: the `earningsRows` array hardcodes `"Your commission (30%)"` and the calculated amounts.
+
+Both of these need to read from `system_settings` instead.
+
+#### 16.2.2 Backend changes
+
+1. **`SystemSettingsService`** - new service under `app/admin/settings/`:
+   - `getSetting(key: string): Promise<string>` - reads from `system_settings` table
+   - `setSetting(key: string, value: string, adminId: number): Promise<void>` - writes to `system_settings`
+   - `getPublicConfig(): Promise<{ agent_commission_rate: number; buyer_referral_discount_kobo: number; buyer_referral_discount_type: string }>` - returns the subset of settings safe to expose publicly (no auth required)
+
+2. **`PaymentService`**: Replace the `AGENT_COMMISSION_RATE` env fallback with a call to `SystemSettingsService.getSetting("agent_commission_rate")` at the point of commission calculation.
+
+3. **Admin endpoints**:
+   - `GET /admin/settings` - returns all `system_settings` rows. Admin auth required.
+   - `PATCH /admin/settings` - body `{ key: string; value: string }`. Validates the value (e.g. commission rate must be a number between 1 and 100). Admin auth required.
+
+4. **Public endpoint** (no auth):
+   - `GET /config/public` - calls `getPublicConfig()`, returns commission rate and referral discount values. Used by the landing page loader.
+
+#### 16.2.3 Admin UI - `admin/settings.tsx`
+
+Currently an empty placeholder. Wire it up with:
+
+- A form showing all configurable settings
+- Commission rate input: number field, min 1, max 100, suffix `%`. Shows current value fetched from `GET /admin/settings`.
+- Buyer referral discount input: number field in Naira (converted to kobo on submit). Toggle between flat (₦) and percent (%).
+- Save button: calls `PATCH /admin/settings`. Shows success toast.
+- "Last updated by [admin name] on [date]" label beneath each field.
+
+---
+
+### 16.3 Agent Referral System
+
+An agent earns a commission when a buyer they referred places an order.
+
+#### How it works
+
+1. Agent shares their referral link: `https://debridgers.com/signup?ref=<agent_referral_code>`
+2. Buyer signs up via that link - the `?ref=` param is captured and stored as `referred_by` on the new user's row.
+3. When the referred buyer places a confirmed order (Paystack `charge.success` webhook fires), the backend:
+   - Looks up the buyer's `referred_by` field
+   - Finds the referring agent
+   - Creates a `commissions` row with `type: "buyer_referral"`, `amount` = fixed ₦20 per order (or a configurable amount from `system_settings`)
+4. Commission is credited to the agent's wallet as a pending commission, same as the existing flow.
+
+#### Backend changes needed
+
+- `POST /auth/signup` - if `referred_by_code` is in the request body, resolve the code to a user ID and persist as `users.referred_by`.
+- Paystack webhook handler (`payment.service.ts`) - on `charge.success` for a buyer order, check if `buyer.referred_by` is set. If so, create the referral commission.
+- The commission row already uses `type: "buyer_referral"` (the enum already exists in `commissions.schema.ts`) - just wire it up.
+
+#### Agent referral link display
+
+- In `agent/overview.tsx` or `agent/wallet.tsx`: show the agent's referral link with a copy-to-clipboard button.
+- `GET /agent/profile` must return `referral_code`.
+
+---
+
+### 16.4 Buyer Referral System - Discount, Not Commission
+
+A buyer earns a discount on their next purchase when a friend they referred places their first order.
+
+#### How it works - in detail
+
+1. Buyer (referrer) shares their referral link: `https://debridgers.com/signup?ref=<buyer_referral_code>`
+2. New buyer (referee) signs up via that link - `referred_by` is stored on their user row.
+3. When the referee places and pays for their **first order**, the backend:
+   - Checks if the referee has `referred_by` set and if it is their first confirmed order.
+   - If yes: creates a `buyer_discounts` row for the **referrer** (not the referee) with the configured discount amount and a 90-day expiry.
+   - Sends the referrer a notification: "Your friend just placed their first order. You have a ₦500 discount waiting on your next purchase."
+4. At checkout, if the buyer has a `pending` discount in `buyer_discounts`, the discount is automatically deducted from the order total before payment is initialized with Paystack.
+5. Once applied, the `buyer_discounts` row is updated to `status: "applied"` and linked to the order via `order_id`.
+
+#### Why discount and not cash
+
+- Buyers are customers, not sales people. Giving them a discount incentivises reuse (they have to shop again to claim it) rather than just paying them out.
+- It is simpler to implement than a buyer wallet top-up - no payout flow needed.
+- The discount expires, creating urgency.
+
+#### Key business rules
+
+- One discount per referral - the referrer earns the discount only once per referred buyer (on the referee's first order only, not every order).
+- Discounts stack: if a buyer has referred 3 friends who all placed first orders, they have 3 pending discounts. At checkout, only one is applied per order (the oldest one first).
+- Discount cannot bring order total below ₦0. If the order is smaller than the discount, the full order is free and the remaining discount is forfeited (no cash change).
+- Discount amount is configurable from admin settings (`buyer_referral_discount_kobo`).
+
+#### Backend changes needed
+
+1. **Paystack webhook** - on `charge.success` for a buyer order: check if it is the buyer's first order AND the buyer has `referred_by` set. If so, create a `buyer_discounts` row for the referrer.
+2. **`POST /buyer/orders` or checkout flow** - before calling Paystack `transaction/initialize`, query `buyer_discounts` for `{ buyer_id, status: "pending" }`. If a discount exists, subtract it from the total before passing to Paystack. Mark the discount as `applied` after Paystack confirms payment.
+3. **`GET /buyer/discounts`** - returns pending discounts for the authenticated buyer, used to show available discount credits in the checkout UI and buyer dashboard.
+4. **Notification** - when a discount is created for a referrer, create an in-app notification and send an email via the existing `EmailService`.
+
+#### Buyer referral link display
+
+- In `buyer/overview.tsx` or `buyer/settings.tsx`: show the buyer's referral link with a copy-to-clipboard button and a short explanation ("Share this link. When your friend places their first order, you get ₦500 off your next one.").
+- `GET /buyer/me` must return `referral_code`.
+
+---
+
+### 16.5 Landing Page - Dynamic Agents Earnings Section
+
+The `earningsRows` in `apps/debridgers-frontend/app/routes/landing/agents.tsx` (lines 165-170) are currently hardcoded at 30%. They must be driven by the live commission rate from the backend.
+
+#### Loader change
+
+```typescript
+// agents.tsx loader
+export async function loader() {
+  const config = await fetch(`${API_BASE}/config/public`).then((r) => r.json());
+  return { commissionRate: config.agent_commission_rate }; // e.g. 30
+}
+```
+
+#### Dynamic earningsRows
+
+```typescript
+const { commissionRate } = useLoaderData<typeof loader>();
+const companyRate = 100 - commissionRate;
+const sampleSaleTotal = 75000; // ₦75,000 example
+
+const earningsRows = [
+  { label: "Sales closed", value: "5 orders", highlight: false },
+  { label: "Total sale amount", value: "₦75,000", highlight: false },
+  {
+    label: `Your commission (${commissionRate}%)`,
+    value: fmt(naira((sampleSaleTotal * commissionRate) / 100)),
+    highlight: true,
+  },
+  {
+    label: `Company keeps (${companyRate}%)`,
+    value: fmt(naira((sampleSaleTotal * companyRate) / 100)),
+    highlight: false,
+  },
+];
+```
+
+If the admin changes the commission rate from 30% to 25%, the agents page reflects this automatically without a code deploy.
+
+---
+
+### 16.6 Landing Page - Referral Page (`/refer`)
+
+A new public landing page explaining both referral programs. Route: `apps/debridgers-frontend/app/routes/landing/refer.tsx`.
+
+#### Page sections
+
+1. **Hero** - headline and subheadline explaining the referral concept. "Invite a friend, both of you win."
+
+2. **For Buyers section**
+   - Heading: "Refer a friend, get money off your next order"
+   - How it works (3 steps):
+     1. Copy your unique referral link from your dashboard
+     2. Share it with friends or family
+     3. When they place their first order, you get ₦500 off your next purchase
+   - CTA: "Log in to get your referral link" (if unauthenticated) or "Copy my referral link" (if authenticated as buyer)
+   - Note: "Discount is applied automatically at checkout. Expires 90 days after it is earned."
+
+3. **For Agents section**
+   - Heading: "Refer buyers, earn on every order they place"
+   - How it works (3 steps):
+     1. Get your agent referral link from your dashboard
+     2. Share it with potential buyers in your area
+     3. Every time a buyer you referred places an order, you earn a commission
+   - CTA: "Apply to become an agent" (links to `/agents`) or "Go to your dashboard" (if already an agent)
+   - Show live commission rate from `/config/public`: "Earn [X]% commission per sale"
+
+4. **FAQ section** - short answers to obvious questions:
+   - "How many friends can I refer?" - No limit.
+   - "When do I get my discount / commission?" - After your friend places their first confirmed order.
+   - "Can I refer agents too?" - Only agents can earn commissions. Buyers earn discounts.
+
+#### Loader
+
+```typescript
+export async function loader() {
+  const config = await fetch(`${API_BASE}/config/public`).then((r) => r.json());
+  return {
+    commissionRate: config.agent_commission_rate,
+    discountKobo: config.buyer_referral_discount_kobo,
+  };
+}
+```
+
+#### Navigation entry point
+
+- Add "Refer & Earn" link to the landing page header nav (between existing links).
+- Add a link in the buyer dashboard sidebar: "Refer a Friend" under the Earnings or Quick Actions section.
+- Add a link in the agent dashboard sidebar: "Your Referral Link" under the Wallet section.
+
+---
+
+### 16.7 Implementation Order
+
+| Step | What                                                                                | Complexity | Blocks                              |
+| ---- | ----------------------------------------------------------------------------------- | ---------- | ----------------------------------- |
+| 1    | `system_settings` table + migration                                                 | Low        | Everything else                     |
+| 2    | `SystemSettingsService` + `GET /config/public` endpoint                             | Low        | Landing page dynamic values         |
+| 3    | `PATCH /admin/settings` endpoint + admin settings UI                                | Low        | Admin can set commission rate       |
+| 4    | Wire `PaymentService` commission calc to `system_settings` instead of env           | Low        | Commission reflects admin setting   |
+| 5    | Add `referral_code` + `referred_by` columns to `users` + migration                  | Low        | All referral tracking               |
+| 6    | Generate `referral_code` on user activation (agent + buyer)                         | Low        | Referral links work                 |
+| 7    | Capture `?ref=` on signup, persist `referred_by`                                    | Low        | Referral attribution                |
+| 8    | Agent referral commission: wire `buyer_referral` commission on referred buyer order | Medium     | Agent earns from referrals          |
+| 9    | `buyer_discounts` table + migration                                                 | Low        | Buyer discount system               |
+| 10   | Buyer referral discount: create discount row on referee's first order               | Medium     | Buyer earns discount                |
+| 11   | Apply discount at checkout before Paystack init                                     | Medium     | Discount redeemable                 |
+| 12   | `GET /buyer/discounts` endpoint + checkout UI shows discount                        | Low        | Buyer sees and uses discount        |
+| 13   | Dynamic `earningsRows` on agents.tsx landing page                                   | Low        | Live commission rate on landing     |
+| 14   | `/refer` landing page                                                               | Medium     | Referral program visible publicly   |
+| 15   | Referral link display in buyer + agent dashboards                                   | Low        | Users can find and share their link |
