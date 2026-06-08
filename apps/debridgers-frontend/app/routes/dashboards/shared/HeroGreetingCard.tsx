@@ -44,7 +44,13 @@ export function HeroGreetingCard({
         <div className="pointer-events-none absolute inset-0 rounded-full border-20 border-[#A5BDA8]/40" />
 
         {/* Middle */}
-        <div className="pointer-events-none absolute inset-[40px] rounded-full border-20 border-[#A5BDA8]/40" />
+        <div
+          className="pointer-events-none absolute inset-10 rounded-full border-20"
+          style={{
+            borderColor:
+              "color-mix(in srgb, var(--text-colour2) 40%, transparent)",
+          }}
+        />
 
         {/* Inner */}
         <div className="pointer-events-none absolute inset-20 rounded-full border-20 border-[#A5BDA8]/40" />

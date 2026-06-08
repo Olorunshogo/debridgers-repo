@@ -281,7 +281,7 @@ function WhatWeDeliver() {
         </p>
 
         <div className="gap-xl flex w-full flex-wrap items-start justify-between">
-          <h2 className="text-primary font-syne max-w-188 text-3xl leading-tight font-extrabold sm:text-4xl lg:text-[50px] lg:font-bold">
+          <h2 className="text-primary font-syne lg:text-50 max-w-188 text-3xl leading-tight font-extrabold sm:text-4xl lg:font-bold">
             Everything you spend on at the market.
           </h2>
 
@@ -482,7 +482,10 @@ export default function Home() {
               <div className="relative flex flex-1 flex-col pt-20 sm:pt-24 lg:pt-32">
                 <div className="gap-xl lg:gap-3xl flex flex-1 flex-col justify-center">
                   {/* Location badge */}
-                  <div className="text-primary font-open-sans p-sm border-primary flex w-fit items-center gap-1 rounded-full border bg-[#A5BDA8] text-sm font-semibold shadow-[50px] backdrop-blur-lg">
+                  <div
+                    className="text-primary font-open-sans p-sm border-primary shadow-50 flex w-fit items-center gap-1 rounded-full border text-sm font-semibold backdrop-blur-lg"
+                    style={{ backgroundColor: "var(--text-colour2)" }}
+                  >
                     <span className="bg-primary h-1.5 w-1.5 rounded-full" />
                     Now Serving in Kaduna
                   </div>
@@ -658,7 +661,7 @@ export default function Home() {
                 className="h-full max-h-130 w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-105 lg:max-h-132"
               />
               {/* Delivery Info Card */}
-              <div className="bg-primary-light border-primary-light absolute right-2.5 bottom-2.5 left-2.5 flex flex-col gap-2.5 rounded-3xl border px-[24px] py-[12px] text-white shadow-md">
+              <div className="bg-primary-light border-primary-light absolute right-2.5 bottom-2.5 left-2.5 flex flex-col gap-2.5 rounded-3xl border px-6 py-3 text-white shadow-md">
                 <div className="flex items-center gap-2.5 text-sm sm:text-base">
                   Next Delivery
                 </div>
@@ -718,7 +721,7 @@ export default function Home() {
         {/* Stats */}
         <div className="px-section-px px sm:px-section-px-sm lg:px-section-px-lg lg:gap-4xl relative z-10 mx-auto flex w-full flex-col">
           <div className="font-syne pb-2xl flex flex-col gap-3">
-            <p className="text-text2 text-xl tracking-[3px] uppercase">
+            <p className="text-text2 text-xl tracking-wider uppercase">
               Early Numbers
             </p>
             <h2 className="w-full text-3xl leading-tight font-bold sm:text-4xl lg:text-5xl lg:font-extrabold">
@@ -756,7 +759,13 @@ export default function Home() {
           <div className="pointer-events-none absolute inset-0 rounded-full border-20 border-[#A5BDA8]/40" />
 
           {/* Middle */}
-          <div className="pointer-events-none absolute inset-[40px] rounded-full border-20 border-[#A5BDA8]/40" />
+          <div
+            className="pointer-events-none absolute inset-10 rounded-full border-20"
+            style={{
+              borderColor:
+                "color-mix(in srgb, var(--text-colour2) 40%, transparent)",
+            }}
+          />
 
           {/* Inner */}
           <div className="pointer-events-none absolute inset-20 rounded-full border-20 border-[#A5BDA8]/40" />
@@ -780,11 +789,11 @@ export default function Home() {
               Get started
             </p>
 
-            <h2 className="text-primary font-syne mx-auto w-full max-w-xs text-center text-4xl leading-tight font-extrabold sm:max-w-125 sm:text-5xl lg:max-w-208 lg:text-6xl">
+            <h2 className="text-primary font-syne mx-auto w-full max-w-110 text-center text-4xl leading-tight font-extrabold sm:max-w-125 sm:text-5xl lg:max-w-208 lg:text-6xl">
               Your first delivery is on us.
             </h2>
 
-            <p className="text-primary font-open-sans mx-auto w-full max-w-xs text-base sm:max-w-125 lg:max-w-208 lg:text-lg">
+            <p className="text-primary font-open-sans mx-auto w-full max-w-120 text-base sm:max-w-125 lg:max-w-208 lg:text-lg">
               Join early and get free delivery on your first order. Just send us
               a WhatsApp and we&apos;ll take it from there.
             </p>
@@ -819,11 +828,11 @@ export default function Home() {
                 </p>
               </div>
 
-              <h2 className="text-text w-full text-xl leading-tight font-extrabold sm:max-w-125 sm:text-2xl lg:max-w-[601px] lg:text-3xl">
+              <h2 className="text-text w-full text-xl leading-tight font-extrabold sm:max-w-125 sm:text-2xl lg:max-w-150.25 lg:text-3xl">
                 Backed by those who&apos;ve been doing this longest.
               </h2>
 
-              <p className="text-text text-base leading-relaxed lg:max-w-[570px] lg:text-lg">
+              <p className="text-text text-base leading-relaxed lg:max-w-142.5 lg:text-lg">
                 Debridgers is proudly partnering with an established agro
                 marketplace that has been connecting Nigerian farmers directly
                 to buyers long before we launched. Together, we bring a wider
@@ -850,11 +859,11 @@ export default function Home() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.15 }}
-              className="bg-primary-light/80 flex h-fit flex-col gap-[32px] rounded-3xl px-8 py-12 text-white"
+              className="bg-primary-light/80 flex h-fit flex-col gap-8 rounded-3xl px-8 py-12 text-white"
             >
               <div className="flex items-center justify-between gap-4">
                 <div className="flex flex-col flex-1 truncate">
-                  <div className="h-[30px] w-32.5">
+                  <div className="h-7.5 w-32.5">
                     <img
                       src="/logos/agrolinking.png"
                       alt="Agro-Linking Logo"

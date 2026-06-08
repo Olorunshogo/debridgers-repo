@@ -52,7 +52,7 @@ const buyerNavGroups: NavGroup[] = [
         href: "/buyer-dashboard/wallet",
       },
       {
-        label: "Notification",
+        label: "Notifications",
         icon: Bell,
         href: "/buyer-dashboard/notifications",
       },
@@ -69,7 +69,7 @@ const buyerNavGroups: NavGroup[] = [
       {
         label: "WhatsApp Support",
         icon: MessageCircle,
-        href: "https://wa.me/+2347012288798",
+        href: "https://chat.whatsapp.com/GjMvQOIbO9qAFjUGR3ZYVK?s=sw&p=i&mlu=2",
       },
       { label: "Help Center", icon: HelpCircle, href: "/buyer-dashboard/help" },
     ],
@@ -124,7 +124,7 @@ const agentNavGroups: NavGroup[] = [
       {
         label: "WhatsApp Support",
         icon: MessageCircle,
-        href: "https://wa.me/+2347012288798",
+        href: "https://chat.whatsapp.com/GjMvQOIbO9qAFjUGR3ZYVK?s=sw&p=i&mlu=2",
       },
       { label: "Help Center", icon: HelpCircle, href: "/agent-dashboard/help" },
     ],
@@ -154,7 +154,7 @@ const adminNavGroups: NavGroup[] = [
       {
         label: "WhatsApp Support",
         icon: MessageCircle,
-        href: "https://wa.me/+2347012288798",
+        href: "https://chat.whatsapp.com/GjMvQOIbO9qAFjUGR3ZYVK?s=sw&p=i&mlu=2",
       },
     ],
   },

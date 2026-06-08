@@ -21,7 +21,7 @@ function FooterWordmark({
       } ${className}`}
     >
       <span
-        className="font-syne text-[50px] leading-none font-extrabold tracking-normal whitespace-nowrap sm:text-[90px] lg:text-[160px]"
+        className="font-syne text-50 sm:text-90 lg:text-160 leading-none font-extrabold tracking-normal whitespace-nowrap"
         style={{
           background: isTop
             ? "linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(16, 17, 16, 0.01) 60%)"

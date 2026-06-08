@@ -33,7 +33,7 @@ export default function AuthSuccessModal({
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 260, damping: 22 }}
         onClick={(e) => e.stopPropagation()}
-        className="flex w-full max-w-[480px] flex-col items-center gap-6 rounded-3xl bg-white px-8 py-10 text-center shadow-2xl"
+        className="flex w-full max-w-120 flex-col items-center gap-6 rounded-3xl bg-white px-8 py-10 text-center shadow-2xl"
       >
         <CheckCircle2 size={56} style={{ color: "var(--primary-color)" }} />
 

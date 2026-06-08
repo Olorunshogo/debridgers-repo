@@ -416,6 +416,7 @@ export default function BuyerSettings() {
         </div>
       </Section>
 
+      {/* Submit Button */}
       <div className="flex justify-end">
         <SubmitButton
           loading={loading}
