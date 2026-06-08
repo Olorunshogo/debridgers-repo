@@ -103,7 +103,7 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-white px-6 py-12">
-      <div className="flex w-full max-w-[600px] flex-col gap-8">
+      <div className="flex w-full max-w-150 flex-col gap-8">
         <Link to="/" className="flex justify-center">
           <AppLogo />
         </Link>

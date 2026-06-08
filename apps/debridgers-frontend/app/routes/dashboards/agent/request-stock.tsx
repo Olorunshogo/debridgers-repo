@@ -301,17 +301,14 @@ export default function AgentRequestStockPage() {
                     How many do you need?
                   </p>
                   <p
-                    className="text-sm"
+                    className="text-center text-sm"
                     style={{ color: "var(--text-colour)" }}
                   >
                     {selectedProduct.name} - {selectedProduct.unit} ·{" "}
                     {fmt(selectedProduct.price_kobo)} each (to remit after sale)
                   </p>
 
-                  <div
-                    className="flex w-full max-w-xs items-center justify-between rounded-2xl px-6 py-4"
-                    style={{ backgroundColor: "var(--bg-light)" }}
-                  >
+                  <div className="bg-bg-light flex w-full max-w-120 items-center justify-between rounded-2xl px-6 py-4">
                     <button
                       type="button"
                       onClick={() => setQty((q) => Math.max(1, q - 1))}
@@ -325,10 +322,7 @@ export default function AgentRequestStockPage() {
                       <Minus size={16} />
                     </button>
                     <div className="flex flex-col items-center gap-0.5">
-                      <span
-                        className="font-syne text-3xl font-bold"
-                        style={{ color: "var(--heading-colour)" }}
-                      >
+                      <span className="font-syne text-heading-colour text-3xl font-bold">
                         {qty}
                       </span>
                       <span

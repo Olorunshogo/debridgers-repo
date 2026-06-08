@@ -87,7 +87,7 @@ export default function BuyerNotifications() {
             className="font-syne text-lg font-bold"
             style={{ color: "var(--heading-colour)" }}
           >
-            Notification
+            Notifications
           </h2>
           {unreadCount > 0 && (
             <span

@@ -272,7 +272,7 @@ function BuyerGuideModal({ onClose }: { onClose: () => void }) {
         {/* Footer CTA */}
         <div className="border-border-gray shrink-0 border-t px-6 py-4">
           <a
-            href="https://wa.me/+2347012288798"
+            href="https://chat.whatsapp.com/GjMvQOIbO9qAFjUGR3ZYVK?s=sw&p=i&mlu=2"
             target="_blank"
             rel="noopener noreferrer"
             className="bg-primary flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white transition-opacity duration-200 hover:opacity-80"
@@ -311,7 +311,7 @@ export default function BuyerHelpPage() {
       {/* Quick actions */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <motion.a
-          href="https://wa.me/+2347012288798"
+          href="https://chat.whatsapp.com/GjMvQOIbO9qAFjUGR3ZYVK?s=sw&p=i&mlu=2"
           target="_blank"
           rel="noopener noreferrer"
           initial={{ opacity: 0, y: 12 }}

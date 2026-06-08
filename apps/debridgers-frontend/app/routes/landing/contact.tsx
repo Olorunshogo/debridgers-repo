@@ -317,7 +317,7 @@ export default function ContactPage() {
             className="grid grid-cols-1 gap-7 lg:grid-cols-2 lg:gap-10"
           >
             {/* Form */}
-            <div className="border-primary flex flex-col gap-7 rounded-2xl border bg-white px-4.5 py-[20px] lg:border-0">
+            <div className="border-primary flex flex-col gap-7 rounded-2xl border bg-white px-4.5 py-5 lg:border-0">
               <h2 className="font-open-sans text-2xl font-semibold text-black">
                 Send Us A Message
               </h2>

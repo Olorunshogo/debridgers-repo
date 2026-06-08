@@ -219,7 +219,7 @@ export default function AdminBuyers() {
                     {buyer.joinedDate}
                   </span>
                   <span
-                    className="w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                    className="flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
                     style={{ backgroundColor: badge.bg, color: badge.text }}
                   >
                     {badge.label}

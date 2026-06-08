@@ -341,7 +341,7 @@ export default function AgentDailyReportPage() {
               </div>
 
               {/* Submit */}
-              <div className="mx-auto w-full max-w-[410px]">
+              <div className="mx-auto w-full max-w-102.5">
                 <SubmitButton
                   loading={loading}
                   loadingText="Submitting…"

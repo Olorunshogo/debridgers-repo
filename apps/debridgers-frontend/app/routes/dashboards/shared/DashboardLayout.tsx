@@ -86,7 +86,9 @@ export default function DashboardLayout() {
       .catch(() => {});
   }, [isAgent, isBuyer, isAdmin]);
 
-  const notifPath = `${basePath}/notification`;
+  const notifPath = isBuyer
+    ? `${basePath}/notifications`
+    : `${basePath}/notification`;
 
   useEffect(() => {
     const stored = localStorage.getItem("debridgers_has_unread");

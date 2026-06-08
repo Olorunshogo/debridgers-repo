@@ -221,7 +221,11 @@ const quickActions: QuickAction[] = [
   { label: "New Order", icon: ShoppingCart, href: "/buyer-dashboard/shop" },
   { label: "Repeat Last", icon: RefreshCcw, href: "/buyer-dashboard/shop" },
   { label: "Add Funds", icon: Wallet, href: "/buyer-dashboard/wallet" },
-  { label: "Get help", icon: Headphones, href: "https://wa.me/+2347012288798" },
+  {
+    label: "Get help",
+    icon: Headphones,
+    href: "https://chat.whatsapp.com/GjMvQOIbO9qAFjUGR3ZYVK?s=sw&p=i&mlu=2",
+  },
 ];
 
 const statusStyles: Record<

@@ -86,11 +86,14 @@ export function HeroSection({
       </div>
 
       {/* Content Wrapper */}
-      <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex h-screen w-full flex-col justify-between gap-[48px]">
+      <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex h-screen w-full flex-col justify-between gap-12">
         <div className="relative flex flex-1 flex-col pt-20 sm:pt-24 lg:pt-32">
           <div className="gap-2xl lg:gap-4xl flex flex-1 flex-col justify-center">
             {/* Location badge */}
-            <div className="text-primary border-primary font-open-sans p-sm inline-flex w-fit items-center gap-1 rounded-full border bg-[#A5BDA8] text-sm font-semibold shadow-[50px] backdrop-blur-lg">
+            <div
+              className="text-primary border-primary font-open-sans p-sm shadow-50 inline-flex w-fit items-center gap-1 rounded-full border text-sm font-semibold backdrop-blur-lg"
+              style={{ backgroundColor: "var(--text-colour2)" }}
+            >
               <span className="bg-primary h-1.5 w-1.5 rounded-full" />
               {servingLocation}
             </div>

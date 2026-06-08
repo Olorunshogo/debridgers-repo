@@ -174,7 +174,7 @@ export default function BuyerShop() {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className="rounded-full px-4 py-1.5 text-sm font-medium transition-all"
+                className="cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium transition-all"
                 style={{
                   backgroundColor: active
                     ? "var(--primary-color)"

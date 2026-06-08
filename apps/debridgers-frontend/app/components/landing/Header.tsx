@@ -217,6 +217,17 @@ export function Header({
                       })}
                     </div>
                     <WhatsAppButton className="w-full" />
+                    <div className="flex flex-col gap-3">
+                      <PrimaryLink href="/login" className="w-full text-center">
+                        Log In
+                      </PrimaryLink>
+                      <SecondaryLink
+                        href={signUpHref}
+                        className="w-full text-center"
+                      >
+                        Sign Up
+                      </SecondaryLink>
+                    </div>
                   </div>
                 </motion.div>
               </>

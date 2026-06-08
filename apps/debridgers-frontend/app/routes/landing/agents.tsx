@@ -243,7 +243,7 @@ export default function AgentsPage() {
               <p className="text-primary-light text-xl tracking-widest">
                 Your role
               </p>
-              <h2 className="font-syne text-primary w-full max-w-[730px] text-3xl font-extrabold sm:text-4xl lg:text-5xl">
+              <h2 className="font-syne text-primary w-full max-w-182.5 text-3xl font-extrabold sm:text-4xl lg:text-5xl">
                 What you&apos;ll do as an agent
               </h2>
             </motion.div>
@@ -312,7 +312,7 @@ export default function AgentsPage() {
               <p className="text-primary-light text-xl tracking-widest">
                 Why join us
               </p>
-              <h2 className="font-syne text-primary max-w-[730px] text-3xl font-extrabold sm:text-4xl lg:text-5xl">
+              <h2 className="font-syne text-primary max-w-182.5 text-3xl font-extrabold sm:text-4xl lg:text-5xl">
                 Built for people who hustle.
               </h2>
             </motion.div>
@@ -381,7 +381,7 @@ export default function AgentsPage() {
               <p className="text-primary-light text-xl tracking-widest">
                 The process
               </p>
-              <h2 className="font-syne text-primary max-w-[730px] text-3xl font-extrabold sm:text-4xl lg:text-5xl">
+              <h2 className="font-syne text-primary max-w-182.5 text-3xl font-extrabold sm:text-4xl lg:text-5xl">
                 Three steps to your first commission.
               </h2>
             </motion.div>
@@ -460,10 +460,10 @@ export default function AgentsPage() {
               <p className="text-xl tracking-widest text-white/60">
                 Example earnings
               </p>
-              <h2 className="font-syne max-w-[730px] text-3xl font-extrabold text-white sm:text-4xl lg:text-5xl">
+              <h2 className="font-syne max-w-182.5 text-3xl font-extrabold text-white sm:text-4xl lg:text-5xl">
                 What a good week looks like.
               </h2>
-              <p className="font-open-sans max-w-[560px] text-lg leading-relaxed text-white/80">
+              <p className="font-open-sans max-w-140 text-lg leading-relaxed text-white/80">
                 Agents who stay consistent typically close 5–10 sales per week.
                 Here&apos;s what that means in your pocket.
               </p>
@@ -529,10 +529,10 @@ export default function AgentsPage() {
             <p className="text-primary-light font-open-sans text-xl tracking-widest">
               Ready to start?
             </p>
-            <h2 className="font-syne text-primary mx-auto max-w-[730px] text-3xl font-extrabold sm:text-4xl lg:text-5xl">
+            <h2 className="font-syne text-primary mx-auto max-w-182.5 text-3xl font-extrabold sm:text-4xl lg:text-5xl">
               Apply in under 3 minutes.
             </h2>
-            <p className="font-open-sans text-text mx-auto max-w-[550px] text-lg leading-relaxed">
+            <p className="font-open-sans text-text mx-auto max-w-137.5 text-lg leading-relaxed">
               No experience required. Just bring your hustle - we&apos;ll handle
               the rest.
             </p>
