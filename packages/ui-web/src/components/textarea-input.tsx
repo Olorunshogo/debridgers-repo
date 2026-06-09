@@ -44,27 +44,10 @@ export function TextareaInput({
         value={value}
         onChange={onChange}
         rows={rows}
-        className="w-full resize-none rounded-lg border p-6 text-base transition-all duration-300 ease-in-out outline-none placeholder:text-[#94A3B8]"
-        style={{
-          borderColor: error ? "var(--input-error-red)" : "var(--input-border)",
-          backgroundColor: "var(--input-bg)",
-          color: "var(--text-colour)",
-        }}
-        onFocus={(e) => {
-          e.currentTarget.style.borderColor = error
-            ? "var(--input-error-red)"
-            : "var(--input-border-focus)";
-        }}
-        onBlur={(e) => {
-          e.currentTarget.style.borderColor = error
-            ? "var(--input-error-red)"
-            : "var(--input-border)";
-        }}
+        className={`placeholder:text-text-placeholder bg-input-bg text-text font-syne w-full resize-none rounded-lg border p-6 text-base transition-all duration-300 ease-in-out outline-none ${error ? "border-input-error-red focus:border-input-error-red" : "border-input-border focus:border-input-border-focus"}`}
       />
       {error && errorMessage && (
-        <p className="text-xs" style={{ color: "var(--input-error-red)" }}>
-          {errorMessage}
-        </p>
+        <p className="text-input-error-red text-xs">{errorMessage}</p>
       )}
     </div>
   );

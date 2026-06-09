@@ -192,10 +192,6 @@ function HydrationProgressBar({ duration }: HydrationProgressBarProps) {
           ease: "linear",
         }}
         className="to-primary h-full w-full origin-left rounded-full bg-linear-to-r from-gray-200"
-        style={{
-          background:
-            "linear-gradient(to right, #e5e7eb 0%, var(--color-primary) 100%)",
-        }}
       />
     </div>
   );
@@ -233,10 +229,7 @@ export function HydrationAnimationOverlay() {
       animate={{ opacity: stage === "complete" ? 0 : 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5, delay: stage === "complete" ? 0.2 : 0 }}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white"
-      style={{
-        pointerEvents: "none", // Allow no interaction during animation
-      }}
+      className="pointer-events-none fixed inset-0 z-50 flex flex-col items-center justify-center bg-white"
     >
       {/* Animation Container */}
       <div className="relative flex w-full items-center justify-center">

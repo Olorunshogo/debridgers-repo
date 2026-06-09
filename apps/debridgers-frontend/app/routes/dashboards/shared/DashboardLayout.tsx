@@ -139,29 +139,9 @@ export default function DashboardLayout() {
                 {group.items.map((item) => {
                   const active = isActive(item.href);
                   const isExternal = item.href.startsWith("http");
-                  const cls =
-                    "flex items-center gap-3 font-open-sans rounded-2xl p-3 text-base transition-all duration-300 ease-in-out cursor-pointer";
-                  const style = {
-                    backgroundColor: active
-                      ? "rgba(75,122,81,1)"
-                      : "transparent",
-                    color: active ? "#FCFDFD" : "var(--text-colour)",
-                  };
-                  const hover = {
-                    onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
-                      if (!active) {
-                        e.currentTarget.style.backgroundColor =
-                          "var(--primary-color)";
-                        e.currentTarget.style.color = "#ffffff";
-                      }
-                    },
-                    onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
-                      if (!active) {
-                        e.currentTarget.style.backgroundColor = "transparent";
-                        e.currentTarget.style.color = "var(--text-colour)";
-                      }
-                    },
-                  };
+                  const cls = active
+                    ? "flex cursor-pointer items-center gap-3 rounded-2xl bg-primary p-3 font-open-sans text-base text-white transition-all duration-300 ease-in-out"
+                    : "text-text flex cursor-pointer items-center gap-3 rounded-2xl p-3 font-open-sans text-base transition-all duration-300 ease-in-out hover:bg-primary hover:text-white";
 
                   if (isExternal) {
                     return (
@@ -172,8 +152,6 @@ export default function DashboardLayout() {
                         rel="noopener noreferrer"
                         onClick={onNavClick}
                         className={cls}
-                        style={style}
-                        {...hover}
                       >
                         <item.icon size={17} />
                         {item.label}
@@ -187,8 +165,6 @@ export default function DashboardLayout() {
                       to={item.href}
                       onClick={onNavClick}
                       className={cls}
-                      style={style}
-                      {...hover}
                     >
                       <item.icon size={17} />
                       {item.label}
@@ -201,23 +177,14 @@ export default function DashboardLayout() {
 
           {/* User card */}
           <div className="flex items-center gap-3 rounded-xl bg-[#FAFAFB] px-4 py-2">
-            <div
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
-              style={{ backgroundColor: "var(--primary-color)" }}
-            >
+            <div className="bg-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white">
               {userProfile ? getInitials(userProfile.name) : "-"}
             </div>
             <div className="flex min-w-0 flex-col">
-              <span
-                className="truncate text-sm font-semibold"
-                style={{ color: "var(--heading-colour)" }}
-              >
+              <span className="text-heading truncate text-sm font-semibold">
                 {userProfile?.name ?? "…"}
               </span>
-              <span
-                className="truncate text-xs"
-                style={{ color: "var(--text-colour)" }}
-              >
+              <span className="text-text truncate text-xs">
                 {userProfile?.sub ?? ""}
               </span>
             </div>
@@ -227,15 +194,7 @@ export default function DashboardLayout() {
         {/* Logout */}
         <button
           onClick={handleLogout}
-          className="font-open-sans text-text z-10 flex w-full shrink-0 cursor-pointer items-center gap-3 rounded-2xl p-4 text-base transition-all duration-300 ease-in-out"
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "#FEE2E2";
-            e.currentTarget.style.color = "#DC2626";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "transparent";
-            e.currentTarget.style.color = "var(--text-colour)";
-          }}
+          className="font-open-sans text-text z-10 flex w-full shrink-0 cursor-pointer items-center gap-3 rounded-2xl p-4 text-base transition-all duration-300 ease-in-out hover:bg-red-100 hover:text-red-600"
         >
           <LogOut size={18} className="text-error-red" />
           Logout
@@ -278,7 +237,7 @@ export default function DashboardLayout() {
                     className="absolute top-4 right-4 cursor-pointer rounded-full p-1.5 hover:bg-black/10"
                     aria-label="Close menu"
                   >
-                    <X size={20} style={{ color: "var(--text-colour)" }} />
+                    <X size={20} className="text-text" />
                   </button>
                   <Sidebar onNavClick={() => setMobileOpen(false)} />
                 </motion.aside>
@@ -289,7 +248,7 @@ export default function DashboardLayout() {
           {/* Main area */}
           <div className="flex h-screen min-w-0 flex-1 flex-col overflow-y-auto">
             {/* Topbar */}
-            <header className="border-border-gray bg-dash-topbar-bg mb-6 flex h-16 shrink-0 items-center justify-between gap-4 border-b px-4 lg:px-6">
+            <header className="border-gray-border bg-dash-topbar-bg mb-6 flex h-16 shrink-0 items-center justify-between gap-4 border-b px-4 lg:px-6">
               <div className="flex items-center gap-3">
                 <button
                   className="text-text shrink-0 cursor-pointer transition-colors lg:hidden"
@@ -331,12 +290,9 @@ export default function DashboardLayout() {
                   className="relative rounded-full p-2 transition-colors"
                   aria-label="Notifications"
                 >
-                  <Bell size={20} style={{ color: "var(--icon-secondary)" }} />
+                  <Bell size={20} className="text-icon-secondary" />
                   {hasUnread && (
-                    <span
-                      className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full"
-                      style={{ backgroundColor: "var(--error-red)" }}
-                    />
+                    <span className="bg-error-red absolute top-1.5 right-1.5 h-2 w-2 rounded-full" />
                   )}
                 </Link>
               </div>

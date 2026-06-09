@@ -14,18 +14,13 @@ export function SecondaryLink({
   style,
 }: SecondaryLinkProps) {
   const base =
-    "inline-flex items-center justify-center px-4 py-2 font-syne rounded-full font-semibold text-base cursor-pointer duration-300 ease-in-out transition-all hover:opacity-90";
+    "border-primary text-primary inline-flex items-center justify-center rounded-full border bg-transparent px-4 py-2 font-syne text-base font-semibold transition-all duration-300 ease-in-out hover:opacity-90 cursor-pointer";
 
   return (
     <a
       href={href}
       className={className ? `${base} ${className}` : base}
-      style={{
-        border: "1px solid var(--color-primary)",
-        color: "var(--color-primary)",
-        backgroundColor: "transparent",
-        ...style,
-      }}
+      style={style}
     >
       {children}
     </a>

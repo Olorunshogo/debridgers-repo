@@ -116,23 +116,16 @@ export default function ResetPasswordPage() {
               animate={{ opacity: 1, y: 0 }}
               className="flex flex-col items-center gap-4 text-center"
             >
-              <CheckCircle2
-                size={48}
-                style={{ color: "var(--primary-color)" }}
-              />
-              <h1
-                className="font-syne text-2xl font-bold"
-                style={{ color: "var(--heading-colour)" }}
-              >
+              <CheckCircle2 size={48} className="text-primary" />
+              <h1 className="font-syne text-heading text-2xl font-bold">
                 Password updated
               </h1>
-              <p className="text-sm" style={{ color: "var(--text-colour)" }}>
+              <p className="text-text text-sm">
                 Your password has been reset successfully.
               </p>
               <Link
                 to="/login"
-                className="mt-2 inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                style={{ backgroundColor: "var(--primary-color)" }}
+                className="bg-primary mt-2 inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
               >
                 Sign in
               </Link>
@@ -145,13 +138,10 @@ export default function ResetPasswordPage() {
               className="flex flex-col gap-6"
             >
               <div className="flex flex-col gap-1">
-                <h1
-                  className="font-syne text-2xl font-bold"
-                  style={{ color: "var(--heading-colour)" }}
-                >
+                <h1 className="font-syne text-heading text-2xl font-bold">
                   Set a new password
                 </h1>
-                <p className="text-sm" style={{ color: "var(--text-colour)" }}>
+                <p className="text-text text-sm">
                   Must be at least 8 characters.
                 </p>
               </div>
@@ -167,11 +157,7 @@ export default function ResetPasswordPage() {
                       initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0 }}
-                      className="rounded-xl px-4 py-3 text-sm"
-                      style={{
-                        backgroundColor: "var(--status-cancelled-bg)",
-                        color: "var(--status-cancelled-text)",
-                      }}
+                      className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
                     >
                       {apiError}
                     </motion.div>

@@ -58,11 +58,7 @@ export default function AdminOverview() {
     return (
       <div className="grid animate-pulse grid-cols-2 gap-4 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-28 rounded-2xl"
-            style={{ backgroundColor: "var(--border-gray)" }}
-          />
+          <div key={i} className="bg-gray-border h-28 rounded-2xl" />
         ))}
       </div>
     );
@@ -110,33 +106,15 @@ export default function AdminOverview() {
             >
               <Link
                 to={c.href}
-                className="flex flex-col gap-3 rounded-2xl border p-4 transition-shadow hover:shadow-md"
-                style={{
-                  borderColor: "var(--border-gray)",
-                  backgroundColor: "var(--white)",
-                }}
+                className="border-gray-border flex flex-col gap-3 rounded-2xl border bg-white p-4 transition-shadow hover:shadow-md"
               >
                 <div className="flex items-center justify-between">
-                  <span
-                    className="text-sm"
-                    style={{ color: "var(--text-colour)" }}
-                  >
-                    {c.label}
-                  </span>
-                  <span
-                    className="flex h-8 w-8 items-center justify-center rounded-full"
-                    style={{ backgroundColor: "var(--bg-light)" }}
-                  >
-                    <c.icon
-                      size={16}
-                      style={{ color: "var(--primary-color)" }}
-                    />
+                  <span className="text-text text-sm">{c.label}</span>
+                  <span className="bg-bg-light flex h-8 w-8 items-center justify-center rounded-full">
+                    <c.icon size={16} className="text-primary" />
                   </span>
                 </div>
-                <p
-                  className="font-syne text-2xl font-bold"
-                  style={{ color: "var(--heading-colour)" }}
-                >
+                <p className="font-syne text-heading text-2xl font-bold">
                   {c.value}
                 </p>
               </Link>
@@ -144,50 +122,27 @@ export default function AdminOverview() {
           ))}
         </div>
       ) : (
-        <div
-          className="rounded-2xl border p-10 text-center"
-          style={{
-            borderColor: "var(--border-gray)",
-            backgroundColor: "var(--white)",
-          }}
-        >
-          <p className="text-sm" style={{ color: "var(--text-colour)" }}>
+        <div className="border-gray-border rounded-2xl border bg-white p-10 text-center">
+          <p className="text-text text-sm">
             Stats unavailable. The admin API is not yet connected.
           </p>
         </div>
       )}
 
-      <div
-        className="rounded-2xl border p-6"
-        style={{
-          borderColor: "var(--border-gray)",
-          backgroundColor: "var(--white)",
-        }}
-      >
-        <h3
-          className="font-syne mb-4 font-semibold"
-          style={{ color: "var(--heading-colour)" }}
-        >
+      <div className="border-gray-border rounded-2xl border bg-white p-6">
+        <h3 className="font-syne text-heading mb-4 font-semibold">
           Quick Actions
         </h3>
         <div className="flex flex-wrap gap-3">
           <Link
             to="/admin-dashboard/agents"
-            className="rounded-full border px-4 py-2 text-sm font-medium transition-colors"
-            style={{
-              borderColor: "var(--border-gray)",
-              color: "var(--heading-colour)",
-            }}
+            className="border-gray-border text-heading rounded-full border px-4 py-2 text-sm font-medium transition-colors"
           >
             Review Pending Agents
           </Link>
           <Link
             to="/admin-dashboard/buyers"
-            className="rounded-full border px-4 py-2 text-sm font-medium transition-colors"
-            style={{
-              borderColor: "var(--border-gray)",
-              color: "var(--heading-colour)",
-            }}
+            className="border-gray-border text-heading rounded-full border px-4 py-2 text-sm font-medium transition-colors"
           >
             View All Buyers
           </Link>

@@ -71,42 +71,24 @@ function FaqRow({ item, index }: { item: FaqItem; index: number }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="rounded-xl border"
-      style={{
-        borderColor: "var(--border-gray)",
-        backgroundColor: "var(--white)",
-      }}
+      className="border-gray-border rounded-xl border bg-white"
     >
       <button
         type="button"
         onClick={() => setOpen((p) => !p)}
         className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
       >
-        <span
-          className="font-syne text-sm font-semibold sm:text-base"
-          style={{ color: "var(--heading-colour)" }}
-        >
+        <span className="font-syne text-heading text-sm font-semibold sm:text-base">
           {item.question}
         </span>
         {open ? (
-          <ChevronUp
-            size={18}
-            style={{ color: "var(--text-colour)" }}
-            className="shrink-0"
-          />
+          <ChevronUp size={18} className="text-text shrink-0" />
         ) : (
-          <ChevronDown
-            size={18}
-            style={{ color: "var(--text-colour)" }}
-            className="shrink-0"
-          />
+          <ChevronDown size={18} className="text-text shrink-0" />
         )}
       </button>
       {open && (
-        <div
-          className="px-5 pb-4 text-sm leading-relaxed"
-          style={{ color: "var(--text-colour)" }}
-        >
+        <div className="text-text px-5 pb-4 text-sm leading-relaxed">
           {item.answer}
         </div>
       )}
@@ -120,15 +102,12 @@ export default function AgentHelpPage() {
     <div className="py-section-px flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <HelpCircle size={24} style={{ color: "var(--primary-color)" }} />
+        <HelpCircle size={24} className="text-primary" />
         <div>
-          <h2
-            className="font-syne text-xl font-bold"
-            style={{ color: "var(--heading-colour)" }}
-          >
+          <h2 className="font-syne text-heading text-xl font-bold">
             Help Center
           </h2>
-          <p className="text-sm" style={{ color: "var(--text-colour)" }}>
+          <p className="text-text text-sm">
             Answers to common questions for agents
           </p>
         </div>
@@ -142,31 +121,16 @@ export default function AgentHelpPage() {
           rel="noopener noreferrer"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-4 rounded-2xl border p-5 transition-all duration-300 ease-in-out hover:shadow-md"
-          style={{
-            borderColor: "var(--border-gray)",
-            backgroundColor: "var(--white)",
-          }}
+          className="border-gray-border flex items-center gap-4 rounded-2xl border bg-white p-5 transition-all duration-300 ease-in-out hover:shadow-md"
         >
-          <span
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-            style={{ backgroundColor: "var(--status-active-bg)" }}
-          >
-            <MessageCircle
-              size={20}
-              style={{ color: "var(--status-active-text)" }}
-            />
+          <span className="bg-status-active-bg flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+            <MessageCircle size={20} className="text-status-active-text" />
           </span>
           <div>
-            <p
-              className="font-syne font-semibold"
-              style={{ color: "var(--heading-colour)" }}
-            >
+            <p className="font-syne text-heading font-semibold">
               WhatsApp Support
             </p>
-            <p className="text-sm" style={{ color: "var(--text-colour)" }}>
-              Chat with your manager directly
-            </p>
+            <p className="text-text text-sm">Chat with your manager directly</p>
           </div>
         </motion.a>
 
@@ -174,29 +138,16 @@ export default function AgentHelpPage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="flex items-center gap-4 rounded-2xl border p-5"
-          style={{
-            borderColor: "var(--border-gray)",
-            backgroundColor: "var(--white)",
-          }}
+          className="border-gray-border flex items-center gap-4 rounded-2xl border bg-white p-5"
         >
-          <span
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-            style={{ backgroundColor: "var(--status-pending-bg)" }}
-          >
-            <BookOpen
-              size={20}
-              style={{ color: "var(--status-pending-text)" }}
-            />
+          <span className="bg-status-pending-bg flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+            <BookOpen size={20} className="text-status-pending-text" />
           </span>
           <div>
-            <p
-              className="font-syne font-semibold"
-              style={{ color: "var(--heading-colour)" }}
-            >
+            <p className="font-syne text-heading font-semibold">
               Agent Guidelines
             </p>
-            <p className="text-sm" style={{ color: "var(--text-colour)" }}>
+            <p className="text-text text-sm">
               Rules, expectations, and best practices
             </p>
           </div>
@@ -205,10 +156,7 @@ export default function AgentHelpPage() {
 
       {/* FAQs */}
       <div className="flex flex-col gap-3">
-        <h3
-          className="font-syne font-semibold"
-          style={{ color: "var(--heading-colour)" }}
-        >
+        <h3 className="font-syne text-heading font-semibold">
           Frequently Asked Questions
         </h3>
         {faqs.map((item, i) => (

@@ -21,7 +21,7 @@ function FooterWordmark({
       } ${className}`}
     >
       <span
-        className="font-syne text-50 sm:text-90 lg:text-160 leading-none font-extrabold tracking-normal whitespace-nowrap"
+        className="font-syne text-[50px] leading-none font-extrabold tracking-normal whitespace-nowrap sm:text-[80px] lg:text-[140px]"
         style={{
           background: isTop
             ? "linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(16, 17, 16, 0.01) 60%)"
@@ -46,12 +46,8 @@ export default function Footer() {
 
       <FooterWordmark position="bottom" />
 
-      {/* <FooterWordmark position="top" className="-translate-y-10" />
-
-      <FooterWordmark position="bottom" className="opacity-50" /> */}
-
       {/* Main footer content */}
-      <div className="gap-2xl px-section-px py-section-py lg:py-section-py-lg sm:py-section-py-sm lg:gap-2xl sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex w-full flex-col">
+      <div className="px-section-px py-section-py sm:px-section-px-sm sm:py-section-py-sm lg:px-section-px-lg lg:py-section-py-lg relative z-10 mx-auto flex w-full flex-col gap-8 lg:gap-8">
         {/* Top section: tagline + columns */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[repeat(auto-fit,minmax(280px,1fr))] lg:items-start">
           {/* Tagline */}
@@ -66,16 +62,16 @@ export default function Footer() {
                 />
               </div>
               <div className="relative inline-block">
-                <span style={{ color: "var(--secondary-color)" }}>Market</span>
+                <span className="text-secondary">Market</span>
               </div>
               <span>Stress.</span>
             </div>
           </h1>
 
           {/* Support and Need help */}
-          <div className="gap-2xl grid grid-cols-2 items-center">
+          <div className="grid grid-cols-2 items-center gap-8">
             {/* Support */}
-            <div className="gap-2xl font-open-sans flex flex-col">
+            <div className="font-open-sans flex flex-col gap-8">
               <h2 className="font-open-sans text-sm font-semibold tracking-widest text-white uppercase">
                 Support
               </h2>
@@ -97,7 +93,7 @@ export default function Footer() {
             </div>
 
             {/* Need Help */}
-            <div className="gap-2xl font-open-sans flex flex-col lg:gap-11">
+            <div className="font-open-sans flex flex-col gap-8 lg:gap-11">
               <h3 className="font-open-sans text-sm font-semibold tracking-widest text-white uppercase">
                 Need Help?
               </h3>
@@ -112,6 +108,10 @@ export default function Footer() {
                   >
                     +2347012288798
                   </a>
+                  {/**
+                   * 08167042797
+                   * 09047480536
+                   */}
                 </div>
                 <div className="font-open-sans flex flex-col gap-1 text-white">
                   <h3 className="text-sm tracking-widest text-white uppercase">
@@ -139,7 +139,7 @@ export default function Footer() {
             <h3 className="font-open-sans text-sm font-semibold tracking-widest text-white uppercase">
               Keep in Touch
             </h3>
-            <div className="p-md flex w-full overflow-hidden rounded-full bg-white shadow-[0px_4px_32px_5px_#FAF2F23B]">
+            <div className="flex w-full overflow-hidden rounded-full bg-white p-3 shadow-[0px_4px_32px_5px_#FAF2F23B]">
               <input
                 type="email"
                 value={email}
@@ -149,7 +149,7 @@ export default function Footer() {
               />
               <button
                 type="button"
-                className="px-2xl bg-primary cursor-pointer rounded-full py-2.5 text-sm text-white transition-opacity duration-300 hover:opacity-90"
+                className="bg-primary cursor-pointer rounded-full px-8 py-2.5 text-sm text-white transition-opacity duration-300 hover:opacity-90"
               >
                 Submit
               </button>
@@ -159,14 +159,17 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="font-open-sans relative z-10 flex flex-col items-center justify-between gap-4 border-t border-white/10 py-6 text-sm text-white md:flex-row">
-          <p className="font-open-sans mx-auto text-sm text-white md:mx-0">
+          <p className="mx-auto text-sm text-white md:mx-0">
             &copy; 2026 Debridgers. Delivering fresh to Kaduna.
           </p>
           <div className="hidden items-center gap-6 md:flex">
             {[
               { label: "Privacy", to: "/privacy" },
               { label: "Contact", to: "/contact" },
-              { label: "WhatsApp", to: "https://wa.me/2347012288798" },
+              {
+                label: "WhatsApp",
+                to: "https://chat.whatsapp.com/GjMvQOIbO9qAFjUGR3ZYVK?s=sw&p=i&mlu=2",
+              },
             ].map((link) => (
               <Link
                 key={link.label}

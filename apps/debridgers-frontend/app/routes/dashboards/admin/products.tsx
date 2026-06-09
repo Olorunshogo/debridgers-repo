@@ -220,35 +220,26 @@ export default function AdminProductsPage() {
   }
 
   const inputCls =
-    "w-full rounded-xl border px-4 py-2.5 text-sm outline-none transition-colors";
-  const inputStyle = {
-    borderColor: "var(--border-gray)",
-    backgroundColor: "var(--bg-light)",
-    color: "var(--heading-colour)",
-  };
+    "border-gray-border bg-bg-light text-heading w-full rounded-xl border px-4 py-2.5 text-sm outline-none transition-colors";
 
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Package size={24} style={{ color: "var(--primary-color)" }} />
+          <Package size={24} className="text-primary" />
           <div>
-            <h2
-              className="font-syne text-xl font-bold"
-              style={{ color: "var(--heading-colour)" }}
-            >
+            <h2 className="font-syne text-heading text-xl font-bold">
               Products
             </h2>
-            <p className="text-sm" style={{ color: "var(--text-colour)" }}>
+            <p className="text-text text-sm">
               Manage the product catalog for buyers and agents
             </p>
           </div>
         </div>
         <button
           onClick={openAdd}
-          className="flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-          style={{ backgroundColor: "var(--primary-color)" }}
+          className="bg-primary flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
         >
           <Plus size={16} /> Add Product
         </button>
@@ -261,45 +252,29 @@ export default function AdminProductsPage() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="rounded-2xl border p-5"
-            style={{
-              borderColor: "var(--border-gray)",
-              backgroundColor: "var(--white)",
-            }}
+            className="border-gray-border rounded-2xl border bg-white p-5"
           >
             <div className="mb-4 flex items-center justify-between">
-              <h3
-                className="font-syne font-semibold"
-                style={{ color: "var(--heading-colour)" }}
-              >
+              <h3 className="font-syne text-heading font-semibold">
                 {editingId !== null ? "Edit Product" : "Add New Product"}
               </h3>
               <button
                 onClick={() => setShowForm(false)}
                 className="rounded-full p-1 hover:bg-black/5"
               >
-                <X size={18} style={{ color: "var(--text-colour)" }} />
+                <X size={18} className="text-text" />
               </button>
             </div>
 
             {error && (
-              <p
-                className="mb-4 rounded-xl px-4 py-3 text-sm"
-                style={{
-                  backgroundColor: "var(--status-cancelled-bg)",
-                  color: "var(--status-cancelled-text)",
-                }}
-              >
+              <p className="bg-status-cancelled-bg text-status-cancelled-text mb-4 rounded-xl px-4 py-3 text-sm">
                 {error}
               </p>
             )}
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-1">
-                <label
-                  className="text-sm font-medium"
-                  style={{ color: "var(--heading-colour)" }}
-                >
+                <label className="text-heading text-sm font-medium">
                   Product Name *
                 </label>
                 <input
@@ -310,14 +285,10 @@ export default function AdminProductsPage() {
                     setForm((p) => ({ ...p, name: e.target.value }))
                   }
                   className={inputCls}
-                  style={inputStyle}
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label
-                  className="text-sm font-medium"
-                  style={{ color: "var(--heading-colour)" }}
-                >
+                <label className="text-heading text-sm font-medium">
                   Unit / Size *
                 </label>
                 <input
@@ -328,14 +299,10 @@ export default function AdminProductsPage() {
                     setForm((p) => ({ ...p, unit: e.target.value }))
                   }
                   className={inputCls}
-                  style={inputStyle}
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label
-                  className="text-sm font-medium"
-                  style={{ color: "var(--heading-colour)" }}
-                >
+                <label className="text-heading text-sm font-medium">
                   Price (₦) *
                 </label>
                 <input
@@ -346,15 +313,11 @@ export default function AdminProductsPage() {
                     setForm((p) => ({ ...p, price: e.target.value }))
                   }
                   className={inputCls}
-                  style={inputStyle}
                   min="1"
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label
-                  className="text-sm font-medium"
-                  style={{ color: "var(--heading-colour)" }}
-                >
+                <label className="text-heading text-sm font-medium">
                   Description
                 </label>
                 <input
@@ -365,25 +328,18 @@ export default function AdminProductsPage() {
                     setForm((p) => ({ ...p, description: e.target.value }))
                   }
                   className={inputCls}
-                  style={inputStyle}
                 />
               </div>
             </div>
 
             {/* Image upload */}
             <div className="flex flex-col gap-2">
-              <label
-                className="text-sm font-medium"
-                style={{ color: "var(--heading-colour)" }}
-              >
+              <label className="text-heading text-sm font-medium">
                 Product Image
               </label>
               <div className="flex items-center gap-4">
                 {form.image_url ? (
-                  <div
-                    className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border"
-                    style={{ borderColor: "var(--border-gray)" }}
-                  >
+                  <div className="border-gray-border relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border">
                     <img
                       src={form.image_url}
                       alt="Product"
@@ -398,18 +354,8 @@ export default function AdminProductsPage() {
                     </button>
                   </div>
                 ) : (
-                  <div
-                    className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border-2 border-dashed"
-                    style={{
-                      borderColor: "var(--border-gray)",
-                      backgroundColor: "var(--bg-light)",
-                    }}
-                  >
-                    <Package
-                      size={28}
-                      className="opacity-20"
-                      style={{ color: "var(--text-colour)" }}
-                    />
+                  <div className="border-gray-border bg-bg-light flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border-2 border-dashed">
+                    <Package size={28} className="text-text opacity-20" />
                   </div>
                 )}
                 <div className="flex flex-col gap-1.5">
@@ -423,11 +369,7 @@ export default function AdminProductsPage() {
                   />
                   <label
                     htmlFor="product-image-input"
-                    className="flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5"
-                    style={{
-                      borderColor: "var(--border-gray)",
-                      color: "var(--heading-colour)",
-                    }}
+                    className="border-gray-border text-heading flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5"
                   >
                     {uploadingImage ? (
                       <>
@@ -441,10 +383,7 @@ export default function AdminProductsPage() {
                       </>
                     )}
                   </label>
-                  <p
-                    className="text-xs"
-                    style={{ color: "var(--text-colour)" }}
-                  >
+                  <p className="text-text text-xs">
                     JPG, PNG or WebP: max 5 MB
                   </p>
                 </div>
@@ -455,8 +394,7 @@ export default function AdminProductsPage() {
               <button
                 onClick={() => void handleSave()}
                 disabled={saving}
-                className="flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                style={{ backgroundColor: "var(--primary-color)" }}
+                className="bg-primary flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
               >
                 <Check size={15} />
                 {saving
@@ -467,11 +405,7 @@ export default function AdminProductsPage() {
               </button>
               <button
                 onClick={() => setShowForm(false)}
-                className="rounded-full border px-6 py-2.5 text-sm font-semibold transition-colors hover:bg-black/5"
-                style={{
-                  borderColor: "var(--border-gray)",
-                  color: "var(--text-colour)",
-                }}
+                className="border-gray-border text-text rounded-full border px-6 py-2.5 text-sm font-semibold transition-colors hover:bg-black/5"
               >
                 Cancel
               </button>
@@ -481,44 +415,32 @@ export default function AdminProductsPage() {
       </AnimatePresence>
 
       {/* Products table */}
-      <div
-        className="overflow-hidden rounded-2xl border"
-        style={{
-          borderColor: "var(--border-gray)",
-          backgroundColor: "var(--white)",
-        }}
-      >
+      <div className="border-gray-border overflow-hidden rounded-2xl border bg-white">
         {loading ? (
           <div className="flex flex-col gap-3 p-5">
             {[0, 1, 2].map((i) => (
               <div
                 key={i}
-                className="h-12 animate-pulse rounded-xl"
-                style={{ backgroundColor: "var(--bg-light)" }}
+                className="bg-bg-light h-12 animate-pulse rounded-xl"
               />
             ))}
           </div>
         ) : products.length === 0 ? (
           <div className="py-16 text-center">
-            <Package
-              size={40}
-              className="mx-auto mb-3 opacity-30"
-              style={{ color: "var(--text-colour)" }}
-            />
-            <p className="text-sm" style={{ color: "var(--text-colour)" }}>
-              No products yet. Click "Add Product" to get started.
+            <Package size={40} className="text-text mx-auto mb-3 opacity-30" />
+            <p className="text-text text-sm">
+              No products yet. Click &quot;Add Product&quot; to get started.
             </p>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ borderBottom: "1px solid var(--border-gray)" }}>
+              <tr className="border-gray-border border-b">
                 {["Product", "Unit / Size", "Price", "Status", "Actions"].map(
                   (h) => (
                     <th
                       key={h}
-                      className="px-5 py-3 text-left text-xs font-semibold tracking-wide uppercase"
-                      style={{ color: "var(--text-colour)" }}
+                      className="text-text px-5 py-3 text-left text-xs font-semibold tracking-wide uppercase"
                     >
                       {h}
                     </th>
@@ -533,12 +455,11 @@ export default function AdminProductsPage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.04 }}
-                  style={{
-                    borderBottom:
-                      i < products.length - 1
-                        ? "1px solid var(--border-gray)"
-                        : undefined,
-                  }}
+                  className={
+                    i < products.length - 1
+                      ? "border-gray-border border-b"
+                      : undefined
+                  }
                 >
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
@@ -549,59 +470,30 @@ export default function AdminProductsPage() {
                           className="h-10 w-10 rounded-lg object-cover"
                         />
                       ) : (
-                        <div
-                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
-                          style={{ backgroundColor: "var(--bg-light)" }}
-                        >
-                          <Package
-                            size={18}
-                            className="opacity-30"
-                            style={{ color: "var(--text-colour)" }}
-                          />
+                        <div className="bg-bg-light flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
+                          <Package size={18} className="text-text opacity-30" />
                         </div>
                       )}
                       <div>
-                        <p
-                          className="font-medium"
-                          style={{ color: "var(--heading-colour)" }}
-                        >
-                          {p.name}
-                        </p>
+                        <p className="text-heading font-medium">{p.name}</p>
                         {p.description && (
-                          <p
-                            className="text-xs"
-                            style={{ color: "var(--text-colour)" }}
-                          >
-                            {p.description}
-                          </p>
+                          <p className="text-text text-xs">{p.description}</p>
                         )}
                       </div>
                     </div>
                   </td>
-                  <td
-                    className="px-5 py-4"
-                    style={{ color: "var(--text-colour)" }}
-                  >
-                    {p.unit}
-                  </td>
-                  <td
-                    className="px-5 py-4 font-semibold"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
+                  <td className="text-text px-5 py-4">{p.unit}</td>
+                  <td className="text-heading px-5 py-4 font-semibold">
                     {fmt(p.price_kobo)}
                   </td>
                   <td className="px-5 py-4">
                     <button
                       onClick={() => void handleToggleActive(p)}
-                      className="rounded-full px-3 py-1 text-xs font-semibold transition-opacity hover:opacity-75"
-                      style={{
-                        backgroundColor: p.is_active
-                          ? "var(--status-delivered-bg)"
-                          : "var(--status-cancelled-bg)",
-                        color: p.is_active
-                          ? "var(--status-delivered-text)"
-                          : "var(--status-cancelled-text)",
-                      }}
+                      className={`rounded-full px-3 py-1 text-xs font-semibold transition-opacity hover:opacity-75 ${
+                        p.is_active
+                          ? "bg-status-delivered-bg text-status-delivered-text"
+                          : "bg-status-cancelled-bg text-status-cancelled-text"
+                      }`}
                     >
                       {p.is_active ? "Active" : "Inactive"}
                     </button>
@@ -613,10 +505,7 @@ export default function AdminProductsPage() {
                         className="rounded-lg p-1.5 transition-colors hover:bg-black/5"
                         title="Edit"
                       >
-                        <Pencil
-                          size={15}
-                          style={{ color: "var(--text-colour)" }}
-                        />
+                        <Pencil size={15} className="text-text" />
                       </button>
                       <button
                         onClick={() => void handleDelete(p.id)}

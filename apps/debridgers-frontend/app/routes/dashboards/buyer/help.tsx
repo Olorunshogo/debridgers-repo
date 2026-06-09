@@ -144,45 +144,27 @@ function FaqRow({ item, index }: { item: FaqItem; index: number }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-      className="rounded-xl border"
-      style={{
-        borderColor: "var(--border-gray)",
-        backgroundColor: "var(--white)",
-      }}
+      transition={{ delay: index * 0.03 }}
+      className="border-gray-border rounded-xl border bg-white"
     >
       <button
         type="button"
         onClick={() => setOpen((p) => !p)}
         className="flex w-full cursor-pointer items-center justify-between gap-3 px-5 py-4 text-left"
       >
-        <span
-          className="font-syne text-sm font-semibold sm:text-base"
-          style={{ color: "var(--heading-colour)" }}
-        >
+        <span className="font-syne text-heading text-sm font-semibold sm:text-base">
           {item.question}
         </span>
         {open ? (
-          <ChevronUp
-            size={18}
-            style={{ color: "var(--text-colour)" }}
-            className="shrink-0"
-          />
+          <ChevronUp size={18} className="text-text shrink-0" />
         ) : (
-          <ChevronDown
-            size={18}
-            style={{ color: "var(--text-colour)" }}
-            className="shrink-0"
-          />
+          <ChevronDown size={18} className="text-text shrink-0" />
         )}
       </button>
       {open && (
-        <div
-          className="px-5 pb-4 text-sm leading-relaxed"
-          style={{ color: "var(--text-colour)" }}
-        >
+        <div className="text-text px-5 pb-4 text-sm leading-relaxed">
           {item.answer}
         </div>
       )}
@@ -210,7 +192,7 @@ function BuyerGuideModal({ onClose }: { onClose: () => void }) {
         style={{ maxHeight: "88dvh" }}
       >
         {/* Modal header */}
-        <div className="border-border-gray flex shrink-0 items-center justify-between border-b px-6 py-5">
+        <div className="border-gray-border flex shrink-0 items-center justify-between border-b px-6 py-5">
           <div className="flex items-center gap-3">
             <span className="bg-status-pending-bg flex h-9 w-9 items-center justify-center rounded-full">
               <BookOpen size={18} className="text-status-pending-text" />
@@ -225,7 +207,7 @@ function BuyerGuideModal({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={onClose}
-            className="border-border-gray flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all duration-300 ease-in-out hover:bg-red-50"
+            className="border-gray-border flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border transition-all duration-300 ease-in-out hover:bg-red-50"
           >
             <X size={16} className="text-error-red" />
           </button>
@@ -240,7 +222,7 @@ function BuyerGuideModal({ onClose }: { onClose: () => void }) {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="border-border-gray flex flex-col gap-3 rounded-xl border bg-white p-5"
+                className="border-gray-border flex flex-col gap-3 rounded-xl border bg-white p-5"
               >
                 <div className="flex items-center gap-3">
                   <span className="bg-status-pending-bg flex h-7 w-7 shrink-0 items-center justify-center rounded-full">
@@ -270,7 +252,7 @@ function BuyerGuideModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Footer CTA */}
-        <div className="border-border-gray shrink-0 border-t px-6 py-4">
+        <div className="border-gray-border shrink-0 border-t px-6 py-4">
           <a
             href="https://chat.whatsapp.com/GjMvQOIbO9qAFjUGR3ZYVK?s=sw&p=i&mlu=2"
             target="_blank"
@@ -294,15 +276,12 @@ export default function BuyerHelpPage() {
     <div className="py-section-px flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <HelpCircle size={24} style={{ color: "var(--primary-color)" }} />
+        <HelpCircle size={24} className="text-primary" />
         <div>
-          <h2
-            className="font-syne text-xl font-bold"
-            style={{ color: "var(--heading-colour)" }}
-          >
+          <h2 className="font-syne text-heading text-xl font-bold">
             Help Center
           </h2>
-          <p className="text-sm" style={{ color: "var(--text-colour)" }}>
+          <p className="text-text text-sm">
             Answers to common questions for buyers
           </p>
         </div>
@@ -316,31 +295,16 @@ export default function BuyerHelpPage() {
           rel="noopener noreferrer"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-4 rounded-2xl border p-5 transition-all duration-300 ease-in-out hover:shadow-md"
-          style={{
-            borderColor: "var(--border-gray)",
-            backgroundColor: "var(--white)",
-          }}
+          className="border-gray-border flex items-center gap-4 rounded-2xl border bg-white p-5 transition-all duration-300 ease-in-out hover:shadow-md"
         >
-          <span
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-            style={{ backgroundColor: "var(--status-active-bg)" }}
-          >
-            <MessageCircle
-              size={20}
-              style={{ color: "var(--status-active-text)" }}
-            />
+          <span className="bg-status-active-bg flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+            <MessageCircle size={20} className="text-status-active-text" />
           </span>
           <div>
-            <p
-              className="font-syne font-semibold"
-              style={{ color: "var(--heading-colour)" }}
-            >
+            <p className="font-syne text-heading font-semibold">
               WhatsApp Support
             </p>
-            <p className="text-sm" style={{ color: "var(--text-colour)" }}>
-              Chat with our support team
-            </p>
+            <p className="text-text text-sm">Chat with our support team</p>
           </div>
         </motion.a>
 
@@ -350,41 +314,21 @@ export default function BuyerHelpPage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="flex cursor-pointer items-center gap-4 rounded-2xl border p-5 text-left transition-all duration-300 ease-in-out hover:shadow-md"
-          style={{
-            borderColor: "var(--border-gray)",
-            backgroundColor: "var(--white)",
-          }}
+          className="border-gray-border flex cursor-pointer items-center gap-4 rounded-2xl border bg-white p-5 text-left transition-all duration-300 ease-in-out hover:shadow-md"
         >
-          <span
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-            style={{ backgroundColor: "var(--status-pending-bg)" }}
-          >
-            <BookOpen
-              size={20}
-              style={{ color: "var(--status-pending-text)" }}
-            />
+          <span className="bg-status-pending-bg flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+            <BookOpen size={20} className="text-status-pending-text" />
           </span>
           <div>
-            <p
-              className="font-syne font-semibold"
-              style={{ color: "var(--heading-colour)" }}
-            >
-              Buyer Guide
-            </p>
-            <p className="text-sm" style={{ color: "var(--text-colour)" }}>
-              How ordering and delivery works
-            </p>
+            <p className="font-syne text-heading font-semibold">Buyer Guide</p>
+            <p className="text-text text-sm">How ordering and delivery works</p>
           </div>
         </motion.button>
       </div>
 
       {/* FAQs */}
       <div className="flex flex-col gap-3">
-        <h3
-          className="font-syne font-semibold"
-          style={{ color: "var(--heading-colour)" }}
-        >
+        <h3 className="font-syne text-heading font-semibold">
           Frequently Asked Questions
         </h3>
         {faqs.map((item, i) => (

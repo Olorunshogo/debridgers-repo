@@ -47,14 +47,14 @@ Two systems are available and can be mixed freely:
 | `--spacing-5xl`  | 64px  | `gap-5xl` / `p-5xl` / `mt-5xl`    |
 
 ```tsx
-<div className="flex gap-base" />       // 16px — semantic name
-<div className="flex gap-4" />          // 16px — numeric scale (same value)
-<div className="flex flex-col gap-xl" />
-<div className="px-xl py-base" />
-<div className="mt-5xl" />              // 64px top margin
+<div className="flex gap-4" />          // canonical component spacing
+<div className="flex flex-col gap-6" />
+<div className="px-6 py-4" />
+<div className="mt-16" />
+<div className="px-section-px py-section-py" /> // keep semantic layout tokens
 ```
 
-The named tokens work on every spacing utility: `gap`, `p`, `m`, `top`, `left`, `w`, `h`, etc.
+The named tokens still work on every spacing utility: `gap`, `p`, `m`, `top`, `left`, `w`, `h`, etc. But in app/component code, prefer Tailwind's numeric spacing scale for generic padding and margin. Keep semantic spacing tokens for named layout contracts like `section-*` and `navbar-h`.
 
 ---
 
@@ -419,7 +419,7 @@ export const colors = {
 ## Rules Going Forward
 
 - Never hardcode hex values in components - always use a CSS var or Tailwind token class.
-- Use semantic spacing tokens (`gap-base`, `p-xl`, `mt-2xl`) or Tailwind's numeric scale (`gap-4`, `p-6`). Both are valid. Pick one style and stay consistent within a file.
+- Use Tailwind's numeric spacing scale for generic component padding and margin (`p-4`, `px-6`, `mt-8`). Keep semantic layout tokens only for named layout contracts like `px-section-px`, `py-section-py`, and `mt-navbar-h`.
 - Use semantic typography tokens (`text-hero`, `text-h2`, etc.) for headings - never write responsive chains like `text-3xl sm:text-5xl lg:text-7xl`.
 - Add new shared tokens to `tokens.css` first, then map in `styles.css @theme`.
 - App-specific layout vars (navbar height, section padding) stay in `styles.css :root`.

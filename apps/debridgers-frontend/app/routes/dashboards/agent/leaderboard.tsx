@@ -53,17 +53,12 @@ export default function AgentLeaderboard() {
     <div className="py-section-px flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Trophy size={24} style={{ color: "var(--primary-color)" }} />
+        <Trophy size={24} className="text-primary" />
         <div>
-          <h2
-            className="font-syne text-xl font-bold"
-            style={{ color: "var(--heading-colour)" }}
-          >
+          <h2 className="font-syne text-heading text-xl font-bold">
             Leaderboard
           </h2>
-          <p className="text-sm" style={{ color: "var(--text-colour)" }}>
-            Top performing agents - all time
-          </p>
+          <p className="text-text text-sm">Top performing agents - all time</p>
         </div>
       </div>
 
@@ -71,11 +66,7 @@ export default function AgentLeaderboard() {
         <div className="flex animate-pulse flex-col gap-4">
           <div className="grid grid-cols-3 gap-4">
             {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="h-32 rounded-2xl"
-                style={{ backgroundColor: "var(--border-gray)" }}
-              />
+              <div key={i} className="bg-gray-border h-32 rounded-2xl" />
             ))}
           </div>
         </div>
@@ -93,52 +84,23 @@ export default function AgentLeaderboard() {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.1 }}
-                  className="flex flex-col items-center gap-2 rounded-2xl border p-4 text-center"
-                  style={{
-                    borderColor: "var(--border-gray)",
-                    backgroundColor: "var(--white)",
-                    order: agent.rank === 1 ? -1 : agent.rank,
-                  }}
+                  className="border-gray-border flex flex-col items-center gap-2 rounded-2xl border bg-white p-4 text-center"
+                  style={{ order: agent.rank === 1 ? -1 : agent.rank }}
                 >
                   <Medal size={28} color={badgeColors[badge]} />
-                  <p
-                    className="font-syne font-semibold"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
+                  <p className="font-syne text-heading font-semibold">
                     {agent.name}
                   </p>
-                  <p
-                    className="text-xs"
-                    style={{ color: "var(--text-colour)" }}
-                  >
-                    {agent.bags_sold} bags
-                  </p>
-                  <p
-                    className="text-xs"
-                    style={{ color: "var(--text-colour)" }}
-                  >
-                    {agent.location}
-                  </p>
+                  <p className="text-text text-xs">{agent.bags_sold} bags</p>
+                  <p className="text-text text-xs">{agent.location}</p>
                 </motion.div>
               );
             })}
           </div>
 
           {/* Full table */}
-          <div
-            className="overflow-hidden rounded-2xl border"
-            style={{
-              borderColor: "var(--border-gray)",
-              backgroundColor: "var(--white)",
-            }}
-          >
-            <div
-              className="grid grid-cols-4 gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase"
-              style={{
-                borderColor: "var(--border-gray)",
-                color: "var(--text-colour)",
-              }}
-            >
+          <div className="border-gray-border overflow-hidden rounded-2xl border bg-white">
+            <div className="border-gray-border text-text grid grid-cols-4 gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase">
               <span>Rank</span>
               <span>Agent</span>
               <span>Location</span>
@@ -152,13 +114,9 @@ export default function AgentLeaderboard() {
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.04 }}
-                  className="grid grid-cols-4 gap-4 border-b px-5 py-4 text-sm last:border-0"
-                  style={{ borderColor: "var(--border-gray)" }}
+                  className="border-gray-border grid grid-cols-4 gap-4 border-b px-5 py-4 text-sm last:border-0"
                 >
-                  <span
-                    className="flex items-center gap-1 font-bold"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
+                  <span className="text-heading flex items-center gap-1 font-bold">
                     {badge ? (
                       <Star
                         size={14}
@@ -168,16 +126,9 @@ export default function AgentLeaderboard() {
                     ) : null}
                     #{agent.rank}
                   </span>
-                  <span style={{ color: "var(--heading-colour)" }}>
-                    {agent.name}
-                  </span>
-                  <span style={{ color: "var(--text-colour)" }}>
-                    {agent.location}
-                  </span>
-                  <span
-                    className="font-semibold"
-                    style={{ color: "var(--primary-color)" }}
-                  >
+                  <span className="text-heading">{agent.name}</span>
+                  <span className="text-text">{agent.location}</span>
+                  <span className="text-primary font-semibold">
                     {agent.bags_sold}
                   </span>
                 </motion.div>
@@ -188,10 +139,7 @@ export default function AgentLeaderboard() {
       )}
 
       {!loading && leaders.length === 0 && (
-        <p
-          className="py-12 text-center text-sm"
-          style={{ color: "var(--text-colour)" }}
-        >
+        <p className="text-text py-12 text-center text-sm">
           No leaderboard data yet.
         </p>
       )}

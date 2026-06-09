@@ -34,48 +34,17 @@ export function BaseInputField({
         )}
       </label>
       {children}
-      {error && (
-        <p className="text-xs" style={{ color: "var(--input-error-red)" }}>
-          {error}
-        </p>
-      )}
+      {error && <p className="text-input-error-red text-xs">{error}</p>}
     </div>
   );
 }
 
-/** Shared inline styles for the actual input/select/textarea element */
-export function getInputStyles(error?: string): React.CSSProperties {
-  return {
-    borderColor: error ? "var(--input-error-red)" : "var(--input-border)",
-    backgroundColor: "var(--input-bg)",
-    color: "var(--heading-colour)",
-  };
-}
-
-/** Shared focus/blur handlers for input elements */
-export function getInputFocusHandlers(error?: string) {
-  return {
-    onFocus: (
-      e: React.FocusEvent<
-        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-      >,
-    ) => {
-      e.currentTarget.style.borderColor = error
-        ? "var(--input-error-red)"
-        : "var(--input-border-focus)";
-    },
-    onBlur: (
-      e: React.FocusEvent<
-        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-      >,
-    ) => {
-      e.currentTarget.style.borderColor = error
-        ? "var(--input-error-red)"
-        : "var(--input-border)";
-    },
-  };
+export function getInputStateClass(error?: string): string {
+  return error
+    ? "border-input-error-red"
+    : "border-input-border focus:border-input-border-focus";
 }
 
 /** Shared className for input/select elements */
 export const BASE_INPUT_CLASS =
-  "placeholder:text-text-placeholder font-syne h-11 w-full cursor-pointer rounded-full border px-4 text-sm transition-all duration-300 ease-in-out outline-none focus-within:cursor-text";
+  "placeholder:text-text-placeholder bg-input-bg text-heading font-syne h-11 w-full cursor-pointer rounded-full border px-4 text-sm transition-all duration-300 ease-in-out outline-none focus:cursor-text";

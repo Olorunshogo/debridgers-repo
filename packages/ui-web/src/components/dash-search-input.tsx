@@ -12,40 +12,27 @@ export const DashSearchInput = forwardRef<
 >(({ className = "", onFilterClick, loading = false, ...props }, ref) => {
   return (
     <div
-      className={`font-syne flex items-center gap-2 rounded-full border px-4 py-2 transition-all duration-300 ease-in-out focus-within:ring-1 ${className}`}
-      style={{
-        borderColor: "var(--border-gray)",
-        backgroundColor: "var(--input-bg)",
-        // @ts-expect-error css var
-        "--tw-ring-color": "var(--primary-color)",
-      }}
+      className={`border-gray-border bg-input-bg focus-within:border-primary focus-within:ring-primary/30 font-syne flex items-center gap-2 rounded-full border px-4 py-2 transition-all duration-300 ease-in-out focus-within:ring-1 ${className}`}
     >
       {loading ? (
         <Loader2
           size={16}
-          className="shrink-0 animate-spin"
-          style={{ color: "var(--icon-secondary)" }}
+          className="text-icon-secondary shrink-0 animate-spin"
         />
       ) : (
-        <Search
-          size={16}
-          className="shrink-0"
-          style={{ color: "var(--icon-secondary)" }}
-        />
+        <Search size={16} className="text-icon-secondary shrink-0" />
       )}
       <input
         ref={ref}
         type="search"
-        className="placeholder:text-text-placeholder w-full bg-transparent text-sm outline-none"
-        style={{ color: "var(--heading-colour)" }}
+        className="placeholder:text-text-placeholder text-heading w-full bg-transparent text-sm outline-none"
         {...props}
       />
       <button
         type="button"
         aria-label="Filter"
         onClick={onFilterClick}
-        className="shrink-0 transition-all duration-300 ease-in-out"
-        style={{ color: "var(--icon-secondary)" }}
+        className="text-icon-secondary shrink-0 transition-all duration-300 ease-in-out"
       >
         <SlidersHorizontal size={16} />
       </button>

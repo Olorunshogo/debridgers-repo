@@ -66,26 +66,26 @@ const tabs: { key: Tab; label: string }[] = [
 
 const statusStyles: Record<
   OrderStatus,
-  { bg: string; text: string; label: string }
+  { bgClass: string; textClass: string; label: string }
 > = {
   active: {
-    bg: "var(--status-on-the-way-bg)",
-    text: "var(--status-on-the-way-text)",
+    bgClass: "bg-status-on-the-way-bg",
+    textClass: "text-status-on-the-way-text",
     label: "On the way",
   },
   pending: {
-    bg: "var(--status-pending-bg)",
-    text: "var(--status-pending-text)",
+    bgClass: "bg-status-pending-bg",
+    textClass: "text-status-pending-text",
     label: "Pending",
   },
   delivered: {
-    bg: "var(--status-delivered-bg)",
-    text: "var(--status-delivered-text)",
+    bgClass: "bg-status-delivered-bg",
+    textClass: "text-status-delivered-text",
     label: "✓ Delivered",
   },
   cancelled: {
-    bg: "var(--status-cancelled-bg)",
-    text: "var(--status-cancelled-text)",
+    bgClass: "bg-status-cancelled-bg",
+    textClass: "text-status-cancelled-text",
     label: "✕ Cancelled",
   },
 };
@@ -119,14 +119,11 @@ export default function BuyerOrders() {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className="cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200"
-            style={{
-              backgroundColor:
-                activeTab === tab.key
-                  ? "var(--primary-color)"
-                  : "var(--bg-light)",
-              color: activeTab === tab.key ? "white" : "var(--text-colour)",
-            }}
+            className={`cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 ${
+              activeTab === tab.key
+                ? "bg-primary text-white"
+                : "bg-bg-light text-text"
+            }`}
           >
             {tab.label}
           </button>
@@ -134,20 +131,8 @@ export default function BuyerOrders() {
       </div>
 
       {/* Table */}
-      <div
-        className="overflow-hidden rounded-2xl border"
-        style={{
-          borderColor: "var(--border-gray)",
-          backgroundColor: "var(--white)",
-        }}
-      >
-        <div
-          className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-4 border-b px-6 py-3 text-xs font-semibold tracking-wider uppercase"
-          style={{
-            borderColor: "var(--border-gray)",
-            color: "var(--text-colour)",
-          }}
-        >
+      <div className="border-gray-border overflow-hidden rounded-2xl border bg-white">
+        <div className="border-gray-border text-text grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-4 border-b px-6 py-3 text-xs font-semibold tracking-wider uppercase">
           <span>Order ID</span>
           <span>Items</span>
           <span>Date</span>
@@ -160,20 +145,12 @@ export default function BuyerOrders() {
             {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
-                className="h-14 animate-pulse border-b"
-                style={{
-                  borderColor: "var(--border-gray)",
-                  backgroundColor:
-                    i % 2 === 0 ? "var(--bg-light)" : "var(--white)",
-                }}
+                className={`border-gray-border h-14 animate-pulse border-b ${i % 2 === 0 ? "bg-bg-light" : "bg-white"}`}
               />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <p
-            className="py-12 text-center text-sm"
-            style={{ color: "var(--text-colour)" }}
-          >
+          <p className="text-text py-12 text-center text-sm">
             No orders found.
           </p>
         ) : (
@@ -194,39 +171,19 @@ export default function BuyerOrders() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.04 }}
                     onClick={() => setSelected(order)}
-                    className="grid cursor-pointer grid-cols-[1fr_1fr_1fr_1fr_auto] items-center gap-4 border-b px-6 py-4 text-sm transition-colors last:border-0"
-                    style={{ borderColor: "var(--border-gray)" }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.backgroundColor =
-                        "var(--dash-quick-action-hover)";
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.backgroundColor =
-                        "transparent";
-                    }}
+                    className="border-gray-border hover:bg-dash-quick-action-hover grid cursor-pointer grid-cols-[1fr_1fr_1fr_1fr_auto] items-center gap-4 border-b px-6 py-4 text-sm transition-colors last:border-0"
                   >
-                    <span
-                      className="font-mono text-xs"
-                      style={{ color: "var(--heading-colour)" }}
-                    >
+                    <span className="text-heading font-mono text-xs">
                       {order.orderId}
                     </span>
-                    <span style={{ color: "var(--text-colour)" }}>
-                      {order.items}
-                    </span>
-                    <span style={{ color: "var(--text-colour)" }}>
-                      {order.date}
-                    </span>
-                    <span
-                      className="font-semibold"
-                      style={{ color: "var(--heading-colour)" }}
-                    >
+                    <span className="text-text">{order.items}</span>
+                    <span className="text-text">{order.date}</span>
+                    <span className="text-heading font-semibold">
                       {order.amount}
                     </span>
                     <div className="flex items-center gap-2">
                       <span
-                        className="rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap"
-                        style={{ backgroundColor: s.bg, color: s.text }}
+                        className={`rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap ${s.bgClass} ${s.textClass}`}
                       >
                         {s.label}
                       </span>
@@ -234,8 +191,7 @@ export default function BuyerOrders() {
                         order.status === "delivered") && (
                         <button
                           onClick={(e) => e.stopPropagation()}
-                          className="rounded-full px-3 py-1 text-xs font-medium text-white transition-opacity hover:opacity-80"
-                          style={{ backgroundColor: "var(--primary-color)" }}
+                          className="bg-primary rounded-full px-3 py-1 text-xs font-medium text-white transition-opacity hover:opacity-80"
                         >
                           Track
                         </button>
@@ -267,60 +223,35 @@ export default function BuyerOrders() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ duration: 0.2 }}
-              className="fixed top-1/2 left-1/2 z-50 w-full max-w-175 -translate-x-1/2 -translate-y-1/2 rounded-2xl p-6 shadow-2xl"
-              style={{ backgroundColor: "var(--white)" }}
+              className="fixed top-1/2 left-1/2 z-50 w-full max-w-175 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-2xl"
             >
               <div className="flex items-start justify-between">
                 <div className="flex flex-col gap-1">
-                  <p
-                    className="font-mono text-sm font-semibold"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
+                  <p className="text-heading font-mono text-sm font-semibold">
                     {selected.orderId}
                   </p>
-                  <p
-                    className="text-sm"
-                    style={{ color: "var(--text-colour)" }}
-                  >
-                    {selected.items}
-                  </p>
-                  <p
-                    className="text-sm"
-                    style={{ color: "var(--text-colour)" }}
-                  >
-                    {selected.date}
-                  </p>
-                  <p
-                    className="font-syne mt-2 text-2xl font-bold"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
+                  <p className="text-text text-sm">{selected.items}</p>
+                  <p className="text-text text-sm">{selected.date}</p>
+                  <p className="font-syne text-heading mt-2 text-2xl font-bold">
                     {selected.amount}
                   </p>
                 </div>
                 <button
                   onClick={() => setSelected(null)}
-                  className="rounded-full p-1.5 transition-colors"
-                  style={{ color: "var(--icon-secondary)" }}
+                  className="text-icon-secondary rounded-full p-1.5 transition-colors"
                 >
                   <X size={18} />
                 </button>
               </div>
               <div className="mt-4 flex gap-2">
                 <span
-                  className="rounded-full px-3 py-1 text-xs font-medium"
-                  style={{
-                    backgroundColor: statusStyles[selected.status].bg,
-                    color: statusStyles[selected.status].text,
-                  }}
+                  className={`rounded-full px-3 py-1 text-xs font-medium ${statusStyles[selected.status].bgClass} ${statusStyles[selected.status].textClass}`}
                 >
                   {statusStyles[selected.status].label}
                 </span>
                 {(selected.status === "active" ||
                   selected.status === "delivered") && (
-                  <button
-                    className="rounded-full px-3 py-1 text-xs font-medium text-white"
-                    style={{ backgroundColor: "var(--primary-color)" }}
-                  >
+                  <button className="bg-primary rounded-full px-3 py-1 text-xs font-medium text-white">
                     Track
                   </button>
                 )}

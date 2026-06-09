@@ -184,7 +184,7 @@ export default function AgentsPage() {
   return (
     <>
       {/* Header */}
-      <div className="top-md sticky z-50">
+      <div className="sticky top-3 z-50">
         <Header
           navLinks={[
             { label: "Home", href: "/" },
@@ -258,30 +258,16 @@ export default function AgentsPage() {
                   viewport={{ once: true }}
                   custom={i + 1}
                   variants={fadeUp}
-                  className="flex flex-col gap-4 rounded-2xl border p-6 transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-md"
-                  style={{ borderColor: "var(--border-gray)" }}
+                  className="border-gray-border flex flex-col gap-4 rounded-2xl border p-6 transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-md"
                 >
-                  <span
-                    className="flex h-12 w-12 items-center justify-center rounded-xl"
-                    style={{ backgroundColor: "var(--bg-light)" }}
-                  >
-                    <Icon
-                      icon={card.icon}
-                      className="h-6 w-6"
-                      style={{ color: "var(--primary-color)" }}
-                    />
+                  <span className="bg-bg-light flex h-12 w-12 items-center justify-center rounded-xl">
+                    <Icon icon={card.icon} className="text-primary h-6 w-6" />
                   </span>
                   <div className="flex flex-col gap-2">
-                    <h3
-                      className="font-syne text-lg font-bold"
-                      style={{ color: "var(--heading-colour)" }}
-                    >
+                    <h3 className="font-syne text-heading text-lg font-bold">
                       {card.title}
                     </h3>
-                    <p
-                      className="font-open-sans text-base leading-relaxed"
-                      style={{ color: "var(--text-colour)" }}
-                    >
+                    <p className="font-open-sans text-text text-base leading-relaxed">
                       {card.description}
                     </p>
                   </div>
@@ -295,8 +281,7 @@ export default function AgentsPage() {
       {/* Why Join Us / Benefits */}
       <section
         id="benefits"
-        className="py-section-py sm:py-section-py-sm lg:py-section-py-lg"
-        style={{ backgroundColor: "var(--bg-light)" }}
+        className="bg-bg-light py-section-py sm:py-section-py-sm lg:py-section-py-lg"
       >
         <div className="default-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
           <div className="flex flex-col gap-8">
@@ -329,29 +314,14 @@ export default function AgentsPage() {
                   variants={fadeUp}
                   className="flex items-start gap-4 rounded-2xl bg-white p-6 shadow-sm transition-all duration-300 ease-in-out hover:scale-105"
                 >
-                  <span
-                    className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                    style={{
-                      backgroundColor: "var(--dash-quick-action-hover)",
-                    }}
-                  >
-                    <Icon
-                      icon={b.icon}
-                      className="h-5 w-5"
-                      style={{ color: "var(--primary-color)" }}
-                    />
+                  <span className="bg-dash-quick-action-hover mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
+                    <Icon icon={b.icon} className="text-primary h-5 w-5" />
                   </span>
                   <div className="flex flex-col gap-1">
-                    <h3
-                      className="font-syne text-base font-bold"
-                      style={{ color: "var(--heading-colour)" }}
-                    >
+                    <h3 className="font-syne text-heading text-base font-bold">
                       {b.title}
                     </h3>
-                    <p
-                      className="font-open-sans text-sm leading-relaxed"
-                      style={{ color: "var(--text-colour)" }}
-                    >
+                    <p className="font-open-sans text-text text-sm leading-relaxed">
                       {b.description}
                     </p>
                   </div>
@@ -397,40 +367,24 @@ export default function AgentsPage() {
                   custom={i + 1}
                   variants={fadeUp}
                   onHoverStart={() => setActiveStep(i)}
-                  className="relative flex flex-col gap-4 rounded-2xl border-2 p-8 transition-all duration-300"
-                  style={{
-                    borderColor:
-                      activeStep === i
-                        ? "var(--primary-color)"
-                        : "var(--border-gray)",
-                    backgroundColor:
-                      activeStep === i
-                        ? "var(--dash-quick-action-hover)"
-                        : "var(--white)",
-                  }}
+                  className={`relative flex flex-col gap-4 rounded-2xl border-2 p-8 transition-all duration-300 ${
+                    activeStep === i
+                      ? "border-primary bg-dash-quick-action-hover"
+                      : "border-gray-border bg-white"
+                  }`}
                 >
                   <span
-                    className="font-syne text-5xl leading-none font-extrabold"
-                    style={{
-                      color:
-                        activeStep === i
-                          ? "var(--primary-color)"
-                          : "var(--border-gray)",
-                    }}
+                    className={`font-syne text-5xl leading-none font-extrabold ${
+                      activeStep === i ? "text-primary" : "text-gray-border"
+                    }`}
                   >
                     {step.number}
                   </span>
                   <div className="flex flex-col gap-2">
-                    <h3
-                      className="font-syne text-xl font-bold"
-                      style={{ color: "var(--heading-colour)" }}
-                    >
+                    <h3 className="font-syne text-heading text-xl font-bold">
                       {step.title}
                     </h3>
-                    <p
-                      className="font-open-sans text-base leading-relaxed"
-                      style={{ color: "var(--text-colour)" }}
-                    >
+                    <p className="font-open-sans text-text text-base leading-relaxed">
                       {step.description}
                     </p>
                   </div>
@@ -442,10 +396,7 @@ export default function AgentsPage() {
       </section>
 
       {/* Example Earnings / Earnings Snapshot */}
-      <section
-        className="py-section-py sm:py-section-py-sm lg:py-section-py-lg"
-        style={{ backgroundColor: "var(--primary-color)" }}
-      >
+      <section className="bg-primary py-section-py sm:py-section-py-sm lg:py-section-py-lg">
         <div className="default-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
           <div className="grid items-center gap-8 lg:grid-cols-2">
             {/* Heading */}
@@ -492,12 +443,9 @@ export default function AgentsPage() {
                       {row.label}
                     </span>
                     <span
-                      className="font-syne text-lg font-bold"
-                      style={{
-                        color: row.highlight
-                          ? "var(--secondary-color)"
-                          : "white",
-                      }}
+                      className={`font-syne text-lg font-bold ${
+                        row.highlight ? "text-secondary" : "text-white"
+                      }`}
                     >
                       {row.value}
                     </span>
@@ -538,8 +486,7 @@ export default function AgentsPage() {
             </p>
             <Link
               to="/signup?role=agent"
-              className="font-syne inline-flex items-center gap-2 rounded-full px-8 py-4 text-base font-semibold text-white transition-opacity duration-200 hover:opacity-90"
-              style={{ backgroundColor: "var(--primary-color)" }}
+              className="bg-primary font-syne inline-flex items-center gap-2 rounded-full px-8 py-4 text-base font-semibold text-white transition-opacity duration-200 hover:opacity-90"
             >
               Apply Now
               <Icon icon="lucide:arrow-right" className="h-4 w-4" />

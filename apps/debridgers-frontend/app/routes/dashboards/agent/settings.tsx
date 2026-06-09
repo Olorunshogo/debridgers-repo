@@ -85,27 +85,15 @@ export default function AgentSettingsPage() {
   }
 
   const inputCls =
-    "rounded-xl border px-4 py-2.5 text-sm outline-none transition-colors";
-  const inputStyle = {
-    borderColor: "var(--border-gray)",
-    backgroundColor: "var(--bg-light)",
-    color: "var(--heading-colour)",
-  };
+    "border-gray-border bg-bg-light text-heading rounded-xl border px-4 py-2.5 text-sm outline-none transition-colors";
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-3">
-        <User size={24} style={{ color: "var(--primary-color)" }} />
+        <User size={24} className="text-primary" />
         <div>
-          <h2
-            className="font-syne text-xl font-bold"
-            style={{ color: "var(--heading-colour)" }}
-          >
-            Settings
-          </h2>
-          <p className="text-sm" style={{ color: "var(--text-colour)" }}>
-            Manage your profile and account
-          </p>
+          <h2 className="font-syne text-heading text-xl font-bold">Settings</h2>
+          <p className="text-text text-sm">Manage your profile and account</p>
         </div>
       </div>
 
@@ -113,18 +101,11 @@ export default function AgentSettingsPage() {
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl border p-5"
-        style={{
-          borderColor: "var(--border-gray)",
-          backgroundColor: "var(--white)",
-        }}
+        className="border-gray-border rounded-2xl border bg-white p-5"
       >
         <div className="mb-4 flex items-center gap-2">
-          <User size={18} style={{ color: "var(--primary-color)" }} />
-          <h3
-            className="font-syne font-semibold"
-            style={{ color: "var(--heading-colour)" }}
-          >
+          <User size={18} className="text-primary" />
+          <h3 className="font-syne text-heading font-semibold">
             Profile Information
           </h3>
         </div>
@@ -136,8 +117,7 @@ export default function AgentSettingsPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex items-center gap-2 text-sm font-medium"
-              style={{ color: "var(--status-active-text)" }}
+              className="text-status-active-text flex items-center gap-2 text-sm font-medium"
             >
               <CheckCircle size={16} /> Profile updated successfully!
             </motion.div>
@@ -146,8 +126,7 @@ export default function AgentSettingsPage() {
               {[0, 1, 2].map((i) => (
                 <div
                   key={i}
-                  className="h-10 animate-pulse rounded-xl"
-                  style={{ backgroundColor: "var(--bg-light)" }}
+                  className="bg-bg-light h-10 animate-pulse rounded-xl"
                 />
               ))}
             </div>
@@ -158,22 +137,13 @@ export default function AgentSettingsPage() {
               className="flex flex-col gap-4"
             >
               {profileError && (
-                <p
-                  className="rounded-xl px-4 py-3 text-sm"
-                  style={{
-                    backgroundColor: "var(--status-cancelled-bg)",
-                    color: "var(--status-cancelled-text)",
-                  }}
-                >
+                <p className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm">
                   {profileError}
                 </p>
               )}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-1">
-                  <label
-                    className="text-sm font-medium"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
+                  <label className="text-heading text-sm font-medium">
                     First Name
                   </label>
                   <input
@@ -183,14 +153,10 @@ export default function AgentSettingsPage() {
                       setForm((p) => ({ ...p, firstName: e.target.value }))
                     }
                     className={inputCls}
-                    style={inputStyle}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label
-                    className="text-sm font-medium"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
+                  <label className="text-heading text-sm font-medium">
                     Last Name
                   </label>
                   <input
@@ -200,15 +166,11 @@ export default function AgentSettingsPage() {
                       setForm((p) => ({ ...p, lastName: e.target.value }))
                     }
                     className={inputCls}
-                    style={inputStyle}
                   />
                 </div>
               </div>
               <div className="flex flex-col gap-1">
-                <label
-                  className="text-sm font-medium"
-                  style={{ color: "var(--heading-colour)" }}
-                >
+                <label className="text-heading text-sm font-medium">
                   Email
                 </label>
                 <input
@@ -216,14 +178,10 @@ export default function AgentSettingsPage() {
                   value={form.email}
                   readOnly
                   className={inputCls + " cursor-not-allowed opacity-60"}
-                  style={inputStyle}
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label
-                  className="text-sm font-medium"
-                  style={{ color: "var(--heading-colour)" }}
-                >
+                <label className="text-heading text-sm font-medium">
                   Phone Number
                 </label>
                 <input
@@ -234,14 +192,10 @@ export default function AgentSettingsPage() {
                   }
                   placeholder="+234 800 000 0000"
                   className={inputCls}
-                  style={inputStyle}
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label
-                  className="text-sm font-medium"
-                  style={{ color: "var(--heading-colour)" }}
-                >
+                <label className="text-heading text-sm font-medium">
                   Delivery Address
                 </label>
                 <input
@@ -252,17 +206,12 @@ export default function AgentSettingsPage() {
                   }
                   placeholder="Your business/delivery address"
                   className={inputCls}
-                  style={inputStyle}
                 />
               </div>
               <button
                 type="submit"
                 disabled={savingProfile}
-                className="self-start rounded-full px-6 py-2.5 text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
-                style={{
-                  backgroundColor: "var(--primary-color)",
-                  color: "#fff",
-                }}
+                className="bg-primary self-start rounded-full px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
               >
                 {savingProfile ? "Saving..." : "Save Changes"}
               </button>
@@ -276,18 +225,11 @@ export default function AgentSettingsPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="rounded-2xl border p-5"
-        style={{
-          borderColor: "var(--border-gray)",
-          backgroundColor: "var(--white)",
-        }}
+        className="border-gray-border rounded-2xl border bg-white p-5"
       >
         <div className="mb-4 flex items-center gap-2">
-          <Lock size={18} style={{ color: "var(--primary-color)" }} />
-          <h3
-            className="font-syne font-semibold"
-            style={{ color: "var(--heading-colour)" }}
-          >
+          <Lock size={18} className="text-primary" />
+          <h3 className="font-syne text-heading font-semibold">
             Change Password
           </h3>
         </div>
@@ -295,10 +237,7 @@ export default function AgentSettingsPage() {
           {["Current Password", "New Password", "Confirm New Password"].map(
             (label) => (
               <div key={label} className="flex flex-col gap-1">
-                <label
-                  className="text-sm font-medium"
-                  style={{ color: "var(--heading-colour)" }}
-                >
+                <label className="text-heading text-sm font-medium">
                   {label}
                 </label>
                 <input
@@ -306,7 +245,6 @@ export default function AgentSettingsPage() {
                   placeholder="••••••••"
                   disabled
                   className={inputCls + " cursor-not-allowed opacity-50"}
-                  style={inputStyle}
                 />
               </div>
             ),
@@ -314,8 +252,7 @@ export default function AgentSettingsPage() {
           <button
             type="button"
             disabled
-            className="cursor-not-allowed self-start rounded-full px-6 py-2.5 text-sm font-semibold opacity-50"
-            style={{ backgroundColor: "var(--primary-color)", color: "#fff" }}
+            className="bg-primary cursor-not-allowed self-start rounded-full px-6 py-2.5 text-sm font-semibold text-white opacity-50"
           >
             Update Password (coming soon)
           </button>

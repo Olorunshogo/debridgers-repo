@@ -70,22 +70,26 @@ function mapAgent(a: ApiAgent): AgentRow {
 
 const STATUS_BADGE: Record<
   AgentStatus,
-  { bg: string; text: string; label: string }
+  { bgClass: string; textClass: string; label: string }
 > = {
   active: {
-    bg: "var(--status-active-bg)",
-    text: "var(--status-active-text)",
+    bgClass: "bg-status-active-bg",
+    textClass: "text-status-active-text",
     label: "Active",
   },
   pending: {
-    bg: "var(--status-pending-bg)",
-    text: "var(--status-pending-text)",
+    bgClass: "bg-status-pending-bg",
+    textClass: "text-status-pending-text",
     label: "Pending",
   },
-  suspended: { bg: "#FEE2E2", text: "#991B1B", label: "Suspended" },
+  suspended: {
+    bgClass: "bg-red-100",
+    textClass: "text-red-800",
+    label: "Suspended",
+  },
   rejected: {
-    bg: "var(--status-cancelled-bg)",
-    text: "var(--status-cancelled-text)",
+    bgClass: "bg-status-cancelled-bg",
+    textClass: "text-status-cancelled-text",
     label: "Rejected",
   },
 };
@@ -195,52 +199,28 @@ export default function AdminAgents() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <UserCheck size={24} style={{ color: "var(--primary-color)" }} />
+          <UserCheck size={24} className="text-primary" />
           <div>
-            <h2
-              className="font-syne text-xl font-bold"
-              style={{ color: "var(--heading-colour)" }}
-            >
-              Agents
-            </h2>
-            <p className="text-sm" style={{ color: "var(--text-colour)" }}>
+            <h2 className="font-syne text-heading text-xl font-bold">Agents</h2>
+            <p className="text-text text-sm">
               {loading ? "Loading..." : `${agents.length} registered agents`}
             </p>
           </div>
         </div>
-        <div
-          className="flex items-center gap-2 rounded-full border px-4 py-2"
-          style={{
-            borderColor: "var(--border-gray)",
-            backgroundColor: "var(--white)",
-          }}
-        >
-          <Search size={15} style={{ color: "var(--text-colour)" }} />
+        <div className="border-gray-border flex items-center gap-2 rounded-full border bg-white px-4 py-2">
+          <Search size={15} className="text-text" />
           <input
             type="text"
             placeholder="Search agents..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-transparent text-sm outline-none"
-            style={{ color: "var(--heading-colour)" }}
+            className="text-heading w-full bg-transparent text-sm outline-none"
           />
         </div>
       </div>
 
-      <div
-        className="overflow-hidden rounded-2xl border"
-        style={{
-          borderColor: "var(--border-gray)",
-          backgroundColor: "var(--white)",
-        }}
-      >
-        <div
-          className="grid grid-cols-[2fr_1fr_1fr_110px_200px] gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase"
-          style={{
-            borderColor: "var(--border-gray)",
-            color: "var(--text-colour)",
-          }}
-        >
+      <div className="border-gray-border overflow-hidden rounded-2xl border bg-white">
+        <div className="border-gray-border text-text grid grid-cols-[2fr_1fr_1fr_110px_200px] gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase">
           <span>Agent</span>
           <span>Area (LGA)</span>
           <span>Phone</span>
@@ -253,20 +233,12 @@ export default function AdminAgents() {
             {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
-                className="h-14 animate-pulse border-b"
-                style={{
-                  borderColor: "var(--border-gray)",
-                  backgroundColor:
-                    i % 2 === 0 ? "var(--bg-light)" : "var(--white)",
-                }}
+                className={`border-gray-border h-14 animate-pulse border-b ${i % 2 === 0 ? "bg-bg-light" : "bg-white"}`}
               />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <p
-            className="px-5 py-8 text-center text-sm"
-            style={{ color: "var(--text-colour)" }}
-          >
+          <p className="text-text px-5 py-8 text-center text-sm">
             {search
               ? "No agents match your search."
               : "No agents registered yet."}
@@ -283,38 +255,19 @@ export default function AdminAgents() {
                   initial={{ opacity: 0, x: -6 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.04 }}
-                  className="grid grid-cols-[2fr_1fr_1fr_110px_200px] items-center gap-4 border-b px-5 py-4 text-sm last:border-0"
-                  style={{ borderColor: "var(--border-gray)" }}
+                  className="border-gray-border grid grid-cols-[2fr_1fr_1fr_110px_200px] items-center gap-4 border-b px-5 py-4 text-sm last:border-0"
                 >
                   <div className="flex flex-col gap-0.5">
-                    <p
-                      className="font-semibold"
-                      style={{ color: "var(--heading-colour)" }}
-                    >
-                      {agent.name}
-                    </p>
-                    <p
-                      className="text-xs"
-                      style={{ color: "var(--text-colour)" }}
-                    >
-                      {agent.email}
-                    </p>
-                    <p
-                      className="text-xs"
-                      style={{ color: "var(--text-colour)" }}
-                    >
+                    <p className="text-heading font-semibold">{agent.name}</p>
+                    <p className="text-text text-xs">{agent.email}</p>
+                    <p className="text-text text-xs">
                       Applied {agent.joinedDate}
                     </p>
                   </div>
-                  <span style={{ color: "var(--text-colour)" }}>
-                    {agent.location}
-                  </span>
-                  <span style={{ color: "var(--text-colour)" }}>
-                    {agent.phone}
-                  </span>
+                  <span className="text-text">{agent.location}</span>
+                  <span className="text-text">{agent.phone}</span>
                   <span
-                    className="inline-flex w-fit items-center rounded-md px-3 py-1 text-xs font-semibold"
-                    style={{ backgroundColor: badge.bg, color: badge.text }}
+                    className={`inline-flex w-fit items-center rounded-md px-3 py-1 text-xs font-semibold ${badge.bgClass} ${badge.textClass}`}
                   >
                     {badge.label}
                   </span>
@@ -324,8 +277,7 @@ export default function AdminAgents() {
                         <button
                           onClick={() => void handleApprove(agent.id)}
                           disabled={isActioning}
-                          className="flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
-                          style={{ backgroundColor: "var(--primary-color)" }}
+                          className="bg-primary flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
                         >
                           <CheckCircle size={12} />
                           {isActioning ? "…" : "Approve"}
@@ -333,11 +285,7 @@ export default function AdminAgents() {
                         <button
                           onClick={() => void handleReject(agent.id)}
                           disabled={isActioning}
-                          className="flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
-                          style={{
-                            borderColor: "var(--status-cancelled-text)",
-                            color: "var(--status-cancelled-text)",
-                          }}
+                          className="border-status-cancelled-text text-status-cancelled-text flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
                         >
                           <XCircle size={12} />
                           {isActioning ? "…" : "Reject"}
@@ -348,8 +296,7 @@ export default function AdminAgents() {
                       <button
                         onClick={() => void handleSuspend(agent.id)}
                         disabled={isActioning}
-                        className="flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
-                        style={{ borderColor: "#F59E0B", color: "#B45309" }}
+                        className="flex items-center gap-1 rounded-full border border-amber-500 px-3 py-1 text-xs font-semibold text-amber-700 transition-opacity hover:opacity-80 disabled:opacity-50"
                       >
                         <Ban size={12} />
                         {isActioning ? "…" : "Suspend"}
@@ -359,8 +306,7 @@ export default function AdminAgents() {
                       <button
                         onClick={() => void handleUnsuspend(agent.id)}
                         disabled={isActioning}
-                        className="flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
-                        style={{ backgroundColor: "var(--primary-color)" }}
+                        className="bg-primary flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
                       >
                         <RotateCcw size={12} />
                         {isActioning ? "…" : "Reinstate"}

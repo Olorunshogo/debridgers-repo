@@ -88,12 +88,9 @@ export function HeroSection({
       {/* Content Wrapper */}
       <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex h-screen w-full flex-col justify-between gap-12">
         <div className="relative flex flex-1 flex-col pt-20 sm:pt-24 lg:pt-32">
-          <div className="gap-2xl lg:gap-4xl flex flex-1 flex-col justify-center">
+          <div className="flex flex-1 flex-col justify-center gap-8 lg:gap-12">
             {/* Location badge */}
-            <div
-              className="text-primary border-primary font-open-sans p-sm shadow-50 inline-flex w-fit items-center gap-1 rounded-full border text-sm font-semibold backdrop-blur-lg"
-              style={{ backgroundColor: "var(--text-colour2)" }}
-            >
+            <div className="text-primary border-primary bg-text2 font-open-sans shadow-50 inline-flex w-fit items-center gap-1 rounded-full border p-2 text-sm font-semibold backdrop-blur-lg">
               <span className="bg-primary h-1.5 w-1.5 rounded-full" />
               {servingLocation}
             </div>
@@ -116,9 +113,7 @@ export function HeroSection({
                     ) {
                       return (
                         <div key={index} className="relative inline-block">
-                          <span style={{ color: "var(--secondary-color)" }}>
-                            {part.text}
-                          </span>
+                          <span className="text-secondary">{part.text}</span>
                           <img
                             src="/images/curved-underline.jpg"
                             alt="Curved Underline"
@@ -134,11 +129,9 @@ export function HeroSection({
                     return (
                       <span
                         key={index}
-                        style={{
-                          color: part.highlight
-                            ? "var(--secondary-color)"
-                            : "inherit",
-                        }}
+                        className={
+                          part.highlight ? "text-secondary" : undefined
+                        }
                       >
                         {part.text}
                       </span>
@@ -170,7 +163,7 @@ export function HeroSection({
         </div>
 
         {/* Trust bar */}
-        <div className="bg-primary py-xl px-base relative mx-auto w-full shadow-md">
+        <div className="bg-primary relative mx-auto w-full px-4 py-6 shadow-md">
           {/* Mobile: slideshow, one item at a time */}
           <div className="relative flex h-6 items-center justify-center truncate overflow-hidden lg:hidden">
             <AnimatePresence mode="sync">
@@ -197,7 +190,7 @@ export function HeroSection({
             {trustItems.map((item, i) => (
               <div
                 key={item.label}
-                className={`gap-xl px-base flex shrink-0 items-center text-white ${i < trustItems.length - 1 ? "border-r border-[#FCFDFD]" : ""}`}
+                className={`flex shrink-0 items-center gap-6 px-4 text-white ${i < trustItems.length - 1 ? "border-r border-[#FCFDFD]" : ""}`}
               >
                 <span className="text-[#FCFDFD]">{renderIcon(item.icon)}</span>
                 <span className="text-sm font-semibold whitespace-nowrap">

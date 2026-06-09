@@ -87,11 +87,13 @@ export const DashSelect = forwardRef<HTMLDivElement, DashSelectProps>(
 
           <div
             onClick={toggleDropdown}
-            className={`flex h-11 w-full cursor-pointer items-center rounded-full border px-4 text-sm transition-all duration-300 ease-in-out outline-none ${error ? "border-[var(--input-error-red)]" : "border-[var(--input-border)]"} ${isOpen ? "border-[var(--input-border-focus)]" : ""} hover:border-[var(--input-border-focus)]`}
-            style={{
-              backgroundColor: "var(--input-bg)",
-              color: "var(--heading-colour)",
-            }}
+            className={`bg-input-bg text-heading hover:border-input-border-focus flex h-11 w-full cursor-pointer items-center rounded-full border px-4 text-sm transition-all duration-300 ease-in-out outline-none ${
+              error
+                ? "border-input-error-red"
+                : isOpen
+                  ? "border-input-border-focus"
+                  : "border-input-border"
+            }`}
           >
             <span className="flex-1 truncate">{currentDisplay}</span>
 
@@ -106,13 +108,7 @@ export const DashSelect = forwardRef<HTMLDivElement, DashSelectProps>(
 
         {/* Dropdown Menu */}
         {isOpen && (
-          <div
-            className="absolute right-0 left-0 z-50 mt-1 max-h-60 overflow-auto rounded-2xl border bg-white py-2 shadow-lg"
-            style={{
-              borderColor: "var(--input-border)",
-              backgroundColor: "var(--input-bg)",
-            }}
-          >
+          <div className="border-input-border bg-input-bg absolute right-0 left-0 z-50 mt-1 max-h-60 overflow-auto rounded-2xl border py-2 shadow-lg">
             {options.length > 0 ? (
               options.map((option) => (
                 <div

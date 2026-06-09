@@ -49,7 +49,8 @@
     "test:e2e": "nx test debridgers-backend-e2e",
     "dev:ui-web": "pnpm --filter @debridgers/ui-web dev",
     "build:ui-web": "pnpm --filter @debridgers/ui-web build",
-    "watch:ui-web": "pnpm --filter @debridgers/ui-web watch"
+    "watch:ui-web": "pnpm --filter @debridgers/ui-web watch",
+    "audit:spacing-tokens": "sh scripts/audit-spacing-tokens.sh"
   },
   "devDependencies": {
     "@nx/eslint": "22.6.5",

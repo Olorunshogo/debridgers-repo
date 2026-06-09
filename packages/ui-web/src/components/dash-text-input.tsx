@@ -2,8 +2,7 @@ import React, { forwardRef } from "react";
 import {
   BaseInputField,
   BASE_INPUT_CLASS,
-  getInputStyles,
-  getInputFocusHandlers,
+  getInputStateClass,
 } from "./base-input-field";
 
 interface DashTextInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -31,9 +30,7 @@ export const DashTextInput = forwardRef<HTMLInputElement, DashTextInputProps>(
           id={inputId}
           name={name ?? inputId}
           type="text"
-          className={BASE_INPUT_CLASS}
-          style={getInputStyles(error)}
-          {...getInputFocusHandlers(error)}
+          className={`${BASE_INPUT_CLASS} ${getInputStateClass(error)}`}
           {...props}
         />
       </BaseInputField>

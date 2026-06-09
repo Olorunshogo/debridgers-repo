@@ -51,10 +51,10 @@ function WhyCard({ card, isActive, onHover }: WhyCardProps) {
       onClick={onHover}
       whileHover={{ y: -10 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`group font-syne lg:gap-xl py-base px-base lg:px-3xl flex h-full flex-col gap-4 rounded-3xl transition-all duration-300 ease-in-out ${
+      className={`group font-syne flex h-full flex-col gap-4 rounded-3xl px-4 py-4 transition-all duration-300 ease-in-out lg:gap-6 lg:px-10 ${
         isActive
           ? "bg-primary text-white"
-          : "border-gray hover:border-primary border bg-white"
+          : "border-gray-border hover:border-primary border bg-white"
       }`}
     >
       {/* Icon */}
@@ -206,7 +206,7 @@ function DeliverCard({
       <div className="absolute inset-0 bg-linear-to-t from-black/60 via-[#666666]/30 to-transparent" />
 
       {/* Label */}
-      <div className="font-open-sans p-base bottom-base absolute right-0 left-0 flex flex-col gap-1 pb-(--space-base) text-white">
+      <div className="font-open-sans absolute right-0 bottom-4 left-0 flex flex-col gap-1 p-4 text-white">
         <p className="text-lg font-semibold">{whatWeDeliverCategory.title}</p>
         <p className="text-base">{whatWeDeliverCategory.subtitle}</p>
       </div>
@@ -272,22 +272,22 @@ function WhatWeDeliver() {
   return (
     <section
       id="what-we-deliver"
-      className="font-syne gap-3xl px-section-px sm:px-section-px-sm lg:px-section-px-lg py-section-py sm:py-section-py-sm lg:py-section-py-lg relative mx-auto flex w-full flex-col bg-white"
+      className="font-syne px-section-px py-section-py sm:px-section-px-sm sm:py-section-py-sm lg:px-section-px-lg lg:py-section-py-lg relative mx-auto flex w-full flex-col gap-10 bg-white"
     >
       {/* Header */}
-      <div className="lg:gap-xl flex flex-col gap-3">
+      <div className="flex flex-col gap-3 lg:gap-6">
         <p className="text-primary-light text-xl tracking-widest">
           What we deliver
         </p>
 
-        <div className="gap-xl flex w-full flex-wrap items-start justify-between">
+        <div className="flex w-full flex-wrap items-start justify-between gap-6">
           <h2 className="text-primary font-syne lg:text-50 max-w-188 text-3xl leading-tight font-extrabold sm:text-4xl lg:font-bold">
             Everything you spend on at the market.
           </h2>
 
           <PrimaryLink
             href="https://wa.me/+2347012288798"
-            className="font-syne py-md px-xl text-xl font-bold sm:text-2xl lg:text-3xl"
+            className="font-syne px-6 py-3 text-xl font-bold sm:text-2xl lg:text-3xl"
           >
             Send Order
           </PrimaryLink>
@@ -437,7 +437,7 @@ export default function Home() {
   return (
     <>
       {/* Header */}
-      <div className="top-md sticky z-50">
+      <div className="sticky top-3 z-50">
         <Header
           navLinks={[
             { label: "Home", href: "/" },
@@ -480,12 +480,9 @@ export default function Home() {
             {/* Content Wrapper */}
             <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex h-screen w-full flex-col justify-between gap-8 md:gap-6 xl:gap-10">
               <div className="relative flex flex-1 flex-col pt-20 sm:pt-24 lg:pt-32">
-                <div className="gap-xl lg:gap-3xl flex flex-1 flex-col justify-center">
+                <div className="flex flex-1 flex-col justify-center gap-6 lg:gap-10">
                   {/* Location badge */}
-                  <div
-                    className="text-primary font-open-sans p-sm border-primary shadow-50 flex w-fit items-center gap-1 rounded-full border text-sm font-semibold backdrop-blur-lg"
-                    style={{ backgroundColor: "var(--text-colour2)" }}
-                  >
+                  <div className="text-primary bg-text2 font-open-sans border-primary shadow-50 flex w-fit items-center gap-1 rounded-full border p-2 text-sm font-semibold backdrop-blur-lg">
                     <span className="bg-primary h-1.5 w-1.5 rounded-full" />
                     Now Serving in Kaduna
                   </div>
@@ -506,9 +503,7 @@ export default function Home() {
                         </div>
                         {/* Highlighted Market */}
                         <div className="relative inline-block">
-                          <span style={{ color: "var(--secondary-color)" }}>
-                            Market
-                          </span>
+                          <span className="text-secondary">Market</span>
                         </div>
                         {/* White Zero */}
                         <span>Stress.</span>
@@ -542,9 +537,9 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="gap-4xl relative flex w-full flex-col lg:gap-4">
+              <div className="relative flex w-full flex-col gap-12 lg:gap-4">
                 {/* Trust bar */}
-                <div className="bg-primary py-xl px-base mx-auto w-full shadow-md">
+                <div className="bg-primary mx-auto w-full px-4 py-6 shadow-md">
                   {/* Mobile: slideshow */}
                   <div className="relative flex h-6 items-center justify-center overflow-hidden lg:hidden">
                     <AnimatePresence mode="sync">
@@ -571,7 +566,7 @@ export default function Home() {
                     {trustItems.map((item, i) => (
                       <div
                         key={item.label}
-                        className={`gap-xl px-base flex shrink-0 items-center text-white ${i < trustItems.length - 1 ? "border-r border-[#FCFDFD]" : ""}`}
+                        className={`flex shrink-0 items-center gap-6 px-4 text-white ${i < trustItems.length - 1 ? "border-r border-[#FCFDFD]" : ""}`}
                       >
                         <span className="text-[#FCFDFD]">
                           {renderIcon(item.icon)}
@@ -594,14 +589,14 @@ export default function Home() {
         id="how-it-works"
         className="py-section-py px-section-px sm:px-section-px-sm lg:px-section-px-lg sm:py-section-py-sm lg:py-section-py-lg relative mx-auto w-full bg-white"
       >
-        <div className="gap-4xl grid items-center lg:grid-cols-2">
+        <div className="grid items-center gap-12 lg:grid-cols-2">
           {/* Left Content */}
           <motion.div
             initial={{ opacity: 0, x: -24 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="gap-3xl flex flex-col"
+            className="flex flex-col gap-10"
           >
             <div className="flex flex-col gap-3">
               <p className="text-text text-sm font-semibold">How it works</p>
@@ -612,7 +607,7 @@ export default function Home() {
 
             <div className="flex flex-col">
               {/* Step 1 */}
-              <div className="py-base text-text flex gap-6 border-b border-[#E5E7EB]">
+              <div className="text-text flex gap-6 border-b border-[#E5E7EB] py-4">
                 <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
                   01
                 </div>
@@ -629,7 +624,7 @@ export default function Home() {
 
               {/* Step 2 */}
 
-              <div className="py-base text-text flex gap-6">
+              <div className="text-text flex gap-6 py-4">
                 <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
                   02
                 </div>
@@ -680,9 +675,9 @@ export default function Home() {
       {/* Why Debridgers */}
       <section
         id="why-debridgers"
-        className="py-section-py px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-3xl sm:py-section-py-sm lg:py-section-py-lg font-syne relative mx-auto flex w-full flex-col bg-[#F6F3F3]"
+        className="font-syne px-section-px py-section-py sm:px-section-px-sm sm:py-section-py-sm lg:px-section-px-lg lg:py-section-py-lg relative mx-auto flex w-full flex-col gap-10 bg-[#F6F3F3]"
       >
-        <div className="lg:gap-xl flex flex-col gap-3">
+        <div className="flex flex-col gap-3 lg:gap-6">
           <p className="text-primary-light text-xl tracking-widest">
             Why Debridgers
           </p>
@@ -719,8 +714,8 @@ export default function Home() {
         </div>
 
         {/* Stats */}
-        <div className="px-section-px px sm:px-section-px-sm lg:px-section-px-lg lg:gap-4xl relative z-10 mx-auto flex w-full flex-col">
-          <div className="font-syne pb-2xl flex flex-col gap-3">
+        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex w-full flex-col lg:gap-12">
+          <div className="font-syne flex flex-col gap-3 pb-8">
             <p className="text-text2 text-xl tracking-wider uppercase">
               Early Numbers
             </p>
@@ -729,7 +724,7 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="sm:gap-3xl grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-4 sm:gap-10">
             {stats.map((stat, i) => {
               const displayValue = statsFormatters[i](stat.value);
               return (
@@ -783,7 +778,7 @@ export default function Home() {
           <BlurDot className="absolute bottom-[70%] left-[90%] h-30 w-28 lg:left-[70%]" />
         </div>
 
-        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-xl lg:gap-3xl relative mx-auto flex w-full flex-col items-center justify-center text-center">
+        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg relative mx-auto flex w-full flex-col items-center justify-center gap-6 text-center lg:gap-10">
           <div className="flex flex-col gap-3">
             <p className="text-primary-light font-open-sans text-center text-lg font-semibold tracking-widest lg:text-xl">
               Get started
@@ -802,121 +797,6 @@ export default function Home() {
           <WhatsAppButton label="Chat with us on whatsApp" />
         </div>
       </section>
-
-      {/* Partnership Section */}
-      {/* <section
-        id="partnership"
-        className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative bg-[#F6F3F3]"
-      >
-        <div className="w-full mx-auto px-section-px sm:px-section-px-sm lg:px-section-px-lg">
-          <div className="grid gap-4xl lg:grid-cols-2">
-            {/* Left Content *
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="flex flex-col lg:gap-3xl gap-xl"
-            >
-              <div className="flex flex-col gap-xl">
-                <div className="bg-primary-light/80 text-primary font-open-sans border-primary gap-2 px-base inline-flex w-fit items-center rounded-full border py-1.5 text-base tracking-widest uppercase lg:text-lg">
-                  Official Partnership
-                </div>
-
-                <p className="text-base tracking-widest uppercase text-text font-open-sans lg:text-lg">
-                  Stronger Together
-                </p>
-              </div>
-
-              <h2 className="text-text w-full text-xl leading-tight font-extrabold sm:max-w-125 sm:text-2xl lg:max-w-150.25 lg:text-3xl">
-                Backed by those who&apos;ve been doing this longest.
-              </h2>
-
-              <p className="text-text text-base leading-relaxed lg:max-w-142.5 lg:text-lg">
-                Debridgers is proudly partnering with an established agro
-                marketplace that has been connecting Nigerian farmers directly
-                to buyers long before we launched. Together, we bring a wider
-                farmer network and deeper reach to your doorstep.
-              </p>
-
-              <a
-                href="https://agrolinking.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-lg transition-all duration-300 ease-in-out cursor-pointer group text-secondary hover:gap-4 w-fit sm:text-xl lg:text-2xl"
-              >
-                See what Agrolinking does
-                <Icon
-                  icon="lucide:arrow-right"
-                  className="w-4 h-4 transition-transform duration-300 ease-in-out group-hover:translate-x-1"
-                />
-              </a>
-            </motion.div>
-
-            {/* Right: Partner Card *
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.15 }}
-              className="bg-primary-light/80 flex h-fit flex-col gap-8 rounded-3xl px-8 py-12 text-white"
-            >
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex flex-col flex-1 truncate">
-                  <div className="h-7.5 w-32.5">
-                    <img
-                      src="/logos/agrolinking.png"
-                      alt="Agro-Linking Logo"
-                      className="block"
-                    />
-                  </div>
-
-                  <div className="text-base text-white font-open-sans">
-                    Farm-to-table marketplace.
-                    <br />
-                    Est. Nigeria.
-                  </div>
-                </div>
-
-                <div className="bg-primary gap-2 flex shrink-0 items-center rounded-full px-(--space-md) py-1 text-base lg:text-lg">
-                  <Icon
-                    icon="lucide:check"
-                    className="h-3.5 w-3.5 text-white"
-                  />
-                  Partner
-                </div>
-              </div>
-
-              <div className="flex flex-col font-open-sans gap-xl">
-                <p className="text-base tracking-widest text-white uppercase font-open-sans lg:text-lg">
-                  What this means for you
-                </p>
-
-                <ul className="flex flex-col gap-4 text-sm text-green-100">
-                  {[
-                    "Access to a larger, verified network of food directly from farm",
-                    "More consistent stock, even during off-season period",
-                    "Two teams, one mission: fresh food at honest prices",
-                  ].map((item) => (
-                    <li
-                      key={item}
-                      className="flex items-start gap-3 font-open-sans"
-                    >
-                      <span
-                        className="text-xl font-bold shrink-0"
-                        style={{ color: "var(--secondary-color)" }}
-                      >
-                        •
-                      </span>
-                      <span className="text-base text-white"> {item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section> */}
     </>
   );
 }

@@ -347,10 +347,7 @@ export default function SignupPage() {
             </h1>
 
             {/* Tab switcher */}
-            <div
-              className="flex border-b"
-              style={{ borderColor: "var(--border-gray)" }}
-            >
+            <div className="border-gray-border flex border-b">
               {(["buyer", "agent"] as Tab[]).map((tab) => {
                 const isActive = activeTab === tab;
                 const label =
@@ -360,16 +357,11 @@ export default function SignupPage() {
                     key={tab}
                     type="button"
                     onClick={() => handleTabChange(tab)}
-                    className="flex-1 cursor-pointer pb-2 text-sm font-semibold transition-all duration-300 ease-in-out"
-                    style={{
-                      color: isActive
-                        ? "var(--primary-color)"
-                        : "var(--text-colour)",
-                      borderBottom: isActive
-                        ? "2px solid var(--primary-color)"
-                        : "2px solid transparent",
-                      marginBottom: "-1px",
-                    }}
+                    className={`flex-1 cursor-pointer pb-2 text-sm font-semibold transition-all duration-300 ease-in-out ${
+                      isActive
+                        ? "text-primary border-primary"
+                        : "text-text border-transparent"
+                    } -mb-px border-b-2`}
                   >
                     {label}
                   </button>
@@ -384,11 +376,7 @@ export default function SignupPage() {
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="rounded-xl px-4 py-3 text-sm"
-                  style={{
-                    backgroundColor: "var(--status-cancelled-bg)",
-                    color: "var(--status-cancelled-text)",
-                  }}
+                  className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
                 >
                   {apiError}
                 </motion.div>
@@ -537,8 +525,7 @@ export default function SignupPage() {
               You already have an account?{" "}
               <Link
                 to="/login"
-                className="font-semibold underline underline-offset-2"
-                style={{ color: "var(--primary-color)" }}
+                className="text-primary font-semibold underline underline-offset-2"
               >
                 Sign in
               </Link>

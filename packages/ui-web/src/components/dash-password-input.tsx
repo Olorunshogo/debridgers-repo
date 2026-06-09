@@ -5,8 +5,7 @@ import { Eye, EyeOff } from "lucide-react";
 import {
   BaseInputField,
   BASE_INPUT_CLASS,
-  getInputStyles,
-  getInputFocusHandlers,
+  getInputStateClass,
 } from "./base-input-field";
 
 interface DashPasswordInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -36,9 +35,7 @@ export const DashPasswordInput = forwardRef<
           id={inputId}
           name={name ?? inputId}
           type={show ? "text" : "password"}
-          className={BASE_INPUT_CLASS}
-          style={getInputStyles(error)}
-          {...getInputFocusHandlers(error)}
+          className={`${BASE_INPUT_CLASS} ${getInputStateClass(error)}`}
           {...props}
         />
         <button

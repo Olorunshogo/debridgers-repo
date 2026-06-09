@@ -21,7 +21,6 @@ interface HeaderProps {
   orderNowHref?: string;
   signUpHref: string;
   heroSectionId?: string;
-  logoVariant?: "black" | "white";
 }
 
 export function Header({
@@ -29,7 +28,6 @@ export function Header({
   orderNowHref = "https://wa.me/+2347012288798",
   signUpHref,
   heroSectionId,
-  logoVariant = "black",
 }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
   const [onGreenBg, setOnGreenBg] = useState<boolean>(true);
@@ -64,24 +62,12 @@ export function Header({
   const pillBg = onGreenBg ? "rgba(255,255,255,1)" : "rgba(30,89,37,0.95)";
   const pillBlur = onGreenBg ? "blur(0px)" : "blur(14px)";
   const linkColor = onGreenBg ? "text-primary" : "text-white";
-
-  // === PrimaryLink: white header → primary bg + white text; green header → white bg + primary text
-  const primaryLinkStyle: React.CSSProperties = onGreenBg
-    ? { backgroundColor: "var(--color-primary)", color: "#fff" }
-    : { backgroundColor: "#fff", color: "var(--color-primary)" };
-
-  // === SecondaryLink: white header → primary border + primary text; green header → white border + white text
-  const secondaryLinkStyle: React.CSSProperties = onGreenBg
-    ? {
-        border: "1px solid var(--color-primary)",
-        color: "var(--color-primary)",
-        backgroundColor: "transparent",
-      }
-    : {
-        border: "1px solid #fff",
-        color: "#fff",
-        backgroundColor: "transparent",
-      };
+  const primaryLinkClass = onGreenBg
+    ? "bg-primary text-white"
+    : "bg-white text-primary";
+  const secondaryLinkClass = onGreenBg
+    ? "border-primary text-primary border bg-transparent"
+    : "border-white text-white border bg-transparent";
 
   return (
     <motion.header
@@ -130,10 +116,10 @@ export function Header({
 
         {/* Desktop CTA buttons */}
         <div className="hidden gap-2 lg:flex">
-          <PrimaryLink href={orderNowHref} style={primaryLinkStyle}>
+          <PrimaryLink href={orderNowHref} className={primaryLinkClass}>
             Order Now
           </PrimaryLink>
-          <SecondaryLink href={signUpHref} style={secondaryLinkStyle}>
+          <SecondaryLink href={signUpHref} className={secondaryLinkClass}>
             Sign Up
           </SecondaryLink>
         </div>

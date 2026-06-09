@@ -83,17 +83,11 @@ export default function AgentNotificationPage() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h2
-            className="font-syne text-lg font-bold"
-            style={{ color: "var(--heading-colour)" }}
-          >
+          <h2 className="font-syne text-heading text-lg font-bold">
             Notification
           </h2>
           {unreadCount > 0 && (
-            <span
-              className="rounded-full px-2 py-0.5 text-xs font-semibold text-white"
-              style={{ backgroundColor: "var(--primary-color)" }}
-            >
+            <span className="bg-primary rounded-full px-2 py-0.5 text-xs font-semibold text-white">
               {unreadCount}
             </span>
           )}
@@ -101,37 +95,27 @@ export default function AgentNotificationPage() {
         {unreadCount > 0 && (
           <button
             onClick={markAllRead}
-            className="text-sm font-medium underline underline-offset-2"
-            style={{ color: "var(--primary-color)" }}
+            className="text-primary text-sm font-medium underline underline-offset-2"
           >
             Mark all read
           </button>
         )}
       </div>
 
-      <div
-        className="overflow-hidden rounded-2xl border"
-        style={{
-          borderColor: "var(--border-gray)",
-          backgroundColor: "var(--white)",
-        }}
-      >
+      <div className="border-gray-border overflow-hidden rounded-2xl border bg-white">
         {loading ? (
           <div className="flex flex-col gap-0">
             {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className="h-20 animate-pulse border-b"
-                style={{ borderColor: "var(--border-gray)" }}
+                className="border-gray-border h-20 animate-pulse border-b"
               />
             ))}
           </div>
         ) : notifications.length === 0 ? (
-          <p
-            className="py-12 text-center text-sm"
-            style={{ color: "var(--text-colour)" }}
-          >
-            No notifications yet. You'll be notified about your activity here.
+          <p className="text-text py-12 text-center text-sm">
+            No notifications yet. You&apos;ll be notified about your activity
+            here.
           </p>
         ) : (
           <AnimatePresence>
@@ -142,45 +126,26 @@ export default function AgentNotificationPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.05 }}
                 onClick={() => markOneRead(n.id)}
-                className="flex cursor-pointer gap-4 border-b px-6 py-5 last:border-0"
-                style={{
-                  borderColor: "var(--border-gray)",
-                  backgroundColor: n.read
-                    ? "transparent"
-                    : "var(--dash-quick-action-hover)",
-                }}
+                className={`border-gray-border flex cursor-pointer gap-4 border-b px-6 py-5 last:border-0 ${
+                  n.read ? "bg-transparent" : "bg-dash-quick-action-hover"
+                }`}
               >
                 <div className="mt-1.5 flex w-3 shrink-0 items-start justify-center">
                   {!n.read && (
-                    <span
-                      className="h-2 w-2 rounded-full"
-                      style={{ backgroundColor: "var(--primary-color)" }}
-                    />
+                    <span className="bg-primary h-2 w-2 rounded-full" />
                   )}
                 </div>
 
                 <div className="flex flex-1 flex-col gap-1">
                   <p
-                    className="text-sm"
-                    style={{
-                      color: "var(--heading-colour)",
-                      fontWeight: n.read ? 400 : 600,
-                    }}
+                    className={`text-heading text-sm ${n.read ? "font-normal" : "font-semibold"}`}
                   >
                     {n.title}
                   </p>
-                  <p
-                    className="text-sm leading-relaxed"
-                    style={{ color: "var(--text-colour)" }}
-                  >
+                  <p className="text-text text-sm leading-relaxed">
                     {n.description}
                   </p>
-                  <p
-                    className="text-xs"
-                    style={{ color: "var(--icon-secondary)" }}
-                  >
-                    {n.timestamp}
-                  </p>
+                  <p className="text-icon-secondary text-xs">{n.timestamp}</p>
                 </div>
               </motion.div>
             ))}

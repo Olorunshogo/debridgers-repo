@@ -83,3 +83,5 @@ Preferred Delivery Date: 10 June 2026
 Payment Method: Transfer
 
 https://wa.me/2347012288798?text=I%20want%20to%20order%20beans%20and%20maize
+
+https://chat.whatsapp.com/GjMvQOIbO9qAFjUGR3ZYVK?s=sw&p=i&mlu=2
