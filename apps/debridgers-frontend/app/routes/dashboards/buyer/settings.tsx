@@ -122,12 +122,14 @@ export default function BuyerSettings() {
         phone?: string | null;
         delivery_address?: string | null;
         avatar_url?: string | null;
+        email_notifications?: boolean | null;
       }>("/buyer/me");
       setForm((p) => ({
         ...p,
         userName: `${profile.first_name} ${profile.last_name}`.trim(),
         email: profile.email,
         deliveryAddress: profile.delivery_address ?? "",
+        emailNotification: profile.email_notifications ?? true,
       }));
       if (profile.avatar_url) setAvatarUrl(profile.avatar_url);
     } catch {
@@ -210,13 +212,31 @@ export default function BuyerSettings() {
           first_name: firstName,
           last_name: rest.join(" ") || undefined,
           delivery_address: result.data.deliveryAddress?.trim() || undefined,
+          email_notifications: result.data.emailNotification,
         }),
       });
+
+      if (result.data.oldPassword && result.data.newPassword) {
+        await apiFetch("/buyer/password", {
+          method: "PATCH",
+          body: JSON.stringify({
+            old_password: result.data.oldPassword,
+            new_password: result.data.newPassword,
+          }),
+        });
+      }
+
       setForm((p) => ({ ...p, oldPassword: "", newPassword: "" }));
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch {
-      setApiError("Failed to save changes. Please try again.");
+    } catch (err) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Failed to save changes. Please try again.";
+      setApiError(
+        msg.includes("incorrect") ? "Current password is incorrect." : msg,
+      );
     } finally {
       setLoading(false);
     }

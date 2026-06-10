@@ -21,6 +21,8 @@ interface HeaderProps {
   orderNowHref?: string;
   signUpHref: string;
   heroSectionId?: string;
+  isAuthenticated?: boolean;
+  dashboardPath?: string;
 }
 
 export function Header({
@@ -28,6 +30,8 @@ export function Header({
   orderNowHref = "https://wa.me/+2347012288798",
   signUpHref,
   heroSectionId,
+  isAuthenticated = false,
+  dashboardPath = "/buyer-dashboard",
 }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
   const [onGreenBg, setOnGreenBg] = useState<boolean>(true);
@@ -119,9 +123,15 @@ export function Header({
           <PrimaryLink href={orderNowHref} className={primaryLinkClass}>
             Order Now
           </PrimaryLink>
-          <SecondaryLink href={signUpHref} className={secondaryLinkClass}>
-            Sign Up
-          </SecondaryLink>
+          {isAuthenticated ? (
+            <SecondaryLink href={dashboardPath} className={secondaryLinkClass}>
+              Dashboard
+            </SecondaryLink>
+          ) : (
+            <SecondaryLink href={signUpHref} className={secondaryLinkClass}>
+              Sign Up
+            </SecondaryLink>
+          )}
         </div>
 
         {/* Mobile hamburger */}
@@ -204,15 +214,29 @@ export function Header({
                     </div>
                     <WhatsAppButton className="w-full" />
                     <div className="flex flex-col gap-3">
-                      <PrimaryLink href="/login" className="w-full text-center">
-                        Log In
-                      </PrimaryLink>
-                      <SecondaryLink
-                        href={signUpHref}
-                        className="w-full text-center"
-                      >
-                        Sign Up
-                      </SecondaryLink>
+                      {isAuthenticated ? (
+                        <PrimaryLink
+                          href={dashboardPath}
+                          className="w-full text-center"
+                        >
+                          Go to Dashboard
+                        </PrimaryLink>
+                      ) : (
+                        <>
+                          <PrimaryLink
+                            href="/login"
+                            className="w-full text-center"
+                          >
+                            Log In
+                          </PrimaryLink>
+                          <SecondaryLink
+                            href={signUpHref}
+                            className="w-full text-center"
+                          >
+                            Sign Up
+                          </SecondaryLink>
+                        </>
+                      )}
                     </div>
                   </div>
                 </motion.div>

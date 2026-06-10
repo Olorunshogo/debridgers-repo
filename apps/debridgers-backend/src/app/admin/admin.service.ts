@@ -4,9 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, desc, count, sum, and } from "drizzle-orm";
+import { eq, desc, count, sum, and, ilike, sql } from "drizzle-orm";
 import * as crypto from "crypto";
 import * as schema from "../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../infrastructure/database/database.provider";
@@ -23,6 +24,7 @@ export class AdminService {
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
     private readonly eventEmitter: EventEmitter2,
+    private readonly config: ConfigService,
   ) {}
 
   async getAdminMe(userId: number) {
@@ -452,6 +454,122 @@ export class AdminService {
 
   // ─── Buyers ─────────────────────────────────────────────────────────────────
 
+  // ─── Orders ──────────────────────────────────────────────────────────────────
+
+  async getAllOrders(
+    filters: {
+      status?: string;
+      payment_status?: string;
+      search?: string; // buyer name or email
+      page?: number;
+      limit?: number;
+    } = {},
+  ) {
+    const { status, payment_status, search, page = 1, limit = 50 } = filters;
+    const offset = (page - 1) * limit;
+
+    const buyer = schema.users;
+    const rows = await this.db
+      .select({
+        id: schema.orders.id,
+        status: schema.orders.status,
+        payment_status: schema.orders.payment_status,
+        order_mode: schema.orders.order_mode,
+        quantity: schema.orders.quantity,
+        unit_price: schema.orders.unit_price,
+        handling_fee: schema.orders.handling_fee,
+        delivery_fee: schema.orders.delivery_fee,
+        total_amount: schema.orders.total_amount,
+        delivery_address: schema.orders.delivery_address,
+        payment_reference: schema.orders.payment_reference,
+        paid_at: schema.orders.paid_at,
+        delivered_at: schema.orders.delivered_at,
+        created_at: schema.orders.created_at,
+        zone_name: schema.zones.name,
+        buyer_id: buyer.id,
+        buyer_first_name: buyer.first_name,
+        buyer_last_name: buyer.last_name,
+        buyer_email: buyer.email,
+        buyer_phone: buyer.phone,
+      })
+      .from(schema.orders)
+      .innerJoin(buyer, eq(schema.orders.buyer_id, buyer.id))
+      .leftJoin(schema.zones, eq(schema.orders.zone_id, schema.zones.id))
+      .where(
+        and(
+          status
+            ? eq(
+                schema.orders.status,
+                status as typeof schema.orders.status._.data,
+              )
+            : undefined,
+          payment_status
+            ? eq(
+                schema.orders.payment_status,
+                payment_status as typeof schema.orders.payment_status._.data,
+              )
+            : undefined,
+          search
+            ? sql`(lower(${buyer.first_name}) || ' ' || lower(${buyer.last_name}) like ${"%" + search.toLowerCase() + "%"} or lower(${buyer.email}) like ${"%" + search.toLowerCase() + "%"})`
+            : undefined,
+        ),
+      )
+      .orderBy(desc(schema.orders.created_at))
+      .limit(limit)
+      .offset(offset);
+
+    const [{ total }] = await this.db
+      .select({ total: count() })
+      .from(schema.orders);
+
+    return {
+      message: "Orders retrieved",
+      data: rows,
+      meta: { total, page, limit, pages: Math.ceil(total / limit) },
+    };
+  }
+
+  async getOrderById(orderId: number) {
+    const buyer = schema.users;
+    const [order] = await this.db
+      .select({
+        id: schema.orders.id,
+        status: schema.orders.status,
+        payment_status: schema.orders.payment_status,
+        order_mode: schema.orders.order_mode,
+        quantity: schema.orders.quantity,
+        unit_price: schema.orders.unit_price,
+        handling_fee: schema.orders.handling_fee,
+        delivery_fee: schema.orders.delivery_fee,
+        total_amount: schema.orders.total_amount,
+        delivery_address: schema.orders.delivery_address,
+        payment_reference: schema.orders.payment_reference,
+        virtual_account_number: schema.orders.virtual_account_number,
+        virtual_account_bank: schema.orders.virtual_account_bank,
+        virtual_account_expires_at: schema.orders.virtual_account_expires_at,
+        paid_at: schema.orders.paid_at,
+        delivered_at: schema.orders.delivered_at,
+        cancellation_reason: schema.orders.cancellation_reason,
+        notes: schema.orders.notes,
+        created_at: schema.orders.created_at,
+        zone_name: schema.zones.name,
+        zone_id: schema.orders.zone_id,
+        buyer_id: buyer.id,
+        buyer_first_name: buyer.first_name,
+        buyer_last_name: buyer.last_name,
+        buyer_email: buyer.email,
+        buyer_phone: buyer.phone,
+      })
+      .from(schema.orders)
+      .innerJoin(buyer, eq(schema.orders.buyer_id, buyer.id))
+      .leftJoin(schema.zones, eq(schema.orders.zone_id, schema.zones.id))
+      .where(eq(schema.orders.id, orderId))
+      .limit(1);
+
+    if (!order) throw new NotFoundException("Order not found");
+    return { message: "Order retrieved", data: order };
+  }
+
   async getBuyers() {
     const buyers = await this.db
       .select({
@@ -743,5 +861,62 @@ export class AdminService {
       .delete(schema.outreach_records)
       .where(eq(schema.outreach_records.id, id));
     return { message: "Record deleted", data: null };
+  }
+
+  // ─── Platform Settings (persisted in system_settings table) ─────────────────
+
+  async getSettings() {
+    const rows = await this.db.select().from(schema.system_settings);
+
+    const stored: Record<string, string> = {};
+    for (const row of rows) stored[row.key] = row.value;
+
+    const envRate =
+      parseFloat(
+        this.config.get<string>("PaystackConfig.commissionRate") ?? "0.30",
+      ) * 100;
+
+    return {
+      message: "Settings retrieved",
+      data: {
+        agent_commission_rate: stored["agent_commission_rate"]
+          ? parseFloat(stored["agent_commission_rate"])
+          : envRate,
+        buyer_referral_discount_kobo: parseInt(
+          stored["buyer_referral_discount_kobo"] ?? "50000",
+          10,
+        ),
+        buyer_referral_discount_type:
+          stored["buyer_referral_discount_type"] ?? "flat",
+      },
+    };
+  }
+
+  async updateSetting(key: string, value: string) {
+    const allowed = [
+      "agent_commission_rate",
+      "buyer_referral_discount_kobo",
+      "buyer_referral_discount_type",
+    ];
+    if (!allowed.includes(key))
+      throw new BadRequestException(`Unknown setting key: ${key}`);
+
+    if (key === "agent_commission_rate") {
+      const n = parseFloat(value);
+      if (isNaN(n) || n < 1 || n > 100)
+        throw new BadRequestException(
+          "Commission rate must be a number between 1 and 100",
+        );
+    }
+
+    await this.db
+      .insert(schema.system_settings)
+      .values({ key, value })
+      .onConflictDoUpdate({
+        target: schema.system_settings.key,
+        set: { value, updated_at: new Date() },
+      });
+
+    return { message: "Setting updated", data: { key, value } };
   }
 }

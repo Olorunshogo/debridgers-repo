@@ -133,4 +133,18 @@ export class BuyerController {
   ) {
     return this.buyerService.markNotificationRead(id, user);
   }
+
+  @Patch("password")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Change buyer password (requires current password)",
+  })
+  @ApiResponse({ status: 200, description: "Password updated" })
+  @ApiResponse({ status: 401, description: "Current password incorrect" })
+  changePassword(
+    @Body() body: { old_password: string; new_password: string },
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.buyerService.changePassword(body, user);
+  }
 }

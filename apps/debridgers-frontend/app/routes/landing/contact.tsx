@@ -1,6 +1,7 @@
 import type { Route } from "./+types/contact";
 import { useState, useEffect, useRef } from "react";
 import { Header } from "../../components/landing/Header";
+import { useAuth } from "../../contexts/AuthContext";
 import { HeroSection } from "../../components/landing/HeroSection";
 import { Phone, Mail, Clock, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -188,6 +189,7 @@ function ContactMap({
 
 // === Main Page
 export default function ContactPage() {
+  const { isAuthenticated, dashboardPath } = useAuth();
   const [form, setForm] = useState<ContactForm>({
     fullName: "",
     email: "",
@@ -259,10 +261,13 @@ export default function ContactPage() {
         <Header
           navLinks={[
             { label: "Home", href: "/" },
+            { label: "Shop", href: "/shop" },
             { label: "Agents", href: "/agents" },
             { label: "Contact Us", href: "/contact" },
           ]}
           signUpHref="/signup"
+          isAuthenticated={isAuthenticated}
+          dashboardPath={dashboardPath}
         />
       </div>
 

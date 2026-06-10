@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import type { Variants } from "framer-motion";
 import { Header } from "../../components/landing/Header";
 import { HeroSection } from "../../components/landing/HeroSection";
+import { useAuth } from "../../contexts/AuthContext";
+import { BASE_BACKEND_URL } from "@debridgers/api-client";
 
 export function meta() {
   return [
@@ -104,7 +106,7 @@ const whatYouDoCards: WhatYouDoCard[] = [
     icon: "lucide:banknote",
     title: "Earn Commissions",
     description:
-      "Get 30% of every sale you close. The more you sell, the more you earn - paid weekly, no delays.",
+      "Get commission on every sale you close. The more you sell, the more you earn — paid weekly, no delays.",
   },
 ];
 
@@ -158,16 +160,31 @@ const steps: Step[] = [
     number: "03",
     title: "Start Earning",
     description:
-      "Log in to your agent dashboard, receive orders, and start earning 30% on every sale.",
+      "Log in to your agent dashboard, receive orders, and start earning commission on every sale.",
   },
 ];
 
-const earningsRows = [
-  { label: "Sales closed", value: "5 orders", highlight: false },
-  { label: "Total sale amount", value: "₦75,000", highlight: false },
-  { label: "Your commission (30%)", value: "₦22,500", highlight: true },
-  { label: "Company keeps (70%)", value: "₦52,500", highlight: false },
-];
+function buildEarningsRows(commissionRate: number) {
+  const sampleTotal = 75000;
+  const agentEarns = Math.round((sampleTotal * commissionRate) / 100);
+  const companyKeeps = sampleTotal - agentEarns;
+  const fmt = (n: number) =>
+    "₦" + n.toLocaleString("en-NG", { minimumFractionDigits: 0 });
+  return [
+    { label: "Sales closed", value: "5 orders", highlight: false },
+    { label: "Total sale amount", value: fmt(sampleTotal), highlight: false },
+    {
+      label: `Your commission (${commissionRate}%)`,
+      value: fmt(agentEarns),
+      highlight: true,
+    },
+    {
+      label: `Company keeps (${100 - commissionRate}%)`,
+      value: fmt(companyKeeps),
+      highlight: false,
+    },
+  ];
+}
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 24 },
@@ -179,7 +196,21 @@ const fadeUp: Variants = {
 };
 
 export default function AgentsPage() {
+  const { isAuthenticated, dashboardPath } = useAuth();
   const [activeStep, setActiveStep] = useState(0);
+  const [commissionRate, setCommissionRate] = useState(30);
+
+  useEffect(() => {
+    fetch(`${BASE_BACKEND_URL}/config/public`)
+      .then((r) => r.json())
+      .then((json) => {
+        const rate = json?.data?.agent_commission_rate;
+        if (typeof rate === "number" && rate > 0) setCommissionRate(rate);
+      })
+      .catch(() => {});
+  }, []);
+
+  const earningsRows = buildEarningsRows(commissionRate);
 
   return (
     <>
@@ -188,10 +219,13 @@ export default function AgentsPage() {
         <Header
           navLinks={[
             { label: "Home", href: "/" },
+            { label: "Shop", href: "/shop" },
             { label: "Agents", href: "/agents" },
             { label: "Contact Us", href: "/contact" },
           ]}
           signUpHref="/signup?role=agent"
+          isAuthenticated={isAuthenticated}
+          dashboardPath={dashboardPath}
         />
       </div>
 
@@ -211,10 +245,13 @@ export default function AgentsPage() {
                   { text: "." },
                 ],
               }}
-              subtext="Become a Debridgers field agent. Source fresh foodstuff, manage deliveries, and earn 30% commission on every sale - on your own schedule."
+              subtext={`Become a Debridgers field agent. Source fresh foodstuff, manage deliveries, and earn ${commissionRate}% commission on every sale — on your own schedule.`}
               secondaryCta={{ label: "Apply Now", href: "#apply-now" }}
               trustItems={[
-                { icon: "lucide:wallet", label: "30% commission per sale" },
+                {
+                  icon: "lucide:wallet",
+                  label: `${commissionRate}% commission per sale`,
+                },
                 { icon: "lucide:clock", label: "Flexible working hours" },
                 {
                   icon: "lucide:graduation-cap",

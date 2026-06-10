@@ -53,6 +53,22 @@ import {
   updateProductSchema,
   UpdateProductDto,
 } from "./dto/update-product.dto";
+import { UsePipes } from "@nestjs/common";
+import { z } from "zod";
+
+const createOutreachSchema = z.object({
+  full_name: z.string().min(2),
+  phone: z.string().min(6),
+  shop_name: z.string().optional(),
+  lga: z.string().optional(),
+  area: z.string().optional(),
+  product_interest: z.string().optional(),
+  estimated_quantity: z.number().optional(),
+  how_heard: z.string().optional(),
+  notes: z.string().optional(),
+  visit_date: z.string().optional(),
+});
+type CreateOutreachDto = z.infer<typeof createOutreachSchema>;
 
 @ApiTags("Admin")
 @ApiBearerAuth("access-token")
@@ -316,6 +332,38 @@ export class AdminController {
     return this.adminService.setAgentTarget(id, target);
   }
 
+  // ─── Orders ──────────────────────────────────────────────────────────────────
+
+  @Get("orders")
+  @ApiOperation({
+    summary: "List all orders — with buyer name, amount, payment status",
+    description:
+      "Supports ?status=pending|confirmed|delivered|cancelled, ?payment_status=unpaid|paid, ?search=name/email, ?page=1&limit=50",
+  })
+  getAllOrders(
+    @Query("status") status?: string,
+    @Query("payment_status") payment_status?: string,
+    @Query("search") search?: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ) {
+    return this.adminService.getAllOrders({
+      status,
+      payment_status,
+      search,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? Math.min(parseInt(limit, 10), 100) : 50,
+    });
+  }
+
+  @Get("orders/:id")
+  @ApiOperation({
+    summary: "Get a single order with full buyer and payment detail",
+  })
+  getOrderById(@Param("id", ParseIntPipe) id: number) {
+    return this.adminService.getOrderById(id);
+  }
+
   // ─── Buyers ─────────────────────────────────────────────────────────────────
 
   @Get("buyers")
@@ -552,11 +600,47 @@ export class AdminController {
 
   @Post("outreach")
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: "Record a new outreach / offline customer visit" })
-  createOutreachRecord(@Body() body: Record<string, unknown>) {
-    return this.adminService.createOutreachRecord(
-      body as Parameters<typeof this.adminService.createOutreachRecord>[0],
-    );
+  @Roles("admin", "agent") // agents do field outreach; overrides class-level @Roles("admin")
+  @ApiOperation({
+    summary: "Record a new outreach / offline customer visit (admin + agent)",
+  })
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["full_name", "phone", "visit_date"],
+      properties: {
+        full_name: { type: "string", example: "Musa Ibrahim" },
+        phone: { type: "string", example: "08012345678" },
+        shop_name: { type: "string", example: "Ibrahim Grains" },
+        lga: { type: "string", example: "Chikun" },
+        area: { type: "string", example: "Barnawa" },
+        product_interest: { type: "string", example: "Maize" },
+        estimated_quantity: { type: "number", example: 5 },
+        how_heard: { type: "string", example: "Word of mouth" },
+        notes: { type: "string" },
+        visit_date: { type: "string", example: "2026-06-10" },
+      },
+    },
+  })
+  @UsePipes(new ZodValidationPipe(createOutreachSchema))
+  createOutreachRecord(
+    @Body() dto: CreateOutreachDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.adminService.createOutreachRecord({
+      shop_name: dto.shop_name ?? dto.full_name,
+      owner_name: dto.full_name,
+      phone: dto.phone,
+      lga: dto.lga,
+      product_interest: dto.product_interest,
+      quantity: dto.estimated_quantity,
+      notes:
+        [dto.how_heard ? `How heard: ${dto.how_heard}` : "", dto.notes ?? ""]
+          .filter(Boolean)
+          .join(" | ") || undefined,
+      collected_by: `${user.role}:${user.sub}`,
+      visit_date: dto.visit_date ?? new Date().toISOString().split("T")[0],
+    });
   }
 
   @Get("outreach")
@@ -699,5 +783,32 @@ export class AdminController {
   @ApiOperation({ summary: "Delete a product" })
   deleteProduct(@Param("id", ParseIntPipe) id: number) {
     return this.adminService.deleteProduct(id);
+  }
+
+  // ─── Platform Settings ───────────────────────────────────────────────────────
+
+  @Get("settings")
+  @ApiOperation({
+    summary: "Get current platform settings (commission rate etc.)",
+  })
+  getSettings() {
+    return this.adminService.getSettings();
+  }
+
+  @Patch("settings")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Update a platform setting (key + value)" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["key", "value"],
+      properties: {
+        key: { type: "string", example: "agent_commission_rate" },
+        value: { type: "string", example: "25" },
+      },
+    },
+  })
+  updateSetting(@Body("key") key: string, @Body("value") value: string) {
+    return this.adminService.updateSetting(key, value);
   }
 }

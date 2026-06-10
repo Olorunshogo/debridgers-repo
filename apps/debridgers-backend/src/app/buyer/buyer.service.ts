@@ -3,7 +3,9 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from "@nestjs/common";
+import * as bcrypt from "bcryptjs";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq, desc, sum, count, and, inArray, sql } from "drizzle-orm";
 import * as schema from "../../infrastructure/persistence/index";
@@ -32,6 +34,7 @@ export class BuyerService {
         zone_id: schema.users.zone_id,
         delivery_address: schema.users.delivery_address,
         avatar_url: schema.users.avatar_url,
+        email_notifications: schema.users.email_notifications,
       })
       .from(schema.users)
       .where(eq(schema.users.id, user.sub))
@@ -49,6 +52,8 @@ export class BuyerService {
     if (dto.phone !== undefined) updates.phone = dto.phone;
     if (dto.delivery_address !== undefined)
       updates.delivery_address = dto.delivery_address;
+    if (dto.email_notifications !== undefined)
+      updates.email_notifications = dto.email_notifications;
 
     if (Object.keys(updates).length > 0) {
       await this.db
@@ -292,5 +297,37 @@ export class BuyerService {
         amount_naira: Number(r.amount ?? 0) / 100,
       })),
     };
+  }
+
+  async changePassword(
+    dto: { old_password: string; new_password: string },
+    user: JwtPayload,
+  ) {
+    const [buyer] = await this.db
+      .select({ id: schema.users.id, password: schema.users.password })
+      .from(schema.users)
+      .where(eq(schema.users.id, user.sub))
+      .limit(1);
+
+    if (!buyer) throw new NotFoundException("Buyer not found");
+    if (!buyer.password)
+      throw new BadRequestException("No password set on this account");
+
+    const valid = await bcrypt.compare(dto.old_password, buyer.password);
+    if (!valid)
+      throw new UnauthorizedException("Current password is incorrect");
+
+    if (dto.new_password.length < 8)
+      throw new BadRequestException(
+        "New password must be at least 8 characters",
+      );
+
+    const hashed = await bcrypt.hash(dto.new_password, 12);
+    await this.db
+      .update(schema.users)
+      .set({ password: hashed })
+      .where(eq(schema.users.id, user.sub));
+
+    return { message: "Password updated successfully", data: null };
   }
 }

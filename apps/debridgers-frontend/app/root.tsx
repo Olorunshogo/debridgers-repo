@@ -11,6 +11,7 @@ import type { Route } from "./+types/root";
 import type { MetaFunction } from "react-router";
 import "./styles.css";
 import { IntroAnimation } from "./components/landing/IntroAnimation";
+import { AuthProvider } from "./contexts/AuthContext";
 
 export const meta: MetaFunction = () => [
   { title: "Debridgers | Fresh Foodstuff at Market Prices in Kaduna" },
@@ -58,10 +59,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <>
+    <AuthProvider>
       <IntroAnimation />
       <Outlet />
-    </>
+    </AuthProvider>
   );
 }
 
