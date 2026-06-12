@@ -71,7 +71,7 @@ export function Header({
 
   return (
     <motion.header
-      className="font-syne h-navbar-h mx-auto flex w-9/10 max-w-232 rounded-full p-4 shadow-md"
+      className="font-syne h-navbar-h mx-auto flex w-4/5 max-w-232 rounded-full p-4 shadow-md xl:max-w-260"
       animate={{ backgroundColor: pillBg, backdropFilter: pillBlur }}
       transition={{ duration: 0.35, ease: "easeInOut" }}
     >

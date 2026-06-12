@@ -124,6 +124,12 @@
   --spacing-section-py-lg: var(--section-py-lg);
 }
 
+/* Width tokens → generates max-w-* and w-* utilities */
+@theme {
+  --width-layout-max-width: 100rem; /* 1600px */
+  --width-section-max-width: 90rem; /* 1600px */
+}
+
 @layer utilities {
   .font-openSans {
     font-family: "Open Sans", sans-serif !important;
@@ -143,7 +149,11 @@
   }
 
   .layout-max-width {
-    @apply mx-auto w-full max-w-500;
+    @apply mx-auto w-full max-w-420;
+  }
+
+  .section-max-width {
+    @apply mx-auto w-full max-w-400;
   }
 
   .dashboard-max-width {

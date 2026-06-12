@@ -299,7 +299,7 @@ export default function ContactPage() {
       </div>
 
       <section className="font-openSans h-full w-full bg-white">
-        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg py-section-py sm:py-section-py-sm lg:py-section-py-lg default-max-width mx-auto flex flex-col gap-10">
+        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg py-section-py sm:py-section-py-sm lg:py-section-py-lg section-max-width mx-auto flex flex-col gap-10">
           {/* Contact Heading */}
           <div className="flex flex-col items-center gap-4 text-center">
             <h2 className="font-open-sans text-2xl font-semibold sm:text-3xl lg:text-4xl">

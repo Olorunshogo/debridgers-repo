@@ -228,8 +228,8 @@ export default function AgentsPage() {
       </div>
 
       {/* What You Do / Your Role */}
-      <section className="py-section-py sm:py-section-py-sm lg:py-section-py-lg bg-white">
-        <div className="default-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
+      <section className="w-full bg-white">
+        <div className="default-max-width px-section-px py-section-py sm:px-section-px-sm sm:py-section-py-sm lg:px-section-px-lg lg:py-section-py-lg mx-auto">
           <div className="flex flex-col gap-8">
             {/* Role Title */}
             <motion.div
@@ -279,11 +279,8 @@ export default function AgentsPage() {
       </section>
 
       {/* Why Join Us / Benefits */}
-      <section
-        id="benefits"
-        className="bg-bg-light py-section-py sm:py-section-py-sm lg:py-section-py-lg"
-      >
-        <div className="default-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
+      <section id="benefits" className="bg-bg-light w-full">
+        <div className="default-max-width px-section-px py-section-py sm:px-section-px-sm sm:py-section-py-sm lg:px-section-px-lg lg:py-section-py-lg mx-auto">
           <div className="flex flex-col gap-8">
             {/* Why Join Us Title */}
             <motion.div
@@ -333,11 +330,8 @@ export default function AgentsPage() {
       </section>
 
       {/* The Process / How It Works */}
-      <section
-        id="how-it-works"
-        className="py-section-py sm:py-section-py-sm lg:py-section-py-lg bg-white"
-      >
-        <div className="default-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
+      <section id="how-it-works" className="w-full bg-white">
+        <div className="default-max-width px-section-px py-section-py sm:px-section-px-sm sm:py-section-py-sm lg:px-section-px-lg lg:py-section-py-lg mx-auto">
           <div className="flex flex-col gap-8">
             {/* Heading */}
             <motion.div
@@ -396,8 +390,8 @@ export default function AgentsPage() {
       </section>
 
       {/* Example Earnings / Earnings Snapshot */}
-      <section className="bg-primary py-section-py sm:py-section-py-sm lg:py-section-py-lg">
-        <div className="default-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
+      <section className="bg-primary w-full">
+        <div className="default-max-width px-section-px py-section-py sm:px-section-px-sm sm:py-section-py-sm lg:px-section-px-lg lg:py-section-py-lg mx-auto">
           <div className="grid items-center gap-8 lg:grid-cols-2">
             {/* Heading */}
             <motion.div
@@ -461,11 +455,8 @@ export default function AgentsPage() {
       </section>
 
       {/* Apply CTA */}
-      <section
-        id="apply-now"
-        className="py-section-py sm:py-section-py-sm lg:py-section-py-lg bg-white"
-      >
-        <div className="default-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
+      <section id="apply-now" className="w-full bg-white">
+        <div className="default-max-width px-section-px py-section-py sm:px-section-px-sm sm:py-section-py-sm lg:px-section-px-lg lg:py-section-py-lg mx-auto">
           <motion.div
             initial="hidden"
             whileInView="visible"
