@@ -63,6 +63,12 @@
   },
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
-  "typescript.autoClosingTags": false,
-  "auto-close-tag.fullMode": false
+  "js/ts.autoClosingTags": false,
+  "auto-close-tag.fullMode": false,
+
+  // === Fix NX extension "pnpm: not found" — pnpm lives outside the shell PATH
+  "terminal.integrated.env.linux": {
+    "PATH": "/home/olorunshogo/.local/share/pnpm:${env:PATH}"
+  },
+  "nxConsole.packageManager": "pnpm"
 }

@@ -22,6 +22,9 @@ import { LoginDto } from "./dto/login.dto";
 
 @Injectable()
 export class AuthService {
+  // Cached once per process — admin referrer ID never changes at runtime
+  private defaultReferrerIdCache: number | null | undefined = undefined;
+
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
@@ -31,21 +34,35 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const existing = await this.db
-      .select()
-      .from(schema.users)
-      .where(eq(sql`lower(${schema.users.email})`, dto.email.toLowerCase()))
-      .limit(1);
+    // Run email check, referrer lookup, and password hash concurrently
+    const [existing, referredByAgentId, hashed] = await Promise.all([
+      this.db
+        .select()
+        .from(schema.users)
+        .where(eq(sql`lower(${schema.users.email})`, dto.email.toLowerCase()))
+        .limit(1),
+      this.resolveBuyerReferrerId(dto.referred_by_agent_code),
+      bcrypt.hash(dto.password, 12),
+    ]);
 
     if (existing.length > 0) {
+      const user = existing[0];
+      if (!user.is_email_verified) {
+        // Silently refresh their OTP and tell the frontend to redirect
+        await this.refreshVerificationOtp(
+          user.id,
+          user.first_name,
+          user.last_name,
+          user.email,
+          user.role,
+        );
+        throw new ConflictException({
+          message: "This email is registered but not yet verified.",
+          code: "UNVERIFIED_EMAIL",
+        });
+      }
       throw new ConflictException("Email already registered");
     }
-
-    const referredByAgentId = await this.resolveBuyerReferrerId(
-      dto.referred_by_agent_code,
-    );
-
-    const hashed = await bcrypt.hash(dto.password, 12);
 
     const verificationToken = this.generateVerificationOtp();
     const verificationExpiresAt = new Date(Date.now() + 24 * 3600 * 1000);
@@ -75,7 +92,8 @@ export class AuthService {
           expires_at: verificationExpiresAt,
         });
 
-        await this.eventEmitter.emitAsync(USER_EVENTS.USER_REGISTERED, {
+        // Fire-and-forget — don't block registration on email delivery
+        this.eventEmitter.emit(USER_EVENTS.USER_REGISTERED, {
           name: `${createdUser.first_name} ${createdUser.last_name}`,
           email: createdUser.email,
           otp: verificationToken,
@@ -378,12 +396,15 @@ export class AuthService {
       role: user.role as JwtPayload["role"],
     };
 
-    const accessSecret =
-      this.config.get<string>("AccessJwt.secret") ?? "fallback_access";
+    const accessSecret = this.config.get<string>("AccessJwt.secret");
+    const refreshSecret = this.config.get<string>("RefreshJwt.secret");
+    if (!accessSecret || !refreshSecret) {
+      throw new Error(
+        "JWT secrets not configured — set ACCESS_TOKEN_SECRET and REFRESH_TOKEN_SECRET",
+      );
+    }
     const accessExpiry =
       this.config.get<string>("AccessJwt.expiresIn") ?? "15m";
-    const refreshSecret =
-      this.config.get<string>("RefreshJwt.secret") ?? "fallback_refresh";
     const refreshExpiry =
       this.config.get<string>("RefreshJwt.expiresIn") ?? "7d";
 
@@ -416,6 +437,11 @@ export class AuthService {
       }
     }
 
+    // Cache the admin ID — it never changes between restarts
+    if (this.defaultReferrerIdCache !== undefined) {
+      return this.defaultReferrerIdCache;
+    }
+
     const adminEmail =
       this.config.get<string>("ADMIN_EMAIL") ?? "admin@debridgers.com";
     const [defaultReferrer] = await this.db
@@ -424,7 +450,36 @@ export class AuthService {
       .where(eq(sql`lower(${schema.users.email})`, adminEmail.toLowerCase()))
       .limit(1);
 
-    return defaultReferrer?.id ?? null;
+    this.defaultReferrerIdCache = defaultReferrer?.id ?? null;
+    return this.defaultReferrerIdCache;
+  }
+
+  private async refreshVerificationOtp(
+    userId: number,
+    firstName: string,
+    lastName: string,
+    email: string,
+    role: string,
+  ) {
+    const token = this.generateVerificationOtp();
+    const expiresAt = new Date(Date.now() + 24 * 3600 * 1000);
+
+    await this.db
+      .delete(schema.email_verification)
+      .where(eq(schema.email_verification.user_id, userId));
+
+    await this.db.insert(schema.email_verification).values({
+      user_id: userId,
+      token,
+      expires_at: expiresAt,
+    });
+
+    this.eventEmitter.emit(USER_EVENTS.EMAIL_VERIFICATION_REQUESTED, {
+      name: `${firstName} ${lastName}`,
+      email,
+      token,
+      role,
+    });
   }
 
   private generateVerificationOtp() {

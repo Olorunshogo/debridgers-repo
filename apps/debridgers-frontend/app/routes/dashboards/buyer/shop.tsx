@@ -148,20 +148,14 @@ export default function BuyerShop() {
       <div className="relative w-full">
         <Search
           size={16}
-          className="absolute top-1/2 left-3.5 -translate-y-1/2 opacity-40"
-          style={{ color: "var(--text-colour)" }}
+          className="text-text absolute top-1/2 left-3.5 -translate-y-1/2 opacity-40"
         />
         <input
           type="text"
           placeholder="Search products..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-xl border py-2.5 pr-4 pl-10 text-sm outline-none"
-          style={{
-            borderColor: "var(--border-gray)",
-            backgroundColor: "var(--white)",
-            color: "var(--heading-colour)",
-          }}
+          className="border-gray-border text-heading w-full rounded-xl border bg-white py-2.5 pr-4 pl-10 text-sm outline-none"
         />
       </div>
 
@@ -174,16 +168,11 @@ export default function BuyerShop() {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className="rounded-full px-4 py-1.5 text-sm font-medium transition-all"
-                style={{
-                  backgroundColor: active
-                    ? "var(--primary-color)"
-                    : "var(--white)",
-                  color: active ? "#fff" : "var(--heading-colour)",
-                  border: active
-                    ? "1.5px solid var(--primary-color)"
-                    : "1.5px solid var(--border-gray)",
-                }}
+                className={`cursor-pointer rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
+                  active
+                    ? "border-primary bg-primary text-white"
+                    : "border-gray-border text-heading bg-white"
+                }`}
               >
                 {cat}
               </button>
@@ -197,28 +186,20 @@ export default function BuyerShop() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="h-64 animate-pulse rounded-2xl"
-              style={{ backgroundColor: "var(--border-gray)" }}
+              className="bg-gray-border h-64 animate-pulse rounded-2xl"
             />
           ))}
         </div>
       ) : products.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-20">
-          <Package
-            size={48}
-            className="opacity-20"
-            style={{ color: "var(--text-colour)" }}
-          />
-          <p className="text-sm" style={{ color: "var(--text-colour)" }}>
+          <Package size={48} className="text-text opacity-20" />
+          <p className="text-text text-sm">
             No products available yet. Check back soon.
           </p>
         </div>
       ) : filtered.length === 0 ? (
-        <p
-          className="py-10 text-center text-sm"
-          style={{ color: "var(--text-colour)" }}
-        >
-          No products match "{search}"
+        <p className="text-text py-10 text-center text-sm">
+          No products match &quot;{search}&quot;
         </p>
       ) : (
         <motion.div
@@ -235,17 +216,10 @@ export default function BuyerShop() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
-                className="overflow-hidden rounded-2xl border bg-white"
-                style={{
-                  borderColor: "var(--border-gray)",
-                  backgroundColor: "var(--white)",
-                }}
+                className="border-gray-border overflow-hidden rounded-2xl border bg-white"
               >
                 {/* Product image */}
-                <div
-                  className="relative h-44 overflow-hidden"
-                  style={{ backgroundColor: "var(--bg-light)" }}
-                >
+                <div className="bg-bg-light relative h-44 overflow-hidden">
                   {product.image_url ? (
                     <img
                       src={product.image_url}
@@ -254,19 +228,12 @@ export default function BuyerShop() {
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center">
-                      <Package
-                        size={44}
-                        className="opacity-15"
-                        style={{ color: "var(--text-colour)" }}
-                      />
+                      <Package size={44} className="text-text opacity-15" />
                     </div>
                   )}
                   {/* Category label overlay */}
                   {product.description && (
-                    <span
-                      className="absolute top-2.5 left-2.5 rounded-full bg-white/85 px-2.5 py-0.5 text-xs font-semibold backdrop-blur-sm"
-                      style={{ color: "var(--heading-colour)" }}
-                    >
+                    <span className="text-heading absolute top-2.5 left-2.5 rounded-full bg-white/85 px-2.5 py-0.5 text-xs font-semibold backdrop-blur-sm">
                       {product.description}
                     </span>
                   )}
@@ -276,39 +243,21 @@ export default function BuyerShop() {
                 <div className="flex flex-col gap-2 p-3">
                   <div className="flex flex-col gap-0.5">
                     {product.description && (
-                      <p
-                        className="text-xs"
-                        style={{ color: "var(--text-colour)" }}
-                      >
-                        {product.description}
-                      </p>
+                      <p className="text-text text-xs">{product.description}</p>
                     )}
-                    <p
-                      className="font-syne text-sm leading-snug font-bold"
-                      style={{ color: "var(--heading-colour)" }}
-                    >
+                    <p className="font-syne text-heading text-sm leading-snug font-bold">
                       {product.name}
                     </p>
                   </div>
 
-                  <p
-                    className="font-syne text-lg font-bold"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
+                  <p className="font-syne text-heading text-lg font-bold">
                     {fmt(priceNaira)}
                   </p>
 
                   {/* Controls */}
                   <div className="flex items-center gap-2">
                     {/* Unit pill */}
-                    <span
-                      className="shrink-0 rounded-lg border px-2 py-1 text-xs font-medium"
-                      style={{
-                        borderColor: "var(--border-gray)",
-                        color: "var(--text-colour)",
-                        backgroundColor: "var(--bg-light)",
-                      }}
-                    >
+                    <span className="border-gray-border bg-bg-light text-text shrink-0 rounded-lg border px-2 py-1 text-xs font-medium">
                       {product.unit}
                     </span>
 
@@ -321,12 +270,7 @@ export default function BuyerShop() {
                           [product.id]: Number(e.target.value),
                         }))
                       }
-                      className="rounded-lg border px-2 py-1 text-xs outline-none"
-                      style={{
-                        borderColor: "var(--border-gray)",
-                        backgroundColor: "var(--bg-light)",
-                        color: "var(--heading-colour)",
-                      }}
+                      className="border-gray-border bg-bg-light text-heading rounded-lg border px-2 py-1 text-xs outline-none"
                     >
                       {[1, 2, 3, 4, 5, 10].map((n) => (
                         <option key={n} value={n}>
@@ -338,8 +282,7 @@ export default function BuyerShop() {
                     {/* Add to cart / Add more */}
                     <button
                       onClick={() => addToCart(product)}
-                      className={`ml-auto flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-85 ${inCart ? "pr-3" : ""}`}
-                      style={{ backgroundColor: "var(--primary-color)" }}
+                      className={`bg-primary ml-auto flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-85 ${inCart ? "pr-3" : ""}`}
                     >
                       {inCart ? (
                         <>
@@ -366,38 +309,26 @@ export default function BuyerShop() {
             initial={{ y: 80, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 80, opacity: 0 }}
-            className="fixed right-0 bottom-0 left-0 z-30 flex items-center justify-between border-t px-6 py-4 shadow-lg lg:left-[280px]"
-            style={{
-              backgroundColor: "var(--white)",
-              borderColor: "var(--border-gray)",
-            }}
+            className="border-gray-border lg:left-w-70 fixed right-0 bottom-0 left-0 z-30 flex items-center justify-between border-t bg-white px-6 py-4 shadow-lg"
           >
             <div>
-              <p className="text-sm" style={{ color: "var(--text-colour)" }}>
+              <p className="text-text text-sm">
                 {cartCount} item{cartCount > 1 ? "s" : ""} in cart
               </p>
-              <p
-                className="font-syne font-bold"
-                style={{ color: "var(--primary-color)" }}
-              >
+              <p className="font-syne text-primary font-bold">
                 Total: {fmt(cartTotal)}
               </p>
             </div>
             <div className="flex gap-3">
               <button
                 onClick={() => setCartOpen(true)}
-                className="flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
-                style={{
-                  borderColor: "var(--border-gray)",
-                  color: "var(--heading-colour)",
-                }}
+                className="border-gray-border text-heading flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
               >
                 <ShoppingCart size={16} /> View Cart
               </button>
               <Link
                 to="/buyer-dashboard/checkout"
-                className="rounded-full px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                style={{ backgroundColor: "var(--primary-color)" }}
+                className="bg-primary rounded-full px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
               >
                 Checkout
               </Link>
@@ -424,24 +355,17 @@ export default function BuyerShop() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "tween", duration: 0.28 }}
-              className="fixed top-0 right-0 z-50 flex h-full w-full max-w-sm flex-col shadow-2xl"
-              style={{ backgroundColor: "var(--white)" }}
+              className="fixed top-0 right-0 z-50 flex h-full w-full max-w-sm flex-col bg-white shadow-2xl"
             >
-              <div
-                className="flex items-center justify-between border-b px-5 py-4"
-                style={{ borderColor: "var(--border-gray)" }}
-              >
-                <h3
-                  className="font-syne font-bold"
-                  style={{ color: "var(--heading-colour)" }}
-                >
+              <div className="border-gray-border flex items-center justify-between border-b px-5 py-4">
+                <h3 className="font-syne text-heading font-bold">
                   Your cart ({cartCount})
                 </h3>
                 <button
                   onClick={() => setCartOpen(false)}
                   className="rounded-full p-1.5 hover:bg-black/5"
                 >
-                  <X size={18} style={{ color: "var(--text-colour)" }} />
+                  <X size={18} className="text-text" />
                 </button>
               </div>
 
@@ -449,14 +373,10 @@ export default function BuyerShop() {
                 {cart.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center gap-3 rounded-xl border p-3"
-                    style={{ borderColor: "var(--border-gray)" }}
+                    className="border-gray-border flex items-center gap-3 rounded-xl border p-3"
                   >
                     {/* Cart item thumbnail */}
-                    <div
-                      className="h-12 w-12 shrink-0 overflow-hidden rounded-lg"
-                      style={{ backgroundColor: "var(--bg-light)" }}
-                    >
+                    <div className="bg-bg-light h-12 w-12 shrink-0 overflow-hidden rounded-lg">
                       {item.image_url ? (
                         <img
                           src={item.image_url}
@@ -465,47 +385,32 @@ export default function BuyerShop() {
                         />
                       ) : (
                         <div className="flex h-full items-center justify-center">
-                          <Package
-                            size={18}
-                            className="opacity-20"
-                            style={{ color: "var(--text-colour)" }}
-                          />
+                          <Package size={18} className="text-text opacity-20" />
                         </div>
                       )}
                     </div>
 
                     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <p
-                        className="truncate text-sm font-medium"
-                        style={{ color: "var(--heading-colour)" }}
-                      >
+                      <p className="text-heading truncate text-sm font-medium">
                         {item.name}
                       </p>
-                      <p
-                        className="text-xs"
-                        style={{ color: "var(--text-colour)" }}
-                      >
+                      <p className="text-text text-xs">
                         {item.unit} · {fmt(item.price)} each
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => updateQty(item.id, -1)}
-                        className="flex h-6 w-6 items-center justify-center rounded-full border text-xs"
-                        style={{ borderColor: "var(--border-gray)" }}
+                        className="border-gray-border flex h-6 w-6 items-center justify-center rounded-full border text-xs"
                       >
                         <Minus size={10} />
                       </button>
-                      <span
-                        className="w-5 text-center text-sm font-semibold"
-                        style={{ color: "var(--heading-colour)" }}
-                      >
+                      <span className="text-heading w-5 text-center text-sm font-semibold">
                         {item.qty}
                       </span>
                       <button
                         onClick={() => updateQty(item.id, 1)}
-                        className="flex h-6 w-6 items-center justify-center rounded-full border text-xs"
-                        style={{ borderColor: "var(--border-gray)" }}
+                        className="border-gray-border flex h-6 w-6 items-center justify-center rounded-full border text-xs"
                       >
                         <Plus size={10} />
                       </button>
@@ -520,29 +425,17 @@ export default function BuyerShop() {
                 ))}
               </div>
 
-              <div
-                className="flex flex-col gap-3 border-t p-5"
-                style={{ borderColor: "var(--border-gray)" }}
-              >
+              <div className="border-gray-border flex flex-col gap-3 border-t p-5">
                 <div className="flex justify-between">
-                  <span
-                    className="text-sm"
-                    style={{ color: "var(--text-colour)" }}
-                  >
-                    Total
-                  </span>
-                  <span
-                    className="font-syne font-bold"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
+                  <span className="text-text text-sm">Total</span>
+                  <span className="font-syne text-heading font-bold">
                     {fmt(cartTotal)}
                   </span>
                 </div>
                 <Link
                   to="/buyer-dashboard/checkout"
                   onClick={() => setCartOpen(false)}
-                  className="w-full rounded-full py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                  style={{ backgroundColor: "var(--primary-color)" }}
+                  className="bg-primary w-full rounded-full py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90"
                 >
                   Proceed to Checkout
                 </Link>

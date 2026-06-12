@@ -10,10 +10,10 @@ import {
 import type { Route } from "./+types/root";
 import type { MetaFunction } from "react-router";
 import "./styles.css";
-import { IntroAnimation } from "./components/IntroAnimation";
+import { IntroAnimation } from "./components/landing/IntroAnimation";
+import { AuthProvider } from "./contexts/AuthContext";
 
 export const meta: MetaFunction = () => [
-  { name: "viewport", content: "width=device-width, initial-scale=1" },
   { title: "Debridgers | Fresh Foodstuff at Market Prices in Kaduna" },
   {
     name: "description",
@@ -41,13 +41,14 @@ export const links: Route.LinksFunction = () => [
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <head>
+    <html lang="en" suppressHydrationWarning>
+      <head suppressHydrationWarning>
         <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         {children}
         <ScrollRestoration />
         <Scripts />
@@ -58,10 +59,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <>
+    <AuthProvider>
       <IntroAnimation />
       <Outlet />
-    </>
+    </AuthProvider>
   );
 }
 
@@ -76,7 +77,6 @@ export function HydrateFallback() {
           <div className="bg-primary h-full w-full origin-left animate-[loading_1.5s_infinite_linear]" />
         </div>
       </div>
-      <Scripts />
     </div>
   );
 }

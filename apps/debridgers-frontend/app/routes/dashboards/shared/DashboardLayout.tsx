@@ -27,7 +27,7 @@ const titleMaps: Record<string, Record<string, string>> = {
     "/buyer-dashboard/shop": "Shop / Catalog",
     "/buyer-dashboard/orders": "My Orders",
     "/buyer-dashboard/wallet": "Wallet & Payment",
-    "/buyer-dashboard/notification": "Notification",
+    "/buyer-dashboard/notifications": "Notifications",
     "/buyer-dashboard/settings": "Profile & Address",
     "/buyer-dashboard/checkout": "Checkout",
     "/buyer-dashboard/help": "Help Center",
@@ -86,7 +86,9 @@ export default function DashboardLayout() {
       .catch(() => {});
   }, [isAgent, isBuyer, isAdmin]);
 
-  const notifPath = `${basePath}/notification`;
+  const notifPath = isBuyer
+    ? `${basePath}/notifications`
+    : `${basePath}/notification`;
 
   useEffect(() => {
     const stored = localStorage.getItem("debridgers_has_unread");
@@ -119,7 +121,7 @@ export default function DashboardLayout() {
     return (
       <div className="flex h-full flex-col">
         {/* Scrollable area: logo + nav + user card */}
-        <div className="flex flex-col gap-6 overflow-y-auto rounded-xl bg-[#FCFDFD] p-4 pt-6">
+        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto rounded-xl bg-[#FCFDFD] p-4 pt-6">
           {/* Logo */}
           <div className="mx-auto flex h-16 items-center">
             <Link to={basePath} onClick={onNavClick}>
@@ -137,29 +139,9 @@ export default function DashboardLayout() {
                 {group.items.map((item) => {
                   const active = isActive(item.href);
                   const isExternal = item.href.startsWith("http");
-                  const cls =
-                    "flex items-center gap-3 font-open-sans rounded-[16px] p-3 text-base transition-all duration-300 ease-in-out cursor-pointer";
-                  const style = {
-                    backgroundColor: active
-                      ? "rgba(75,122,81,1)"
-                      : "transparent",
-                    color: active ? "#FCFDFD" : "var(--text-colour)",
-                  };
-                  const hover = {
-                    onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
-                      if (!active) {
-                        e.currentTarget.style.backgroundColor =
-                          "var(--primary-color)";
-                        e.currentTarget.style.color = "#ffffff";
-                      }
-                    },
-                    onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
-                      if (!active) {
-                        e.currentTarget.style.backgroundColor = "transparent";
-                        e.currentTarget.style.color = "var(--text-colour)";
-                      }
-                    },
-                  };
+                  const cls = active
+                    ? "flex cursor-pointer items-center gap-3 rounded-2xl bg-primary p-3 font-open-sans text-base text-white transition-all duration-300 ease-in-out"
+                    : "text-text flex cursor-pointer items-center gap-3 rounded-2xl p-3 font-open-sans text-base transition-all duration-300 ease-in-out hover:bg-primary hover:text-white";
 
                   if (isExternal) {
                     return (
@@ -170,8 +152,6 @@ export default function DashboardLayout() {
                         rel="noopener noreferrer"
                         onClick={onNavClick}
                         className={cls}
-                        style={style}
-                        {...hover}
                       >
                         <item.icon size={17} />
                         {item.label}
@@ -185,8 +165,6 @@ export default function DashboardLayout() {
                       to={item.href}
                       onClick={onNavClick}
                       className={cls}
-                      style={style}
-                      {...hover}
                     >
                       <item.icon size={17} />
                       {item.label}
@@ -199,43 +177,26 @@ export default function DashboardLayout() {
 
           {/* User card */}
           <div className="flex items-center gap-3 rounded-xl bg-[#FAFAFB] px-4 py-2">
-            <div
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
-              style={{ backgroundColor: "var(--primary-color)" }}
-            >
+            <div className="bg-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white">
               {userProfile ? getInitials(userProfile.name) : "-"}
             </div>
             <div className="flex min-w-0 flex-col">
-              <span
-                className="truncate text-sm font-semibold"
-                style={{ color: "var(--heading-colour)" }}
-              >
+              <span className="text-heading truncate text-sm font-semibold">
                 {userProfile?.name ?? "…"}
               </span>
-              <span
-                className="truncate text-xs"
-                style={{ color: "var(--text-colour)" }}
-              >
+              <span className="text-text truncate text-xs">
                 {userProfile?.sub ?? ""}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Logout - always anchored at bottom, never scrolls away */}
+        {/* Logout */}
         <button
           onClick={handleLogout}
-          className="font-open-sans text-text z-10 flex w-full shrink-0 cursor-pointer items-center gap-3 rounded-[16px] p-4 text-base transition-all duration-300 ease-in-out"
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "#FEE2E2";
-            e.currentTarget.style.color = "#DC2626";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "transparent";
-            e.currentTarget.style.color = "var(--text-colour)";
-          }}
+          className="font-open-sans text-text z-10 flex w-full shrink-0 cursor-pointer items-center gap-3 rounded-2xl p-4 text-base transition-all duration-300 ease-in-out hover:bg-red-100 hover:text-red-600"
         >
-          <LogOut size={17} className="text-error-red" />
+          <LogOut size={18} className="text-error-red" />
           Logout
         </button>
       </div>
@@ -247,7 +208,7 @@ export default function DashboardLayout() {
       <div className="layout-max-width relative flex h-screen flex-col">
         <div className="bg-dash-page-bg px-section-px flex h-screen w-full gap-6">
           {/* Desktop sidebar */}
-          <aside className="sticky top-0 hidden h-screen w-[280px] shrink-0 rounded-[16px] lg:flex lg:flex-col">
+          <aside className="sticky top-0 hidden h-screen w-70 shrink-0 rounded-2xl lg:flex lg:flex-col">
             <Sidebar />
           </aside>
 
@@ -269,14 +230,14 @@ export default function DashboardLayout() {
                   animate={{ x: 0 }}
                   exit={{ x: "-100%" }}
                   transition={{ type: "tween", duration: 0.28 }}
-                  className="fixed top-0 left-0 z-50 h-full w-[280px] bg-[#FCFDFD] lg:hidden"
+                  className="fixed top-0 left-0 z-50 h-full w-70 bg-[#FCFDFD] lg:hidden"
                 >
                   <button
                     onClick={() => setMobileOpen(false)}
                     className="absolute top-4 right-4 cursor-pointer rounded-full p-1.5 hover:bg-black/10"
                     aria-label="Close menu"
                   >
-                    <X size={20} style={{ color: "var(--text-colour)" }} />
+                    <X size={20} className="text-text" />
                   </button>
                   <Sidebar onNavClick={() => setMobileOpen(false)} />
                 </motion.aside>
@@ -287,7 +248,7 @@ export default function DashboardLayout() {
           {/* Main area */}
           <div className="flex h-screen min-w-0 flex-1 flex-col overflow-y-auto">
             {/* Topbar */}
-            <header className="border-border-gray bg-dash-topbar-bg flex h-16 shrink-0 items-center justify-between gap-4 border-b px-4 lg:px-6">
+            <header className="border-gray-border bg-dash-topbar-bg mb-6 flex h-16 shrink-0 items-center justify-between gap-4 border-b px-4 lg:px-6">
               <div className="flex items-center gap-3">
                 <button
                   className="text-text shrink-0 cursor-pointer transition-colors lg:hidden"
@@ -329,12 +290,9 @@ export default function DashboardLayout() {
                   className="relative rounded-full p-2 transition-colors"
                   aria-label="Notifications"
                 >
-                  <Bell size={20} style={{ color: "var(--icon-secondary)" }} />
+                  <Bell size={20} className="text-icon-secondary" />
                   {hasUnread && (
-                    <span
-                      className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full"
-                      style={{ backgroundColor: "var(--error-red)" }}
-                    />
+                    <span className="bg-error-red absolute top-1.5 right-1.5 h-2 w-2 rounded-full" />
                   )}
                 </Link>
               </div>

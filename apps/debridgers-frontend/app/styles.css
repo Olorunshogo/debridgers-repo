@@ -45,6 +45,12 @@
   --color-text2: var(--text-colour2);
   --color-text-placeholder: var(--text-placeholder);
 
+  /* Inputs */
+  --color-input-bg: var(--input-bg);
+  --color-input-border: var(--input-border);
+  --color-input-border-focus: var(--input-border-focus);
+  --color-input-error-red: var(--input-error-red);
+
   /* Status */
   --color-good-green: var(--good-green);
   --color-error-red: var(--error-red);
@@ -56,6 +62,7 @@
 
   /* Borders */
   --color-border-gray: var(--border-gray);
+  --color-gray-border: var(--border-gray);
 
   /* Icons */
   --color-icon-primary: var(--icon-primary);
@@ -207,4 +214,28 @@ input::-webkit-inner-spin-button {
 /* Hide number input arrows: Firefox */
 input[type="number"] {
   -moz-appearance: textfield;
+}
+
+/* Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }

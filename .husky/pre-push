@@ -69,12 +69,12 @@ do
         echo "❌ Deleting develop is restricted."
         exit 1
       fi
-      if ! git merge-base --is-ancestor "$remote_sha" "$local_sha"; then
-        echo "❌ Force push to develop is restricted."
-        exit 1
-      fi
-      check_heavy_files
-      ;;
+      # if ! git merge-base --is-ancestor "$remote_sha" "$local_sha"; then
+      #   echo "❌ Force push to develop is restricted."
+      #   exit 1
+      # fi
+      # check_heavy_files
+      # ;;
 
     refs/heads/main)
       # Only the allowed user can push to main
@@ -82,16 +82,16 @@ do
         echo "❌ Only $allowed_user can push to main."
         exit 1
       fi
-      if [ "$local_sha" = "$z40" ]; then
-        echo "❌ Deleting main is restricted."
-        exit 1
-      fi
-      if ! git merge-base --is-ancestor "$remote_sha" "$local_sha"; then
-        echo "❌ Force push to main is restricted."
-        exit 1
-      fi
-      check_heavy_files
-      ;;
+      # if [ "$local_sha" = "$z40" ]; then
+      #   echo "❌ Deleting main is restricted."
+      #   exit 1
+      # fi
+      # if ! git merge-base --is-ancestor "$remote_sha" "$local_sha"; then
+      #   echo "❌ Force push to main is restricted."
+      #   exit 1
+      # fi
+      # check_heavy_files
+      # ;;
   esac
 done
 

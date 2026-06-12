@@ -149,11 +149,7 @@ export default function LoginPage() {
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="rounded-xl px-4 py-3 text-sm"
-                  style={{
-                    backgroundColor: "var(--status-cancelled-bg)",
-                    color: "var(--status-cancelled-text)",
-                  }}
+                  className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
                 >
                   {apiError}
                 </motion.div>
@@ -182,8 +178,7 @@ export default function LoginPage() {
               />
               <Link
                 to="/forgot-password"
-                className="self-end text-xs font-medium underline underline-offset-2"
-                style={{ color: "var(--primary-color)" }}
+                className="text-primary self-end text-xs font-medium underline underline-offset-2"
               >
                 Forgot password?
               </Link>

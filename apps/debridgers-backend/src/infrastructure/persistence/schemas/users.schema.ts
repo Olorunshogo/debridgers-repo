@@ -41,6 +41,7 @@ export const users = pgTable(
     avatar_url: text(),
     mailtrap_contact_id: text(),
     refresh_token: text(),
+    email_notifications: boolean().notNull().default(true),
     ...timestamps,
   },
   (table) => [uniqueIndex("users_email_idx").on(lower(table.email))],

@@ -83,20 +83,8 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className="flex flex-col gap-5 rounded-2xl border p-6"
-      style={{
-        borderColor: "var(--border-gray)",
-        backgroundColor: "var(--white)",
-      }}
-    >
-      <h3
-        className="font-syne border-b pb-3 text-lg font-semibold"
-        style={{
-          borderColor: "var(--border-gray)",
-          color: "var(--heading-colour)",
-        }}
-      >
+    <div className="border-gray-border flex flex-col gap-5 rounded-2xl border bg-white p-6">
+      <h3 className="border-gray-border font-syne text-heading border-b pb-3 text-lg font-semibold">
         {title}
       </h3>
       {children}
@@ -134,12 +122,14 @@ export default function BuyerSettings() {
         phone?: string | null;
         delivery_address?: string | null;
         avatar_url?: string | null;
+        email_notifications?: boolean | null;
       }>("/buyer/me");
       setForm((p) => ({
         ...p,
         userName: `${profile.first_name} ${profile.last_name}`.trim(),
         email: profile.email,
         deliveryAddress: profile.delivery_address ?? "",
+        emailNotification: profile.email_notifications ?? true,
       }));
       if (profile.avatar_url) setAvatarUrl(profile.avatar_url);
     } catch {
@@ -222,13 +212,31 @@ export default function BuyerSettings() {
           first_name: firstName,
           last_name: rest.join(" ") || undefined,
           delivery_address: result.data.deliveryAddress?.trim() || undefined,
+          email_notifications: result.data.emailNotification,
         }),
       });
+
+      if (result.data.oldPassword && result.data.newPassword) {
+        await apiFetch("/buyer/password", {
+          method: "PATCH",
+          body: JSON.stringify({
+            old_password: result.data.oldPassword,
+            new_password: result.data.newPassword,
+          }),
+        });
+      }
+
       setForm((p) => ({ ...p, oldPassword: "", newPassword: "" }));
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch {
-      setApiError("Failed to save changes. Please try again.");
+    } catch (err) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Failed to save changes. Please try again.";
+      setApiError(
+        msg.includes("incorrect") ? "Current password is incorrect." : msg,
+      );
     } finally {
       setLoading(false);
     }
@@ -247,11 +255,7 @@ export default function BuyerSettings() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm"
-            style={{
-              backgroundColor: "var(--status-delivered-bg)",
-              color: "var(--status-delivered-text)",
-            }}
+            className="bg-status-delivered-bg text-status-delivered-text flex items-center gap-2 rounded-xl px-4 py-3 text-sm"
           >
             <CheckCircle2 size={16} />
             Settings saved successfully.
@@ -262,11 +266,7 @@ export default function BuyerSettings() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="rounded-xl px-4 py-3 text-sm"
-            style={{
-              backgroundColor: "var(--status-cancelled-bg)",
-              color: "var(--status-cancelled-text)",
-            }}
+            className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
           >
             {apiError}
           </motion.div>
@@ -283,10 +283,7 @@ export default function BuyerSettings() {
               className="h-16 w-16 rounded-full object-cover"
             />
           ) : (
-            <div
-              className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white"
-              style={{ backgroundColor: "var(--primary-color)" }}
-            >
+            <div className="bg-primary flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white">
               {form.userName
                 ? form.userName
                     .trim()
@@ -302,11 +299,7 @@ export default function BuyerSettings() {
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={avatarUploading}
-              className="rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 disabled:opacity-60"
-              style={{
-                borderColor: "var(--border-gray)",
-                color: "var(--heading-colour)",
-              }}
+              className="border-gray-border text-heading rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 disabled:opacity-60"
             >
               {avatarUploading ? "Uploading..." : "Change Photo"}
             </button>
@@ -416,6 +409,7 @@ export default function BuyerSettings() {
         </div>
       </Section>
 
+      {/* Submit Button */}
       <div className="flex justify-end">
         <SubmitButton
           loading={loading}

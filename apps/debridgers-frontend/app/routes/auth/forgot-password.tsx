@@ -208,17 +208,11 @@ export default function ForgotPasswordPage() {
                 className="flex flex-col gap-6"
               >
                 <div className="flex flex-col gap-1">
-                  <h1
-                    className="font-syne text-2xl font-bold"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
+                  <h1 className="font-syne text-heading text-2xl font-bold">
                     Forgot your password?
                   </h1>
-                  <p
-                    className="text-sm"
-                    style={{ color: "var(--text-colour)" }}
-                  >
-                    Enter your email and we'll send you a reset token.
+                  <p className="text-text text-sm">
+                    Enter your email and we&apos;ll send you a reset token.
                   </p>
                 </div>
 
@@ -233,11 +227,7 @@ export default function ForgotPasswordPage() {
                         initial={{ opacity: 0, y: -8 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
-                        className="rounded-xl px-4 py-3 text-sm"
-                        style={{
-                          backgroundColor: "var(--status-cancelled-bg)",
-                          color: "var(--status-cancelled-text)",
-                        }}
+                        className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
                       >
                         {step1ApiError}
                       </motion.div>
@@ -267,8 +257,7 @@ export default function ForgotPasswordPage() {
 
                 <Link
                   to="/login"
-                  className="text-center text-sm font-medium underline underline-offset-2"
-                  style={{ color: "var(--text-colour)" }}
+                  className="text-text text-center text-sm font-medium underline underline-offset-2"
                 >
                   Back to sign in
                 </Link>
@@ -283,16 +272,10 @@ export default function ForgotPasswordPage() {
                 className="flex flex-col gap-6"
               >
                 <div className="flex flex-col gap-1">
-                  <h1
-                    className="font-syne text-2xl font-bold"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
+                  <h1 className="font-syne text-heading text-2xl font-bold">
                     Reset your password
                   </h1>
-                  <p
-                    className="text-sm"
-                    style={{ color: "var(--text-colour)" }}
-                  >
+                  <p className="text-text text-sm">
                     Enter the token from your email and set a new password.
                   </p>
                 </div>
@@ -308,11 +291,7 @@ export default function ForgotPasswordPage() {
                         initial={{ opacity: 0, y: -8 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
-                        className="rounded-xl px-4 py-3 text-sm"
-                        style={{
-                          backgroundColor: "var(--status-cancelled-bg)",
-                          color: "var(--status-cancelled-text)",
-                        }}
+                        className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
                       >
                         {step2ApiError}
                       </motion.div>
@@ -376,8 +355,7 @@ export default function ForgotPasswordPage() {
                 <button
                   type="button"
                   onClick={goBackToStep1}
-                  className="text-center text-sm font-medium underline underline-offset-2"
-                  style={{ color: "var(--text-colour)" }}
+                  className="text-text text-center text-sm font-medium underline underline-offset-2"
                 >
                   Back to step 1
                 </button>

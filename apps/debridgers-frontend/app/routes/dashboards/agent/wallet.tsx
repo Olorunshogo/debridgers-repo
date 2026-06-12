@@ -80,12 +80,16 @@ function mapCommission(c: ApiCommission): CommissionRow {
 
 const STATUS_BADGE: Record<
   string,
-  { bg: string; text: string; label: string }
+  { bgClass: string; textClass: string; label: string }
 > = {
-  pending: { bg: "#FEF3C7", text: "#92400E", label: "Pending" },
+  pending: {
+    bgClass: "bg-amber-100",
+    textClass: "text-amber-800",
+    label: "Pending",
+  },
   paid: {
-    bg: "var(--status-active-bg)",
-    text: "var(--status-active-text)",
+    bgClass: "bg-status-active-bg",
+    textClass: "text-status-active-text",
     label: "Paid",
   },
 };
@@ -112,14 +116,8 @@ export default function AgentWalletPage() {
   if (loading) {
     return (
       <div className="flex animate-pulse flex-col gap-6">
-        <div
-          className="h-40 rounded-2xl"
-          style={{ backgroundColor: "var(--border-gray)" }}
-        />
-        <div
-          className="h-64 rounded-2xl"
-          style={{ backgroundColor: "var(--border-gray)" }}
-        />
+        <div className="bg-gray-border h-40 rounded-2xl" />
+        <div className="bg-gray-border h-64 rounded-2xl" />
       </div>
     );
   }
@@ -134,8 +132,7 @@ export default function AgentWalletPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="flex flex-col gap-4 rounded-2xl p-6 sm:flex-row sm:items-center sm:justify-between"
-        style={{ backgroundColor: "var(--primary-color)" }}
+        className="bg-primary flex flex-col gap-4 rounded-2xl p-6 sm:flex-row sm:items-center sm:justify-between"
       >
         <div className="flex flex-col gap-3">
           <p className="text-sm text-white/70">Available Balance</p>
@@ -143,13 +140,7 @@ export default function AgentWalletPage() {
             {fmt(availableBalance)}
           </p>
           <div className="flex flex-wrap gap-3">
-            <div
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold"
-              style={{
-                backgroundColor: "rgba(255,255,255,0.15)",
-                color: "var(--secondary-color)",
-              }}
-            >
+            <div className="text-secondary flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-semibold">
               <Wallet size={14} />
               {fmt(pendingBalance)} pending
             </div>
@@ -157,10 +148,7 @@ export default function AgentWalletPage() {
         </div>
         <div className="flex flex-col gap-1 sm:items-end">
           <p className="text-xs text-white/60">Automatic payout at</p>
-          <p
-            className="font-syne text-xl font-bold"
-            style={{ color: "var(--secondary-color)" }}
-          >
+          <p className="text-secondary font-syne text-xl font-bold">
             {nextPayoutDate}
           </p>
           <p className="text-xs text-white/60">Every Friday 9am disbursement</p>
@@ -168,25 +156,13 @@ export default function AgentWalletPage() {
       </motion.div>
 
       {/* Commission history */}
-      <div
-        className="flex flex-col gap-4 rounded-2xl border p-5"
-        style={{
-          borderColor: "var(--border-gray)",
-          backgroundColor: "var(--white)",
-        }}
-      >
-        <h3
-          className="font-syne font-semibold"
-          style={{ color: "var(--heading-colour)" }}
-        >
+      <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
+        <h3 className="font-syne text-heading font-semibold">
           Commission History
         </h3>
 
         {commissions.length === 0 ? (
-          <p
-            className="py-8 text-center text-sm"
-            style={{ color: "var(--text-colour)" }}
-          >
+          <p className="text-text py-8 text-center text-sm">
             No commissions yet. Sell stock or refer buyers to earn commission.
           </p>
         ) : (
@@ -199,55 +175,41 @@ export default function AgentWalletPage() {
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="flex items-center justify-between border-b py-4 last:border-0"
-                  style={{ borderColor: "var(--border-gray)" }}
+                  className="border-gray-border flex items-center justify-between border-b py-4 last:border-0"
                 >
                   <div className="flex items-center gap-3">
                     <span
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-                      style={{
-                        backgroundColor: c.isPaid
-                          ? "var(--status-delivered-bg)"
-                          : "var(--status-pending-bg)",
-                      }}
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                        c.isPaid
+                          ? "bg-status-delivered-bg"
+                          : "bg-status-pending-bg"
+                      }`}
                     >
                       {c.isPaid ? (
                         <ArrowDownLeft
                           size={16}
-                          style={{ color: "var(--status-delivered-text)" }}
+                          className="text-status-delivered-text"
                         />
                       ) : (
                         <ArrowUpRight
                           size={16}
-                          style={{ color: "var(--status-pending-text)" }}
+                          className="text-status-pending-text"
                         />
                       )}
                     </span>
                     <div className="flex flex-col gap-0.5">
-                      <p
-                        className="text-sm font-medium"
-                        style={{ color: "var(--heading-colour)" }}
-                      >
+                      <p className="text-heading text-sm font-medium">
                         {c.description}
                       </p>
-                      <p
-                        className="text-xs"
-                        style={{ color: "var(--text-colour)" }}
-                      >
-                        {c.date}
-                      </p>
+                      <p className="text-text text-xs">{c.date}</p>
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <p
-                      className="font-syne font-semibold"
-                      style={{ color: "var(--heading-colour)" }}
-                    >
+                    <p className="font-syne text-heading font-semibold">
                       {fmt(c.amount)}
                     </p>
                     <span
-                      className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                      style={{ backgroundColor: badge.bg, color: badge.text }}
+                      className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.bgClass} ${badge.textClass}`}
                     >
                       {badge.label}
                     </span>
@@ -265,19 +227,10 @@ export default function AgentWalletPage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="flex flex-col gap-3 rounded-2xl border p-5"
-          style={{
-            borderColor: "var(--border-gray)",
-            backgroundColor: "var(--white)",
-          }}
+          className="border-gray-border flex flex-col gap-3 rounded-2xl border bg-white p-5"
         >
-          <h3
-            className="font-syne font-semibold"
-            style={{ color: "var(--heading-colour)" }}
-          >
-            Bank Details
-          </h3>
-          <p className="text-sm" style={{ color: "var(--text-colour)" }}>
+          <h3 className="font-syne text-heading font-semibold">Bank Details</h3>
+          <p className="text-text text-sm">
             Bank account management coming soon. Contact admin to update your
             payout details.
           </p>

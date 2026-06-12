@@ -55,6 +55,7 @@ export const agent_profiles = pgTable(
     managed_state: text(),
     // bank details
     bank_name: text(),
+    bank_code: varchar("bank_code", { length: 10 }),
     bank_account_number: varchar("bank_account_number", { length: 20 }),
     bank_account_name: text(),
     // KYC

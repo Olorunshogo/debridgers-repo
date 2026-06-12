@@ -1,10 +1,11 @@
 import type { Route } from "./+types/home";
-import { Header } from "../../components/Header";
+import { Header } from "../../components/landing/Header";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   renderIcon,
   useImageCycle,
   useTrustCycle,
-} from "../../components/HeroSection";
+} from "../../components/landing/HeroSection";
 import { Icon } from "@iconify/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
@@ -51,10 +52,10 @@ function WhyCard({ card, isActive, onHover }: WhyCardProps) {
       onClick={onHover}
       whileHover={{ y: -10 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`group font-syne lg:gap-xl py-base px-3xl flex h-full flex-col gap-4 rounded-3xl transition-all duration-300 ease-in-out ${
+      className={`group font-syne flex h-full flex-col gap-4 rounded-3xl px-4 py-4 transition-all duration-300 ease-in-out lg:gap-6 lg:px-10 ${
         isActive
           ? "bg-primary text-white"
-          : "border-gray hover:border-primary border bg-white"
+          : "border-gray-border hover:border-primary border bg-white"
       }`}
     >
       {/* Icon */}
@@ -90,62 +91,78 @@ function WhyCard({ card, isActive, onHover }: WhyCardProps) {
 }
 
 // === Delivery Category
-interface DeliverCategory {
-  title: string;
-  subtitle: string;
-  images: string[];
+interface DeliverVariant {
+  name: string;
+  image: string;
 }
 
-const deliverCategories: DeliverCategory[] = [
+interface WhatWeDeliverCategory {
+  title: string;
+  variants: DeliverVariant[];
+}
+
+const whatWeDeliverCategories: WhatWeDeliverCategory[] = [
   {
-    title: "Grain & Staples",
-    subtitle: "Rice, Beans, Garri",
-    images: [
-      "/images/deliver-grains-staples-1.jpg",
-      "/images/deliver-grains-staples-2.jpg",
-      "/images/deliver-grains-staples-3.jpg",
+    title: "Grains & Staples",
+    variants: [
+      {
+        name: "Local White Rice",
+        image: "/images/deliver-grains-staples-1.jpg",
+      },
+      { name: "Ofada Rice", image: "/images/deliver-grains-staples-2.jpg" },
+      { name: "Tuwo Rice", image: "/images/deliver-grains-staples-3.jpg" },
     ],
   },
   {
-    title: "Grains",
-    subtitle: "Beans",
-    images: [
-      "/images/deliver-grains-1.jpg",
-      "/images/deliver-grains-2.jpg",
-      "/images/deliver-grains-3.jpg",
+    title: "Beans",
+    variants: [
+      { name: "Wake Gida", image: "/images/deliver-grains-1.jpg" },
+      { name: "Cowpea", image: "/images/deliver-grains-2.jpg" },
+      { name: "Soya Beans", image: "/images/deliver-grains-3.jpg" },
     ],
   },
   {
     title: "Oil & Protein",
-    subtitle: "Groundnut oil, Palm Oil",
-    images: [
-      "/images/deliver-oil-protein-1.jpg",
-      "/images/deliver-oil-protein-2.jpg",
-      "/images/deliver-oil-protein-3.jpg",
+    variants: [
+      { name: "Fresh Palm Oil", image: "/images/deliver-oil-protein-1.jpg" },
+      { name: "Groundnut Oil", image: "/images/deliver-oil-protein-2.jpg" },
+      { name: "Vegetable Oil", image: "/images/deliver-oil-protein-3.jpg" },
     ],
   },
   {
     title: "Tubers",
-    subtitle: "Yam, Potato",
-    images: [
-      "/images/deliver-tubers-1.jpg",
-      "/images/deliver-tubers-2.jpg",
-      "/images/deliver-tubers-3.jpg",
+    variants: [
+      { name: "Yam", image: "/images/deliver-tubers-1.jpg" },
+      { name: "Irish Potato", image: "/images/deliver-tubers-2.jpg" },
     ],
   },
 ];
 
-// === WhatWeDeliver: 4 cards visible on lg, infinite marquee through all 6
 // === DeliverCard: images static on load, cycle right-to-left only on hover
-function DeliverCard({ category }: { category: DeliverCategory }) {
-  const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
+// === Subtitle fades out on index change, fades in 1.6s later (600ms transition + 1s hold)
+function DeliverCard({
+  whatWeDeliverCategory,
+}: {
+  whatWeDeliverCategory: WhatWeDeliverCategory;
+}) {
+  const [activeIndex, setActiveIndex] = useState<number>(0);
   const [isHovered, setIsHovered] = useState<boolean>(false);
+  const [subtitleVisible, setSubtitleVisible] = useState<boolean>(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const subtitleTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { variants } = whatWeDeliverCategory;
 
   const startCycling = () => {
-    if (category.images.length <= 1) return;
+    if (variants.length <= 1) return;
     intervalRef.current = setInterval(() => {
-      setActiveImageIndex((prev) => (prev + 1) % category.images.length);
+      setActiveIndex((prev) => (prev + 1) % variants.length);
+      setSubtitleVisible(false);
+      if (subtitleTimerRef.current) clearTimeout(subtitleTimerRef.current);
+      subtitleTimerRef.current = setTimeout(
+        () => setSubtitleVisible(true),
+        1600,
+      );
     }, 900);
   };
 
@@ -154,12 +171,18 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    setActiveImageIndex(0);
+    if (subtitleTimerRef.current) {
+      clearTimeout(subtitleTimerRef.current);
+      subtitleTimerRef.current = null;
+    }
+    setActiveIndex(0);
+    setSubtitleVisible(true);
   };
 
   useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
+      if (subtitleTimerRef.current) clearTimeout(subtitleTimerRef.current);
     };
   }, []);
 
@@ -175,22 +198,18 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
       }}
       whileHover={{ scale: 1.04 }}
       transition={{ duration: 0.3 }}
-      className="group relative h-95 w-65 shrink-0 cursor-default overflow-hidden rounded-3xl shadow-lg"
+      className="group relative h-80 w-55 shrink-0 cursor-default overflow-hidden rounded-3xl shadow-lg sm:h-95 sm:w-65"
     >
       {/* Images - static until hover, then swipe right-to-left */}
-      {category.images.map((src, idx) => (
+      {variants.map(({ image, name }, idx) => (
         <motion.img
-          key={src}
-          src={src}
-          alt={`${category.title} - image ${idx + 1}`}
+          key={image}
+          src={image}
+          alt={`${whatWeDeliverCategory.title} — ${name}`}
           className="absolute inset-0 h-full w-full object-cover"
           animate={{
             x:
-              idx === activeImageIndex
-                ? "0%"
-                : idx < activeImageIndex
-                  ? "-100%"
-                  : "100%",
+              idx === activeIndex ? "0%" : idx < activeIndex ? "-100%" : "100%",
           }}
           transition={{ duration: 0.6, ease: "easeInOut" }}
         />
@@ -199,20 +218,29 @@ function DeliverCard({ category }: { category: DeliverCategory }) {
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-linear-to-t from-black/60 via-[#666666]/30 to-transparent" />
 
-      {/* Label */}
-      <div className="font-open-sans p-base bottom-base absolute right-0 left-0 flex flex-col gap-1 pb-(--space-base) text-white">
-        <p className="text-lg font-semibold">{category.title}</p>
-        <p className="text-base">{category.subtitle}</p>
+      {/* Label — title always visible, subtitle fades on index change */}
+      <div className="font-open-sans absolute right-0 bottom-4 left-0 flex flex-col gap-1 p-4 text-white">
+        <p className="text-lg font-semibold">{whatWeDeliverCategory.title}</p>
+        <motion.p
+          animate={{
+            opacity: subtitleVisible ? 1 : 0,
+            y: subtitleVisible ? 0 : 4,
+          }}
+          transition={{ duration: 0.35 }}
+          className="text-base"
+        >
+          {variants[activeIndex].name}
+        </motion.p>
       </div>
 
       {/* Image dots - visible on hover */}
-      {isHovered && category.images.length > 1 && (
+      {isHovered && variants.length > 1 && (
         <div className="absolute bottom-20 left-1/2 flex -translate-x-1/2 gap-1.5">
-          {category.images.map((_, i) => (
+          {variants.map((_, i) => (
             <div
               key={i}
               className={`h-1.5 w-1.5 rounded-full transition-all ${
-                i === activeImageIndex ? "scale-110 bg-white" : "bg-white/50"
+                i === activeIndex ? "scale-110 bg-white" : "bg-white/50"
               }`}
             />
           ))}
@@ -232,9 +260,9 @@ function WhatWeDeliver() {
   const cardWidth = 260; // w-65
   const gap = 24; // gap-6 = 24px
   const step = cardWidth + gap;
-  const totalCards = deliverCategories.length;
+  const totalCards = whatWeDeliverCategories.length;
   // === Render doubled list - when offset hits totalCards, silently snap back to 0
-  const doubled = [...deliverCategories, ...deliverCategories];
+  const doubled = [...whatWeDeliverCategories, ...whatWeDeliverCategories];
 
   useEffect(() => {
     if (isHovered) {
@@ -266,22 +294,22 @@ function WhatWeDeliver() {
   return (
     <section
       id="what-we-deliver"
-      className="font-syne gap-3xl px-section-px sm:px-section-px-sm lg:px-section-px-lg py-section-py sm:py-section-py-sm lg:py-section-py-lg relative mx-auto flex w-full flex-col bg-white"
+      className="font-syne px-section-px py-section-py sm:px-section-px-sm sm:py-section-py-sm lg:px-section-px-lg lg:py-section-py-lg relative mx-auto flex w-full flex-col gap-10 bg-white"
     >
       {/* Header */}
-      <div className="lg:gap-xl flex flex-col gap-3">
+      <div className="flex flex-col gap-3 lg:gap-6">
         <p className="text-primary-light text-xl tracking-widest">
           What we deliver
         </p>
 
-        <div className="gap-xl flex w-full flex-wrap items-start justify-between">
-          <h2 className="text-primary font-syne max-w-188 text-3xl leading-tight font-extrabold sm:text-4xl lg:text-[50px] lg:font-bold">
+        <div className="flex w-full flex-wrap items-start justify-between gap-6">
+          <h2 className="text-primary font-syne lg:text-50 max-w-188 text-3xl leading-tight font-extrabold sm:text-4xl lg:font-bold">
             Everything you spend on at the market.
           </h2>
 
           <PrimaryLink
-            href="https://wa.me/+2348167042797"
-            className="font-syne py-md px-xl text-xl font-bold sm:text-2xl lg:text-3xl"
+            href="https://wa.me/+2347012288798"
+            className="font-syne px-6 py-3 text-xl font-bold sm:text-2xl lg:text-3xl"
           >
             Send Order
           </PrimaryLink>
@@ -309,7 +337,7 @@ function WhatWeDeliver() {
           {doubled.map((category, index) => (
             <DeliverCard
               key={`${category.title}-${index}`}
-              category={category}
+              whatWeDeliverCategory={category}
             />
           ))}
         </motion.div>
@@ -361,12 +389,63 @@ export function meta({}: Route.MetaArgs) {
     {
       name: "description",
       content:
-        "Fresh foodstuff delivered straight to your door or shop at market prices.",
+        "Fresh foodstuff delivered straight to your door step at the same price you'd pay at Central Market. Rice, beans, palm oil and more. Serving Kaduna.",
     },
+    {
+      name: "keywords",
+      content:
+        "fresh foodstuff delivery Kaduna, market price food delivery Nigeria, rice beans delivery Kaduna, Debridgers, affordable food delivery Kaduna, palm oil delivery Nigeria, fresh produce Kaduna",
+    },
+
+    // === Open Graph
+    { property: "og:type", content: "website" },
+    { property: "og:url", content: "https://debridgers.com" },
+    { property: "og:site_name", content: "Debridgers" },
+    {
+      property: "og:title",
+      content: "Debridgers | Market Prices. Zero Market Stress.",
+    },
+    {
+      property: "og:description",
+      content:
+        "Fresh foodstuff at Central Market prices, delivered to your door. Rice, beans, palm oil and more — serving Kaduna.",
+    },
+    { property: "og:image", content: "https://debridgers.com/og-image.png" },
+    { property: "og:image:width", content: "1200" },
+    { property: "og:image:height", content: "630" },
+    {
+      property: "og:image:alt",
+      content: "Debridgers — fresh foodstuff at market prices in Kaduna",
+    },
+    { property: "og:locale", content: "en_NG" },
+
+    // === Twitter
+    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:site", content: "@debridgers" },
+    { name: "twitter:url", content: "https://debridgers.com" },
+    {
+      name: "twitter:title",
+      content: "Debridgers | Market Prices. Zero Market Stress.",
+    },
+    {
+      name: "twitter:description",
+      content:
+        "Fresh foodstuff at Central Market prices, delivered to your door. Rice, beans, palm oil and more — serving Kaduna.",
+    },
+    { name: "twitter:image", content: "https://debridgers.com/og-image.png" },
+    {
+      name: "twitter:image:alt",
+      content: "Debridgers — fresh foodstuff at market prices in Kaduna",
+    },
+
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "index, follow" },
   ];
 }
 
 export default function Home() {
+  const { isAuthenticated, dashboardPath } = useAuth();
   const [activeWhyCardIndex, setActiveWhyCardIndex] = useState<number>(0);
   const currentIndex = useImageCycle(1);
   const activeTrustIndex = useTrustCycle(4);
@@ -381,15 +460,18 @@ export default function Home() {
   return (
     <>
       {/* Header */}
-      <div className="top-md sticky z-50">
+      <div className="sticky top-3 z-50">
         <Header
           navLinks={[
             { label: "Home", href: "/" },
+            { label: "Shop", href: "/shop" },
             { label: "Agents", href: "/agents" },
             { label: "Contact Us", href: "/contact" },
           ]}
           signUpHref="/signup"
           heroSectionId="hero-section"
+          isAuthenticated={isAuthenticated}
+          dashboardPath={dashboardPath}
         />
       </div>
 
@@ -424,9 +506,9 @@ export default function Home() {
             {/* Content Wrapper */}
             <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex h-screen w-full flex-col justify-between gap-8 md:gap-6 xl:gap-10">
               <div className="relative flex flex-1 flex-col pt-20 sm:pt-24 lg:pt-32">
-                <div className="gap-xl lg:gap-3xl flex flex-1 flex-col justify-center">
+                <div className="flex flex-1 flex-col justify-center gap-6 lg:gap-10">
                   {/* Location badge */}
-                  <div className="text-primary font-open-sans p-sm border-primary inline-flex w-fit items-center gap-1 rounded-full border bg-[#A5BDA8] text-sm font-semibold shadow-[50px] backdrop-blur-lg">
+                  <div className="text-primary bg-text2 font-open-sans border-primary shadow-50 flex w-fit items-center gap-1 rounded-full border p-2 text-sm font-semibold backdrop-blur-lg">
                     <span className="bg-primary h-1.5 w-1.5 rounded-full" />
                     Now Serving in Kaduna
                   </div>
@@ -434,7 +516,7 @@ export default function Home() {
                   {/* Heading and Paragraph */}
                   <div className="flex flex-col gap-6">
                     {/* Heading */}
-                    <h1 className="flex flex-col text-4xl leading-tight font-bold text-white sm:text-5xl md:text-6xl lg:text-7xl">
+                    <h1 className="flex flex-col text-4xl leading-tight font-bold text-white sm:text-5xl md:text-6xl lg:text-7xl 2xl:text-8xl">
                       <span>Market Prices.</span>
                       <span className="flex flex-wrap items-baseline gap-x-3">
                         {/* Curved Underlined Zero */}
@@ -447,9 +529,7 @@ export default function Home() {
                         </div>
                         {/* Highlighted Market */}
                         <div className="relative inline-block">
-                          <span style={{ color: "var(--secondary-color)" }}>
-                            Market
-                          </span>
+                          <span className="text-secondary">Market</span>
                         </div>
                         {/* White Zero */}
                         <span>Stress.</span>
@@ -457,7 +537,7 @@ export default function Home() {
                     </h1>
 
                     {/* Subtext */}
-                    <p className="w-full max-w-90 text-base leading-relaxed font-semibold text-white sm:text-lg lg:max-w-144 lg:text-xl">
+                    <p className="w-full max-w-90 text-base leading-relaxed font-medium text-white sm:text-lg lg:max-w-144 lg:text-xl">
                       Fresh foodstuff delivered straight to your door step. At
                       the same price you&apos;d pay at Central Market.
                     </p>
@@ -483,9 +563,9 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="gap-4xl relative flex w-full flex-col lg:gap-4">
+              <div className="relative flex w-full flex-col gap-12 lg:gap-4">
                 {/* Trust bar */}
-                <div className="bg-primary py-xl px-base mx-auto w-full shadow-md">
+                <div className="bg-primary mx-auto w-full px-4 py-6 shadow-md">
                   {/* Mobile: slideshow */}
                   <div className="relative flex h-6 items-center justify-center overflow-hidden lg:hidden">
                     <AnimatePresence mode="sync">
@@ -512,7 +592,7 @@ export default function Home() {
                     {trustItems.map((item, i) => (
                       <div
                         key={item.label}
-                        className={`gap-xl px-base flex shrink-0 items-center text-white ${i < trustItems.length - 1 ? "border-r border-[#FCFDFD]" : ""}`}
+                        className={`flex shrink-0 items-center gap-6 px-4 text-white ${i < trustItems.length - 1 ? "border-r border-[#FCFDFD]" : ""}`}
                       >
                         <span className="text-[#FCFDFD]">
                           {renderIcon(item.icon)}
@@ -535,14 +615,14 @@ export default function Home() {
         id="how-it-works"
         className="py-section-py px-section-px sm:px-section-px-sm lg:px-section-px-lg sm:py-section-py-sm lg:py-section-py-lg relative mx-auto w-full bg-white"
       >
-        <div className="gap-4xl grid items-center lg:grid-cols-2">
+        <div className="grid items-center gap-12 lg:grid-cols-2">
           {/* Left Content */}
           <motion.div
             initial={{ opacity: 0, x: -24 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="gap-3xl flex flex-col"
+            className="flex flex-col gap-10"
           >
             <div className="flex flex-col gap-3">
               <p className="text-text text-sm font-semibold">How it works</p>
@@ -553,7 +633,7 @@ export default function Home() {
 
             <div className="flex flex-col">
               {/* Step 1 */}
-              <div className="py-base text-text flex gap-6 border-b border-[#E5E7EB]">
+              <div className="text-text flex gap-6 border-b border-[#E5E7EB] py-4">
                 <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
                   01
                 </div>
@@ -570,7 +650,7 @@ export default function Home() {
 
               {/* Step 2 */}
 
-              <div className="py-base text-text flex gap-6">
+              <div className="text-text flex gap-6 py-4">
                 <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
                   02
                 </div>
@@ -602,7 +682,7 @@ export default function Home() {
                 className="h-full max-h-130 w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-105 lg:max-h-132"
               />
               {/* Delivery Info Card */}
-              <div className="bg-primary-light border-primary-light absolute right-2.5 bottom-2.5 left-2.5 flex flex-col gap-2.5 rounded-3xl border px-[24px] py-[12px] text-white shadow-md">
+              <div className="bg-primary-light border-primary-light absolute right-2.5 bottom-2.5 left-2.5 flex flex-col gap-2.5 rounded-3xl border px-6 py-3 text-white shadow-md">
                 <div className="flex items-center gap-2.5 text-sm sm:text-base">
                   Next Delivery
                 </div>
@@ -621,9 +701,9 @@ export default function Home() {
       {/* Why Debridgers */}
       <section
         id="why-debridgers"
-        className="py-section-py px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-3xl sm:py-section-py-sm lg:py-section-py-lg font-syne relative mx-auto flex w-full flex-col bg-[#F6F3F3]"
+        className="font-syne px-section-px py-section-py sm:px-section-px-sm sm:py-section-py-sm lg:px-section-px-lg lg:py-section-py-lg relative mx-auto flex w-full flex-col gap-10 bg-[#F6F3F3]"
       >
-        <div className="lg:gap-xl flex flex-col gap-3">
+        <div className="flex flex-col gap-3 lg:gap-6">
           <p className="text-primary-light text-xl tracking-widest">
             Why Debridgers
           </p>
@@ -660,9 +740,9 @@ export default function Home() {
         </div>
 
         {/* Stats */}
-        <div className="px-section-px px sm:px-section-px-sm lg:px-section-px-lg lg:gap-4xl relative z-10 mx-auto flex w-full flex-col">
-          <div className="font-syne pb-2xl flex flex-col gap-3">
-            <p className="text-text2 text-xl tracking-[3px] uppercase">
+        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex w-full flex-col lg:gap-12">
+          <div className="font-syne flex flex-col gap-3 pb-8">
+            <p className="text-text2 text-xl tracking-wider uppercase">
               Early Numbers
             </p>
             <h2 className="w-full text-3xl leading-tight font-bold sm:text-4xl lg:text-5xl lg:font-extrabold">
@@ -670,7 +750,7 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="sm:gap-3xl grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-4 sm:gap-10">
             {stats.map((stat, i) => {
               const displayValue = statsFormatters[i](stat.value);
               return (
@@ -685,7 +765,7 @@ export default function Home() {
                   <div className="text-secondary font-syne text-2xl leading-none font-extrabold sm:text-4xl lg:text-5xl">
                     {displayValue}
                   </div>
-                  <p className="font-open-sans text-body-sm text-white sm:text-base lg:text-lg">
+                  <p className="font-open-sans sm:text-body-sm text-xs text-white lg:text-base">
                     {stat.label}
                   </p>
                 </motion.div>
@@ -700,7 +780,13 @@ export default function Home() {
           <div className="pointer-events-none absolute inset-0 rounded-full border-20 border-[#A5BDA8]/40" />
 
           {/* Middle */}
-          <div className="pointer-events-none absolute inset-[40px] rounded-full border-20 border-[#A5BDA8]/40" />
+          <div
+            className="pointer-events-none absolute inset-10 rounded-full border-20"
+            style={{
+              borderColor:
+                "color-mix(in srgb, var(--text-colour2) 40%, transparent)",
+            }}
+          />
 
           {/* Inner */}
           <div className="pointer-events-none absolute inset-20 rounded-full border-20 border-[#A5BDA8]/40" />
@@ -718,17 +804,17 @@ export default function Home() {
           <BlurDot className="absolute bottom-[70%] left-[90%] h-30 w-28 lg:left-[70%]" />
         </div>
 
-        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg gap-xl lg:gap-3xl relative mx-auto flex w-full flex-col items-center justify-center text-center">
+        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg relative mx-auto flex w-full flex-col items-center justify-center gap-6 text-center lg:gap-10">
           <div className="flex flex-col gap-3">
             <p className="text-primary-light font-open-sans text-center text-lg font-semibold tracking-widest lg:text-xl">
               Get started
             </p>
 
-            <h2 className="text-primary font-syne mx-auto w-full max-w-64 text-center text-4xl leading-tight font-extrabold sm:max-w-125 sm:text-5xl lg:max-w-208 lg:text-6xl">
+            <h2 className="text-primary font-syne mx-auto w-full max-w-110 text-center text-4xl leading-tight font-extrabold sm:max-w-125 sm:text-5xl lg:max-w-208 lg:text-6xl">
               Your first delivery is on us.
             </h2>
 
-            <p className="text-primary font-open-sans mx-auto w-full max-w-64 text-base sm:max-w-125 lg:max-w-208 lg:text-lg">
+            <p className="text-primary font-open-sans mx-auto w-full max-w-120 text-base sm:max-w-125 lg:max-w-208 lg:text-lg">
               Join early and get free delivery on your first order. Just send us
               a WhatsApp and we&apos;ll take it from there.
             </p>
@@ -737,121 +823,6 @@ export default function Home() {
           <WhatsAppButton label="Chat with us on whatsApp" />
         </div>
       </section>
-
-      {/* Partnership Section */}
-      {/* <section
-        id="partnership"
-        className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative bg-[#F6F3F3]"
-      >
-        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto w-full">
-          <div className="gap-4xl grid lg:grid-cols-2">
-            {/* Left Content *
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="lg:gap-3xl gap-xl flex flex-col"
-            >
-              <div className="gap-xl flex flex-col">
-                <div className="bg-primary-light/80 text-primary font-open-sans border-primary gap-2 px-base inline-flex w-fit items-center rounded-full border py-1.5 text-base tracking-widest uppercase lg:text-lg">
-                  Official Partnership
-                </div>
-
-                <p className="text-text font-open-sans text-base tracking-widest uppercase lg:text-lg">
-                  Stronger Together
-                </p>
-              </div>
-
-              <h2 className="text-text w-full text-xl leading-tight font-extrabold sm:max-w-125 sm:text-2xl lg:max-w-[601px] lg:text-3xl">
-                Backed by those who&apos;ve been doing this longest.
-              </h2>
-
-              <p className="text-text text-base leading-relaxed lg:max-w-[570px] lg:text-lg">
-                Debridgers is proudly partnering with an established agro
-                marketplace that has been connecting Nigerian farmers directly
-                to buyers long before we launched. Together, we bring a wider
-                farmer network and deeper reach to your doorstep.
-              </p>
-
-              <a
-                href="https://agrolinking.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group text-secondary hover:gap-4 gap-2 inline-flex w-fit cursor-pointer items-center text-lg transition-all duration-300 ease-in-out sm:text-xl lg:text-2xl"
-              >
-                See what Agrolinking does
-                <Icon
-                  icon="lucide:arrow-right"
-                  className="h-4 w-4 transition-transform duration-300 ease-in-out group-hover:translate-x-1"
-                />
-              </a>
-            </motion.div>
-
-            {/* Right: Partner Card *
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.15 }}
-              className="bg-primary-light/80 flex h-fit flex-col gap-[32px] rounded-3xl px-8 py-12 text-white"
-            >
-              <div className="gap-4 flex items-center justify-between">
-                <div className="flex flex-1 flex-col truncate">
-                  <div className="h-[30px] w-[130px]">
-                    <img
-                      src="/logos/agrolinking.png"
-                      alt="Agro-Linking Logo"
-                      className="block"
-                    />
-                  </div>
-
-                  <div className="font-open-sans text-base text-white">
-                    Farm-to-table marketplace.
-                    <br />
-                    Est. Nigeria.
-                  </div>
-                </div>
-
-                <div className="bg-primary gap-2 flex shrink-0 items-center rounded-full px-(--space-md) py-1 text-base lg:text-lg">
-                  <Icon
-                    icon="lucide:check"
-                    className="h-3.5 w-3.5 text-white"
-                  />
-                  Partner
-                </div>
-              </div>
-
-              <div className="font-open-sans gap-xl flex flex-col">
-                <p className="font-open-sans text-base tracking-widest text-white uppercase lg:text-lg">
-                  What this means for you
-                </p>
-
-                <ul className="gap-4 flex flex-col text-sm text-green-100">
-                  {[
-                    "Access to a larger, verified network of food directly from farm",
-                    "More consistent stock, even during off-season period",
-                    "Two teams, one mission: fresh food at honest prices",
-                  ].map((item) => (
-                    <li
-                      key={item}
-                      className="font-open-sans gap-3 flex items-start"
-                    >
-                      <span
-                        className="shrink-0 text-xl font-bold"
-                        style={{ color: "var(--secondary-color)" }}
-                      >
-                        •
-                      </span>
-                      <span className="text-base text-white"> {item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section> */}
     </>
   );
 }

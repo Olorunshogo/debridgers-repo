@@ -5,10 +5,15 @@ import { resolve } from "path";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-  optimizeDeps: {
-    exclude: ["framer-motion", "@iconify/react", "lucide-react"],
-  },
   root: __dirname,
+  optimizeDeps: {
+    include: [
+      "framer-motion",
+      "framer-motion/dom",
+      "@iconify/react",
+      "lucide-react",
+    ],
+  },
   plugins: [
     tailwindcss(),
     reactRouter(),
@@ -27,7 +32,7 @@ export default defineConfig({
     },
   ],
   resolve: {
-    dedupe: ["react", "react-dom", "react-router"],
+    dedupe: ["react", "react-dom", "react-router", "react-router/dom"],
     alias: {
       "@debridgers/ui-app": resolve(__dirname, "../../packages/ui-app/src"),
       "@debridgers/ui-web": resolve(__dirname, "../../packages/ui-web/src"),

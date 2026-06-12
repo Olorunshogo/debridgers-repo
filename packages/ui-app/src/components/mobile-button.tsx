@@ -6,15 +6,6 @@ type Props = {
 
 export function MobileButton({ children }: Props) {
   return (
-    <button
-      style={{
-        padding: 12,
-        borderRadius: 8,
-        background: "black",
-        color: "white",
-      }}
-    >
-      {children}
-    </button>
+    <button className="rounded-lg bg-black p-3 text-white">{children}</button>
   );
 }

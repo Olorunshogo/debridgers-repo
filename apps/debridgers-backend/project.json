@@ -47,6 +47,18 @@
         "command": "npx drizzle-kit {args}",
         "cwd": "apps/debridgers-backend"
       }
+    },
+    "docker": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "pnpm run docker:up",
+          "pnpm run db:migrate",
+          "pnpm run dev"
+        ],
+        "parallel": false,
+        "cwd": "apps/debridgers-backend"
+      }
     }
   }
 }

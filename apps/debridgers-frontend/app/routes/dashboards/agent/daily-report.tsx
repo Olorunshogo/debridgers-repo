@@ -64,19 +64,22 @@ function mapApiReport(r: ApiReport): ReportHistoryEntry {
 }
 
 // === Status styles
-const STATUS_STYLES: Record<ReportStatus, { color: string; icon: string }> = {
-  approved: { color: "var(--status-active-text)", icon: "✓" },
-  pending: { color: "var(--status-pending-text)", icon: "…" },
-  rejected: { color: "#DC2626", icon: "✗" },
-  missed: { color: "#DC2626", icon: "–" },
+const STATUS_STYLES: Record<
+  ReportStatus,
+  { colorClass: string; icon: string }
+> = {
+  approved: { colorClass: "text-status-active-text", icon: "✓" },
+  pending: { colorClass: "text-status-pending-text", icon: "…" },
+  rejected: { colorClass: "text-red-600", icon: "✗" },
+  missed: { colorClass: "text-red-600", icon: "–" },
 };
 
 // === Report History Card
 function ReportHistoryCard({ entries }: { entries: ReportHistoryEntry[] }) {
   const latest = entries.slice(0, 10);
   return (
-    <div className="border-border-gray flex flex-col overflow-hidden rounded-2xl border bg-white">
-      <div className="border-border-gray border-b px-5 py-4">
+    <div className="border-gray-border flex flex-col overflow-hidden rounded-2xl border bg-white">
+      <div className="border-gray-border border-b px-5 py-4">
         <h3 className="font-syne text-heading font-semibold">Report History</h3>
       </div>
       <div className="flex flex-col">
@@ -89,19 +92,12 @@ function ReportHistoryCard({ entries }: { entries: ReportHistoryEntry[] }) {
               initial={{ opacity: 0, x: 8 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.04 }}
-              className="border-border-gray flex items-center justify-between border-b px-5 py-3.5 last:border-0"
+              className="border-gray-border flex items-center justify-between border-b px-5 py-3.5 last:border-0"
             >
               <div className="flex flex-col gap-0.5">
-                <p className="text-xs" style={{ color: "var(--text-colour)" }}>
-                  {entry.dayLabel}
-                </p>
+                <p className="text-text text-xs">{entry.dayLabel}</p>
                 <p
-                  className="text-sm font-semibold"
-                  style={{
-                    color: isMissed
-                      ? "var(--text-colour)"
-                      : "var(--heading-colour)",
-                  }}
+                  className={`text-sm font-semibold ${isMissed ? "text-text" : "text-heading"}`}
                 >
                   {isMissed
                     ? `${entry.bagsSold} bag  Day off`
@@ -110,12 +106,11 @@ function ReportHistoryCard({ entries }: { entries: ReportHistoryEntry[] }) {
               </div>
               <div className="flex items-center gap-1.5">
                 <span
-                  className="font-syne text-sm font-semibold"
-                  style={{ color: s.color }}
+                  className={`font-syne text-sm font-semibold ${s.colorClass}`}
                 >
                   {isMissed ? "Miss" : entry.amount}
                 </span>
-                <span className="text-sm font-bold" style={{ color: s.color }}>
+                <span className={`text-sm font-bold ${s.colorClass}`}>
                   {s.icon}
                 </span>
               </div>
@@ -231,7 +226,7 @@ export default function AgentDailyReportPage() {
   return (
     <div className="py-section-py grid gap-6 lg:grid-cols-[1fr_453px]">
       {/* Left: Submit form */}
-      <div className="border-border-gray flex flex-col gap-5 rounded-2xl border bg-white p-6">
+      <div className="border-gray-border flex flex-col gap-5 rounded-2xl border bg-white p-6">
         <h3 className="font-syne text-heading text-lg font-semibold">
           Submit Today&apos;s Report
         </h3>
@@ -243,11 +238,7 @@ export default function AgentDailyReportPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
-              className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium"
-              style={{
-                backgroundColor: "var(--status-delivered-bg)",
-                color: "var(--status-delivered-text)",
-              }}
+              className="bg-status-delivered-bg text-status-delivered-text flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium"
             >
               <CheckCircle2 size={18} />
               Report submitted successfully!
@@ -261,13 +252,7 @@ export default function AgentDailyReportPage() {
               className="flex flex-col gap-6"
             >
               {submitError && (
-                <p
-                  className="rounded-xl px-4 py-3 text-sm"
-                  style={{
-                    backgroundColor: "var(--status-cancelled-bg)",
-                    color: "var(--status-cancelled-text)",
-                  }}
-                >
+                <p className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm">
                   {submitError}
                 </p>
               )}
@@ -341,7 +326,7 @@ export default function AgentDailyReportPage() {
               </div>
 
               {/* Submit */}
-              <div className="mx-auto w-full max-w-[410px]">
+              <div className="mx-auto w-full max-w-102.5">
                 <SubmitButton
                   loading={loading}
                   loadingText="Submitting…"
@@ -357,12 +342,11 @@ export default function AgentDailyReportPage() {
 
       {/* Right: History */}
       {historyLoading ? (
-        <div className="border-border-gray flex flex-col gap-3 overflow-hidden rounded-2xl border bg-white p-5">
+        <div className="border-gray-border flex flex-col gap-3 overflow-hidden rounded-2xl border bg-white p-5">
           {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className="h-12 animate-pulse rounded-xl"
-              style={{ backgroundColor: "var(--bg-light)" }}
+              className="bg-bg-light h-12 animate-pulse rounded-xl"
             />
           ))}
         </div>

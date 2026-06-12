@@ -14,17 +14,13 @@ export function PrimaryLink({
   style,
 }: PrimaryLinkProps) {
   const base =
-    "inline-flex items-center justify-center px-4 py-2.5 rounded-full font-semibold gap-2.5 font-semibold text-[#FCFDFD] transition-all text-base cursor-pointer duration-300 ease-in-out hover:opacity-90";
+    "bg-primary text-white inline-flex items-center justify-center gap-2.5 rounded-full px-4 py-2.5 text-base font-semibold transition-all duration-300 ease-in-out hover:opacity-90 cursor-pointer";
 
   return (
     <a
       href={href}
       className={className ? `${base} ${className}` : base}
-      style={{
-        backgroundColor: "var(--color-primary)",
-        color: "#fff",
-        ...style,
-      }}
+      style={style}
     >
       {children}
     </a>

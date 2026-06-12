@@ -9,6 +9,8 @@ export default [
   // === Landing Page Routes
   layout("routes/landing/layout.tsx", [
     index("routes/landing/home.tsx"),
+    route("shop", "routes/landing/shop.tsx"),
+    route("outreach", "routes/landing/outreach.tsx"),
     route("contact", "routes/landing/contact.tsx"),
     route("agents", "routes/landing/agents.tsx"),
   ]),
@@ -30,8 +32,8 @@ export default [
     route("buyer-dashboard/wallet", "routes/dashboards/buyer/wallet.tsx"),
     route("buyer-dashboard/checkout", "routes/dashboards/buyer/checkout.tsx"),
     route(
-      "buyer-dashboard/notification",
-      "routes/dashboards/buyer/notification.tsx",
+      "buyer-dashboard/notifications",
+      "routes/dashboards/buyer/notifications.tsx",
     ),
     route("buyer-dashboard/settings", "routes/dashboards/buyer/settings.tsx"),
     route("buyer-dashboard/help", "routes/dashboards/buyer/help.tsx"),

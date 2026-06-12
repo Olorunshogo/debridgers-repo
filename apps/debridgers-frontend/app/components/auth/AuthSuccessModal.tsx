@@ -33,21 +33,13 @@ export default function AuthSuccessModal({
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 260, damping: 22 }}
         onClick={(e) => e.stopPropagation()}
-        className="flex w-full max-w-[480px] flex-col items-center gap-6 rounded-3xl bg-white px-8 py-10 text-center shadow-2xl"
+        className="flex w-full max-w-120 flex-col items-center gap-6 rounded-3xl bg-white px-8 py-10 text-center shadow-2xl"
       >
-        <CheckCircle2 size={56} style={{ color: "var(--primary-color)" }} />
+        <CheckCircle2 size={56} className="text-primary" />
 
         <div className="flex flex-col gap-2">
-          <h2
-            className="font-syne text-2xl font-bold"
-            style={{ color: "var(--heading-colour)" }}
-          >
-            {title}
-          </h2>
-          <p
-            className="font-open-sans text-sm leading-relaxed"
-            style={{ color: "var(--text-colour)" }}
-          >
+          <h2 className="font-syne text-heading text-2xl font-bold">{title}</h2>
+          <p className="text-text font-open-sans text-sm leading-relaxed">
             {description}
           </p>
         </div>
@@ -55,8 +47,7 @@ export default function AuthSuccessModal({
         <button
           type="button"
           onClick={handleRedirect}
-          className="w-full rounded-full py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-          style={{ backgroundColor: "var(--primary-color)" }}
+          className="bg-primary w-full rounded-full py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
         >
           {submitButtonText}
         </button>

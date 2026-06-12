@@ -212,20 +212,10 @@ export default function VerifyEmailPage() {
 
   // ── Slot style ────────────────────────────────────────────────────────────
 
-  function slotStyle(index: number): React.CSSProperties {
-    return {
-      width: 48,
-      height: 52,
-      borderRadius: 8,
-      border: `1.5px solid ${focusedIndex === index ? "var(--primary-color)" : "var(--border-gray)"}`,
-      textAlign: "center" as const,
-      fontSize: "1.25rem",
-      fontWeight: 600,
-      color: "var(--heading-colour)",
-      background: "white",
-      outline: "none",
-      transition: "border-color 0.15s",
-    };
+  function slotClass(index: number): string {
+    return `h-[52px] w-12 rounded-lg border-[1.5px] bg-white text-center text-xl font-semibold text-heading outline-none transition-colors ${
+      focusedIndex === index ? "border-primary" : "border-gray-border"
+    }`;
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -275,18 +265,12 @@ export default function VerifyEmailPage() {
 
             {/* Heading */}
             <div className="flex flex-col gap-1">
-              <h1
-                className="font-syne text-2xl font-bold"
-                style={{ color: "var(--heading-colour)" }}
-              >
+              <h1 className="font-syne text-heading text-2xl font-bold">
                 Verify your email
               </h1>
-              <p className="text-sm" style={{ color: "var(--text-colour)" }}>
+              <p className="text-text text-sm">
                 Enter the 6-digit code we sent to{" "}
-                <span
-                  className="font-semibold"
-                  style={{ color: "var(--heading-colour)" }}
-                >
+                <span className="text-heading font-semibold">
                   {email || "your email"}
                 </span>
               </p>
@@ -299,10 +283,7 @@ export default function VerifyEmailPage() {
             >
               {/* OTP field label row */}
               <div className="flex items-center justify-between">
-                <label
-                  className="text-sm font-medium"
-                  style={{ color: "var(--heading-colour)" }}
-                >
+                <label className="text-heading text-sm font-medium">
                   Verification code
                 </label>
 
@@ -312,8 +293,7 @@ export default function VerifyEmailPage() {
                     type="button"
                     onClick={handleResend}
                     disabled={resendCooldown > 0 || resendLoading}
-                    className="flex items-center gap-1.5 text-xs font-semibold transition-opacity disabled:opacity-50"
-                    style={{ color: "var(--primary-color)" }}
+                    className="text-primary flex items-center gap-1.5 text-xs font-semibold transition-opacity disabled:opacity-50"
                   >
                     <RefreshCw
                       size={13}
@@ -347,17 +327,14 @@ export default function VerifyEmailPage() {
                       onPaste={handlePaste}
                       onFocus={() => setFocusedIndex(i)}
                       onBlur={() => setFocusedIndex(null)}
-                      style={slotStyle(i)}
+                      className={slotClass(i)}
                       aria-label={`Digit ${i + 1}`}
                     />
                   ))}
                 </div>
 
                 {/* Separator */}
-                <span
-                  className="text-xl font-bold select-none"
-                  style={{ color: "var(--border-gray)" }}
-                >
+                <span className="text-gray-border text-xl font-bold select-none">
                   -
                 </span>
 
@@ -378,7 +355,7 @@ export default function VerifyEmailPage() {
                       onPaste={handlePaste}
                       onFocus={() => setFocusedIndex(i)}
                       onBlur={() => setFocusedIndex(null)}
-                      style={slotStyle(i)}
+                      className={slotClass(i)}
                       aria-label={`Digit ${i + 1}`}
                     />
                   ))}
@@ -387,7 +364,7 @@ export default function VerifyEmailPage() {
 
               {/* Max resend message */}
               {maxResendReached && (
-                <p className="text-xs" style={{ color: "var(--text-colour)" }}>
+                <p className="text-text text-xs">
                   Maximum resend attempts reached.
                 </p>
               )}
@@ -399,11 +376,7 @@ export default function VerifyEmailPage() {
                     initial={{ opacity: 0, y: -6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
-                    className="rounded-xl px-4 py-3 text-sm"
-                    style={{
-                      backgroundColor: "var(--status-cancelled-bg)",
-                      color: "var(--status-cancelled-text)",
-                    }}
+                    className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
                   >
                     {apiError}
                   </motion.p>
@@ -420,15 +393,11 @@ export default function VerifyEmailPage() {
               </SubmitButton>
             </form>
 
-            <p
-              className="text-center text-sm"
-              style={{ color: "var(--text-colour)" }}
-            >
+            <p className="text-text text-center text-sm">
               Wrong email?{" "}
               <Link
                 to="/signup"
-                className="font-semibold underline underline-offset-2"
-                style={{ color: "var(--primary-color)" }}
+                className="text-primary font-semibold underline underline-offset-2"
               >
                 Go back to sign up
               </Link>

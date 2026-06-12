@@ -57,16 +57,16 @@ function mapBuyer(b: ApiBuyer): BuyerRow {
 
 const STATUS_BADGE: Record<
   BuyerStatus,
-  { bg: string; text: string; label: string }
+  { bgClass: string; textClass: string; label: string }
 > = {
   active: {
-    bg: "var(--status-active-bg)",
-    text: "var(--status-active-text)",
+    bgClass: "bg-status-active-bg",
+    textClass: "text-status-active-text",
     label: "Active",
   },
   inactive: {
-    bg: "var(--status-cancelled-bg)",
-    text: "var(--status-cancelled-text)",
+    bgClass: "bg-status-cancelled-bg",
+    textClass: "text-status-cancelled-text",
     label: "Blocked",
   },
 };
@@ -97,53 +97,29 @@ export default function AdminBuyers() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <ShoppingBag size={24} style={{ color: "var(--primary-color)" }} />
+          <ShoppingBag size={24} className="text-primary" />
           <div>
-            <h2
-              className="font-syne text-xl font-bold"
-              style={{ color: "var(--heading-colour)" }}
-            >
-              Buyers
-            </h2>
-            <p className="text-sm" style={{ color: "var(--text-colour)" }}>
+            <h2 className="font-syne text-heading text-xl font-bold">Buyers</h2>
+            <p className="text-text text-sm">
               {loading ? "Loading..." : `${buyers.length} registered buyers`}
             </p>
           </div>
         </div>
 
-        <div
-          className="flex items-center gap-2 rounded-full border px-4 py-2"
-          style={{
-            borderColor: "var(--border-gray)",
-            backgroundColor: "var(--white)",
-          }}
-        >
-          <Search size={15} style={{ color: "var(--text-colour)" }} />
+        <div className="border-gray-border flex items-center gap-2 rounded-full border bg-white px-4 py-2">
+          <Search size={15} className="text-text" />
           <input
             type="text"
             placeholder="Search buyers…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-transparent text-sm outline-none"
-            style={{ color: "var(--heading-colour)" }}
+            className="text-heading w-full bg-transparent text-sm outline-none"
           />
         </div>
       </div>
 
-      <div
-        className="overflow-hidden rounded-2xl border"
-        style={{
-          borderColor: "var(--border-gray)",
-          backgroundColor: "var(--white)",
-        }}
-      >
-        <div
-          className="grid grid-cols-[1fr_1fr_1fr_90px_80px] gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase"
-          style={{
-            borderColor: "var(--border-gray)",
-            color: "var(--text-colour)",
-          }}
-        >
+      <div className="border-gray-border overflow-hidden rounded-2xl border bg-white">
+        <div className="border-gray-border text-text grid grid-cols-[1fr_1fr_1fr_90px_80px] gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase">
           <span>Buyer</span>
           <span>Email</span>
           <span>Phone</span>
@@ -156,20 +132,12 @@ export default function AdminBuyers() {
             {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
-                className="h-14 animate-pulse border-b"
-                style={{
-                  borderColor: "var(--border-gray)",
-                  backgroundColor:
-                    i % 2 === 0 ? "var(--bg-light)" : "var(--white)",
-                }}
+                className={`border-gray-border h-14 animate-pulse border-b ${i % 2 === 0 ? "bg-bg-light" : "bg-white"}`}
               />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <p
-            className="px-5 py-8 text-center text-sm"
-            style={{ color: "var(--text-colour)" }}
-          >
+          <p className="text-text px-5 py-8 text-center text-sm">
             {search
               ? "No buyers match your search."
               : "No buyers registered yet."}
@@ -184,43 +152,23 @@ export default function AdminBuyers() {
                   initial={{ opacity: 0, x: -6 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.04 }}
-                  className="grid grid-cols-[1fr_1fr_1fr_90px_80px] gap-4 border-b px-5 py-4 text-sm last:border-0"
-                  style={{ borderColor: "var(--border-gray)" }}
+                  className="border-gray-border grid grid-cols-[1fr_1fr_1fr_90px_80px] gap-4 border-b px-5 py-4 text-sm last:border-0"
                 >
                   <div className="flex flex-col gap-0.5">
-                    <p
-                      className="font-semibold"
-                      style={{ color: "var(--heading-colour)" }}
-                    >
-                      {buyer.name}
-                    </p>
+                    <p className="text-heading font-semibold">{buyer.name}</p>
                     {buyer.verified && (
-                      <p
-                        className="text-xs"
-                        style={{ color: "var(--status-active-text)" }}
-                      >
+                      <p className="text-status-active-text text-xs">
                         ✓ Verified
                       </p>
                     )}
                   </div>
-                  <span
-                    className="truncate text-xs"
-                    style={{ color: "var(--text-colour)" }}
-                  >
+                  <span className="text-text truncate text-xs">
                     {buyer.email}
                   </span>
-                  <span style={{ color: "var(--text-colour)" }}>
-                    {buyer.phone}
-                  </span>
+                  <span className="text-text">{buyer.phone}</span>
+                  <span className="text-text text-xs">{buyer.joinedDate}</span>
                   <span
-                    className="text-xs"
-                    style={{ color: "var(--text-colour)" }}
-                  >
-                    {buyer.joinedDate}
-                  </span>
-                  <span
-                    className="w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                    style={{ backgroundColor: badge.bg, color: badge.text }}
+                    className={`flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.bgClass} ${badge.textClass}`}
                   >
                     {badge.label}
                   </span>

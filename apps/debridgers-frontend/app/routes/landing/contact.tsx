@@ -1,7 +1,8 @@
 import type { Route } from "./+types/contact";
 import { useState, useEffect, useRef } from "react";
-import { Header } from "../../components/Header";
-import { HeroSection } from "../../components/HeroSection";
+import { Header } from "../../components/landing/Header";
+import { useAuth } from "../../contexts/AuthContext";
+import { HeroSection } from "../../components/landing/HeroSection";
 import { Phone, Mail, Clock, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -40,10 +41,15 @@ export function meta({}: Route.MetaArgs) {
     { property: "og:image", content: "https://debridgers.com/og-image.png" },
     { property: "og:image:width", content: "1200" },
     { property: "og:image:height", content: "630" },
+    {
+      property: "og:image:alt",
+      content: "Debridgers — fresh foodstuff at market prices in Kaduna",
+    },
     { property: "og:locale", content: "en_NG" },
 
     // === Twitter
     { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:site", content: "@debridgers" },
     { name: "twitter:url", content: "https://debridgers.com/contact" },
     { name: "twitter:title", content: "Contact Debridgers | Get in Touch" },
     {
@@ -52,6 +58,10 @@ export function meta({}: Route.MetaArgs) {
         "Reach out to Debridgers for orders, partnership inquiries or support. We are available 24 hours a day.",
     },
     { name: "twitter:image", content: "https://debridgers.com/og-image.png" },
+    {
+      name: "twitter:image:alt",
+      content: "Debridgers — fresh foodstuff at market prices in Kaduna",
+    },
 
     // === Author and Robots
     { name: "author", content: "Debridgers Team" },
@@ -179,6 +189,7 @@ function ContactMap({
 
 // === Main Page
 export default function ContactPage() {
+  const { isAuthenticated, dashboardPath } = useAuth();
   const [form, setForm] = useState<ContactForm>({
     fullName: "",
     email: "",
@@ -246,14 +257,17 @@ export default function ContactPage() {
   return (
     <>
       {/* Header */}
-      <div className="top-md sticky z-500">
+      <div className="sticky top-3 z-500">
         <Header
           navLinks={[
             { label: "Home", href: "/" },
+            { label: "Shop", href: "/shop" },
             { label: "Agents", href: "/agents" },
             { label: "Contact Us", href: "/contact" },
           ]}
           signUpHref="/signup"
+          isAuthenticated={isAuthenticated}
+          dashboardPath={dashboardPath}
         />
       </div>
 
@@ -308,7 +322,7 @@ export default function ContactPage() {
             className="grid grid-cols-1 gap-7 lg:grid-cols-2 lg:gap-10"
           >
             {/* Form */}
-            <div className="border-primary flex flex-col gap-7 rounded-2xl border bg-white px-4.5 py-[20px] lg:border-0">
+            <div className="border-primary flex flex-col gap-7 rounded-2xl border bg-white px-4.5 py-5 lg:border-0">
               <h2 className="font-open-sans text-2xl font-semibold text-black">
                 Send Us A Message
               </h2>
@@ -322,21 +336,17 @@ export default function ContactPage() {
                     exit={{ opacity: 0 }}
                     className="flex flex-col items-center gap-(--gap-4) py-12 text-center"
                   >
-                    <CheckCircle2
-                      className="h-14 w-14"
-                      style={{ color: "var(--color-primary)" }}
-                    />
+                    <CheckCircle2 className="text-primary h-14 w-14" />
                     <h3 className="text-xl font-bold text-black">
                       Message sent!
                     </h3>
-                    <p className="max-w-xs text-sm text-gray-500">
+                    <p className="max-w-100 text-sm text-gray-500">
                       Thanks for reaching out. We&apos;ll get back to you
                       shortly.
                     </p>
                     <button
                       onClick={() => setSubmitted(false)}
-                      className="text-sm font-semibold underline underline-offset-2"
-                      style={{ color: "var(--color-primary)" }}
+                      className="text-primary text-sm font-semibold underline underline-offset-2"
                     >
                       Send another message
                     </button>
@@ -403,7 +413,7 @@ export default function ContactPage() {
               <div className="flex flex-col gap-3">
                 {contactItems.map(({ icon: Icon, label, value, href }) => {
                   const inner = (
-                    <div className="border-gray gap-md flex w-full items-center rounded-2xl border p-5 lg:border-0">
+                    <div className="border-gray-border flex w-full items-center gap-3 rounded-2xl border p-5 lg:border-0">
                       <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-[#A7E8BF]">
                         <Icon className="text-primary h-8 w-8" />
                       </span>
@@ -431,7 +441,7 @@ export default function ContactPage() {
               </div>
 
               {/* Map */}
-              <div className="border-gray relative h-96 overflow-hidden rounded-2xl border shadow-sm lg:h-auto lg:min-h-84 lg:flex-1">
+              <div className="border-gray-border relative h-96 overflow-hidden rounded-2xl border shadow-sm lg:h-auto lg:min-h-84 lg:flex-1">
                 <ContactMap lat={10.4831} lng={7.4324} zoom={15} />
                 <div className="absolute right-2 bottom-2 z-2 rounded bg-white/90 px-2 py-1 text-xs text-gray-500 shadow">
                   © OpenStreetMap

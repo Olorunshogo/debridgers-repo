@@ -18,6 +18,7 @@ import {
   Wallet,
   Headphones,
   ArrowUpRight,
+  ArrowRight,
 } from "lucide-react";
 import { HeroGreetingCard } from "../shared/HeroGreetingCard";
 import { apiFetch } from "@debridgers/api-client";
@@ -80,6 +81,7 @@ interface DashboardData {
     eta: string;
     steps: TrackingStep[];
     items: string[];
+    hasOrder: boolean;
   };
   spending: {
     weeks: SpendingWeek[];
@@ -204,6 +206,7 @@ function mapApiToDashboard(api: ApiDashboard): DashboardData {
       eta: "N/A",
       steps: trackingSteps,
       items: nd ? [`${nd.quantity} pack${nd.quantity !== 1 ? "s" : ""}`] : [],
+      hasOrder: !!nd,
     },
     spending: {
       weeks: [],
@@ -218,64 +221,45 @@ const quickActions: QuickAction[] = [
   { label: "New Order", icon: ShoppingCart, href: "/buyer-dashboard/shop" },
   { label: "Repeat Last", icon: RefreshCcw, href: "/buyer-dashboard/shop" },
   { label: "Add Funds", icon: Wallet, href: "/buyer-dashboard/wallet" },
-  { label: "Get help", icon: Headphones, href: "https://wa.me/+2348167042797" },
+  {
+    label: "Get help",
+    icon: Headphones,
+    href: "https://chat.whatsapp.com/GjMvQOIbO9qAFjUGR3ZYVK?s=sw&p=i&mlu=2",
+  },
 ];
 
 const statusStyles: Record<
   RecentOrder["status"],
-  { bg: string; text: string; label: string }
+  { bgClass: string; textClass: string; label: string }
 > = {
   "on-the-way": {
-    bg: "var(--status-on-the-way-bg)",
-    text: "var(--status-on-the-way-text)",
+    bgClass: "bg-status-on-the-way-bg",
+    textClass: "text-status-on-the-way-text",
     label: "On the way",
   },
   delivered: {
-    bg: "var(--status-delivered-bg)",
-    text: "var(--status-delivered-text)",
+    bgClass: "bg-status-delivered-bg",
+    textClass: "text-status-delivered-text",
     label: "✓ Delivered",
   },
   cancelled: {
-    bg: "var(--status-cancelled-bg)",
-    text: "var(--status-cancelled-text)",
+    bgClass: "bg-status-cancelled-bg",
+    textClass: "text-status-cancelled-text",
     label: "✕ Cancelled",
   },
 };
 
 function StatCardItem({ stat }: { stat: StatCard }) {
   return (
-    <div
-      className="flex flex-col gap-3 rounded-2xl border p-4"
-      style={{
-        borderColor: "var(--border-gray)",
-        backgroundColor: "var(--white)",
-      }}
-    >
+    <div className="border-gray-border flex flex-col gap-3 rounded-2xl border bg-white p-4">
       <div className="flex items-center justify-between">
-        <span className="text-sm" style={{ color: "var(--text-colour)" }}>
-          {stat.label}
-        </span>
-        <span
-          className="flex h-8 w-8 items-center justify-center rounded-full"
-          style={{ backgroundColor: "var(--bg-light)" }}
-        >
-          <Icon
-            icon={stat.icon}
-            className="h-4 w-4"
-            style={{ color: "var(--primary-color)" }}
-          />
+        <span className="text-text text-sm">{stat.label}</span>
+        <span className="bg-bg-light flex h-8 w-8 items-center justify-center rounded-full">
+          <Icon icon={stat.icon} className="text-primary h-4 w-4" />
         </span>
       </div>
-      <p
-        className="font-syne text-2xl font-bold"
-        style={{ color: "var(--heading-colour)" }}
-      >
-        {stat.value}
-      </p>
-      <p
-        className="flex items-center gap-1 text-xs"
-        style={{ color: "var(--primary-color)" }}
-      >
+      <p className="font-syne text-heading text-2xl font-bold">{stat.value}</p>
+      <p className="text-primary flex items-center gap-1 text-xs">
         <ArrowUpRight size={12} />
         {stat.trend}
       </p>
@@ -286,38 +270,17 @@ function StatCardItem({ stat }: { stat: StatCard }) {
 function OrderRow({ order }: { order: RecentOrder }) {
   const s = statusStyles[order.status];
   return (
-    <div
-      className="flex items-center justify-between rounded-xl px-4 py-3 transition-colors duration-150"
-      style={{ backgroundColor: "var(--white)" }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.backgroundColor =
-          "var(--dash-quick-action-hover)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.backgroundColor = "var(--white)";
-      }}
-    >
+    <div className="hover:bg-dash-quick-action-hover flex items-center justify-between rounded-xl bg-white px-4 py-3 transition-colors duration-150">
       <div className="flex flex-col gap-0.5">
-        <p
-          className="text-sm font-semibold"
-          style={{ color: "var(--heading-colour)" }}
-        >
-          {order.items}
-        </p>
-        <p className="text-xs" style={{ color: "var(--text-colour)" }}>
+        <p className="text-heading text-sm font-semibold">{order.items}</p>
+        <p className="text-text text-xs">
           {order.orderId} • {order.time}
         </p>
       </div>
       <div className="flex flex-col items-end gap-1">
-        <p
-          className="text-sm font-bold"
-          style={{ color: "var(--heading-colour)" }}
-        >
-          {order.amount}
-        </p>
+        <p className="text-heading text-sm font-bold">{order.amount}</p>
         <span
-          className="rounded-full px-2.5 py-0.5 text-xs font-medium"
-          style={{ backgroundColor: s.bg, color: s.text }}
+          className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${s.bgClass} ${s.textClass}`}
         >
           {s.label}
         </span>
@@ -340,16 +303,12 @@ export default function BuyerOverview() {
   if (loading || !data) {
     return (
       <div className="flex animate-pulse flex-col gap-6">
-        <div
-          className="h-40 rounded-2xl"
-          style={{ backgroundColor: "var(--border-gray)" }}
-        />
+        <div className="border-gray-border h-40 rounded-2xl border" />
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="h-28 rounded-2xl"
-              style={{ backgroundColor: "var(--border-gray)" }}
+              className="border-gray-border h-28 rounded-2xl border"
             />
           ))}
         </div>
@@ -363,35 +322,28 @@ export default function BuyerOverview() {
       <HeroGreetingCard
         greeting={data.greeting}
         userName={data.userName}
-        subtitle={<p className="max-w-[350px]">{data.subtitle}</p>}
+        subtitle={<p className="max-w-87.5">{data.subtitle}</p>}
         actions={
           <>
             <a
-              href="https://wa.me/+2348167042797"
+              href="https://chat.whatsapp.com/GjMvQOIbO9qAFjUGR3ZYVK?s=sw&p=i&mlu=2"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
-              style={{
-                backgroundColor: "var(--secondary-color)",
-                color: "var(--heading-colour)",
-              }}
+              className="bg-secondary text-heading inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
             >
               <Icon icon="lucide:message-circle" className="h-4 w-4" />
               Order On WhatsApp
             </a>
             <Link
               to="/buyer-dashboard/shop"
-              className="inline-flex items-center gap-1 text-sm font-medium text-white/80 transition-colors hover:text-white"
+              className="flex items-center gap-1 text-sm font-medium text-white/80 transition-colors hover:text-white"
             >
-              Browse catalog →
+              Browse catalog <ArrowRight size={16} />
             </Link>
           </>
         }
         infoBox={
-          <div
-            className="flex flex-col gap-1 rounded-xl border border-white/20 p-4 lg:min-w-[200px]"
-            style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
-          >
+          <div className="flex flex-col gap-1 rounded-xl border border-white/20 bg-white/10 p-4 lg:min-w-50">
             <p className="text-xs text-white/60">Next Delivery</p>
             <p className="font-syne text-2xl font-bold text-white">
               {data.nextDelivery.time}
@@ -420,24 +372,14 @@ export default function BuyerOverview() {
 
       {/* Recent orders + Quick actions */}
       <div className="grid grid-cols-1 gap-6">
-        <div
-          className="flex flex-col gap-4 rounded-2xl border p-5"
-          style={{
-            borderColor: "var(--border-gray)",
-            backgroundColor: "var(--white)",
-          }}
-        >
+        <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
           <div className="flex items-center justify-between">
-            <h3
-              className="font-syne font-semibold"
-              style={{ color: "var(--heading-colour)" }}
-            >
+            <h3 className="font-syne text-heading font-semibold">
               Recent Order
             </h3>
             <Link
               to="/buyer-dashboard/orders"
-              className="text-sm font-medium underline underline-offset-2"
-              style={{ color: "var(--primary-color)" }}
+              className="text-primary text-sm font-medium underline underline-offset-2"
             >
               View All
             </Link>
@@ -459,32 +401,10 @@ export default function BuyerOverview() {
             >
               <Link
                 to={action.href}
-                className="flex flex-col items-center gap-2 rounded-2xl border p-4 text-center transition-colors duration-200"
-                style={{
-                  borderColor: "var(--border-gray)",
-                  backgroundColor: "var(--white)",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor =
-                    "var(--dash-quick-action-hover)";
-                  (e.currentTarget as HTMLElement).style.borderColor =
-                    "var(--primary-color)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor =
-                    "var(--white)";
-                  (e.currentTarget as HTMLElement).style.borderColor =
-                    "var(--border-gray)";
-                }}
+                className="border-gray-border hover:border-primary hover:bg-dash-quick-action-hover flex flex-col items-center gap-2 rounded-2xl border bg-white p-4 text-center transition-colors duration-200"
               >
-                <action.icon
-                  size={22}
-                  style={{ color: "var(--primary-color)" }}
-                />
-                <span
-                  className="text-xs font-medium"
-                  style={{ color: "var(--heading-colour)" }}
-                >
+                <action.icon size={22} className="text-primary" />
+                <span className="text-heading text-xs font-medium">
                   {action.label}
                 </span>
               </Link>
@@ -498,107 +418,90 @@ export default function BuyerOverview() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.2 }}
-        className="rounded-2xl p-6"
-        style={{ backgroundColor: "var(--primary-color)" }}
+        className="bg-primary rounded-2xl p-6"
       >
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
+        {data.tracking.hasOrder ? (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-white/60">
+                  Order #{data.tracking.orderId}
+                </p>
+                <p className="font-syne text-sm font-semibold text-white">
+                  Live Tracking
+                </p>
+              </div>
+              <span className="bg-status-active-bg text-status-active-text rounded-full px-2.5 py-1 text-xs font-medium">
+                ● Active
+              </span>
+            </div>
+
             <div>
-              <p className="text-xs text-white/60">
-                Order #{data.tracking.orderId}
-              </p>
-              <p className="font-syne text-sm font-semibold text-white">
-                Live Tracking
+              <p className="text-xs text-white/60">Estimated arrival</p>
+              <p className="font-syne text-3xl font-extrabold text-white">
+                {data.tracking.eta}
               </p>
             </div>
-            <span
-              className="rounded-full px-2.5 py-1 text-xs font-medium"
-              style={{
-                backgroundColor: "var(--status-active-bg)",
-                color: "var(--status-active-text)",
-              }}
-            >
-              ● Active
-            </span>
-          </div>
 
-          <div>
-            <p className="text-xs text-white/60">Estimated arrival</p>
-            <p className="font-syne text-3xl font-extrabold text-white">
-              {data.tracking.eta}
-            </p>
-          </div>
-
-          <div className="relative h-1.5 w-full rounded-full bg-white/20">
-            <div
-              className="absolute top-0 left-0 h-full rounded-full"
-              style={{
-                width: "75%",
-                backgroundColor: "var(--secondary-color)",
-              }}
-            />
-          </div>
-
-          <div className="grid grid-cols-4 gap-2">
-            {data.tracking.steps.map((step) => (
-              <div key={step.label} className="flex items-center gap-1">
-                <span
-                  className="text-xs"
-                  style={{
-                    color: step.done
-                      ? "var(--secondary-color)"
-                      : "rgba(255,255,255,0.4)",
-                  }}
-                >
-                  {step.done ? "✓" : "○"}
-                </span>
-                <span className="text-xs text-white/70">{step.label}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <p className="w-full text-xs tracking-widest text-white/50 uppercase">
-              Items in order
-            </p>
-            {data.tracking.items.map((item) => (
-              <span
-                key={item}
-                className="rounded-full px-3 py-1 text-xs font-medium"
+            <div className="relative h-1.5 w-full rounded-full bg-white/20">
+              <div
+                className="bg-secondary absolute top-0 left-0 h-full rounded-full transition-all duration-500"
                 style={{
-                  backgroundColor: "rgba(255,255,255,0.15)",
-                  color: "white",
+                  width: `${(data.tracking.steps.filter((s) => s.done).length / data.tracking.steps.length) * 100}%`,
                 }}
-              >
-                {item}
-              </span>
-            ))}
+              />
+            </div>
+
+            <div className="grid grid-cols-4 gap-2">
+              {data.tracking.steps.map((step) => (
+                <div key={step.label} className="flex items-center gap-1">
+                  <span
+                    className={`text-xs ${step.done ? "text-secondary" : "text-white/40"}`}
+                  >
+                    {step.done ? "✓" : "○"}
+                  </span>
+                  <span className="text-xs text-white/70">{step.label}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <p className="w-full text-xs tracking-widest text-white/50 uppercase">
+                Items in order
+              </p>
+              {data.tracking.items.map((item) => (
+                <span
+                  key={item}
+                  className="rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex flex-col items-center gap-3 py-4 text-center">
+            <p className="font-syne text-sm font-semibold text-white">
+              Live Tracking
+            </p>
+            <p className="text-sm text-white/60">No active orders right now.</p>
+            <Link
+              to="/buyer-dashboard/shop"
+              className="bg-secondary text-heading mt-1 rounded-full px-4 py-2 text-xs font-semibold transition-opacity hover:opacity-80"
+            >
+              Place an order
+            </Link>
+          </div>
+        )}
       </motion.div>
 
       {/* Spending chart */}
-      <div
-        className="flex flex-col gap-4 rounded-2xl border p-5"
-        style={{
-          borderColor: "var(--border-gray)",
-          backgroundColor: "var(--white)",
-        }}
-      >
+      <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
         <div className="flex items-center justify-between">
-          <h3
-            className="font-syne font-semibold"
-            style={{ color: "var(--heading-colour)" }}
-          >
+          <h3 className="font-syne text-heading font-semibold">
             Spending - Last 6 Weeks
           </h3>
-          <span
-            className="rounded-full px-3 py-1 text-xs font-medium"
-            style={{
-              backgroundColor: "var(--bg-light)",
-              color: "var(--text-colour)",
-            }}
-          >
+          <span className="bg-bg-light text-text rounded-full px-3 py-1 text-xs font-medium">
             This week ↑
           </span>
         </div>
@@ -635,23 +538,15 @@ export default function BuyerOverview() {
           </BarChart>
         </ResponsiveContainer>
 
-        <div
-          className="grid grid-cols-3 gap-4 border-t pt-4"
-          style={{ borderColor: "var(--border-gray)" }}
-        >
+        <div className="border-gray-border grid grid-cols-3 gap-4 border-t pt-4">
           {[
             { label: "This week", value: data.spending.thisWeek },
             { label: "This month", value: data.spending.thisMonth },
             { label: "Avg / week", value: data.spending.avgPerWeek },
           ].map((s) => (
             <div key={s.label} className="flex flex-col gap-0.5">
-              <p className="text-xs" style={{ color: "var(--text-colour)" }}>
-                {s.label}
-              </p>
-              <p
-                className="font-syne text-lg font-bold"
-                style={{ color: "var(--heading-colour)" }}
-              >
+              <p className="text-text text-xs">{s.label}</p>
+              <p className="font-syne text-heading text-lg font-bold">
                 {s.value}
               </p>
             </div>

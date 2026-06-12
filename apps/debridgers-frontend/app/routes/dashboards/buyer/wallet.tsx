@@ -4,7 +4,15 @@ import { ArrowUpRight, ArrowDownLeft, Plus } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
 
 export function meta() {
-  return [{ title: "Wallet & Payment | Debridgers" }];
+  return [
+    { title: "Wallet & Payment | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Manage your Debridgers wallet balance, top up funds and view your payment history.",
+    },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 type TransactionType = "credit" | "debit";
@@ -101,14 +109,8 @@ export default function BuyerWallet() {
   if (loading || !data) {
     return (
       <div className="flex animate-pulse flex-col gap-6">
-        <div
-          className="h-36 rounded-2xl"
-          style={{ backgroundColor: "var(--border-gray)" }}
-        />
-        <div
-          className="h-64 rounded-2xl"
-          style={{ backgroundColor: "var(--border-gray)" }}
-        />
+        <div className="bg-gray-border h-36 rounded-2xl" />
+        <div className="bg-gray-border h-64 rounded-2xl" />
       </div>
     );
   }
@@ -119,8 +121,7 @@ export default function BuyerWallet() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="relative overflow-hidden rounded-2xl p-6 lg:p-8"
-        style={{ backgroundColor: "var(--primary-color)" }}
+        className="bg-primary relative overflow-hidden rounded-2xl p-6 lg:p-8"
       >
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-col gap-1">
@@ -132,19 +133,13 @@ export default function BuyerWallet() {
             </p>
           </div>
           <div className="flex gap-3">
-            <div
-              className="flex min-w-[130px] flex-col gap-1 rounded-xl border border-white/20 p-4"
-              style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
-            >
+            <div className="flex min-w-32.5 flex-col gap-1 rounded-xl border border-white/20 bg-white/10 p-4">
               <p className="text-xs text-white/60">Total Orders</p>
               <p className="font-syne text-lg font-bold text-white">
                 {data.transactions.length}
               </p>
             </div>
-            <div
-              className="flex min-w-[130px] flex-col gap-1 rounded-xl border border-white/20 p-4"
-              style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
-            >
+            <div className="flex min-w-32.5 flex-col gap-1 rounded-xl border border-white/20 bg-white/10 p-4">
               <p className="text-xs text-white/60">Wallet Top-up</p>
               <p className="font-syne text-base font-bold text-white/60">
                 Coming soon
@@ -155,11 +150,7 @@ export default function BuyerWallet() {
         <div className="mt-6">
           <button
             disabled
-            className="inline-flex cursor-not-allowed items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold opacity-50"
-            style={{
-              backgroundColor: "var(--secondary-color)",
-              color: "var(--heading-colour)",
-            }}
+            className="bg-secondary text-heading inline-flex cursor-not-allowed items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold opacity-50"
             title="Wallet top-up coming soon"
           >
             <Plus size={16} />
@@ -170,25 +161,13 @@ export default function BuyerWallet() {
         <div className="pointer-events-none absolute -top-6 -right-6 h-24 w-24 rounded-full border-2 border-white/10" />
       </motion.div>
 
-      <div
-        className="flex flex-col gap-4 rounded-2xl border p-5"
-        style={{
-          borderColor: "var(--border-gray)",
-          backgroundColor: "var(--white)",
-        }}
-      >
-        <h3
-          className="font-syne font-semibold"
-          style={{ color: "var(--heading-colour)" }}
-        >
+      <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
+        <h3 className="font-syne text-heading font-semibold">
           Transaction History
         </h3>
         <div className="flex flex-col">
           {data.transactions.length === 0 && (
-            <p
-              className="py-8 text-center text-sm"
-              style={{ color: "var(--text-colour)" }}
-            >
+            <p className="text-text py-8 text-center text-sm">
               No orders yet. Your order history will appear here.
             </p>
           )}
@@ -198,54 +177,41 @@ export default function BuyerWallet() {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className="flex items-center justify-between border-b py-4 last:border-0"
-              style={{ borderColor: "var(--border-gray)" }}
+              className="border-gray-border flex items-center justify-between border-b py-4 last:border-0"
             >
               <div className="flex items-center gap-3">
                 <span
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-                  style={{
-                    backgroundColor:
-                      tx.type === "credit"
-                        ? "var(--status-delivered-bg)"
-                        : "var(--status-cancelled-bg)",
-                  }}
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                    tx.type === "credit"
+                      ? "bg-status-delivered-bg"
+                      : "bg-status-cancelled-bg"
+                  }`}
                 >
                   {tx.type === "credit" ? (
                     <ArrowDownLeft
                       size={16}
-                      style={{ color: "var(--status-delivered-text)" }}
+                      className="text-status-delivered-text"
                     />
                   ) : (
                     <ArrowUpRight
                       size={16}
-                      style={{ color: "var(--status-cancelled-text)" }}
+                      className="text-status-cancelled-text"
                     />
                   )}
                 </span>
                 <div className="flex flex-col gap-0.5">
-                  <p
-                    className="text-sm font-medium"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
+                  <p className="text-heading text-sm font-medium">
                     {tx.description}
                   </p>
-                  <p
-                    className="text-xs"
-                    style={{ color: "var(--text-colour)" }}
-                  >
-                    {tx.date}
-                  </p>
+                  <p className="text-text text-xs">{tx.date}</p>
                 </div>
               </div>
               <p
-                className="font-syne font-semibold"
-                style={{
-                  color:
-                    tx.type === "credit"
-                      ? "var(--status-delivered-text)"
-                      : "var(--status-cancelled-text)",
-                }}
+                className={`font-syne font-semibold ${
+                  tx.type === "credit"
+                    ? "text-status-delivered-text"
+                    : "text-status-cancelled-text"
+                }`}
               >
                 {tx.type === "credit" ? "+" : "-"}
                 {fmt(tx.amount)}
@@ -272,29 +238,19 @@ export default function BuyerWallet() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ duration: 0.2 }}
-              className="fixed top-1/2 left-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl p-6 shadow-2xl"
-              style={{ backgroundColor: "var(--white)" }}
+              className="fixed top-1/2 left-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-2xl"
             >
-              <h3
-                className="font-syne mb-4 text-lg font-bold"
-                style={{ color: "var(--heading-colour)" }}
-              >
+              <h3 className="font-syne text-heading mb-4 text-lg font-bold">
                 Add Funds
               </h3>
               {funded ? (
-                <p
-                  className="text-sm font-medium"
-                  style={{ color: "var(--status-delivered-text)" }}
-                >
+                <p className="text-status-delivered-text text-sm font-medium">
                   Funds added successfully!
                 </p>
               ) : (
                 <form onSubmit={handleFund} className="flex flex-col gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <label
-                      className="text-sm font-medium"
-                      style={{ color: "var(--heading-colour)" }}
-                    >
+                    <label className="text-heading text-sm font-medium">
                       Amount
                     </label>
                     <input
@@ -304,39 +260,21 @@ export default function BuyerWallet() {
                       onChange={(e) => setFundAmount(e.target.value)}
                       placeholder="e.g. 5000"
                       required
-                      className="w-full rounded-xl border px-4 py-3 text-sm transition-all outline-none"
-                      style={{
-                        borderColor: "var(--border-gray)",
-                        backgroundColor: "var(--bg-light)",
-                        color: "var(--heading-colour)",
-                      }}
-                      onFocus={(e) => {
-                        e.currentTarget.style.borderColor =
-                          "var(--primary-color)";
-                      }}
-                      onBlur={(e) => {
-                        e.currentTarget.style.borderColor =
-                          "var(--border-gray)";
-                      }}
+                      className="border-gray-border focus:border-primary text-heading bg-bg-light w-full rounded-xl border px-4 py-3 text-sm transition-all outline-none"
                     />
                   </div>
                   <div className="flex gap-3">
                     <button
                       type="button"
                       onClick={() => setShowFundModal(false)}
-                      className="flex-1 rounded-full border py-3 text-sm font-medium"
-                      style={{
-                        borderColor: "var(--border-gray)",
-                        color: "var(--text-colour)",
-                      }}
+                      className="border-gray-border text-text flex-1 rounded-full border py-3 text-sm font-medium"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={funding}
-                      className="flex-1 rounded-full py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                      style={{ backgroundColor: "var(--primary-color)" }}
+                      className="bg-primary flex-1 rounded-full py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
                     >
                       {funding ? "Processing..." : "Add Funds"}
                     </button>

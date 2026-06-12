@@ -1,9 +1,5 @@
 import React, { forwardRef } from "react";
-import {
-  BaseInputField,
-  getInputStyles,
-  getInputFocusHandlers,
-} from "./base-input-field";
+import { BaseInputField, getInputStateClass } from "./base-input-field";
 
 interface DashTextareaInputProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label: string;
@@ -82,22 +78,14 @@ export const DashTextareaInput = forwardRef<
           id={inputId}
           name={name ?? inputId}
           rows={4}
-          className={`placeholder:text-text-placeholder font-syne w-full rounded-2xl border px-4 py-3 text-sm transition-all duration-300 ease-in-out outline-none ${resizable ? "resize-y" : "resize-none"}`}
-          style={{
-            ...getInputStyles(displayError),
-            minHeight: "100px",
-          }}
+          className={`placeholder:text-text-placeholder bg-input-bg text-heading font-syne min-h-25 w-full rounded-2xl border px-4 py-3 text-sm transition-all duration-300 ease-in-out outline-none ${resizable ? "resize-y" : "resize-none"} ${getInputStateClass(displayError)}`}
           value={value}
           onChange={handleChange}
-          {...getInputFocusHandlers(displayError)}
           {...props}
         />
         {/* Live word count */}
         <p
-          className="flex justify-end text-xs"
-          style={{
-            color: atMax ? "var(--input-error-red)" : "var(--text-colour)",
-          }}
+          className={`flex justify-end text-xs ${atMax ? "text-input-error-red" : "text-text"}`}
         >
           {currentWords}/{maxWords}
         </p>

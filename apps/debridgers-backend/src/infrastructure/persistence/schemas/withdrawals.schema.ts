@@ -5,6 +5,7 @@ import {
   integer,
   text,
   timestamp,
+  varchar,
 } from "drizzle-orm/pg-core";
 import { timestamps } from "../../helper/column.helper";
 import { users } from "./users.schema";
@@ -24,8 +25,10 @@ export const withdrawals = pgTable("withdrawals", {
     .references(() => users.id, { onDelete: "cascade" }),
   amount: integer().notNull(), // in kobo
   bank_name: text().notNull(),
+  bank_code: varchar("bank_code", { length: 10 }).notNull(),
   bank_account_number: text().notNull(),
   bank_account_name: text().notNull(),
+  payout_reference: varchar("payout_reference", { length: 100 }),
   status: withdrawalStatusEnum().notNull().default("pending"),
   rejection_reason: text(),
   processed_at: timestamp(),

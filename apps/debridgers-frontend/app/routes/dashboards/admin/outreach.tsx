@@ -16,6 +16,11 @@ import { kadunaLgas, kadunaAreas, kadunaAreasByLga } from "@/models/models";
 export function meta() {
   return [
     { title: "Outreach Records | Debridgers Admin" },
+    {
+      name: "description",
+      content:
+        "View and manage outreach records — track leads, follow-ups and conversion progress.",
+    },
     { name: "robots", content: "noindex, nofollow" },
   ];
 }
@@ -69,12 +74,7 @@ function todayString() {
 }
 
 const inputCls =
-  "w-full rounded-xl border px-4 py-2.5 text-sm outline-none transition-colors";
-const inputStyle = {
-  borderColor: "var(--border-gray)",
-  backgroundColor: "var(--bg-light)",
-  color: "var(--heading-colour)",
-};
+  "border-gray-border bg-bg-light text-heading w-full rounded-xl border px-4 py-2.5 text-sm outline-none transition-colors";
 
 export default function AdminOutreachPage() {
   const [records, setRecords] = useState<OutreachRecord[]>([]);
@@ -192,15 +192,12 @@ export default function AdminOutreachPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <MapPin size={24} style={{ color: "var(--primary-color)" }} />
+          <MapPin size={24} className="text-primary" />
           <div>
-            <h2
-              className="font-syne text-xl font-bold"
-              style={{ color: "var(--heading-colour)" }}
-            >
+            <h2 className="font-syne text-heading text-xl font-bold">
               Outreach Records
             </h2>
-            <p className="text-sm" style={{ color: "var(--text-colour)" }}>
+            <p className="text-text text-sm">
               Offline customer data collected during field visits
             </p>
           </div>
@@ -211,8 +208,7 @@ export default function AdminOutreachPage() {
             setFormError(null);
             setShowForm(true);
           }}
-          className="flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-          style={{ backgroundColor: "var(--primary-color)" }}
+          className="bg-primary flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
         >
           <Plus size={16} /> Record Visit
         </button>
@@ -231,22 +227,13 @@ export default function AdminOutreachPage() {
         ].map((s) => (
           <div
             key={s.label}
-            className="flex flex-col gap-2 rounded-2xl border p-4"
-            style={{
-              borderColor: "var(--border-gray)",
-              backgroundColor: "var(--white)",
-            }}
+            className="border-gray-border flex flex-col gap-2 rounded-2xl border bg-white p-4"
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs" style={{ color: "var(--text-colour)" }}>
-                {s.label}
-              </span>
-              <s.icon size={16} style={{ color: "var(--primary-color)" }} />
+              <span className="text-text text-xs">{s.label}</span>
+              <s.icon size={16} className="text-primary" />
             </div>
-            <p
-              className="font-syne text-2xl font-bold"
-              style={{ color: "var(--heading-colour)" }}
-            >
+            <p className="font-syne text-heading text-2xl font-bold">
               {s.value}
             </p>
           </div>
@@ -260,35 +247,22 @@ export default function AdminOutreachPage() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="rounded-2xl border p-6"
-            style={{
-              borderColor: "var(--border-gray)",
-              backgroundColor: "var(--white)",
-            }}
+            className="border-gray-border rounded-2xl border bg-white p-6"
           >
             <div className="mb-5 flex items-center justify-between">
-              <h3
-                className="font-syne font-semibold"
-                style={{ color: "var(--heading-colour)" }}
-              >
+              <h3 className="font-syne text-heading font-semibold">
                 Record New Visit
               </h3>
               <button
                 onClick={() => setShowForm(false)}
                 className="rounded-full p-1 hover:bg-black/5"
               >
-                <X size={18} style={{ color: "var(--text-colour)" }} />
+                <X size={18} className="text-text" />
               </button>
             </div>
 
             {formError && (
-              <p
-                className="mb-4 rounded-xl px-4 py-3 text-sm"
-                style={{
-                  backgroundColor: "var(--status-cancelled-bg)",
-                  color: "var(--status-cancelled-text)",
-                }}
-              >
+              <p className="bg-status-cancelled-bg text-status-cancelled-text mb-4 rounded-xl px-4 py-3 text-sm">
                 {formError}
               </p>
             )}
@@ -297,12 +271,9 @@ export default function AdminOutreachPage() {
               {/* Row 1 */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-1">
-                  <label
-                    className="text-sm font-medium"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
+                  <label className="text-heading text-sm font-medium">
                     Shop / Customer Name{" "}
-                    <span style={{ color: "var(--error-red)" }}>*</span>
+                    <span className="text-error-red">*</span>
                   </label>
                   <input
                     type="text"
@@ -310,15 +281,11 @@ export default function AdminOutreachPage() {
                     value={form.shop_name}
                     onChange={handleChange("shop_name")}
                     className={inputCls}
-                    style={inputStyle}
                     required
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label
-                    className="text-sm font-medium"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
+                  <label className="text-heading text-sm font-medium">
                     Owner / Contact Name
                   </label>
                   <input
@@ -327,7 +294,6 @@ export default function AdminOutreachPage() {
                     value={form.owner_name}
                     onChange={handleChange("owner_name")}
                     className={inputCls}
-                    style={inputStyle}
                   />
                 </div>
               </div>
@@ -335,10 +301,7 @@ export default function AdminOutreachPage() {
               {/* Row 2 */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-1">
-                  <label
-                    className="text-sm font-medium"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
+                  <label className="text-heading text-sm font-medium">
                     Phone Number
                   </label>
                   <input
@@ -347,14 +310,10 @@ export default function AdminOutreachPage() {
                     value={form.phone}
                     onChange={handleChange("phone")}
                     className={inputCls}
-                    style={inputStyle}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label
-                    className="text-sm font-medium"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
+                  <label className="text-heading text-sm font-medium">
                     LGA
                   </label>
                   <select
@@ -363,7 +322,6 @@ export default function AdminOutreachPage() {
                       setForm((p) => ({ ...p, lga: e.target.value, area: "" }));
                     }}
                     className={inputCls}
-                    style={inputStyle}
                   >
                     <option value="">Select LGA</option>
                     {kadunaLgas.map((l) => (
@@ -374,17 +332,13 @@ export default function AdminOutreachPage() {
                   </select>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label
-                    className="text-sm font-medium"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
+                  <label className="text-heading text-sm font-medium">
                     Area
                   </label>
                   <select
                     value={form.area}
                     onChange={handleChange("area")}
                     className={inputCls}
-                    style={inputStyle}
                     disabled={!form.lga || !kadunaAreasByLga[form.lga]}
                   >
                     <option value="">
@@ -403,10 +357,7 @@ export default function AdminOutreachPage() {
 
               {/* Row 3 */}
               <div className="flex flex-col gap-1">
-                <label
-                  className="text-sm font-medium"
-                  style={{ color: "var(--heading-colour)" }}
-                >
+                <label className="text-heading text-sm font-medium">
                   Address / Landmark
                 </label>
                 <input
@@ -415,17 +366,13 @@ export default function AdminOutreachPage() {
                   value={form.address}
                   onChange={handleChange("address")}
                   className={inputCls}
-                  style={inputStyle}
                 />
               </div>
 
               {/* Row 4 */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="flex flex-col gap-1 sm:col-span-2">
-                  <label
-                    className="text-sm font-medium"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
+                  <label className="text-heading text-sm font-medium">
                     Products Interested In
                   </label>
                   <input
@@ -434,14 +381,10 @@ export default function AdminOutreachPage() {
                     value={form.product_interest}
                     onChange={handleChange("product_interest")}
                     className={inputCls}
-                    style={inputStyle}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label
-                    className="text-sm font-medium"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
+                  <label className="text-heading text-sm font-medium">
                     Quantity (bags)
                   </label>
                   <input
@@ -451,7 +394,6 @@ export default function AdminOutreachPage() {
                     value={form.quantity}
                     onChange={handleChange("quantity")}
                     className={inputCls}
-                    style={inputStyle}
                   />
                 </div>
               </div>
@@ -459,10 +401,7 @@ export default function AdminOutreachPage() {
               {/* Row 5 */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-1">
-                  <label
-                    className="text-sm font-medium"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
+                  <label className="text-heading text-sm font-medium">
                     Collected By
                   </label>
                   <input
@@ -471,14 +410,10 @@ export default function AdminOutreachPage() {
                     value={form.collected_by}
                     onChange={handleChange("collected_by")}
                     className={inputCls}
-                    style={inputStyle}
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label
-                    className="text-sm font-medium"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
+                  <label className="text-heading text-sm font-medium">
                     Visit Date
                   </label>
                   <input
@@ -486,17 +421,13 @@ export default function AdminOutreachPage() {
                     value={form.visit_date}
                     onChange={handleChange("visit_date")}
                     className={inputCls}
-                    style={inputStyle}
                   />
                 </div>
               </div>
 
               {/* Notes */}
               <div className="flex flex-col gap-1">
-                <label
-                  className="text-sm font-medium"
-                  style={{ color: "var(--heading-colour)" }}
-                >
+                <label className="text-heading text-sm font-medium">
                   Notes / Feedback
                 </label>
                 <textarea
@@ -504,8 +435,7 @@ export default function AdminOutreachPage() {
                   placeholder="Any additional observations, customer feedback, follow-up needed..."
                   value={form.notes}
                   onChange={handleChange("notes")}
-                  className="w-full resize-none rounded-xl border px-4 py-2.5 text-sm outline-none"
-                  style={inputStyle}
+                  className="border-gray-border bg-bg-light text-heading w-full resize-none rounded-xl border px-4 py-2.5 text-sm outline-none"
                 />
               </div>
 
@@ -514,19 +444,14 @@ export default function AdminOutreachPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                  style={{ backgroundColor: "var(--primary-color)" }}
+                  className="bg-primary flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
                 >
                   {saving ? "Saving..." : "Save Record"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="rounded-full border px-6 py-2.5 text-sm font-medium transition-colors hover:bg-black/5"
-                  style={{
-                    borderColor: "var(--border-gray)",
-                    color: "var(--text-colour)",
-                  }}
+                  className="border-gray-border text-text rounded-full border px-6 py-2.5 text-sm font-medium transition-colors hover:bg-black/5"
                 >
                   Cancel
                 </button>
@@ -538,32 +463,20 @@ export default function AdminOutreachPage() {
 
       {/* Filters */}
       <div className="flex flex-col gap-3 sm:flex-row">
-        <div
-          className="flex flex-1 items-center gap-2 rounded-full border px-4 py-2"
-          style={{
-            borderColor: "var(--border-gray)",
-            backgroundColor: "var(--white)",
-          }}
-        >
-          <Search size={15} style={{ color: "var(--text-colour)" }} />
+        <div className="border-gray-border flex flex-1 items-center gap-2 rounded-full border bg-white px-4 py-2">
+          <Search size={15} className="text-text" />
           <input
             type="text"
             placeholder="Search by name, phone, area..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-transparent text-sm outline-none"
-            style={{ color: "var(--heading-colour)" }}
+            className="text-heading w-full bg-transparent text-sm outline-none"
           />
         </div>
         <select
           value={filterLga}
           onChange={(e) => setFilterLga(e.target.value)}
-          className="rounded-full border px-4 py-2 text-sm outline-none"
-          style={{
-            borderColor: "var(--border-gray)",
-            backgroundColor: "var(--white)",
-            color: "var(--heading-colour)",
-          }}
+          className="border-gray-border text-heading rounded-full border bg-white px-4 py-2 text-sm outline-none"
         >
           <option value="">All Locations</option>
           <optgroup label="── By LGA ──">
@@ -584,20 +497,8 @@ export default function AdminOutreachPage() {
       </div>
 
       {/* Records table */}
-      <div
-        className="overflow-hidden rounded-2xl border"
-        style={{
-          borderColor: "var(--border-gray)",
-          backgroundColor: "var(--white)",
-        }}
-      >
-        <div
-          className="grid grid-cols-[1fr_120px_100px_100px_1fr_80px_40px] gap-3 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase"
-          style={{
-            borderColor: "var(--border-gray)",
-            color: "var(--text-colour)",
-          }}
-        >
+      <div className="border-gray-border overflow-hidden rounded-2xl border bg-white">
+        <div className="border-gray-border text-text grid grid-cols-[1fr_120px_100px_100px_1fr_80px_40px] gap-3 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase">
           <span>Shop / Customer</span>
           <span>Phone</span>
           <span>LGA</span>
@@ -612,23 +513,14 @@ export default function AdminOutreachPage() {
             {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
-                className="h-14 animate-pulse border-b"
-                style={{
-                  borderColor: "var(--border-gray)",
-                  backgroundColor:
-                    i % 2 === 0 ? "var(--bg-light)" : "var(--white)",
-                }}
+                className={`border-gray-border h-14 animate-pulse border-b ${i % 2 === 0 ? "bg-bg-light" : "bg-white"}`}
               />
             ))}
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-16">
-            <MapPin
-              size={40}
-              className="opacity-20"
-              style={{ color: "var(--text-colour)" }}
-            />
-            <p className="text-sm" style={{ color: "var(--text-colour)" }}>
+            <MapPin size={40} className="text-text opacity-20" />
+            <p className="text-text text-sm">
               {records.length === 0
                 ? 'No outreach records yet. Click "Record Visit" to add your first entry.'
                 : "No records match your search."}
@@ -642,32 +534,16 @@ export default function AdminOutreachPage() {
                 initial={{ opacity: 0, x: -6 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.03 }}
-                className="grid grid-cols-[1fr_120px_100px_100px_1fr_80px_40px] items-center gap-3 border-b px-5 py-4 text-sm last:border-0"
-                style={{ borderColor: "var(--border-gray)" }}
+                className="border-gray-border grid grid-cols-[1fr_120px_100px_100px_1fr_80px_40px] items-center gap-3 border-b px-5 py-4 text-sm last:border-0"
               >
                 {/* Shop */}
                 <div className="flex flex-col gap-0.5">
-                  <p
-                    className="font-semibold"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
-                    {r.shop_name}
-                  </p>
+                  <p className="text-heading font-semibold">{r.shop_name}</p>
                   {r.owner_name && (
-                    <p
-                      className="text-xs"
-                      style={{ color: "var(--text-colour)" }}
-                    >
-                      {r.owner_name}
-                    </p>
+                    <p className="text-text text-xs">{r.owner_name}</p>
                   )}
                   {r.address && (
-                    <p
-                      className="text-xs"
-                      style={{ color: "var(--text-colour)" }}
-                    >
-                      {r.address}
-                    </p>
+                    <p className="text-text text-xs">{r.address}</p>
                   )}
                 </div>
 
@@ -682,8 +558,7 @@ export default function AdminOutreachPage() {
                         <a
                           key={num}
                           href={`tel:${num.replace(/\s/g, "")}`}
-                          className="flex items-center gap-1 text-xs font-medium transition-opacity hover:opacity-70"
-                          style={{ color: "var(--primary-color)" }}
+                          className="text-primary flex items-center gap-1 text-xs font-medium transition-opacity hover:opacity-70"
                         >
                           <Phone size={11} />
                           {num}
@@ -695,10 +570,7 @@ export default function AdminOutreachPage() {
                 </div>
 
                 {/* LGA */}
-                <span
-                  className="text-xs"
-                  style={{ color: "var(--text-colour)" }}
-                >
+                <span className="text-text text-xs">
                   {r.lga
                     ? (kadunaLgas.find((l) => l.value === r.lga)?.label ??
                       r.lga)
@@ -706,10 +578,7 @@ export default function AdminOutreachPage() {
                 </span>
 
                 {/* Area */}
-                <span
-                  className="text-xs"
-                  style={{ color: "var(--heading-colour)" }}
-                >
+                <span className="text-heading text-xs">
                   {r.area
                     ? (kadunaAreas.find((a) => a.value === r.area)?.label ??
                       r.area)
@@ -719,30 +588,19 @@ export default function AdminOutreachPage() {
                 {/* Interest */}
                 <div className="flex flex-col gap-0.5">
                   {r.product_interest ? (
-                    <span style={{ color: "var(--heading-colour)" }}>
-                      {r.product_interest}
-                    </span>
+                    <span className="text-heading">{r.product_interest}</span>
                   ) : (
                     <span className="text-xs opacity-40">—</span>
                   )}
                   {r.quantity ? (
-                    <span
-                      className="w-fit rounded-full px-2 py-0.5 text-xs font-semibold"
-                      style={{
-                        backgroundColor: "var(--status-active-bg)",
-                        color: "var(--status-active-text)",
-                      }}
-                    >
+                    <span className="bg-status-active-bg text-status-active-text w-fit rounded-full px-2 py-0.5 text-xs font-semibold">
                       {r.quantity} bag{r.quantity !== 1 ? "s" : ""}
                     </span>
                   ) : null}
                 </div>
 
                 {/* Date */}
-                <span
-                  className="text-xs"
-                  style={{ color: "var(--text-colour)" }}
-                >
+                <span className="text-text text-xs">
                   {new Date(r.visit_date).toLocaleDateString("en-NG", {
                     month: "short",
                     day: "numeric",
@@ -766,7 +624,7 @@ export default function AdminOutreachPage() {
 
       {/* Notes detail drawer hint */}
       {filtered.some((r) => r.notes) && (
-        <p className="text-xs" style={{ color: "var(--text-colour)" }}>
+        <p className="text-text text-xs">
           * Hover a row to see full notes in future updates.
         </p>
       )}

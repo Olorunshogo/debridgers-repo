@@ -1,10 +1,25 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Minus, Plus, CheckCircle2, Package } from "lucide-react";
+import {
+  Minus,
+  Plus,
+  CheckCircle2,
+  Package,
+  Trash2,
+  ChevronDown,
+} from "lucide-react";
 import { apiFetch, ApiError } from "@debridgers/api-client";
 
 export function meta() {
-  return [{ title: "Request Stock | Debridgers" }];
+  return [
+    { title: "Request Stock | Debridgers" },
+    {
+      name: "description",
+      content:
+        "Request fresh foodstuff stock from the Debridgers warehouse to fulfil your customer orders.",
+    },
+    { name: "robots", content: "noindex, nofollow" },
+  ];
 }
 
 type RequestStatus = "pending" | "fulfilled" | "cancelled";
@@ -38,19 +53,28 @@ interface StockRequest {
   created_at: string;
 }
 
+interface RequestLineItem {
+  product: Product;
+  quantity: number;
+}
+
 const statusStyles: Record<
   RequestStatus,
-  { bg: string; text: string; label: string }
+  { bgClass: string; textClass: string; label: string }
 > = {
   fulfilled: {
-    bg: "var(--status-delivered-bg)",
-    text: "var(--status-delivered-text)",
+    bgClass: "bg-status-delivered-bg",
+    textClass: "text-status-delivered-text",
     label: "Fulfilled",
   },
-  pending: { bg: "#FEF3C7", text: "#92400E", label: "Pending" },
+  pending: {
+    bgClass: "bg-amber-100",
+    textClass: "text-amber-800",
+    label: "Pending",
+  },
   cancelled: {
-    bg: "var(--status-cancelled-bg)",
-    text: "var(--status-cancelled-text)",
+    bgClass: "bg-status-cancelled-bg",
+    textClass: "text-status-cancelled-text",
     label: "Cancelled",
   },
 };
@@ -61,14 +85,30 @@ function fmt(kobo: number) {
   );
 }
 
+// Group products by description (category) then name (type/variety)
+function groupProducts(products: Product[]) {
+  const categories: Record<string, Product[]> = {};
+  for (const p of products) {
+    const cat = p.description ?? "Other";
+    if (!categories[cat]) categories[cat] = [];
+    categories[cat].push(p);
+  }
+  return categories;
+}
+
 export default function AgentRequestStockPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [qty, setQty] = useState(1);
-  const [submitted, setSubmitted] = useState<boolean>(false);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [activeProductId, setActiveProductId] = useState<number | null>(null);
+  const [inlineQty, setInlineQty] = useState(1);
+
+  const [requestItems, setRequestItems] = useState<RequestLineItem[]>([]);
+
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
+
   const [pastRequests, setPastRequests] = useState<StockRequest[]>([]);
   const [loadingRequests, setLoadingRequests] = useState(true);
   const [productMap, setProductMap] = useState<Record<number, Product>>({});
@@ -82,7 +122,6 @@ export default function AgentRequestStockPage() {
           map[p.id] = p;
         });
         setProductMap(map);
-        if (rows.length > 0) setSelectedProduct(rows[0] ?? null);
       })
       .catch(() => {})
       .finally(() => setLoadingProducts(false));
@@ -113,20 +152,83 @@ export default function AgentRequestStockPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productMap]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selectedProduct) return;
+  const grouped = groupProducts(products);
+  const categoryNames = Object.keys(grouped);
+
+  function selectCategory(cat: string) {
+    setActiveCategory((prev) => (prev === cat ? null : cat));
+    setActiveProductId(null);
+    setInlineQty(1);
+  }
+
+  function selectProduct(id: number) {
+    setActiveProductId((prev) => (prev === id ? null : id));
+    setInlineQty(1);
+  }
+
+  function addToRequest() {
+    if (!activeProductId) return;
+    const product = products.find((p) => p.id === activeProductId);
+    if (!product) return;
+    setRequestItems((prev) => {
+      const existing = prev.find((i) => i.product.id === activeProductId);
+      if (existing) {
+        return prev.map((i) =>
+          i.product.id === activeProductId
+            ? { ...i, quantity: i.quantity + inlineQty }
+            : i,
+        );
+      }
+      return [...prev, { product, quantity: inlineQty }];
+    });
+    setActiveProductId(null);
+    setInlineQty(1);
+  }
+
+  function removeFromRequest(productId: number) {
+    setRequestItems((prev) => prev.filter((i) => i.product.id !== productId));
+  }
+
+  function updateRequestQty(productId: number, delta: number) {
+    setRequestItems((prev) =>
+      prev
+        .map((i) =>
+          i.product.id === productId
+            ? { ...i, quantity: Math.max(0, i.quantity + delta) }
+            : i,
+        )
+        .filter((i) => i.quantity > 0),
+    );
+  }
+
+  const totalRemit = requestItems.reduce(
+    (sum, i) => sum + i.product.price_kobo * i.quantity,
+    0,
+  );
+
+  async function handleSubmit() {
+    if (requestItems.length === 0) return;
     setSubmitError(null);
-    setLoading(true);
+    setSubmitting(true);
     try {
-      await apiFetch("/agent/stock/request", {
-        method: "POST",
-        body: JSON.stringify({ product_id: selectedProduct.id, quantity: qty }),
-      });
+      // Submit each line item as a separate stock request (matches existing API)
+      await Promise.all(
+        requestItems.map((item) =>
+          apiFetch("/agent/stock/request", {
+            method: "POST",
+            body: JSON.stringify({
+              product_id: item.product.id,
+              quantity: item.quantity,
+            }),
+          }),
+        ),
+      );
       setSubmitted(true);
-      setQty(1);
+      setRequestItems([]);
+      setActiveCategory(null);
+      setActiveProductId(null);
       await loadRequests();
-      setTimeout(() => setSubmitted(false), 3000);
+      setTimeout(() => setSubmitted(false), 4000);
     } catch (err) {
       setSubmitError(
         err instanceof ApiError
@@ -134,345 +236,354 @@ export default function AgentRequestStockPage() {
           : "Failed to submit. Please try again.",
       );
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   }
 
-  const totalKobo = selectedProduct ? qty * selectedProduct.price_kobo : 0;
+  const alreadyAdded = (id: number) =>
+    requestItems.some((i) => i.product.id === id);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-      {/* Left: form */}
-      <div
-        className="flex flex-col gap-6 rounded-2xl border p-6"
-        style={{
-          borderColor: "var(--border-gray)",
-          backgroundColor: "var(--white)",
-        }}
-      >
-        <h3
-          className="font-syne text-lg font-semibold"
-          style={{ color: "var(--heading-colour)" }}
-        >
-          Request new stock
-        </h3>
+    <div className="flex flex-col gap-6">
+      {/* Success banner */}
+      <AnimatePresence>
+        {submitted && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="bg-status-delivered-bg text-status-delivered-text flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium"
+          >
+            <CheckCircle2 size={16} /> Stock request submitted! Admin will
+            review shortly.
+          </motion.div>
+        )}
+        {submitError && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
+          >
+            {submitError}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        <AnimatePresence mode="wait">
-          {submitted ? (
-            <motion.div
-              key="success"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium"
-              style={{
-                backgroundColor: "var(--status-delivered-bg)",
-                color: "var(--status-delivered-text)",
-              }}
-            >
-              <CheckCircle2 size={18} /> Stock request submitted! Admin will
-              review shortly.
-            </motion.div>
-          ) : loadingProducts ? (
+      <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+        {/* Left: hierarchical picker */}
+        <div className="border-gray-border flex flex-col gap-5 rounded-2xl border bg-white p-6">
+          <h3 className="font-syne text-heading text-lg font-semibold">
+            Request new stock
+          </h3>
+
+          {loadingProducts ? (
             <div className="flex flex-col gap-3">
               {[0, 1, 2].map((i) => (
                 <div
                   key={i}
-                  className="h-14 animate-pulse rounded-xl"
-                  style={{ backgroundColor: "var(--bg-light)" }}
+                  className="bg-bg-light h-12 animate-pulse rounded-xl"
                 />
               ))}
             </div>
           ) : products.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-10">
-              <Package
-                size={36}
-                className="opacity-30"
-                style={{ color: "var(--text-colour)" }}
-              />
-              <p className="text-sm" style={{ color: "var(--text-colour)" }}>
+              <Package size={36} className="text-text opacity-30" />
+              <p className="text-text text-sm">
                 No products available. Admin needs to add products first.
               </p>
             </div>
           ) : (
-            <motion.form
-              key="form"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              onSubmit={handleSubmit}
-              className="flex flex-col gap-6"
-            >
-              {submitError && (
-                <p
-                  className="rounded-xl px-4 py-3 text-sm"
-                  style={{
-                    backgroundColor: "var(--status-cancelled-bg)",
-                    color: "var(--status-cancelled-text)",
-                  }}
-                >
-                  {submitError}
-                </p>
-              )}
+            <div className="flex flex-col gap-3">
+              {/* Step 1 — Category row */}
+              <p className="text-heading text-xs font-semibold tracking-wider uppercase opacity-60">
+                Step 1 — Select category
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {categoryNames.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => selectCategory(cat)}
+                    className={`rounded-full border px-4 py-2 text-sm font-semibold transition-all ${
+                      activeCategory === cat
+                        ? "border-primary bg-primary text-white"
+                        : "border-gray-border text-heading hover:border-primary bg-white"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
 
-              {/* Product picker */}
-              <div className="flex flex-col gap-2">
-                <p
-                  className="text-sm font-medium"
-                  style={{ color: "var(--heading-colour)" }}
-                >
-                  Select product
-                </p>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {products.map((p) => {
-                    const selected = selectedProduct?.id === p.id;
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedProduct(p);
-                          setQty(1);
-                        }}
-                        className="flex items-center gap-3 rounded-xl border px-3 py-3 text-left transition-all"
-                        style={{
-                          borderColor: selected
-                            ? "var(--primary-color)"
-                            : "var(--border-gray)",
-                          backgroundColor: selected
-                            ? "var(--dash-quick-action-hover)"
-                            : "var(--bg-light)",
-                        }}
-                      >
-                        <div
-                          className="h-10 w-10 shrink-0 overflow-hidden rounded-lg"
-                          style={{ backgroundColor: "var(--white)" }}
-                        >
-                          {p.image_url ? (
-                            <img
-                              src={p.image_url}
-                              alt={p.name}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center">
-                              <Package
-                                size={18}
-                                className="opacity-25"
-                                style={{ color: "var(--text-colour)" }}
-                              />
+              {/* Step 2 — Products in active category */}
+              <AnimatePresence>
+                {activeCategory && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mt-2 flex flex-col gap-2">
+                      <p className="text-heading text-xs font-semibold tracking-wider uppercase opacity-60">
+                        Step 2 — Pick a product
+                      </p>
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        {(grouped[activeCategory] ?? []).map((product) => {
+                          const isActive = activeProductId === product.id;
+                          const added = alreadyAdded(product.id);
+                          return (
+                            <div
+                              key={product.id}
+                              className="flex flex-col gap-0"
+                            >
+                              <button
+                                type="button"
+                                onClick={() => selectProduct(product.id)}
+                                className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-3 text-left transition-all ${
+                                  isActive
+                                    ? "border-primary bg-dash-quick-action-hover"
+                                    : added
+                                      ? "border-primary/30 bg-green-50"
+                                      : "border-gray-border bg-bg-light"
+                                }`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white">
+                                    {product.image_url ? (
+                                      <img
+                                        src={product.image_url}
+                                        alt={product.name}
+                                        className="h-full w-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="flex h-full items-center justify-center">
+                                        <Package
+                                          size={18}
+                                          className="text-text opacity-25"
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-heading text-sm font-semibold">
+                                      {product.name}
+                                    </span>
+                                    <span className="text-text text-xs">
+                                      {product.unit} · {fmt(product.price_kobo)}{" "}
+                                      to remit
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {added && (
+                                    <span className="text-primary text-xs font-semibold">
+                                      ✓ Added
+                                    </span>
+                                  )}
+                                  <ChevronDown
+                                    size={14}
+                                    className={`text-text transition-transform ${isActive ? "rotate-180" : ""}`}
+                                  />
+                                </div>
+                              </button>
+
+                              {/* Step 3 — Inline quantity input */}
+                              <AnimatePresence>
+                                {isActive && (
+                                  <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: "auto" }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="overflow-hidden"
+                                  >
+                                    <div className="border-gray-border bg-bg-light flex items-center gap-3 rounded-b-xl border border-t-0 px-4 py-3">
+                                      <span className="text-text text-xs">
+                                        Qty ({product.unit}):
+                                      </span>
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setInlineQty((q) =>
+                                              Math.max(1, q - 1),
+                                            )
+                                          }
+                                          className="border-gray-border flex h-7 w-7 items-center justify-center rounded-full border bg-white"
+                                        >
+                                          <Minus size={12} />
+                                        </button>
+                                        <span className="font-syne text-heading w-6 text-center font-bold">
+                                          {inlineQty}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setInlineQty((q) => q + 1)
+                                          }
+                                          className="border-gray-border flex h-7 w-7 items-center justify-center rounded-full border bg-white"
+                                        >
+                                          <Plus size={12} />
+                                        </button>
+                                      </div>
+                                      <span className="text-text text-xs">
+                                        = {fmt(product.price_kobo * inlineQty)}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={addToRequest}
+                                        className="bg-primary ml-auto rounded-full px-4 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                                      >
+                                        Add to Request
+                                      </button>
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
                             </div>
-                          )}
-                        </div>
-                        <div className="flex flex-col gap-0.5">
-                          <span
-                            className="text-sm font-semibold"
-                            style={{ color: "var(--heading-colour)" }}
-                          >
-                            {p.name}
-                          </span>
-                          <span
-                            className="text-xs"
-                            style={{ color: "var(--text-colour)" }}
-                          >
-                            {p.unit} · {fmt(p.price_kobo)} to remit
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Quantity stepper */}
-              {selectedProduct && (
-                <div className="flex flex-col items-center gap-3">
-                  <p
-                    className="font-syne text-base font-semibold"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
-                    How many do you need?
-                  </p>
-                  <p
-                    className="text-sm"
-                    style={{ color: "var(--text-colour)" }}
-                  >
-                    {selectedProduct.name} - {selectedProduct.unit} ·{" "}
-                    {fmt(selectedProduct.price_kobo)} each (to remit after sale)
-                  </p>
-
-                  <div
-                    className="flex w-full max-w-xs items-center justify-between rounded-2xl px-6 py-4"
-                    style={{ backgroundColor: "var(--bg-light)" }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setQty((q) => Math.max(1, q - 1))}
-                      className="flex h-9 w-9 items-center justify-center rounded-full border transition-colors"
-                      style={{
-                        borderColor: "var(--border-gray)",
-                        backgroundColor: "var(--white)",
-                        color: "var(--heading-colour)",
-                      }}
-                    >
-                      <Minus size={16} />
-                    </button>
-                    <div className="flex flex-col items-center gap-0.5">
-                      <span
-                        className="font-syne text-3xl font-bold"
-                        style={{ color: "var(--heading-colour)" }}
-                      >
-                        {qty}
-                      </span>
-                      <span
-                        className="text-xs"
-                        style={{ color: "var(--text-colour)" }}
-                      >
-                        {selectedProduct.unit}
-                      </span>
+                          );
+                        })}
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setQty((q) => q + 1)}
-                      className="flex h-9 w-9 items-center justify-center rounded-full border transition-colors"
-                      style={{
-                        borderColor: "var(--border-gray)",
-                        backgroundColor: "var(--white)",
-                        color: "var(--heading-colour)",
-                      }}
-                    >
-                      <Plus size={16} />
-                    </button>
-                  </div>
-                </div>
-              )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+        </div>
 
-              {/* Summary */}
-              <div
-                className="grid grid-cols-2 gap-4 rounded-xl p-4"
-                style={{ backgroundColor: "var(--bg-light)" }}
-              >
-                <div className="flex flex-col gap-0.5">
-                  <p
-                    className="text-xs"
-                    style={{ color: "var(--text-colour)" }}
+        {/* Right: past requests */}
+        <div className="border-gray-border flex flex-col gap-3 rounded-2xl border bg-white p-5">
+          <h3 className="font-syne text-heading font-semibold">
+            Past Requests
+          </h3>
+          {loadingRequests ? (
+            <div className="flex flex-col gap-2">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="bg-bg-light h-16 animate-pulse rounded-xl"
+                />
+              ))}
+            </div>
+          ) : pastRequests.length === 0 ? (
+            <p className="text-text py-4 text-center text-sm">
+              No stock requests yet.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {pastRequests.map((req, i) => {
+                const s = statusStyles[req.status] ?? statusStyles.pending;
+                return (
+                  <motion.div
+                    key={req.id}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.06 }}
+                    className="border-gray-border bg-bg-light flex items-center justify-between rounded-xl border px-4 py-3"
                   >
-                    Quantity
-                  </p>
-                  <p
-                    className="font-syne text-lg font-bold"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
-                    {qty} {selectedProduct?.unit ?? ""}
-                  </p>
+                    <div className="flex flex-col gap-0.5">
+                      <p className="text-heading text-sm font-semibold">
+                        {req.product_name} × {req.quantity}
+                      </p>
+                      <p className="text-text text-xs">
+                        {new Date(req.created_at).toLocaleDateString("en-NG", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                        {" · "}
+                        {fmt(req.amount_to_remit)}
+                      </p>
+                    </div>
+                    <span
+                      className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${s.bgClass} ${s.textClass}`}
+                    >
+                      {s.label}
+                    </span>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Sticky request cart at bottom */}
+      <AnimatePresence>
+        {requestItems.length > 0 && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="border-gray-border fixed right-0 bottom-0 left-0 z-30 border-t bg-white shadow-xl lg:left-70"
+          >
+            <div className="mx-auto max-w-5xl px-4 py-4">
+              <div className="flex flex-col gap-3">
+                {/* Item list */}
+                <div className="flex flex-wrap gap-2">
+                  {requestItems.map((item) => (
+                    <div
+                      key={item.product.id}
+                      className="border-gray-border bg-bg-light flex items-center gap-2 rounded-xl border px-3 py-2 text-xs"
+                    >
+                      <span className="text-heading font-semibold">
+                        {item.product.name}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => updateRequestQty(item.product.id, -1)}
+                          className="border-gray-border flex h-5 w-5 items-center justify-center rounded-full border bg-white text-xs"
+                        >
+                          <Minus size={9} />
+                        </button>
+                        <span className="text-heading w-4 text-center font-bold">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() => updateRequestQty(item.product.id, 1)}
+                          className="border-gray-border flex h-5 w-5 items-center justify-center rounded-full border bg-white text-xs"
+                        >
+                          <Plus size={9} />
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => removeFromRequest(item.product.id)}
+                        className="ml-0.5 text-red-400 hover:text-red-600"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex flex-col gap-0.5">
-                  <p
-                    className="text-xs"
-                    style={{ color: "var(--text-colour)" }}
+
+                {/* Total + submit */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-text text-xs">
+                      {requestItems.length} product
+                      {requestItems.length !== 1 ? "s" : ""}
+                    </p>
+                    <p className="font-syne text-heading font-bold">
+                      Total to remit: {fmt(totalRemit)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleSubmit}
+                    disabled={submitting}
+                    className="bg-primary rounded-full px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
                   >
-                    Amount to remit
-                  </p>
-                  <p
-                    className="font-syne text-lg font-bold"
-                    style={{ color: "var(--heading-colour)" }}
-                  >
-                    {fmt(totalKobo)}
-                  </p>
+                    {submitting ? "Submitting..." : "Submit Request"}
+                  </button>
                 </div>
               </div>
-
-              <button
-                type="submit"
-                disabled={loading || !selectedProduct}
-                className="w-full rounded-full py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                style={{ backgroundColor: "var(--primary-color)" }}
-              >
-                {loading ? "Submitting..." : "Submit Stock Request"}
-              </button>
-            </motion.form>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Right: past requests */}
-      <div
-        className="flex flex-col gap-3 rounded-2xl border p-5"
-        style={{
-          borderColor: "var(--border-gray)",
-          backgroundColor: "var(--white)",
-        }}
-      >
-        <h3
-          className="font-syne font-semibold"
-          style={{ color: "var(--heading-colour)" }}
-        >
-          Past Requests
-        </h3>
-
-        {loadingRequests ? (
-          <div className="flex flex-col gap-2">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="h-16 animate-pulse rounded-xl"
-                style={{ backgroundColor: "var(--bg-light)" }}
-              />
-            ))}
-          </div>
-        ) : pastRequests.length === 0 ? (
-          <p
-            className="py-4 text-center text-sm"
-            style={{ color: "var(--text-colour)" }}
-          >
-            No stock requests yet.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {pastRequests.map((req, i) => {
-              const s = statusStyles[req.status] ?? statusStyles.pending;
-              return (
-                <motion.div
-                  key={req.id}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.06 }}
-                  className="flex items-center justify-between rounded-xl border px-4 py-3"
-                  style={{
-                    borderColor: "var(--border-gray)",
-                    backgroundColor: "var(--bg-light)",
-                  }}
-                >
-                  <div className="flex flex-col gap-0.5">
-                    <p
-                      className="text-sm font-semibold"
-                      style={{ color: "var(--heading-colour)" }}
-                    >
-                      {req.product_name} × {req.quantity}
-                    </p>
-                    <p
-                      className="text-xs"
-                      style={{ color: "var(--text-colour)" }}
-                    >
-                      {new Date(req.created_at).toLocaleDateString("en-NG", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                      {" · "}
-                      {fmt(req.amount_to_remit)}
-                    </p>
-                  </div>
-                  <span
-                    className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                    style={{ backgroundColor: s.bg, color: s.text }}
-                  >
-                    {s.label}
-                  </span>
-                </motion.div>
-              );
-            })}
-          </div>
+            </div>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
+
+      {/* Spacer so sticky bar doesn't cover content */}
+      {requestItems.length > 0 && <div className="h-32" />}
     </div>
   );
 }

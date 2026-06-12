@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import type { Variants } from "framer-motion";
-import { Header } from "../../components/Header";
-import { HeroSection } from "../../components/HeroSection";
+import { Header } from "../../components/landing/Header";
+import { HeroSection } from "../../components/landing/HeroSection";
+import { useAuth } from "../../contexts/AuthContext";
+import { BASE_BACKEND_URL } from "@debridgers/api-client";
 
 export function meta() {
   return [
@@ -36,10 +38,16 @@ export function meta() {
     { property: "og:image", content: "https://debridgers.com/og-image.png" },
     { property: "og:image:width", content: "1200" },
     { property: "og:image:height", content: "630" },
+    {
+      property: "og:image:alt",
+      content:
+        "Debridgers — become a field agent and earn commission in Kaduna",
+    },
     { property: "og:locale", content: "en_NG" },
 
     // === Twitter
     { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:site", content: "@debridgers" },
     { name: "twitter:url", content: "https://debridgers.com/agents" },
     {
       name: "twitter:title",
@@ -48,9 +56,14 @@ export function meta() {
     {
       name: "twitter:description",
       content:
-        "Earn 5% commission on every sale as a Debridgers field agent. Work flexibly, serve your community and get paid weekly. Apply in under 3 minutes.",
+        "Earn 30% commission on every sale as a Debridgers field agent. Work flexibly, serve your community and get paid weekly. Apply in under 3 minutes.",
     },
     { name: "twitter:image", content: "https://debridgers.com/og-image.png" },
+    {
+      name: "twitter:image:alt",
+      content:
+        "Debridgers — become a field agent and earn commission in Kaduna",
+    },
 
     // === Author and Robots
     { name: "author", content: "Debridgers Team" },
@@ -93,7 +106,7 @@ const whatYouDoCards: WhatYouDoCard[] = [
     icon: "lucide:banknote",
     title: "Earn Commissions",
     description:
-      "Get 30% of every sale you close. The more you sell, the more you earn - paid weekly, no delays.",
+      "Get commission on every sale you close. The more you sell, the more you earn — paid weekly, no delays.",
   },
 ];
 
@@ -147,16 +160,31 @@ const steps: Step[] = [
     number: "03",
     title: "Start Earning",
     description:
-      "Log in to your agent dashboard, receive orders, and start earning 30% on every sale.",
+      "Log in to your agent dashboard, receive orders, and start earning commission on every sale.",
   },
 ];
 
-const earningsRows = [
-  { label: "Sales closed", value: "5 orders", highlight: false },
-  { label: "Total sale amount", value: "₦75,000", highlight: false },
-  { label: "Your commission (30%)", value: "₦22,500", highlight: true },
-  { label: "Company keeps (70%)", value: "₦52,500", highlight: false },
-];
+function buildEarningsRows(commissionRate: number) {
+  const sampleTotal = 75000;
+  const agentEarns = Math.round((sampleTotal * commissionRate) / 100);
+  const companyKeeps = sampleTotal - agentEarns;
+  const fmt = (n: number) =>
+    "₦" + n.toLocaleString("en-NG", { minimumFractionDigits: 0 });
+  return [
+    { label: "Sales closed", value: "5 orders", highlight: false },
+    { label: "Total sale amount", value: fmt(sampleTotal), highlight: false },
+    {
+      label: `Your commission (${commissionRate}%)`,
+      value: fmt(agentEarns),
+      highlight: true,
+    },
+    {
+      label: `Company keeps (${100 - commissionRate}%)`,
+      value: fmt(companyKeeps),
+      highlight: false,
+    },
+  ];
+}
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 24 },
@@ -168,19 +196,36 @@ const fadeUp: Variants = {
 };
 
 export default function AgentsPage() {
+  const { isAuthenticated, dashboardPath } = useAuth();
   const [activeStep, setActiveStep] = useState(0);
+  const [commissionRate, setCommissionRate] = useState(30);
+
+  useEffect(() => {
+    fetch(`${BASE_BACKEND_URL}/config/public`)
+      .then((r) => r.json())
+      .then((json) => {
+        const rate = json?.data?.agent_commission_rate;
+        if (typeof rate === "number" && rate > 0) setCommissionRate(rate);
+      })
+      .catch(() => {});
+  }, []);
+
+  const earningsRows = buildEarningsRows(commissionRate);
 
   return (
     <>
       {/* Header */}
-      <div className="top-md sticky z-50">
+      <div className="sticky top-3 z-50">
         <Header
           navLinks={[
             { label: "Home", href: "/" },
+            { label: "Shop", href: "/shop" },
             { label: "Agents", href: "/agents" },
             { label: "Contact Us", href: "/contact" },
           ]}
           signUpHref="/signup?role=agent"
+          isAuthenticated={isAuthenticated}
+          dashboardPath={dashboardPath}
         />
       </div>
 
@@ -200,10 +245,13 @@ export default function AgentsPage() {
                   { text: "." },
                 ],
               }}
-              subtext="Become a Debridgers field agent. Source fresh foodstuff, manage deliveries, and earn 30% commission on every sale - on your own schedule."
+              subtext={`Become a Debridgers field agent. Source fresh foodstuff, manage deliveries, and earn ${commissionRate}% commission on every sale — on your own schedule.`}
               secondaryCta={{ label: "Apply Now", href: "#apply-now" }}
               trustItems={[
-                { icon: "lucide:wallet", label: "30% commission per sale" },
+                {
+                  icon: "lucide:wallet",
+                  label: `${commissionRate}% commission per sale`,
+                },
                 { icon: "lucide:clock", label: "Flexible working hours" },
                 {
                   icon: "lucide:graduation-cap",
@@ -232,7 +280,7 @@ export default function AgentsPage() {
               <p className="text-primary-light text-xl tracking-widest">
                 Your role
               </p>
-              <h2 className="font-syne text-primary w-full max-w-[730px] text-3xl font-extrabold sm:text-4xl lg:text-5xl">
+              <h2 className="font-syne text-primary w-full max-w-182.5 text-3xl font-extrabold sm:text-4xl lg:text-5xl">
                 What you&apos;ll do as an agent
               </h2>
             </motion.div>
@@ -247,30 +295,16 @@ export default function AgentsPage() {
                   viewport={{ once: true }}
                   custom={i + 1}
                   variants={fadeUp}
-                  className="flex flex-col gap-4 rounded-2xl border p-6 transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-md"
-                  style={{ borderColor: "var(--border-gray)" }}
+                  className="border-gray-border flex flex-col gap-4 rounded-2xl border p-6 transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-md"
                 >
-                  <span
-                    className="flex h-12 w-12 items-center justify-center rounded-xl"
-                    style={{ backgroundColor: "var(--bg-light)" }}
-                  >
-                    <Icon
-                      icon={card.icon}
-                      className="h-6 w-6"
-                      style={{ color: "var(--primary-color)" }}
-                    />
+                  <span className="bg-bg-light flex h-12 w-12 items-center justify-center rounded-xl">
+                    <Icon icon={card.icon} className="text-primary h-6 w-6" />
                   </span>
                   <div className="flex flex-col gap-2">
-                    <h3
-                      className="font-syne text-lg font-bold"
-                      style={{ color: "var(--heading-colour)" }}
-                    >
+                    <h3 className="font-syne text-heading text-lg font-bold">
                       {card.title}
                     </h3>
-                    <p
-                      className="font-open-sans text-base leading-relaxed"
-                      style={{ color: "var(--text-colour)" }}
-                    >
+                    <p className="font-open-sans text-text text-base leading-relaxed">
                       {card.description}
                     </p>
                   </div>
@@ -284,8 +318,7 @@ export default function AgentsPage() {
       {/* Why Join Us / Benefits */}
       <section
         id="benefits"
-        className="py-section-py sm:py-section-py-sm lg:py-section-py-lg"
-        style={{ backgroundColor: "var(--bg-light)" }}
+        className="bg-bg-light py-section-py sm:py-section-py-sm lg:py-section-py-lg"
       >
         <div className="default-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
           <div className="flex flex-col gap-8">
@@ -301,7 +334,7 @@ export default function AgentsPage() {
               <p className="text-primary-light text-xl tracking-widest">
                 Why join us
               </p>
-              <h2 className="font-syne text-primary max-w-[730px] text-3xl font-extrabold sm:text-4xl lg:text-5xl">
+              <h2 className="font-syne text-primary max-w-182.5 text-3xl font-extrabold sm:text-4xl lg:text-5xl">
                 Built for people who hustle.
               </h2>
             </motion.div>
@@ -318,29 +351,14 @@ export default function AgentsPage() {
                   variants={fadeUp}
                   className="flex items-start gap-4 rounded-2xl bg-white p-6 shadow-sm transition-all duration-300 ease-in-out hover:scale-105"
                 >
-                  <span
-                    className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                    style={{
-                      backgroundColor: "var(--dash-quick-action-hover)",
-                    }}
-                  >
-                    <Icon
-                      icon={b.icon}
-                      className="h-5 w-5"
-                      style={{ color: "var(--primary-color)" }}
-                    />
+                  <span className="bg-dash-quick-action-hover mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
+                    <Icon icon={b.icon} className="text-primary h-5 w-5" />
                   </span>
                   <div className="flex flex-col gap-1">
-                    <h3
-                      className="font-syne text-base font-bold"
-                      style={{ color: "var(--heading-colour)" }}
-                    >
+                    <h3 className="font-syne text-heading text-base font-bold">
                       {b.title}
                     </h3>
-                    <p
-                      className="font-open-sans text-sm leading-relaxed"
-                      style={{ color: "var(--text-colour)" }}
-                    >
+                    <p className="font-open-sans text-text text-sm leading-relaxed">
                       {b.description}
                     </p>
                   </div>
@@ -370,7 +388,7 @@ export default function AgentsPage() {
               <p className="text-primary-light text-xl tracking-widest">
                 The process
               </p>
-              <h2 className="font-syne text-primary max-w-[730px] text-3xl font-extrabold sm:text-4xl lg:text-5xl">
+              <h2 className="font-syne text-primary max-w-182.5 text-3xl font-extrabold sm:text-4xl lg:text-5xl">
                 Three steps to your first commission.
               </h2>
             </motion.div>
@@ -386,40 +404,24 @@ export default function AgentsPage() {
                   custom={i + 1}
                   variants={fadeUp}
                   onHoverStart={() => setActiveStep(i)}
-                  className="relative flex flex-col gap-4 rounded-2xl border-2 p-8 transition-all duration-300"
-                  style={{
-                    borderColor:
-                      activeStep === i
-                        ? "var(--primary-color)"
-                        : "var(--border-gray)",
-                    backgroundColor:
-                      activeStep === i
-                        ? "var(--dash-quick-action-hover)"
-                        : "var(--white)",
-                  }}
+                  className={`relative flex flex-col gap-4 rounded-2xl border-2 p-8 transition-all duration-300 ${
+                    activeStep === i
+                      ? "border-primary bg-dash-quick-action-hover"
+                      : "border-gray-border bg-white"
+                  }`}
                 >
                   <span
-                    className="font-syne text-5xl leading-none font-extrabold"
-                    style={{
-                      color:
-                        activeStep === i
-                          ? "var(--primary-color)"
-                          : "var(--border-gray)",
-                    }}
+                    className={`font-syne text-5xl leading-none font-extrabold ${
+                      activeStep === i ? "text-primary" : "text-gray-border"
+                    }`}
                   >
                     {step.number}
                   </span>
                   <div className="flex flex-col gap-2">
-                    <h3
-                      className="font-syne text-xl font-bold"
-                      style={{ color: "var(--heading-colour)" }}
-                    >
+                    <h3 className="font-syne text-heading text-xl font-bold">
                       {step.title}
                     </h3>
-                    <p
-                      className="font-open-sans text-base leading-relaxed"
-                      style={{ color: "var(--text-colour)" }}
-                    >
+                    <p className="font-open-sans text-text text-base leading-relaxed">
                       {step.description}
                     </p>
                   </div>
@@ -431,10 +433,7 @@ export default function AgentsPage() {
       </section>
 
       {/* Example Earnings / Earnings Snapshot */}
-      <section
-        className="py-section-py sm:py-section-py-sm lg:py-section-py-lg"
-        style={{ backgroundColor: "var(--primary-color)" }}
-      >
+      <section className="bg-primary py-section-py sm:py-section-py-sm lg:py-section-py-lg">
         <div className="default-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
           <div className="grid items-center gap-8 lg:grid-cols-2">
             {/* Heading */}
@@ -449,10 +448,10 @@ export default function AgentsPage() {
               <p className="text-xl tracking-widest text-white/60">
                 Example earnings
               </p>
-              <h2 className="font-syne max-w-[730px] text-3xl font-extrabold text-white sm:text-4xl lg:text-5xl">
+              <h2 className="font-syne max-w-182.5 text-3xl font-extrabold text-white sm:text-4xl lg:text-5xl">
                 What a good week looks like.
               </h2>
-              <p className="font-open-sans max-w-[560px] text-lg leading-relaxed text-white/80">
+              <p className="font-open-sans max-w-140 text-lg leading-relaxed text-white/80">
                 Agents who stay consistent typically close 5–10 sales per week.
                 Here&apos;s what that means in your pocket.
               </p>
@@ -481,12 +480,9 @@ export default function AgentsPage() {
                       {row.label}
                     </span>
                     <span
-                      className="font-syne text-lg font-bold"
-                      style={{
-                        color: row.highlight
-                          ? "var(--secondary-color)"
-                          : "white",
-                      }}
+                      className={`font-syne text-lg font-bold ${
+                        row.highlight ? "text-secondary" : "text-white"
+                      }`}
                     >
                       {row.value}
                     </span>
@@ -518,17 +514,16 @@ export default function AgentsPage() {
             <p className="text-primary-light font-open-sans text-xl tracking-widest">
               Ready to start?
             </p>
-            <h2 className="font-syne text-primary mx-auto max-w-[730px] text-3xl font-extrabold sm:text-4xl lg:text-5xl">
+            <h2 className="font-syne text-primary mx-auto max-w-182.5 text-3xl font-extrabold sm:text-4xl lg:text-5xl">
               Apply in under 3 minutes.
             </h2>
-            <p className="font-open-sans text-text mx-auto max-w-[550px] text-lg leading-relaxed">
+            <p className="font-open-sans text-text mx-auto max-w-137.5 text-lg leading-relaxed">
               No experience required. Just bring your hustle - we&apos;ll handle
               the rest.
             </p>
             <Link
               to="/signup?role=agent"
-              className="font-syne inline-flex items-center gap-2 rounded-full px-8 py-4 text-base font-semibold text-white transition-opacity duration-200 hover:opacity-90"
-              style={{ backgroundColor: "var(--primary-color)" }}
+              className="bg-primary font-syne inline-flex items-center gap-2 rounded-full px-8 py-4 text-base font-semibold text-white transition-opacity duration-200 hover:opacity-90"
             >
               Apply Now
               <Icon icon="lucide:arrow-right" className="h-4 w-4" />

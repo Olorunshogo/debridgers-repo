@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { z } from "zod";
 import {
@@ -17,7 +17,14 @@ import { kadunaStateLgas } from "../../models/models";
 export function meta() {
   return [
     { title: "Create Account | Debridgers" },
-    { name: "description", content: "Join Debridgers as a buyer or agent." },
+    {
+      name: "description",
+      content:
+        "Create your Debridgers account. Sign up as a buyer to order fresh foodstuff at market prices, or as an agent to earn commission.",
+    },
+    // === Author and Robots
+    { name: "author", content: "Debridgers Team" },
+    { name: "robots", content: "noindex, nofollow" },
   ];
 }
 
@@ -80,6 +87,7 @@ function splitFullName(fullName: string): {
 
 // === Page
 export default function SignupPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>("buyer");
 
   // === Buyer form state
@@ -178,6 +186,12 @@ export default function SignupPage() {
       const json = await res.json();
 
       if (res.status === 409) {
+        if (json.code === "UNVERIFIED_EMAIL") {
+          navigate("/verify-email", {
+            state: { email: result.data.email, role: "buyer" },
+          });
+          return;
+        }
         setApiError("This email is already registered.");
         return;
       }
@@ -240,6 +254,12 @@ export default function SignupPage() {
       const json = await res.json();
 
       if (res.status === 409) {
+        if (json.code === "UNVERIFIED_EMAIL") {
+          navigate("/verify-email", {
+            state: { email: result.data.email, role: "agent" },
+          });
+          return;
+        }
         setApiError("This email is already registered.");
         return;
       }
@@ -327,10 +347,7 @@ export default function SignupPage() {
             </h1>
 
             {/* Tab switcher */}
-            <div
-              className="flex border-b"
-              style={{ borderColor: "var(--border-gray)" }}
-            >
+            <div className="border-gray-border flex border-b">
               {(["buyer", "agent"] as Tab[]).map((tab) => {
                 const isActive = activeTab === tab;
                 const label =
@@ -340,16 +357,11 @@ export default function SignupPage() {
                     key={tab}
                     type="button"
                     onClick={() => handleTabChange(tab)}
-                    className="flex-1 cursor-pointer pb-2 text-sm font-semibold transition-all duration-300 ease-in-out"
-                    style={{
-                      color: isActive
-                        ? "var(--primary-color)"
-                        : "var(--text-colour)",
-                      borderBottom: isActive
-                        ? "2px solid var(--primary-color)"
-                        : "2px solid transparent",
-                      marginBottom: "-1px",
-                    }}
+                    className={`flex-1 cursor-pointer pb-2 text-sm font-semibold transition-all duration-300 ease-in-out ${
+                      isActive
+                        ? "text-primary border-primary"
+                        : "text-text border-transparent"
+                    } -mb-px border-b-2`}
                   >
                     {label}
                   </button>
@@ -364,11 +376,7 @@ export default function SignupPage() {
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="rounded-xl px-4 py-3 text-sm"
-                  style={{
-                    backgroundColor: "var(--status-cancelled-bg)",
-                    color: "var(--status-cancelled-text)",
-                  }}
+                  className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
                 >
                   {apiError}
                 </motion.div>
@@ -517,8 +525,7 @@ export default function SignupPage() {
               You already have an account?{" "}
               <Link
                 to="/login"
-                className="font-semibold underline underline-offset-2"
-                style={{ color: "var(--primary-color)" }}
+                className="text-primary font-semibold underline underline-offset-2"
               >
                 Sign in
               </Link>

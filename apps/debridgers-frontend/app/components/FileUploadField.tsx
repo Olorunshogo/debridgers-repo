@@ -74,19 +74,9 @@ export function FileUploadField({
     <div className="flex w-full flex-col gap-1.5">
       {/* Label */}
       <label className="flex cursor-pointer items-center gap-1">
-        <span
-          className="font-syne font-medium"
-          style={{ color: "var(--heading-colour)" }}
-        >
-          {label}
-        </span>
+        <span className="text-heading font-syne font-medium">{label}</span>
         {!required && (
-          <span
-            className="font-open-sans text-sm"
-            style={{ color: "var(--text-colour)" }}
-          >
-            (optional)
-          </span>
+          <span className="text-text font-open-sans text-sm">(optional)</span>
         )}
       </label>
 
@@ -95,33 +85,19 @@ export function FileUploadField({
         // === Selected file card
         <div
           className={cn(
-            "flex items-center justify-between rounded-full border px-4 py-2.5 transition-all duration-300 ease-in-out",
+            "bg-input-bg flex items-center justify-between rounded-full border px-4 py-2.5 transition-all duration-300 ease-in-out",
+            displayError ? "border-input-error-red" : "border-input-border",
           )}
-          style={{
-            borderColor: displayError
-              ? "var(--input-error-red)"
-              : "var(--input-border)",
-            backgroundColor: "var(--input-bg)",
-          }}
         >
           <div className="flex items-center gap-2 overflow-hidden">
-            <span
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
-              style={{ backgroundColor: "var(--primary-color)" }}
-            >
+            <span className="bg-primary flex h-7 w-7 shrink-0 items-center justify-center rounded-full">
               <FileUp size={14} className="text-white" />
             </span>
-            <span
-              className="font-syne truncate text-sm font-medium"
-              style={{ color: "var(--heading-colour)" }}
-            >
+            <span className="text-heading font-syne truncate text-sm font-medium">
               {file.name}
             </span>
-            <Dot style={{ color: "var(--text-colour)" }} />
-            <span
-              className="font-syne shrink-0 text-xs"
-              style={{ color: "var(--text-colour)" }}
-            >
+            <Dot className="text-text" />
+            <span className="text-text font-syne shrink-0 text-xs">
               {formatSize(file.size)}
             </span>
             <CheckCircle2
@@ -135,14 +111,7 @@ export function FileUploadField({
           <button
             type="button"
             onClick={reset}
-            className="ml-2 shrink-0 cursor-pointer transition-all duration-300 ease-in-out"
-            style={{ color: "var(--text-colour)" }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.color = "var(--input-error-red)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.color = "var(--text-colour)")
-            }
+            className="text-text hover:text-input-error-red ml-2 shrink-0 cursor-pointer transition-all duration-300 ease-in-out"
           >
             <Trash2 size={16} />
           </button>
@@ -153,39 +122,18 @@ export function FileUploadField({
           onDrop={onDrop}
           onDragOver={(e) => e.preventDefault()}
           onClick={() => fileInputRef.current?.click()}
-          className="cursor-pointer rounded-full border px-4 py-2.5 transition-all duration-300 ease-in-out"
-          style={{
-            borderColor: displayError
-              ? "var(--input-error-red)"
-              : "var(--input-border)",
-            backgroundColor: "var(--input-bg)",
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.borderColor = displayError
-              ? "var(--input-error-red)"
-              : "var(--input-border-focus)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.borderColor = displayError
-              ? "var(--input-error-red)"
-              : "var(--input-border)")
-          }
+          className={cn(
+            "bg-input-bg cursor-pointer rounded-full border px-4 py-2.5 transition-all duration-300 ease-in-out",
+            displayError
+              ? "border-input-error-red"
+              : "border-input-border hover:border-input-border-focus",
+          )}
         >
           <div className="flex items-center justify-between">
-            <span
-              className="font-syne text-sm"
-              style={{ color: "var(--text-placeholder)" }}
-            >
+            <span className="text-text-placeholder font-syne text-sm">
               {formattedTypes}: up to {maxSizeMB}MB
             </span>
-            <div
-              className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-semibold transition-all duration-300 ease-in-out"
-              style={{
-                borderColor: "var(--input-border)",
-                color: "var(--heading-colour)",
-                backgroundColor: "var(--white)",
-              }}
-            >
+            <div className="border-input-border text-heading flex items-center gap-1.5 rounded-full border bg-white px-3 py-1 text-sm font-semibold transition-all duration-300 ease-in-out">
               <UploadIcon size={14} strokeWidth={2.5} />
               <span className="font-syne">Upload</span>
             </div>
@@ -203,12 +151,7 @@ export function FileUploadField({
 
       {/* Error */}
       {displayError && (
-        <p
-          className="font-syne text-xs"
-          style={{ color: "var(--input-error-red)" }}
-        >
-          {displayError}
-        </p>
+        <p className="text-input-error-red font-syne text-xs">{displayError}</p>
       )}
     </div>
   );

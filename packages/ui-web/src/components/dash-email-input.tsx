@@ -2,8 +2,7 @@ import React, { forwardRef } from "react";
 import {
   BaseInputField,
   BASE_INPUT_CLASS,
-  getInputStyles,
-  getInputFocusHandlers,
+  getInputStateClass,
 } from "./base-input-field";
 
 interface DashEmailInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -28,9 +27,7 @@ export const DashEmailInput = forwardRef<HTMLInputElement, DashEmailInputProps>(
           id={inputId}
           name={name ?? inputId}
           type="email"
-          className={BASE_INPUT_CLASS}
-          style={getInputStyles(error)}
-          {...getInputFocusHandlers(error)}
+          className={`${BASE_INPUT_CLASS} ${getInputStateClass(error)}`}
           {...props}
         />
       </BaseInputField>
