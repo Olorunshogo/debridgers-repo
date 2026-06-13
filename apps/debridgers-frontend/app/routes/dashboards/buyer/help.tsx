@@ -179,7 +179,7 @@ function BuyerGuideModal({ onClose }: { onClose: () => void }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex w-full items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-50 flex w-full cursor-pointer items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center"
       onClick={onClose}
     >
       <motion.div
@@ -188,7 +188,7 @@ function BuyerGuideModal({ onClose }: { onClose: () => void }) {
         exit={{ opacity: 0, y: 40 }}
         transition={{ type: "spring", damping: 28, stiffness: 320 }}
         onClick={(e) => e.stopPropagation()}
-        className="flex w-full max-w-180 flex-col rounded-t-3xl bg-white sm:rounded-3xl"
+        className="mx-auto flex w-full max-w-[92%] flex-col rounded-t-3xl bg-white sm:max-w-180 sm:rounded-3xl"
         style={{ maxHeight: "88dvh" }}
       >
         {/* Modal header */}

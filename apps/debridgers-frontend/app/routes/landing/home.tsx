@@ -294,53 +294,55 @@ function WhatWeDeliver() {
   return (
     <section
       id="what-we-deliver"
-      className="font-syne px-section-px py-section-py sm:px-section-px-sm sm:py-section-py-sm lg:px-section-px-lg lg:py-section-py-lg relative mx-auto flex w-full flex-col gap-10 bg-white"
+      className="font-syne relative w-full bg-white"
     >
-      {/* Header */}
-      <div className="flex flex-col gap-3 lg:gap-6">
-        <p className="text-primary-light text-xl tracking-widest">
-          What we deliver
-        </p>
+      <div className="px-section-px py-section-py sm:px-section-px-sm sm:py-section-py-sm lg:px-section-px-lg lg:py-section-py-lg landing-max-width mx-auto flex w-full flex-col items-center gap-10">
+        {/* Header */}
+        <div className="flex w-full max-w-220 flex-col items-center gap-3 text-center lg:gap-6">
+          <p className="text-primary-light text-xl tracking-widest">
+            What we deliver
+          </p>
 
-        <div className="flex w-full flex-wrap items-start justify-between gap-6">
-          <h2 className="text-primary font-syne lg:text-50 max-w-188 text-3xl leading-tight font-extrabold sm:text-4xl lg:font-bold">
-            Everything you spend on at the market.
-          </h2>
+          <div className="flex w-full flex-col items-center gap-6">
+            <h2 className="text-primary font-syne lg:text-50 max-w-188 text-3xl leading-tight font-extrabold sm:text-4xl lg:font-bold">
+              Everything you spend on at the market.
+            </h2>
 
-          <PrimaryLink
-            href="https://wa.me/+2347012288798"
-            className="font-syne px-6 py-3 text-xl font-bold sm:text-2xl lg:text-3xl"
-          >
-            Send Order
-          </PrimaryLink>
+            <PrimaryLink
+              href="https://wa.me/+2347012288798"
+              className="font-syne px-6 py-3 text-xl font-bold sm:text-2xl lg:text-3xl"
+            >
+              Send Order
+            </PrimaryLink>
+          </div>
         </div>
-      </div>
 
-      {/* Carousel - overflow-hidden clips cards beyond 4 on lg */}
-      <div
-        className="overflow-hidden"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <motion.div
-          className="flex gap-6"
-          animate={{ x: `-${offset * step}px` }}
-          transition={
-            isAnimating
-              ? { type: "spring", stiffness: 300, damping: 30 }
-              : { duration: 0 }
-          }
-          style={{
-            width: `${doubled.length * (cardWidth + gap) - gap}px`,
-          }}
+        {/* Carousel - overflow-hidden clips cards beyond 4 on lg */}
+        <div
+          className="mx-auto w-full overflow-hidden"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
         >
-          {doubled.map((category, index) => (
-            <DeliverCard
-              key={`${category.title}-${index}`}
-              whatWeDeliverCategory={category}
-            />
-          ))}
-        </motion.div>
+          <motion.div
+            className="flex gap-6"
+            animate={{ x: `-${offset * step}px` }}
+            transition={
+              isAnimating
+                ? { type: "spring", stiffness: 300, damping: 30 }
+                : { duration: 0 }
+            }
+            style={{
+              width: `${doubled.length * (cardWidth + gap) - gap}px`,
+            }}
+          >
+            {doubled.map((category, index) => (
+              <DeliverCard
+                key={`${category.title}-${index}`}
+                whatWeDeliverCategory={category}
+              />
+            ))}
+          </motion.div>
+        </div>
       </div>
     </section>
   );
@@ -481,6 +483,7 @@ export default function Home() {
           <div className="font-syne -mt-navbar-h bg-primary absolute inset-0 z-0 overflow-hidden" />
           <section
             id="hero-section"
+            aria-label="Hero"
             className="font-syne relative mx-auto flex h-full min-h-screen w-full flex-col overflow-hidden"
           >
             {/* Background layer */}
@@ -613,114 +616,120 @@ export default function Home() {
       {/* How It Works */}
       <section
         id="how-it-works"
-        className="py-section-py px-section-px sm:px-section-px-sm lg:px-section-px-lg sm:py-section-py-sm lg:py-section-py-lg relative mx-auto w-full bg-white"
+        aria-label="How it works"
+        className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative bg-white"
       >
-        <div className="grid items-center gap-12 lg:grid-cols-2">
-          {/* Left Content */}
-          <motion.div
-            initial={{ opacity: 0, x: -24 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="flex flex-col gap-10"
-          >
-            <div className="flex flex-col gap-3">
-              <p className="text-text text-sm font-semibold">How it works</p>
-              <h2 className="text-primary text-2xl leading-tight font-bold sm:text-3xl lg:text-5xl">
-                From market to your door in two steps
-              </h2>
-            </div>
+        <div className="landing-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
+          <div className="grid items-center gap-12 lg:grid-cols-2">
+            {/* Left Content */}
+            <motion.div
+              initial={{ opacity: 0, x: -24 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="flex flex-col gap-10"
+            >
+              <div className="flex flex-col gap-3">
+                <p className="text-text text-sm font-semibold">How it works</p>
+                <h2 className="text-primary text-2xl leading-tight font-bold sm:text-3xl lg:text-5xl">
+                  From market to your door in two steps
+                </h2>
+              </div>
 
-            <div className="flex flex-col">
-              {/* Step 1 */}
-              <div className="text-text flex gap-6 border-b border-[#E5E7EB] py-4">
-                <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
-                  01
+              <div className="flex flex-col">
+                {/* Step 1 */}
+                <div className="text-text flex gap-6 border-b border-[#E5E7EB] py-4">
+                  <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
+                    01
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
+                      Send us your order
+                    </h3>
+                    <p className="font-open-sans text-sm leading-relaxed sm:text-base">
+                      Chat on WhatsApp, call, or browse our catalog. Tell us
+                      what you need: rice, beans, palm oil, etc.
+                    </p>
+                  </div>
                 </div>
-                <div className="flex flex-col gap-2">
-                  <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
-                    Send us your order
-                  </h3>
-                  <p className="font-open-sans text-sm leading-relaxed sm:text-base">
-                    Chat on WhatsApp, call, or browse our catalog. Tell us what
-                    you need: rice, beans, palm oil, etc.
+
+                {/* Step 2 */}
+
+                <div className="text-text flex gap-6 py-4">
+                  <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
+                    02
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
+                      Delivered to you
+                    </h3>
+                    <p className="font-open-sans text-sm leading-relaxed sm:text-base">
+                      Your order arrives at your home or shop at the market
+                      price you agreed. No surprises, no hidden fees.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Right Image + Market woman Card */}
+            <motion.div
+              initial={{ opacity: 0, x: 24 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="relative"
+            >
+              <div className="group relative overflow-hidden rounded-3xl shadow-2xl">
+                <img
+                  src="/images/market-lady.jpg"
+                  alt="Smiling Nigerian woman at fresh produce market"
+                  className="h-full max-h-130 w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-105 lg:max-h-132"
+                />
+                {/* Delivery Info Card */}
+                <div className="bg-primary-light border-primary-light absolute right-2.5 bottom-2.5 left-2.5 flex flex-col gap-2.5 rounded-3xl border px-6 py-3 text-white shadow-md">
+                  <div className="flex items-center gap-2.5 text-sm sm:text-base">
+                    Next Delivery
+                  </div>
+                  <p className="text-sm font-semibold sm:text-base lg:text-lg">
+                    Kaduna South • Today
+                  </p>
+                  <p className="text-sm lg:text-base">
+                    Order before 12pm to experience same day delivery
                   </p>
                 </div>
               </div>
-
-              {/* Step 2 */}
-
-              <div className="text-text flex gap-6 py-4">
-                <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl">
-                  02
-                </div>
-                <div className="flex flex-col gap-2">
-                  <h3 className="font-syne text-lg font-bold sm:text-xl lg:text-2xl">
-                    Delivered to you
-                  </h3>
-                  <p className="font-open-sans text-sm leading-relaxed sm:text-base">
-                    Your order arrives at your home or shop at the market price
-                    you agreed. No surprises, no hidden fees.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Right Image + Market woman Card */}
-          <motion.div
-            initial={{ opacity: 0, x: 24 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="relative"
-          >
-            <div className="group relative overflow-hidden rounded-3xl shadow-2xl">
-              <img
-                src="/images/market-lady.jpg"
-                alt="Smiling Nigerian woman at fresh produce market"
-                className="h-full max-h-130 w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-105 lg:max-h-132"
-              />
-              {/* Delivery Info Card */}
-              <div className="bg-primary-light border-primary-light absolute right-2.5 bottom-2.5 left-2.5 flex flex-col gap-2.5 rounded-3xl border px-6 py-3 text-white shadow-md">
-                <div className="flex items-center gap-2.5 text-sm sm:text-base">
-                  Next Delivery
-                </div>
-                <p className="text-sm font-semibold sm:text-base lg:text-lg">
-                  Kaduna South • Today
-                </p>
-                <p className="text-sm lg:text-base">
-                  Order before 12pm to experience same day delivery
-                </p>
-              </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
       {/* Why Debridgers */}
       <section
         id="why-debridgers"
-        className="font-syne px-section-px py-section-py sm:px-section-px-sm sm:py-section-py-sm lg:px-section-px-lg lg:py-section-py-lg relative mx-auto flex w-full flex-col gap-10 bg-[#F6F3F3]"
+        aria-label="Why Debridgers"
+        className="font-syne py-section-py sm:py-section-py-sm lg:py-section-py-lg relative bg-[#F6F3F3]"
       >
-        <div className="flex flex-col gap-3 lg:gap-6">
-          <p className="text-primary-light text-xl tracking-widest">
-            Why Debridgers
-          </p>
-          <h2 className="text-primary w-full text-3xl font-bold sm:text-4xl lg:text-5xl lg:font-bold">
-            We solve what the market can&apos;t.
-          </h2>
-        </div>
+        <div className="landing-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto flex flex-col gap-10">
+          <div className="flex flex-col gap-3 lg:gap-6">
+            <p className="text-primary-light text-xl tracking-widest">
+              Why Debridgers
+            </p>
+            <h2 className="text-primary w-full text-3xl font-bold sm:text-4xl lg:text-5xl lg:font-bold">
+              We solve what the market can&apos;t.
+            </h2>
+          </div>
 
-        <div className="font-syne grid gap-6 lg:grid-cols-3">
-          {whyCardsData.map((card, index) => (
-            <WhyCard
-              key={card.title}
-              card={card}
-              isActive={index === activeWhyCardIndex}
-              onHover={() => setActiveWhyCardIndex(index)}
-            />
-          ))}
+          <div className="font-syne grid gap-6 lg:grid-cols-3">
+            {whyCardsData.map((card, index) => (
+              <WhyCard
+                key={card.title}
+                card={card}
+                isActive={index === activeWhyCardIndex}
+                onHover={() => setActiveWhyCardIndex(index)}
+              />
+            ))}
+          </div>
         </div>
       </section>
 
@@ -730,6 +739,7 @@ export default function Home() {
       {/* Stats Section */}
       <section
         id="stats"
+        aria-label="Key stats"
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg font-syne bg-primary relative overflow-hidden text-white"
       >
         {/* Blur Dot */}
@@ -740,7 +750,7 @@ export default function Home() {
         </div>
 
         {/* Stats */}
-        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex w-full flex-col lg:gap-12">
+        <div className="landing-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex w-full flex-col lg:gap-12">
           <div className="font-syne flex flex-col gap-3 pb-8">
             <p className="text-text2 text-xl tracking-wider uppercase">
               Early Numbers
@@ -796,6 +806,7 @@ export default function Home() {
       {/* GetStarted Section */}
       <section
         id="get-started"
+        aria-label="Get started"
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative overflow-hidden bg-white"
       >
         <div className="pointer-events-none absolute inset-0 z-1">
@@ -804,22 +815,7 @@ export default function Home() {
           <BlurDot className="absolute bottom-[70%] left-[90%] h-30 w-28 lg:left-[70%]" />
         </div>
 
-        <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg relative mx-auto flex w-full flex-col items-center justify-center gap-6 text-center lg:gap-10">
-          <div className="flex flex-col gap-3">
-            <p className="text-primary-light font-open-sans text-center text-lg font-semibold tracking-widest lg:text-xl">
-              Get started
-            </p>
-
-            <h2 className="text-primary font-syne mx-auto w-full max-w-110 text-center text-4xl leading-tight font-extrabold sm:max-w-125 sm:text-5xl lg:max-w-208 lg:text-6xl">
-              Your first delivery is on us.
-            </h2>
-
-            <p className="text-primary font-open-sans mx-auto w-full max-w-120 text-base sm:max-w-125 lg:max-w-208 lg:text-lg">
-              Join early and get free delivery on your first order. Just send us
-              a WhatsApp and we&apos;ll take it from there.
-            </p>
-          </div>
-
+        <div className="landing-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg relative mx-auto flex w-full flex-col items-center justify-center gap-6 text-center lg:gap-10">
           <div className="relative flex w-full flex-col items-center justify-center gap-6 text-center lg:gap-10">
             <div className="flex flex-col gap-3">
               <p className="text-primary-light font-open-sans text-center text-lg font-semibold tracking-widest lg:text-xl xl:text-2xl">

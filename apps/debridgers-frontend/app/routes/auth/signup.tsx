@@ -12,7 +12,9 @@ import {
 } from "@debridgers/ui-web";
 import AuthSuccessModal from "../../components/auth/AuthSuccessModal";
 import { BASE_BACKEND_URL } from "@debridgers/api-client";
+import { isAuthActionError, useAuthActions } from "../../hooks/useAuthActions";
 import { kadunaStateLgas } from "../../models/models";
+import { splitFullName } from "../../utils/name";
 
 export function meta() {
   return [
@@ -72,22 +74,10 @@ type AgentFormData = z.infer<typeof agentSchema>;
 type Tab = "buyer" | "agent";
 type FormErrors<T> = Partial<Record<keyof T, string>>;
 
-// === Helpers
-function splitFullName(fullName: string): {
-  first_name: string;
-  last_name: string;
-} {
-  const idx = fullName.indexOf(" ");
-  if (idx === -1) return { first_name: fullName, last_name: "" };
-  return {
-    first_name: fullName.slice(0, idx),
-    last_name: fullName.slice(idx + 1),
-  };
-}
-
 // === Page
 export default function SignupPage() {
   const navigate = useNavigate();
+  const { registerBuyer } = useAuthActions();
   const [activeTab, setActiveTab] = useState<Tab>("buyer");
 
   // === Buyer form state
@@ -164,55 +154,49 @@ export default function SignupPage() {
       return;
     }
 
-    const { first_name, last_name } = splitFullName(result.data.fullName);
-    const payload = {
-      first_name,
-      last_name,
-      email: result.data.email,
-      phone: result.data.phone || undefined,
-      password: result.data.password,
-      role: result.data.role,
-      referred_by_agent_code: result.data.referred_by_agent_code || undefined,
-    };
-
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_BACKEND_URL}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload),
+      const signupResult = await registerBuyer({
+        fullName: result.data.fullName,
+        email: result.data.email,
+        password: result.data.password,
+        phone: result.data.phone,
+        referredByAgentCode: result.data.referred_by_agent_code,
       });
-      const json = await res.json();
 
-      if (res.status === 409) {
-        if (json.code === "UNVERIFIED_EMAIL") {
-          navigate("/verify-email", {
-            state: { email: result.data.email, role: "buyer" },
-          });
-          return;
-        }
-        setApiError("This email is already registered.");
-        return;
-      }
-      if (res.status === 400) {
-        const errs: FormErrors<BuyerFormData> = {};
-        (json.errors ?? []).forEach(
-          (err: { field: string; message: string }) => {
-            errs[err.field as keyof BuyerFormData] = err.message;
-          },
-        );
-        setBuyerErrors(errs);
-        return;
-      }
-      if (!res.ok) {
-        setApiError(json.message ?? "Registration failed.");
+      if (!signupResult.requiresEmailVerification) {
+        navigate("/buyer-dashboard");
         return;
       }
 
       setRegisteredEmail(result.data.email);
       setShowSuccess(true);
-    } catch {
+    } catch (error) {
+      if (isAuthActionError(error)) {
+        if (error.status === 409) {
+          if (error.code === "UNVERIFIED_EMAIL") {
+            navigate("/verify-email", {
+              state: { email: result.data.email, role: "buyer" },
+            });
+            return;
+          }
+          setApiError("This email is already registered.");
+          return;
+        }
+
+        if (error.status === 400 && error.fields) {
+          const errs: FormErrors<BuyerFormData> = {};
+          error.fields.forEach((fieldError) => {
+            errs[fieldError.field as keyof BuyerFormData] = fieldError.message;
+          });
+          setBuyerErrors(errs);
+          return;
+        }
+
+        setApiError(error.message);
+        return;
+      }
+
       setApiError("Network error. Please try again.");
     } finally {
       setLoading(false);

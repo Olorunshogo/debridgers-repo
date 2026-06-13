@@ -8,13 +8,8 @@ import {
   DashPasswordInput,
   SubmitButton,
 } from "@debridgers/ui-web";
-import {
-  BASE_BACKEND_URL,
-  decodeJwtPayload,
-  storeTokens,
-} from "@debridgers/api-client";
-import type { JwtPayload } from "@debridgers/api-client";
 import { redirectAfterAuth } from "../../utils/auth-redirect";
+import { useAuthActions } from "../../hooks/useAuthActions";
 
 export function meta() {
   return [
@@ -40,6 +35,7 @@ type FormErrors = Partial<Record<keyof LoginForm, string>>;
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { loginWithPassword } = useAuthActions();
   const [form, setForm] = useState<LoginForm>({ email: "", password: "" });
   const [errors, setErrors] = useState<FormErrors>({});
   const [apiError, setApiError] = useState<string | null>(null);
@@ -69,26 +65,14 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_BACKEND_URL}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email: form.email, password: form.password }),
-      });
-      const json = await res.json();
-      if (res.status === 401) {
-        setApiError("Invalid email or password.");
-        return;
-      }
-      if (!res.ok) {
-        setApiError(json.message ?? "Something went wrong. Please try again.");
-        return;
-      }
-      storeTokens(json.data.accessToken, json.data.refreshToken);
-      const decoded = decodeJwtPayload<JwtPayload>(json.data.accessToken);
-      redirectAfterAuth(navigate, decoded?.role ?? "buyer");
-    } catch {
-      setApiError("Network error. Please try again.");
+      const role = await loginWithPassword(form.email, form.password);
+      redirectAfterAuth(navigate, role);
+    } catch (error) {
+      setApiError(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong. Please try again.",
+      );
     } finally {
       setLoading(false);
     }

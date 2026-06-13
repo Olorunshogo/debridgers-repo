@@ -204,7 +204,7 @@ export default function DashboardLayout() {
   }
 
   return (
-    <div className="relative h-screen overflow-hidden bg-black">
+    <div className="relative h-screen bg-black">
       <div className="layout-max-width relative flex h-screen flex-col">
         <div className="bg-dash-page-bg px-section-px flex h-screen w-full gap-6">
           {/* Desktop sidebar */}
@@ -230,7 +230,7 @@ export default function DashboardLayout() {
                   animate={{ x: 0 }}
                   exit={{ x: "-100%" }}
                   transition={{ type: "tween", duration: 0.28 }}
-                  className="fixed top-0 left-0 z-50 h-full w-70 bg-[#FCFDFD] lg:hidden"
+                  className="fixed top-0 left-0 z-50 h-full w-full max-w-120 bg-[#FCFDFD] lg:hidden"
                 >
                   <button
                     onClick={() => setMobileOpen(false)}

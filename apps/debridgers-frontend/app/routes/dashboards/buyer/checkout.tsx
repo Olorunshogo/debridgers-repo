@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { motion } from "framer-motion";
 import { CheckCircle2 } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
@@ -36,6 +36,7 @@ function formatNaira(n: number) {
 }
 
 export default function BuyerCheckout() {
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState<Step>("delivery");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryTime, setDeliveryTime] = useState<"today" | "tomorrow">(
@@ -53,12 +54,21 @@ export default function BuyerCheckout() {
     } catch {
       setCartItems([]);
     }
-    apiFetch<{ first_name: string; last_name: string; email: string }>(
-      "/buyer/me",
-    )
-      .then(() => {})
-      .catch(() => {});
   }, []);
+
+  // Detect return from Paystack - trxref or reference appended to callback URL
+  useEffect(() => {
+    const ref = searchParams.get("trxref") ?? searchParams.get("reference");
+    if (ref) {
+      const cartSnapshot = localStorage.getItem("debridgers_cart");
+      if (cartSnapshot) {
+        localStorage.setItem("debridgers_last_order", cartSnapshot);
+      }
+      localStorage.removeItem("debridgers_cart");
+      setCartItems([]);
+      setStep("confirmed");
+    }
+  }, [searchParams]);
 
   const subtotal = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
 
@@ -68,25 +78,26 @@ export default function BuyerCheckout() {
     setError(null);
     setLoading(true);
     try {
-      const totalQty = cartItems.reduce((s, i) => s + i.qty, 0);
-      await apiFetch("/buyer/orders", {
+      const res = await apiFetch<{
+        data: { authorization_url: string; reference: string };
+      }>("/buyer/orders/initialize-payment", {
         method: "POST",
         body: JSON.stringify({
-          quantity: totalQty,
-          total_amount_kobo: subtotal * 100,
           delivery_address: deliveryAddress.trim(),
+          delivery_time: deliveryTime,
           notes: note.trim() || undefined,
+          cart: cartItems.map((i) => ({
+            product_id: Number(i.id),
+            name: i.name,
+            price_kobo: Math.round(i.price * 100),
+            unit: i.unit,
+            qty: i.qty,
+          })),
         }),
       });
-      const cartSnapshot = localStorage.getItem("debridgers_cart");
-      if (cartSnapshot) {
-        localStorage.setItem("debridgers_last_order", cartSnapshot);
-      }
-      localStorage.removeItem("debridgers_cart");
-      setStep("confirmed");
+      window.location.href = res.data.authorization_url;
     } catch {
-      setError("Failed to place order. Please try again.");
-    } finally {
+      setError("Failed to initialize payment. Please try again.");
       setLoading(false);
     }
   }
@@ -103,7 +114,7 @@ export default function BuyerCheckout() {
           Order Confirmed!
         </h2>
         <p className="text-text max-w-87.5 text-sm">
-          Your order has been placed. We&apos;ll notify you when it&apos;s
+          Your payment was received. We&apos;ll notify you when your order is
           picked up.
         </p>
         <Link
@@ -117,7 +128,7 @@ export default function BuyerCheckout() {
   }
 
   return (
-    <div className="flex max-w-4xl flex-col gap-6">
+    <div className="flex max-w-250 flex-col gap-6">
       {/* Progress */}
       <div className="flex items-center gap-2">
         {steps.map((s, i) => (
@@ -219,12 +230,12 @@ export default function BuyerCheckout() {
         </div>
 
         {/* Right: Order summary */}
-        <div className="border-gray-border flex h-fit flex-col gap-4 rounded-2xl border bg-white p-5">
+        <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
           <h3 className="font-syne text-heading font-semibold">
             Order Summary
           </h3>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex h-full flex-1 flex-col gap-3">
             {cartItems.length === 0 ? (
               <p className="text-text text-sm">
                 Your cart is empty.{" "}
@@ -242,8 +253,7 @@ export default function BuyerCheckout() {
                   className="flex items-center justify-between text-sm"
                 >
                   <span className="text-text">
-                    {item.name} {item.qty}
-                    {item.unit.replace("per ", "")}
+                    {item.name} x{item.qty} {item.unit}
                   </span>
                   <span className="text-heading">
                     {formatNaira(item.price * item.qty)}
@@ -283,8 +293,11 @@ export default function BuyerCheckout() {
             }
             className="bg-primary flex items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
           >
-            {loading ? "Placing order..." : "Place Order →"}
+            {loading ? "Initializing payment..." : "Pay with Paystack →"}
           </button>
+          <p className="text-text text-center text-xs">
+            You&apos;ll be redirected to Paystack to complete payment securely.
+          </p>
         </div>
       </form>
     </div>

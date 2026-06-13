@@ -291,12 +291,12 @@ Three reusable max-width container classes are defined in `styles.css`.
 
 | Class                  | Equivalent                 | Use                                    |
 | ---------------------- | -------------------------- | -------------------------------------- |
-| `.default-max-width`   | `mx-auto w-full max-w-350` | Default landing page content container |
+| `.landing-max-width`   | `mx-auto w-full max-w-350` | Default landing page content container |
 | `.layout-max-width`    | `mx-auto w-full max-w-500` | Wider full-page layout wrapper         |
 | `.dashboard-max-width` | `mx-auto w-full max-w-355` | Dashboard content container            |
 
 ```tsx
-<div className="default-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg" />
+<div className="landing-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg" />
 <main className="layout-max-width" />
 <div className="dashboard-max-width" />
 ```

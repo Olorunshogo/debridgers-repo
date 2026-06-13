@@ -82,9 +82,16 @@ Not started. No backend endpoints, no UI, no heart icon on product cards.
 
 ## 4. Checkout and Payment Flow
 
-Orders are currently created immediately with no payment step - money is never collected.
+### Frontend - DONE
 
-### Option B - Pay per order via Paystack (recommended, ship first)
+`buyer/checkout.tsx` now:
+
+- Calls `POST /buyer/orders/initialize-payment` with `{ delivery_address, delivery_time, notes, cart: [{ product_id, name, price_kobo, unit, qty }] }`
+- Redirects to `authorization_url` returned by backend
+- On Paystack callback (`?trxref=...` in URL), clears cart, snapshots to `debridgers_last_order`, shows confirmed screen
+- Button reads "Pay with Paystack" with a redirect note
+
+### Backend - PENDING
 
 ```
 Buyer places order
@@ -92,18 +99,12 @@ Buyer places order
 → Backend calls Paystack initialize → returns authorization_url + reference
 → Frontend redirects buyer to Paystack
 → Paystack webhook: charge.success → create order with status "confirmed"
-→ Buyer redirected back → show "Order confirmed" screen
+→ Buyer redirected back → confirmed screen already handled on frontend
 ```
 
-**Backend changes:**
-
-1. New endpoint `POST /buyer/orders/initialize-payment` - validate cart, call Paystack `transaction/initialize` with `metadata: { type: "buyer_order", cart: [...] }`, return `{ authorization_url, reference }`.
-2. Paystack webhook: on `charge.success` with `metadata.type = "buyer_order"`, create the confirmed order, notify buyer.
-
-**Frontend changes (`buyer/checkout.tsx`):**
-
-1. On "Place Order", call initialize endpoint, redirect to `authorization_url`.
-2. On Paystack callback URL, show confirmation screen, clear cart.
+1. New endpoint `POST /buyer/orders/initialize-payment` (auth: buyer) - accept `{ delivery_address, delivery_time, notes, cart }`, look up buyer email from JWT, call Paystack `transaction/initialize` with `{ email, amount, callback_url: FRONTEND_URL + "/buyer-dashboard/checkout", metadata: { type: "buyer_order", cart, delivery_address, delivery_time, notes } }`, return `{ data: { authorization_url, reference } }`.
+2. Paystack webhook (`payment.service.ts > handleWebhook`): on `charge.success` where `metadata.type === "buyer_order"`, create the order row + order_items rows, notify buyer via email.
+3. Set `FRONTEND_URL` env var on backend so the callback URL is correct per environment.
 
 ### Option A - Pay from wallet (later, after buyer wallet exists)
 

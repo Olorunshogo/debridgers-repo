@@ -3,6 +3,6 @@
 Buyer: reeach.olorunshogo@gmail.com
 0x0dgp@gmail.com
 
-Agent: georgeanne1935@web-library.net
+Agent: lawrencesunday311@gmail.com
 
 Password: Password001@

@@ -11,6 +11,7 @@ import {
   Search,
 } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
+import { Pagination, ProductCard } from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -48,14 +49,27 @@ function fmt(naira: number) {
   return "₦" + naira.toLocaleString("en-NG", { minimumFractionDigits: 0 });
 }
 
+const ITEMS_PER_PAGE = 9;
+
 export default function BuyerShop() {
   const [products, setProducts] = useState<ApiProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState<boolean>(false);
   const [qtys, setQtys] = useState<Record<number, number>>({});
-  const [search, setSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState("All");
+  const [search, setSearch] = useState<string>("");
+  const [activeCategory, setActiveCategory] = useState<string>("All");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // Restore cart from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("debridgers_cart");
+      if (saved) setCart(JSON.parse(saved) as CartItem[]);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     apiFetch<ApiProduct[]>("/buyer/products")
@@ -94,8 +108,14 @@ export default function BuyerShop() {
     return list;
   }, [products, search, activeCategory]);
 
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginatedProducts = filtered.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
+
   const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const cartCount = cart.reduce((s, i) => s + i.qty, 0);
+  const cartProductCount = cart.length;
 
   useEffect(() => {
     if (cart.length > 0) {
@@ -104,6 +124,12 @@ export default function BuyerShop() {
       localStorage.removeItem("debridgers_cart");
     }
   }, [cart]);
+
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [currentPage, totalPages]);
 
   function addToCart(product: ApiProduct) {
     const qty = qtys[product.id] ?? 1;
@@ -144,7 +170,7 @@ export default function BuyerShop() {
 
   return (
     // === Relative container so cart drawer can use absolute positioning
-    <div className="relative h-full overflow-hidden">
+    <div className="relative h-full">
       {/* Scrollable content */}
       <div className="flex h-full flex-col gap-4 overflow-y-auto pb-28">
         {/* Search bar */}
@@ -157,20 +183,26 @@ export default function BuyerShop() {
             type="text"
             placeholder="Search products..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
             className="border-gray-border text-heading w-full rounded-xl border bg-white py-2.5 pr-4 pl-10 text-sm outline-none"
           />
         </div>
 
         {/* Category filter pills */}
-        {!loading && categories.length > 1 && (
+        {/* {!loading && categories.length > 1 && (
           <div className="flex flex-wrap gap-2">
             {categories.map((cat) => {
               const active = cat === activeCategory;
               return (
                 <button
                   key={cat}
-                  onClick={() => setActiveCategory(cat)}
+                  onClick={() => {
+                    setActiveCategory(cat);
+                    setCurrentPage(1);
+                  }}
                   className={`cursor-pointer rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
                     active
                       ? "border-primary bg-primary text-white"
@@ -182,7 +214,7 @@ export default function BuyerShop() {
               );
             })}
           </div>
-        )}
+        )} */}
 
         {loading ? (
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
@@ -208,138 +240,68 @@ export default function BuyerShop() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="grid grid-cols-2 gap-4 lg:grid-cols-3"
+            className="grid grid-cols-[repeat(auto-fit,minmax(min(280px,100%),1fr))] gap-4 lg:grid-cols-3 xl:grid-cols-4"
           >
-            {filtered.map((product, i) => {
+            {paginatedProducts.map((product, i) => {
               const priceNaira = product.price_kobo / 100;
               const inCart = cart.find((c) => c.id === String(product.id));
+
               return (
-                <motion.div
+                <ProductCard
                   key={product.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.04 }}
-                  className="border-gray-border overflow-hidden rounded-2xl border bg-white"
-                >
-                  {/* Product image */}
-                  <div className="bg-bg-light relative h-44 overflow-hidden">
-                    {product.image_url ? (
-                      <img
-                        src={product.image_url}
-                        alt={product.name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center">
-                        <Package size={44} className="text-text opacity-15" />
-                      </div>
-                    )}
-                    {/* Category label overlay */}
-                    {product.description && (
-                      <span className="text-heading absolute top-2.5 left-2.5 rounded-full bg-white/85 px-2.5 py-0.5 text-xs font-semibold backdrop-blur-sm">
-                        {product.description}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Card body */}
-                  <div className="flex flex-col gap-2 p-3">
-                    <div className="flex flex-col gap-1">
-                      <p className="font-syne text-heading text-sm leading-snug font-bold">
-                        {product.name}
-                      </p>
-                      {product.description && (
-                        <p className="text-text text-xs">
-                          {product.description}
-                        </p>
-                      )}
-                    </div>
-
-                    <p className="font-syne text-heading text-lg font-bold">
-                      {fmt(priceNaira)}
-                    </p>
-
-                    {/* Controls */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      {/* Unit pill */}
-                      <span className="border-gray-border bg-bg-light text-text shrink-0 rounded-lg border px-2 py-1 text-xs font-medium">
-                        {product.unit}
-                      </span>
-
-                      {/* Qty stepper */}
-                      <div className="border-gray-border flex items-center rounded-lg border">
-                        <button
-                          onClick={() =>
-                            setQtys((prev) => ({
-                              ...prev,
-                              [product.id]: Math.max(
-                                1,
-                                (prev[product.id] ?? 1) - 1,
-                              ),
-                            }))
-                          }
-                          className="text-heading cursor-pointer px-2 py-1 text-xs hover:opacity-60"
-                        >
-                          <Minus size={10} />
-                        </button>
-                        <span className="text-heading w-5 text-center text-xs font-semibold">
-                          {qtys[product.id] ?? 1}
-                        </span>
-                        <button
-                          onClick={() =>
-                            setQtys((prev) => ({
-                              ...prev,
-                              [product.id]: (prev[product.id] ?? 1) + 1,
-                            }))
-                          }
-                          className="text-heading cursor-pointer px-2 py-1 text-xs hover:opacity-60"
-                        >
-                          <Plus size={10} />
-                        </button>
-                      </div>
-
-                      {/* Add to cart / Add more */}
-                      <button
-                        onClick={() => addToCart(product)}
-                        className="bg-primary ml-auto flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-85"
-                      >
-                        {inCart ? (
-                          <>
-                            <Plus size={11} /> Add more
-                          </>
-                        ) : (
-                          <>
-                            <ShoppingCart size={11} /> Add to cart
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
+                  product={product}
+                  quantity={qtys[product.id] ?? 1}
+                  inCart={Boolean(inCart)}
+                  formattedPrice={fmt(priceNaira)}
+                  animationDelay={i * 0.04}
+                  onDecreaseQuantity={() =>
+                    setQtys((prev) => ({
+                      ...prev,
+                      [product.id]: Math.max(1, (prev[product.id] ?? 1) - 1),
+                    }))
+                  }
+                  onIncreaseQuantity={() =>
+                    setQtys((prev) => ({
+                      ...prev,
+                      [product.id]: (prev[product.id] ?? 1) + 1,
+                    }))
+                  }
+                  onAddToCart={() => addToCart(product)}
+                />
               );
             })}
           </motion.div>
+        )}
+
+        {!loading && filtered.length > 0 && totalPages > 1 && (
+          <div className="mt-8 flex justify-center pb-2">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          </div>
         )}
       </div>
 
       {/* === Bottom cart bar - absolute so it stays at the visible bottom */}
       <AnimatePresence>
-        {cartCount > 0 && (
+        {cartProductCount > 0 && (
           <motion.div
             initial={{ y: 80, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 80, opacity: 0 }}
-            className="border-gray-border absolute right-0 bottom-0 left-0 z-30 flex items-center justify-between border-t bg-white px-6 py-4 shadow-lg"
+            className="border-gray-border fixed right-0 bottom-0 left-0 z-30 flex flex-wrap items-center justify-center gap-4 border-t bg-white px-6 py-4 shadow-lg sm:justify-between"
           >
-            <div>
+            <div className="flex w-full items-center justify-between gap-4">
               <p className="text-text text-sm">
-                {cartCount} item{cartCount > 1 ? "s" : ""} in cart
+                {cartProductCount} item{cartProductCount > 1 ? "s" : ""} in cart
               </p>
               <p className="font-syne text-primary font-bold">
                 Total: {fmt(cartTotal)}
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex w-full justify-end gap-3 sm:w-auto">
               <button
                 onClick={() => setCartOpen(true)}
                 className="border-gray-border text-heading flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
@@ -366,20 +328,20 @@ export default function BuyerShop() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-40 bg-black/40"
+              className="fixed inset-0 z-40 cursor-pointer bg-black/40"
               onClick={() => setCartOpen(false)}
             />
             <motion.div
               key="panel"
-              initial={{ x: "100%" }}
+              initial={{ x: "100vw" }}
               animate={{ x: 0 }}
-              exit={{ x: "100%" }}
+              exit={{ x: "100vw" }}
               transition={{ type: "tween", duration: 0.28 }}
-              className="absolute top-0 right-0 z-50 flex h-full w-full max-w-sm flex-col bg-white shadow-2xl"
+              className="fixed top-0 right-0 z-50 flex h-screen w-full max-w-120 flex-col bg-white shadow-2xl"
             >
               <div className="border-gray-border flex items-center justify-between border-b px-5 py-4">
                 <h3 className="font-syne text-heading font-bold">
-                  Your cart ({cartCount})
+                  Your cart ({cartProductCount})
                 </h3>
                 <button
                   onClick={() => setCartOpen(false)}
@@ -455,7 +417,7 @@ export default function BuyerShop() {
                 <Link
                   to="/buyer-dashboard/checkout"
                   onClick={() => setCartOpen(false)}
-                  className="bg-primary w-full rounded-full py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                  className="bg-primary w-full cursor-pointer rounded-full py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90"
                 >
                   Proceed to Checkout
                 </Link>

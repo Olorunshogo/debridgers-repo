@@ -266,7 +266,7 @@ export default function AgentsPage() {
 
       {/* What You Do / Your Role */}
       <section className="py-section-py sm:py-section-py-sm lg:py-section-py-lg bg-white">
-        <div className="default-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
+        <div className="landing-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
           <div className="flex flex-col gap-8">
             {/* Role Title */}
             <motion.div
@@ -320,7 +320,7 @@ export default function AgentsPage() {
         id="benefits"
         className="bg-bg-light py-section-py sm:py-section-py-sm lg:py-section-py-lg"
       >
-        <div className="default-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
+        <div className="landing-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
           <div className="flex flex-col gap-8">
             {/* Why Join Us Title */}
             <motion.div
@@ -374,7 +374,7 @@ export default function AgentsPage() {
         id="how-it-works"
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg bg-white"
       >
-        <div className="default-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
+        <div className="landing-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
           <div className="flex flex-col gap-8">
             {/* Heading */}
             <motion.div
@@ -434,7 +434,7 @@ export default function AgentsPage() {
 
       {/* Example Earnings / Earnings Snapshot */}
       <section className="bg-primary py-section-py sm:py-section-py-sm lg:py-section-py-lg">
-        <div className="default-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
+        <div className="landing-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
           <div className="grid items-center gap-8 lg:grid-cols-2">
             {/* Heading */}
             <motion.div
@@ -502,7 +502,7 @@ export default function AgentsPage() {
         id="apply-now"
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg bg-white"
       >
-        <div className="default-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
+        <div className="landing-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
           <motion.div
             initial="hidden"
             whileInView="visible"

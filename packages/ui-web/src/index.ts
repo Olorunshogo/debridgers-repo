@@ -31,3 +31,5 @@ export * from "./components/whatsapp-link";
 export * from "./components/submit-button";
 export * from "./components/button-primary";
 export * from "./components/button-secondary";
+export * from "./components/product-card";
+export * from "./components/pagination";

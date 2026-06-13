@@ -25,8 +25,9 @@ interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthUser["role"]>;
   logout: () => Promise<void>;
+  syncUserFromToken: () => AuthUser | null;
   dashboardPath: string;
 }
 
@@ -59,32 +60,49 @@ function dashboardForRole(role: string): string {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const syncUserFromToken = useCallback((): AuthUser | null => {
+    const nextUser = readUserFromToken();
+    setUser(nextUser);
+    return nextUser;
+  }, []);
 
   // Hydrate from stored token on mount
   useEffect(() => {
-    setUser(readUserFromToken());
+    syncUserFromToken();
     setIsLoading(false);
-  }, []);
+  }, [syncUserFromToken]);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await fetch(`${BASE_BACKEND_URL}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ email, password }),
-    });
-    const json = await res.json();
-    if (!res.ok) {
-      throw new Error(
-        res.status === 401
-          ? "Invalid email or password."
-          : (json.message ?? "Login failed."),
-      );
-    }
-    storeTokens(json.data.accessToken, json.data.refreshToken);
-    setUser(readUserFromToken());
-  }, []);
+  const login = useCallback(
+    async (email: string, password: string): Promise<AuthUser["role"]> => {
+      let res: Response;
+      try {
+        res = await fetch(`${BASE_BACKEND_URL}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email, password }),
+        });
+      } catch {
+        throw new Error("Network error. Please try again.");
+      }
+
+      const json = await res.json().catch(() => ({}) as { message?: string });
+      if (!res.ok) {
+        throw new Error(
+          res.status === 401
+            ? "Invalid email or password."
+            : (json.message ?? "Login failed."),
+        );
+      }
+
+      storeTokens(json.data.accessToken, json.data.refreshToken);
+      const nextUser = syncUserFromToken();
+      return nextUser?.role ?? "buyer";
+    },
+    [syncUserFromToken],
+  );
 
   const logout = useCallback(async () => {
     await apiLogout();
@@ -101,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         login,
         logout,
+        syncUserFromToken,
         dashboardPath,
       }}
     >

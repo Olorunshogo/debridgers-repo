@@ -16,7 +16,8 @@
     "serve": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "pnpm run dev",
+        "commands": ["pnpm nx reset", "pnpm run dev"],
+        "sequential": true,
         "cwd": "apps/debridgers-backend"
       }
     },
@@ -52,6 +53,7 @@
       "executor": "nx:run-commands",
       "options": {
         "commands": [
+          "pnpm nx reset",
           "pnpm run docker:up",
           "pnpm run db:migrate",
           "pnpm run dev"
