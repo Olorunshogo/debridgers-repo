@@ -299,7 +299,7 @@ export default function DashboardLayout() {
             </header>
 
             {/* Page content */}
-            <main className="flex-1">
+            <main className="min-h-0 flex-1">
               <Outlet />
             </main>
           </div>

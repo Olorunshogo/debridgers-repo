@@ -9,7 +9,7 @@ import {
 import { Icon } from "@iconify/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
-import { PrimaryLink, WhatsAppButton } from "@debridgers/ui-web";
+import { PrimaryLink, WhatsAppLink } from "@debridgers/ui-web";
 
 // === Why Debridgers
 interface WhyCardData {
@@ -545,7 +545,7 @@ export default function Home() {
 
                   {/* CTAs */}
                   <div className="flex flex-col items-center justify-center gap-4 lg:flex-row lg:justify-start lg:gap-18.5">
-                    <WhatsAppButton className="w-auto" />
+                    <WhatsAppLink shadowYellow className="w-auto" />
                     <a
                       href="#how-it-works"
                       className="font-open-sans flex items-center gap-1 text-base text-white transition-all duration-300 ease-in-out hover:text-white sm:text-lg lg:gap-2.5 lg:text-xl"
@@ -820,7 +820,24 @@ export default function Home() {
             </p>
           </div>
 
-          <WhatsAppButton label="Chat with us on whatsApp" />
+          <div className="relative flex w-full flex-col items-center justify-center gap-6 text-center lg:gap-10">
+            <div className="flex flex-col gap-3">
+              <p className="text-primary-light font-open-sans text-center text-lg font-semibold tracking-widest lg:text-xl xl:text-2xl">
+                Get started
+              </p>
+
+              <h2 className="text-primary font-syne mx-auto w-full max-w-110 text-center text-4xl leading-tight font-extrabold sm:max-w-125 sm:text-5xl lg:max-w-208 lg:text-6xl xl:text-7xl">
+                Your first delivery is on us.
+              </h2>
+
+              <p className="text-primary font-open-sans mx-auto w-full max-w-120 text-base sm:max-w-125 lg:max-w-208 lg:text-lg xl:text-2xl">
+                Join early and get free delivery on your first order. Just send
+                us a WhatsApp and we&apos;ll take it from there.
+              </p>
+            </div>
+
+            <WhatsAppLink label="Chat with us on whatsApp" />
+          </div>
         </div>
       </section>
     </>

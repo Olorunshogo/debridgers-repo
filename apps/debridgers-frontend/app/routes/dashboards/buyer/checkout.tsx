@@ -78,6 +78,10 @@ export default function BuyerCheckout() {
           notes: note.trim() || undefined,
         }),
       });
+      const cartSnapshot = localStorage.getItem("debridgers_cart");
+      if (cartSnapshot) {
+        localStorage.setItem("debridgers_last_order", cartSnapshot);
+      }
       localStorage.removeItem("debridgers_cart");
       setStep("confirmed");
     } catch {

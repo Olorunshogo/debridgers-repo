@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import {
@@ -56,7 +56,8 @@ interface RecentOrder {
 interface QuickAction {
   label: string;
   icon: LucideIcon;
-  href: string;
+  href?: string;
+  onClick?: () => void;
 }
 
 interface TrackingStep {
@@ -217,15 +218,10 @@ function mapApiToDashboard(api: ApiDashboard): DashboardData {
   };
 }
 
-const quickActions: QuickAction[] = [
+const staticQuickActions: QuickAction[] = [
   { label: "New Order", icon: ShoppingCart, href: "/buyer-dashboard/shop" },
-  { label: "Repeat Last", icon: RefreshCcw, href: "/buyer-dashboard/shop" },
   { label: "Add Funds", icon: Wallet, href: "/buyer-dashboard/wallet" },
-  {
-    label: "Get help",
-    icon: Headphones,
-    href: "https://chat.whatsapp.com/GjMvQOIbO9qAFjUGR3ZYVK?s=sw&p=i&mlu=2",
-  },
+  { label: "Get help", icon: Headphones, href: "/buyer-dashboard/help" },
 ];
 
 const statusStyles: Record<
@@ -290,8 +286,19 @@ function OrderRow({ order }: { order: RecentOrder }) {
 }
 
 export default function BuyerOverview() {
+  const navigate = useNavigate();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  function repeatLastOrder() {
+    const last = localStorage.getItem("debridgers_last_order");
+    if (!last) {
+      navigate("/buyer-dashboard/shop");
+      return;
+    }
+    localStorage.setItem("debridgers_cart", last);
+    navigate("/buyer-dashboard/shop");
+  }
 
   useEffect(() => {
     apiFetch<ApiDashboard>("/buyer/dashboard")
@@ -393,23 +400,43 @@ export default function BuyerOverview() {
 
         {/* Quick actions */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {quickActions.map((action) => (
-            <motion.div
-              key={action.label}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-            >
-              <Link
-                to={action.href}
-                className="border-gray-border hover:border-primary hover:bg-dash-quick-action-hover flex flex-col items-center gap-2 rounded-2xl border bg-white p-4 text-center transition-colors duration-200"
-              >
+          {[
+            ...staticQuickActions.slice(0, 1),
+            {
+              label: "Repeat Last",
+              icon: RefreshCcw,
+              onClick: repeatLastOrder,
+            },
+            ...staticQuickActions.slice(1),
+          ].map((action) => {
+            const tileClass =
+              "border-gray-border hover:border-primary hover:bg-dash-quick-action-hover flex w-full flex-col items-center gap-2 rounded-2xl border bg-white p-4 text-center transition-colors duration-200 cursor-pointer";
+            const inner = (
+              <>
                 <action.icon size={22} className="text-primary" />
                 <span className="text-heading text-xs font-medium">
                   {action.label}
                 </span>
-              </Link>
-            </motion.div>
-          ))}
+              </>
+            );
+            return (
+              <motion.div
+                key={action.label}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                {action.onClick ? (
+                  <button onClick={action.onClick} className={tileClass}>
+                    {inner}
+                  </button>
+                ) : (
+                  <Link to={action.href!} className={tileClass}>
+                    {inner}
+                  </Link>
+                )}
+              </motion.div>
+            );
+          })}
         </div>
       </div>
 

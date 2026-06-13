@@ -7,7 +7,7 @@ import {
   AppLogo,
   PrimaryLink,
   SecondaryLink,
-  WhatsAppButton,
+  WhatsAppLink,
 } from "@debridgers/ui-web";
 import { X } from "lucide-react";
 
@@ -141,7 +141,9 @@ export function Header({
           aria-label={menuOpen ? "Close menu" : "Open menu"}
         >
           {menuOpen ? (
-            <Icon icon="lucide:x" width={24} height={24} />
+            // <Icon icon="lucide:x" width={24} height={24} />
+            // <Icon icon="lucide:menu" width={24} height={24} />
+            <div />
           ) : (
             <Icon icon="lucide:menu" width={24} height={24} />
           )}
@@ -166,9 +168,9 @@ export function Header({
                   animate={{ x: 0 }}
                   exit={{ x: "-100%" }}
                   transition={{ type: "tween", duration: 0.3 }}
-                  className="px-section-px fixed top-0 left-0 z-50 h-full w-[85%] max-w-95 overflow-hidden bg-white shadow-xl lg:hidden"
+                  className="px-section-px fixed top-0 left-0 z-50 h-full w-full max-w-120 overflow-hidden bg-white shadow-xl lg:hidden"
                 >
-                  <div className="flex h-full w-full flex-col gap-4 py-6">
+                  <div className="flex h-full w-full flex-col gap-6 py-6">
                     <div className="flex w-full items-center justify-between">
                       <Link
                         to="/"
@@ -212,7 +214,12 @@ export function Header({
                         );
                       })}
                     </div>
-                    <WhatsAppButton className="w-full" />
+
+                    <WhatsAppLink
+                      shadowYellow={false}
+                      className="w-full text-center"
+                    />
+
                     <div className="flex flex-col gap-3">
                       {isAuthenticated ? (
                         <PrimaryLink
