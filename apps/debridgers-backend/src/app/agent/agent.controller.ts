@@ -27,6 +27,7 @@ import { AgentService } from "./agent.service";
 import { WalletService } from "./wallet.service";
 import { StockService } from "./stock.service";
 import { KycService } from "./kyc.service";
+import { CloudinaryService } from "../../infrastructure/cloudinary/cloudinary.service";
 import { ZodValidationPipe } from "../../infrastructure/pipeline/validation.pipeline";
 import { applyAgentSchema, ApplyAgentDto } from "./dto/apply-agent.dto";
 import {
@@ -51,6 +52,7 @@ export class AgentController {
     private readonly walletService: WalletService,
     private readonly stockService: StockService,
     private readonly kycService: KycService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   // ─── Public ─────────────────────────────────────────────────────────────────
@@ -221,6 +223,26 @@ export class AgentController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.agentService.updateProfile(dto, user);
+  }
+
+  @Post("avatar")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("agent")
+  @ApiBearerAuth("access-token")
+  @UseInterceptors(FileInterceptor("file"))
+  @ApiOperation({ summary: "Upload agent profile photo" })
+  @ApiResponse({ status: 200, description: "Avatar uploaded" })
+  async uploadAvatar(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    const url = await this.cloudinaryService.uploadBuffer(
+      file.buffer,
+      "debridgers/avatars",
+    );
+    await this.agentService.updateAvatar(url, user);
+    return { message: "Avatar updated", data: { url } };
   }
 
   // ─── Reports & Commissions ───────────────────────────────────────────────────

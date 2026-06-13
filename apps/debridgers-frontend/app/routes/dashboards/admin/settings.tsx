@@ -142,7 +142,7 @@ export default function AdminSettings() {
           <strong>{settings?.agent_commission_rate ?? "—"}%</strong>
         </p>
 
-        <div className="flex max-w-xs flex-col gap-1.5">
+        <div className="flex max-w-80 flex-col gap-1.5">
           <label className="text-heading text-sm font-medium">
             Commission Rate (%)
           </label>
@@ -183,7 +183,7 @@ export default function AdminSettings() {
           </strong>
         </p>
 
-        <div className="flex max-w-xs flex-col gap-1.5">
+        <div className="flex max-w-80 flex-col gap-1.5">
           <label className="text-heading text-sm font-medium">
             Discount Amount (₦)
           </label>

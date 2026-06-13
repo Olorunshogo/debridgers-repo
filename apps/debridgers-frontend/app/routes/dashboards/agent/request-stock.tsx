@@ -305,7 +305,7 @@ export default function AgentRequestStockPage() {
                     key={cat}
                     type="button"
                     onClick={() => selectCategory(cat)}
-                    className={`rounded-full border px-4 py-2 text-sm font-semibold transition-all ${
+                    className={`cursor-pointer rounded-full border px-4 py-2 text-sm font-semibold transition-all ${
                       activeCategory === cat
                         ? "border-primary bg-primary text-white"
                         : "border-gray-border text-heading hover:border-primary bg-white"
@@ -341,7 +341,7 @@ export default function AgentRequestStockPage() {
                               <button
                                 type="button"
                                 onClick={() => selectProduct(product.id)}
-                                className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-3 text-left transition-all ${
+                                className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl border px-3 py-3 text-left transition-all ${
                                   isActive
                                     ? "border-primary bg-dash-quick-action-hover"
                                     : added
@@ -410,7 +410,7 @@ export default function AgentRequestStockPage() {
                                               Math.max(1, q - 1),
                                             )
                                           }
-                                          className="border-gray-border flex h-7 w-7 items-center justify-center rounded-full border bg-white"
+                                          className="border-gray-border flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border bg-white"
                                         >
                                           <Minus size={12} />
                                         </button>
@@ -422,7 +422,7 @@ export default function AgentRequestStockPage() {
                                           onClick={() =>
                                             setInlineQty((q) => q + 1)
                                           }
-                                          className="border-gray-border flex h-7 w-7 items-center justify-center rounded-full border bg-white"
+                                          className="border-gray-border flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border bg-white"
                                         >
                                           <Plus size={12} />
                                         </button>
@@ -433,7 +433,7 @@ export default function AgentRequestStockPage() {
                                       <button
                                         type="button"
                                         onClick={addToRequest}
-                                        className="bg-primary ml-auto rounded-full px-4 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                                        className="bg-primary ml-auto cursor-pointer rounded-full px-4 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
                                       >
                                         Add to Request
                                       </button>
@@ -516,9 +516,9 @@ export default function AgentRequestStockPage() {
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="border-gray-border fixed right-0 bottom-0 left-0 z-30 border-t bg-white shadow-xl lg:left-70"
+            className="border-gray-border fixed right-4 bottom-0 left-4 z-30 rounded-t-2xl border bg-white shadow-xl lg:left-80"
           >
-            <div className="mx-auto max-w-5xl px-4 py-4">
+            <div className="px-4 py-4">
               <div className="flex flex-col gap-3">
                 {/* Item list */}
                 <div className="flex flex-wrap gap-2">
@@ -533,7 +533,7 @@ export default function AgentRequestStockPage() {
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => updateRequestQty(item.product.id, -1)}
-                          className="border-gray-border flex h-5 w-5 items-center justify-center rounded-full border bg-white text-xs"
+                          className="border-gray-border flex h-5 w-5 cursor-pointer items-center justify-center rounded-full border bg-white text-xs"
                         >
                           <Minus size={9} />
                         </button>
@@ -542,14 +542,14 @@ export default function AgentRequestStockPage() {
                         </span>
                         <button
                           onClick={() => updateRequestQty(item.product.id, 1)}
-                          className="border-gray-border flex h-5 w-5 items-center justify-center rounded-full border bg-white text-xs"
+                          className="border-gray-border flex h-5 w-5 cursor-pointer items-center justify-center rounded-full border bg-white text-xs"
                         >
                           <Plus size={9} />
                         </button>
                       </div>
                       <button
                         onClick={() => removeFromRequest(item.product.id)}
-                        className="ml-0.5 text-red-400 hover:text-red-600"
+                        className="ml-0.5 cursor-pointer text-red-400 hover:text-red-600"
                       >
                         <Trash2 size={12} />
                       </button>
@@ -571,7 +571,7 @@ export default function AgentRequestStockPage() {
                   <button
                     onClick={handleSubmit}
                     disabled={submitting}
-                    className="bg-primary rounded-full px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                    className="bg-primary cursor-pointer rounded-full px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
                   >
                     {submitting ? "Submitting..." : "Submit Request"}
                   </button>
@@ -582,8 +582,7 @@ export default function AgentRequestStockPage() {
         )}
       </AnimatePresence>
 
-      {/* Spacer so sticky bar doesn't cover content */}
-      {requestItems.length > 0 && <div className="h-32" />}
+      {requestItems.length > 0 && <div className="h-28" />}
     </div>
   );
 }

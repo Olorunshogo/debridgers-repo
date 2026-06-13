@@ -7,6 +7,7 @@ import { StockService } from "./stock.service";
 import { KycService } from "./kyc.service";
 import { DatabaseModule } from "../../infrastructure/database/database.module";
 import { AuthModule } from "../auth/auth.module";
+import { CloudinaryService } from "../../infrastructure/cloudinary/cloudinary.service";
 
 @Module({
   imports: [
@@ -15,7 +16,13 @@ import { AuthModule } from "../auth/auth.module";
     MulterModule.register({ dest: "/tmp/uploads" }),
   ],
   controllers: [AgentController],
-  providers: [AgentService, WalletService, StockService, KycService],
+  providers: [
+    AgentService,
+    WalletService,
+    StockService,
+    KycService,
+    CloudinaryService,
+  ],
   exports: [WalletService],
 })
 export class AgentModule {}

@@ -137,6 +137,7 @@ export class AgentService {
         role: schema.users.role,
         status: schema.agent_profiles.status,
         target: schema.agent_profiles.target,
+        avatar_url: schema.users.avatar_url,
         cv_url: schema.agent_profiles.cv_url,
         address: schema.agent_profiles.address,
         lga: schema.agent_profiles.lga,
@@ -183,6 +184,13 @@ export class AgentService {
     }
 
     return { message: "Profile updated", data: null };
+  }
+
+  async updateAvatar(url: string, user: JwtPayload) {
+    await this.db
+      .update(schema.users)
+      .set({ avatar_url: url })
+      .where(eq(schema.users.id, user.sub));
   }
 
   async submitReport(dto: SubmitReportDto, user: JwtPayload) {

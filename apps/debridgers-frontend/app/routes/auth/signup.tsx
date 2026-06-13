@@ -296,7 +296,7 @@ export default function SignupPage() {
 
       <div className="flex min-h-screen w-full">
         {/* Left brand panel */}
-        <div className="bg-primary hidden flex-col justify-center p-12 lg:flex lg:w-[45%]">
+        <div className="bg-primary hidden flex-col justify-center p-12 lg:flex lg:w-100">
           <Link to="/" className="mb-12 flex items-center gap-2">
             <span className="font-syne text-xl font-bold text-white">
               Debridgers
@@ -318,7 +318,7 @@ export default function SignupPage() {
         </div>
 
         {/* Right form panel */}
-        <div className="flex flex-1 flex-col items-center justify-center bg-white px-6 py-12 lg:px-16">
+        <div className="flex min-h-screen flex-1 flex-col items-center justify-center overflow-y-auto bg-white px-6 py-12 lg:px-16">
           <div className="flex w-full max-w-120 flex-col gap-6">
             {/* Logo */}
             <Link to="/" className="flex justify-center">

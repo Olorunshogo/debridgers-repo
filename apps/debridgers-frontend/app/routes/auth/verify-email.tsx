@@ -235,7 +235,7 @@ export default function VerifyEmailPage() {
 
       <div className="flex min-h-screen w-full">
         {/* Brand panel */}
-        <div className="bg-primary hidden flex-col justify-center p-12 lg:flex lg:w-[45%]">
+        <div className="bg-primary hidden flex-col justify-center p-12 lg:flex lg:w-100">
           <Link to="/" className="mb-12 flex items-center gap-2">
             <span className="font-syne text-xl font-bold text-white">
               Debridgers
@@ -249,14 +249,14 @@ export default function VerifyEmailPage() {
               <br />
               <span className="text-secondary">delivered.</span>
             </h2>
-            <p className="max-w-[80%] text-lg leading-relaxed text-white">
+            <p className="max-w-80 text-lg leading-relaxed text-white">
               Verify your email to start enjoying fresh food at market prices.
             </p>
           </div>
         </div>
 
         {/* Form panel */}
-        <div className="flex flex-1 flex-col items-center justify-center bg-white px-6 py-12 lg:px-16">
+        <div className="flex min-h-screen flex-1 flex-col items-center justify-center overflow-y-auto bg-white px-6 py-12 lg:px-16">
           <div className="flex w-full max-w-120 flex-col gap-6">
             {/* Logo */}
             <div className="flex justify-center">

@@ -191,177 +191,201 @@ export default function ForgotPasswordPage() {
         />
       )}
 
-      <div className="flex min-h-screen w-full items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md">
-          <div className="mb-8 flex justify-center">
-            <AppLogo />
+      <div className="flex min-h-screen w-full">
+        {/* Brand panel */}
+        <div className="bg-primary hidden flex-col justify-center p-12 lg:flex lg:w-100">
+          <Link to="/" className="mb-12 flex items-center gap-2">
+            <span className="font-syne text-xl font-bold text-white">
+              Debridgers
+            </span>
+          </Link>
+          <div className="flex flex-1 flex-col justify-center gap-6">
+            <h2 className="font-syne text-4xl leading-tight font-bold text-white xl:text-5xl">
+              No worries,
+              <br />
+              we&apos;ll get you
+              <br />
+              <span className="text-secondary">back in.</span>
+            </h2>
+            <p className="max-w-80 text-lg leading-relaxed text-white">
+              Enter your email and we&apos;ll send you a reset token right away.
+            </p>
           </div>
+        </div>
 
-          <AnimatePresence mode="wait">
-            {step === 1 ? (
-              <motion.div
-                key="step1"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -16 }}
-                transition={{ duration: 0.2 }}
-                className="flex flex-col gap-6"
-              >
-                <div className="flex flex-col gap-1">
-                  <h1 className="font-syne text-heading text-2xl font-bold">
-                    Forgot your password?
-                  </h1>
-                  <p className="text-text text-sm">
-                    Enter your email and we&apos;ll send you a reset token.
-                  </p>
-                </div>
+        {/* Form panel */}
+        <div className="flex min-h-screen flex-1 flex-col items-center justify-center overflow-y-auto bg-white px-6 py-12 lg:px-16">
+          <div className="flex w-full max-w-120 flex-col gap-6">
+            <div className="flex justify-center lg:hidden">
+              <AppLogo />
+            </div>
 
-                <form
-                  onSubmit={handleStep1Submit}
-                  noValidate
-                  className="flex flex-col gap-5"
+            <AnimatePresence mode="wait">
+              {step === 1 ? (
+                <motion.div
+                  key="step1"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -16 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex flex-col gap-6"
                 >
-                  <AnimatePresence>
-                    {step1ApiError && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0 }}
-                        className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
-                      >
-                        {step1ApiError}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  <div className="flex flex-col gap-1">
+                    <h1 className="font-syne text-heading text-2xl font-bold">
+                      Forgot your password?
+                    </h1>
+                    <p className="text-text text-sm">
+                      Enter your email and we&apos;ll send you a reset token.
+                    </p>
+                  </div>
 
-                  <DashEmailInput
-                    label="Email address"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      if (emailError) setEmailError(undefined);
-                    }}
-                    error={emailError}
-                    required
-                  />
-
-                  <SubmitButton
-                    loading={step1Loading}
-                    loadingText="Sending..."
-                    className="rounded-full"
+                  <form
+                    onSubmit={handleStep1Submit}
+                    noValidate
+                    className="flex flex-col gap-5"
                   >
-                    Send reset link
-                  </SubmitButton>
-                </form>
+                    <AnimatePresence>
+                      {step1ApiError && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
+                        >
+                          {step1ApiError}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
 
-                <Link
-                  to="/login"
-                  className="text-text text-center text-sm font-medium underline underline-offset-2"
-                >
-                  Back to sign in
-                </Link>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="step2"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -16 }}
-                transition={{ duration: 0.2 }}
-                className="flex flex-col gap-6"
-              >
-                <div className="flex flex-col gap-1">
-                  <h1 className="font-syne text-heading text-2xl font-bold">
-                    Reset your password
-                  </h1>
-                  <p className="text-text text-sm">
-                    Enter the token from your email and set a new password.
-                  </p>
-                </div>
+                    <DashEmailInput
+                      label="Email address"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (emailError) setEmailError(undefined);
+                      }}
+                      error={emailError}
+                      required
+                    />
 
-                <form
-                  onSubmit={handleStep2Submit}
-                  noValidate
-                  className="flex flex-col gap-5"
-                >
-                  <AnimatePresence>
-                    {step2ApiError && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0 }}
-                        className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
-                      >
-                        {step2ApiError}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                    <SubmitButton
+                      loading={step1Loading}
+                      loadingText="Sending..."
+                      className="rounded-full"
+                    >
+                      Send reset link
+                    </SubmitButton>
+                  </form>
 
-                  <DashTextInput
-                    label="Reset token"
-                    placeholder="Paste your reset token"
-                    value={token}
-                    onChange={handleTokenChange}
-                    error={tokenError}
-                    required
-                  />
-
-                  <AnimatePresence>
-                    {showPasswordFields && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        transition={{ duration: 0.2 }}
-                        className="flex flex-col gap-5"
-                      >
-                        <DashPasswordInput
-                          label="New password"
-                          placeholder="Min. 8 characters"
-                          value={password}
-                          onChange={(e) => {
-                            setPassword(e.target.value);
-                            if (passwordError) setPasswordError(undefined);
-                          }}
-                          error={passwordError}
-                          required
-                        />
-                        <DashPasswordInput
-                          label="Confirm new password"
-                          placeholder="Repeat your password"
-                          value={confirmPassword}
-                          onChange={(e) => {
-                            setConfirmPassword(e.target.value);
-                            if (confirmPasswordError)
-                              setConfirmPasswordError(undefined);
-                          }}
-                          error={confirmPasswordError}
-                          required
-                        />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  <SubmitButton
-                    loading={step2Loading}
-                    loadingText="Resetting..."
-                    className="rounded-full"
+                  <Link
+                    to="/login"
+                    className="text-text text-center text-sm font-medium underline underline-offset-2"
                   >
-                    Reset password
-                  </SubmitButton>
-                </form>
-
-                <button
-                  type="button"
-                  onClick={goBackToStep1}
-                  className="text-text text-center text-sm font-medium underline underline-offset-2"
+                    Back to sign in
+                  </Link>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="step2"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -16 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex flex-col gap-6"
                 >
-                  Back to step 1
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  <div className="flex flex-col gap-1">
+                    <h1 className="font-syne text-heading text-2xl font-bold">
+                      Reset your password
+                    </h1>
+                    <p className="text-text text-sm">
+                      Enter the token from your email and set a new password.
+                    </p>
+                  </div>
+
+                  <form
+                    onSubmit={handleStep2Submit}
+                    noValidate
+                    className="flex flex-col gap-5"
+                  >
+                    <AnimatePresence>
+                      {step2ApiError && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
+                        >
+                          {step2ApiError}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <DashTextInput
+                      label="Reset token"
+                      placeholder="Paste your reset token"
+                      value={token}
+                      onChange={handleTokenChange}
+                      error={tokenError}
+                      required
+                    />
+
+                    <AnimatePresence>
+                      {showPasswordFields && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.2 }}
+                          className="flex flex-col gap-5"
+                        >
+                          <DashPasswordInput
+                            label="New password"
+                            placeholder="Min. 8 characters"
+                            value={password}
+                            onChange={(e) => {
+                              setPassword(e.target.value);
+                              if (passwordError) setPasswordError(undefined);
+                            }}
+                            error={passwordError}
+                            required
+                          />
+                          <DashPasswordInput
+                            label="Confirm new password"
+                            placeholder="Repeat your password"
+                            value={confirmPassword}
+                            onChange={(e) => {
+                              setConfirmPassword(e.target.value);
+                              if (confirmPasswordError)
+                                setConfirmPasswordError(undefined);
+                            }}
+                            error={confirmPasswordError}
+                            required
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <SubmitButton
+                      loading={step2Loading}
+                      loadingText="Resetting..."
+                      className="rounded-full"
+                    >
+                      Reset password
+                    </SubmitButton>
+                  </form>
+
+                  <button
+                    type="button"
+                    onClick={goBackToStep1}
+                    className="text-text text-center text-sm font-medium underline underline-offset-2"
+                  >
+                    Back to step 1
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
     </>

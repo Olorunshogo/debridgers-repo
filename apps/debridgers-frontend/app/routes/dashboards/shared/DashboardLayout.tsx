@@ -61,6 +61,7 @@ export default function DashboardLayout() {
   const [userProfile, setUserProfile] = useState<{
     name: string;
     sub: string;
+    avatar_url?: string | null;
   } | null>(null);
 
   useEffect(() => {
@@ -77,11 +78,12 @@ export default function DashboardLayout() {
       last_name: string;
       lga?: string | null;
       email?: string;
+      avatar_url?: string | null;
     }>(endpoint)
       .then((p) => {
         const name = `${p.first_name} ${p.last_name}`.trim();
         const sub = isAgent ? (p.lga ?? "") : (p.email ?? "");
-        setUserProfile({ name, sub });
+        setUserProfile({ name, sub, avatar_url: p.avatar_url });
       })
       .catch(() => {});
   }, [isAgent, isBuyer, isAdmin]);
@@ -177,8 +179,18 @@ export default function DashboardLayout() {
 
           {/* User card */}
           <div className="flex items-center gap-3 rounded-xl bg-[#FAFAFB] px-4 py-2">
-            <div className="bg-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white">
-              {userProfile ? getInitials(userProfile.name) : "-"}
+            <div className="bg-primary flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-semibold text-white">
+              {userProfile?.avatar_url ? (
+                <img
+                  src={userProfile.avatar_url}
+                  alt={userProfile.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : userProfile ? (
+                getInitials(userProfile.name)
+              ) : (
+                "-"
+              )}
             </div>
             <div className="flex min-w-0 flex-col">
               <span className="text-heading truncate text-sm font-semibold">

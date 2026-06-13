@@ -168,7 +168,7 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
         <h2 className="font-syne text-heading text-2xl font-bold">
           Order Confirmed!
         </h2>
-        <p className="text-text max-w-xs text-sm">
+        <p className="text-text max-w-80 text-sm">
           Your payment was received. We&apos;ll notify you when your order is
           picked up.
         </p>

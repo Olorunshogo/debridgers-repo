@@ -204,7 +204,7 @@ export default function OutreachPage() {
                     <h2 className="font-syne text-heading text-2xl font-bold">
                       We&apos;ve got your details!
                     </h2>
-                    <p className="text-text max-w-sm text-sm leading-relaxed">
+                    <p className="text-text max-w-96 text-sm leading-relaxed">
                       An agent will reach out to you within 24 hours. Want to
                       speed things up?
                     </p>

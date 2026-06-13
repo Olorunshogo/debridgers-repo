@@ -81,7 +81,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen w-full">
       {/* Brand panel */}
-      <div className="bg-primary hidden flex-col justify-center p-12 lg:flex lg:w-[45%]">
+      <div className="bg-primary hidden flex-col justify-center p-12 lg:flex lg:w-100">
         <div className="flex w-full flex-col gap-12">
           <Link to="/" className="flex items-center gap-2">
             <span className="font-syne text-xl font-bold text-white">
@@ -93,7 +93,7 @@ export default function LoginPage() {
               Welcome back to{" "}
               <span className="text-secondary">Debridgers.</span>
             </h2>
-            <p className="max-w-[80%] text-lg leading-relaxed text-white">
+            <p className="max-w-80 text-lg leading-relaxed text-white">
               Fresh food at market prices, delivered to your door step.
             </p>
           </div>
