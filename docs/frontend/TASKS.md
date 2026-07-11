@@ -82,16 +82,13 @@ Not started. No backend endpoints, no UI, no heart icon on product cards.
 
 ## 4. Checkout and Payment Flow
 
-### Frontend - DONE
+### Status: BROKEN - frontend/backend contract mismatch
 
-`buyer/checkout.tsx` now:
+`buyer/checkout.tsx` calls `POST /buyer/orders/initialize-payment` with `{ delivery_address, delivery_time, notes, cart: [{ product_id, name, price_kobo, unit, qty }] }`, expects `authorization_url` back, redirects to it, then on Paystack callback (`?trxref=...`) clears cart, snapshots to `debridgers_last_order`, and shows the confirmed screen.
 
-- Calls `POST /buyer/orders/initialize-payment` with `{ delivery_address, delivery_time, notes, cart: [{ product_id, name, price_kobo, unit, qty }] }`
-- Redirects to `authorization_url` returned by backend
-- On Paystack callback (`?trxref=...` in URL), clears cart, snapshots to `debridgers_last_order`, shows confirmed screen
-- Button reads "Pay with Paystack" with a redirect note
+That endpoint does not exist on the backend. `buyer.controller.ts` only has `POST orders` / `GET orders`. The only payment-initialize route is `payment.controller.ts > POST payment/initialize`, which is built for the agent stock-request flow (requires `agent_id`, validated against an approved agent) - it cannot accept a buyer cart payload. As wired today, checkout 404s in production.
 
-### Backend - PENDING
+### Backend needed
 
 ```
 Buyer places order
@@ -234,17 +231,9 @@ Toggle is pure UI - no TOTP implementation exists.
 6. Frontend settings: clicking toggle opens setup flow (QR code + confirm code), not just a boolean flip. Disabling also requires entering current TOTP code.
 7. Frontend login page: if `requires2fa` returned, show second step for TOTP code.
 
-### 8.4 Change Password
-
-Frontend is wired. Backend is missing:
-
-1. `BuyerService`: add `changePassword(dto: { old_password, new_password }, user)` - fetch user, bcrypt compare old, hash new, update.
-2. `BuyerController`: add `PATCH /buyer/password` guarded by `AuthGuard + RolesGuard("buyer")`. New DTO with min 8 chars validation.
-
 | Feature                   | Backend missing                           | Complexity |
 | ------------------------- | ----------------------------------------- | ---------- |
 | Email notification        | Schema col, DTO, listener gate            | Low        |
-| Change password endpoint  | Service method + endpoint                 | Low        |
 | SMS notifications         | Full SMS provider + schema + listeners    | High       |
 | Two-factor authentication | Full TOTP flow + 3 endpoints + login step | High       |
 
@@ -344,33 +333,12 @@ interface RequestLineItem {
 
 ### 11.1 Backend - system_settings Table
 
-Needed before anything in this section.
+`system_settings` table, `SystemSettingsService`, `GET`/`PATCH /admin/settings`, and `GET /config/public` are all built. The admin settings UI (`admin/settings.tsx`) is wired on the frontend.
 
-```
-system_settings
-  key:         varchar PRIMARY KEY
-  value:       text
-  updated_at:  timestamp
-  updated_by:  integer FK -> users.id
-```
+### What's still missing
 
-Initial seed:
-
-| key                            | value   | description                     |
-| ------------------------------ | ------- | ------------------------------- |
-| `agent_commission_rate`        | `30`    | Percentage agent earns per sale |
-| `buyer_referral_discount_kobo` | `50000` | Flat ₦500 discount for referrer |
-| `buyer_referral_discount_type` | `flat`  | `flat` or `percent`             |
-
-**Backend needed:**
-
-- `SystemSettingsService`: `getSetting(key)`, `setSetting(key, value, adminId)`, `getPublicConfig()`.
-- `PaymentService`: replace `AGENT_COMMISSION_RATE` env with `SystemSettingsService.getSetting("agent_commission_rate")`.
-- `GET /admin/settings` - all settings, admin auth.
-- `PATCH /admin/settings` - update one key, admin auth, validate value.
-- `GET /config/public` - safe subset, no auth. (Frontend already calls this.)
-
-Note: the admin settings UI (`admin/settings.tsx`) is already built on the frontend.
+- `PaymentService` still reads the agent commission rate from the `AGENT_COMMISSION_RATE` env var, not from `SystemSettingsService.getSetting("agent_commission_rate")`. Wire it to the DB-backed setting so admin changes actually take effect.
+- Seed rows for `buyer_referral_discount_kobo` (`50000`) and `buyer_referral_discount_type` (`flat`) - needed once section 11.4 (buyer referral discounts) is built.
 
 ### 11.2 Referral Tracking Columns
 

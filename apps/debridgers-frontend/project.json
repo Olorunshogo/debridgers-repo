@@ -17,8 +17,7 @@
     "dev": {
       "executor": "nx:run-commands",
       "options": {
-        "commands": ["pnpm nx reset", "pnpm run dev"],
-        "sequential": true,
+        "command": "pnpm run dev",
         "cwd": "apps/debridgers-frontend"
       }
     },

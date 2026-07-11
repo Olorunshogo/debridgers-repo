@@ -1,18 +1,101 @@
 {
-  // === Auto Save
-  "files.autoSave": "afterDelay",
-  "files.autoSaveDelay": 300,
+  // === Editor core
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.formatOnSave": true,
-  // === Tab & indentation
+  "editor.formatOnPaste": false,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "never"
+  },
   "editor.tabSize": 2,
   "editor.insertSpaces": true,
   "editor.detectIndentation": false,
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit"
+  "editor.rulers": [80],
+  "editor.wordWrap": "off",
+  "editor.linkedEditing": true,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": "active",
+  "editor.inlayHints.enabled": "on",
+  "editor.suggest.preview": true,
+  "editor.acceptSuggestionOnEnter": "smart",
+  "editor.quickSuggestionsDelay": 100,
+  "editor.stickyScroll.enabled": true,
+
+  // === Files
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 300,
+  "files.eol": "\n",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/node_modules": true,
+    "**/cache": true,
+    "**/artifacts": true,
+    "**/out": true,
+    "**/.vercel": true,
+    "**/.github": true,
+    "**/.claude": true,
+    "**/.nx": true,
+    "**/.husky": false,
+    "**/package-lock.json": true,
+    "**/pnpm-lock.yaml": true,
+    "**/.editorconfig": false,
+    "**/.prettierignore": false,
+    "**/.prettierrc": false,
+    "**/.gitignore": false
   },
 
-  // === Prettier config
+  "files.associations": {
+    ".env.*": "dotenv",
+    ".lintstagedrc": "jsonc"
+  },
+
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/node_modules/**": true,
+    "**/.nx/**": true,
+    "**/build/**": true
+  },
+
+  // === Search
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/cache": true,
+    "**/artifacts": true,
+    "**/out": true,
+    "**/.nx": true,
+    "**/package-lock.json": true
+  },
+
+  // === TypeScript
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.preferences.importModuleSpecifier": "non-relative",
+  "typescript.preferences.quoteStyle": "single",
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.inlayHints.parameterNames.enabled": "literals",
+  "typescript.inlayHints.variableTypes.enabled": false,
+  "typescript.inlayHints.functionLikeReturnTypes.enabled": false,
+  "js/ts.autoClosingTags": false,
+  "auto-close-tag.fullMode": false,
+
+  // === ESLint
+  "eslint.enable": true,
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "eslint.workingDirectories": [{ "mode": "auto" }],
+  "eslint.run": "onSave",
+
+  // === Prettier
+  "prettier.requireConfig": true,
+  "prettier.useEditorConfig": false,
   "prettier.printWidth": 80,
   "prettier.tabWidth": 2,
   "prettier.useTabs": false,
@@ -21,54 +104,57 @@
   "prettier.trailingComma": "es5",
   "prettier.bracketSpacing": true,
 
-  "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  // === Language formatters
+  "[javascript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[javascriptreact]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[typescript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[typescriptreact]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[json]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[jsonc]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[css]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.wordWrap": "on"
   },
-  "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "[json]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  // === Prettier
-  "prettier.requireConfig": true,
-  "prettier.useEditorConfig": false,
 
-  // === Optional: trim whitespace
-  "files.trimTrailingWhitespace": true,
-  "files.insertFinalNewline": true,
-  "editor.wordWrap": "off",
-
-  "eslint.validate": [
-    "javascript",
-    "javascriptreact",
-    "typescript",
-    "typescriptreact"
+  // === Tailwind CSS
+  "tailwindCSS.experimental.classRegex": [
+    ["cn\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"],
+    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+    ["cx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
   ],
-  // === Exclusions
-  "files.exclude": {
-    "**/.git": true,
-    "**/.DS_Store": true,
-    "**/node_modules": true,
-    "**/cache": true,
-    "**/artifacts": true,
-    "**/out": true
+  "tailwindCSS.includeLanguages": {
+    "typescript": "javascript",
+    "typescriptreact": "javascript"
   },
-  // === Search
-  "search.exclude": {
-    "**/node_modules": true,
-    "**/cache": true,
-    "**/artifacts": true,
-    "**/out": true
-  },
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.enablePromptUseWorkspaceTsdk": true,
-  "js/ts.autoClosingTags": false,
-  "auto-close-tag.fullMode": false,
+  "tailwindCSS.validate": true,
 
+  // === Terminal
+  "terminal.integrated.defaultProfile.linux": "bash",
   // === Fix NX extension "pnpm: not found" — pnpm lives outside the shell PATH
   "terminal.integrated.env.linux": {
     "PATH": "/home/olorunshogo/.local/share/pnpm:${env:PATH}"
   },
-  "nxConsole.packageManager": "pnpm"
+
+  // === Git
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "git.enableSmartCommit": true,
+
+  // === Nx
+  "nxConsole.packageManager": "pnpm",
+
+  // === Misc
+  "emmet.includeLanguages": {
+    "typescriptreact": "html"
+  },
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "*.ts": "${capture}.js, ${capture}.d.ts",
+    "package.json": "package-lock.json, .npmrc, .nvmrc, .node-version, pnpm-lock.yaml",
+    "vite.config.*": "vite-env.d.ts",
+    "tailwind.config.*": "postcss.config.*",
+    "eslint.config.*": ".prettierrc, .prettierignore, .editorconfig, .lintstagedrc*"
+  },
+  "cSpell.words": ["debridgers", "nx", "pnpm"]
 }
