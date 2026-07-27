@@ -18,3 +18,6 @@ export * from "./schemas/inventory_records.schema";
 export * from "./schemas/outreach_records.schema";
 export * from "./schemas/notifications.schema";
 export * from "./schemas/system_settings.schema";
+export * from "./schemas/carts.schema";
+export * from "./schemas/favorites.schema";
+export * from "./schemas/order_items.schema";

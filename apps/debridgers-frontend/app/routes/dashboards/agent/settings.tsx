@@ -14,7 +14,12 @@ import {
   BASE_BACKEND_URL,
   getAccessToken,
 } from "@debridgers/api-client";
-import { DashSelectInput } from "@debridgers/ui-web";
+import {
+  DashSelectInput,
+  defaultStateName,
+  stateSelectOptions,
+  lgaSelectOptions,
+} from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -35,6 +40,8 @@ interface AgentProfile {
   email: string;
   phone: string | null;
   address: string | null;
+  state: string | null;
+  lga: string | null;
 }
 
 interface KycStatus {
@@ -88,6 +95,10 @@ export default function AgentSettingsPage() {
     email: "",
     phone: "",
     address: "",
+    /* Kaduna is the launch state, so it is the sensible default until the
+       agent picks otherwise. */
+    state: defaultStateName,
+    lga: "",
   });
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileSaved, setProfileSaved] = useState<boolean>(false);
@@ -125,6 +136,8 @@ export default function AgentSettingsPage() {
         email: p.email,
         phone: p.phone ?? "",
         address: p.address ?? "",
+        state: p.state ?? defaultStateName,
+        lga: p.lga ?? "",
       });
       if (p.avatar_url) setAvatarUrl(p.avatar_url);
     } catch {
@@ -205,6 +218,9 @@ export default function AgentSettingsPage() {
           last_name: form.lastName.trim() || undefined,
           phone: form.phone.trim() || undefined,
           address: form.address.trim() || undefined,
+          state: form.state.trim() || undefined,
+          /* Setting the LGA re-resolves the agent's delivery zone server-side. */
+          lga: form.lga.trim() || undefined,
         }),
       });
       setProfileSaved(true);
@@ -449,6 +465,28 @@ export default function AgentSettingsPage() {
                   className={inputCls}
                 />
               </div>
+              <DashSelectInput
+                label="State"
+                value={form.state}
+                options={stateSelectOptions()}
+                onChange={(e) =>
+                  setForm((p) => ({
+                    ...p,
+                    state: e.target.value,
+                    /* LGAs are state-specific, so a stale one must not survive
+                       a state change. */
+                    lga: "",
+                  }))
+                }
+              />
+              <DashSelectInput
+                label="LGA"
+                value={form.lga}
+                options={lgaSelectOptions(form.state)}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, lga: e.target.value }))
+                }
+              />
               <button
                 type="submit"
                 disabled={savingProfile}

@@ -11,7 +11,8 @@ import {
   decodeJwtPayload,
   storeTokens,
   logout as apiLogout,
-  BASE_BACKEND_URL,
+  login as loginRequest,
+  adminLogin as adminLoginRequest,
 } from "@debridgers/api-client";
 import type { JwtPayload } from "@debridgers/api-client";
 
@@ -25,7 +26,11 @@ interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<AuthUser["role"]>;
+  login: (
+    email: string,
+    password: string,
+    variant?: "public" | "admin",
+  ) => Promise<AuthUser["role"]>;
   logout: () => Promise<void>;
   syncUserFromToken: () => AuthUser | null;
   dashboardPath: string;
@@ -75,29 +80,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [syncUserFromToken]);
 
   const login = useCallback(
-    async (email: string, password: string): Promise<AuthUser["role"]> => {
-      let res: Response;
-      try {
-        res = await fetch(`${BASE_BACKEND_URL}/auth/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ email, password }),
-        });
-      } catch {
-        throw new Error("Network error. Please try again.");
-      }
+    async (
+      email: string,
+      password: string,
+      variant: "public" | "admin" = "public",
+    ): Promise<AuthUser["role"]> => {
+      /*
+       * The transport lives in @debridgers/api-client. This context only stores
+       * the tokens and derives the session, so moving auth to HttpOnly cookies
+       * later is a change inside api-client, not here.
+       *
+       * ApiError already carries the server's message verbatim, including on
+       * 401. That matters because the backend returns 401 for five different
+       * conditions - bad credentials, missing password, unverified email, and
+       * agent-approval pending or rejected. This previously overrode all of
+       * them with "Invalid email or password", which told users with a real,
+       * valid account that their password was wrong.
+       *
+       * Passing the server's wording through does not leak account existence:
+       * the backend deliberately returns the same "Invalid credentials" string
+       * for both an unknown email and a wrong password.
+       */
+      const request = variant === "admin" ? adminLoginRequest : loginRequest;
+      const session = await request({ email, password });
 
-      const json = await res.json().catch(() => ({}) as { message?: string });
-      if (!res.ok) {
-        throw new Error(
-          res.status === 401
-            ? "Invalid email or password."
-            : (json.message ?? "Login failed."),
-        );
-      }
-
-      storeTokens(json.data.accessToken, json.data.refreshToken);
+      storeTokens(session.accessToken, session.refreshToken);
       const nextUser = syncUserFromToken();
       return nextUser?.role ?? "buyer";
     },

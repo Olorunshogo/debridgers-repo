@@ -85,6 +85,52 @@ export class PaymentService {
     return { message: "Payment initialized", data: data.data };
   }
 
+  /*
+   * Buyer checkout initialize. Separate from `initialize`, which is the agent
+   * stock flow and carries a subaccount split - a buyer order has no agent to
+   * split with. metadata.type is what lets the shared webhook tell them apart.
+   */
+  async initializeBuyerOrder(params: {
+    email: string;
+    amountKobo: number;
+    orderId: number;
+    buyerId: number;
+  }) {
+    const callbackUrl = `${this.config.get<string>("FRONTEND_URL") ?? "http://localhost:3000"}/buyer-dashboard/checkout`;
+
+    const response = await fetch(`${this.baseUrl}/transaction/initialize`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.secretKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: params.email,
+        amount: params.amountKobo,
+        callback_url: callbackUrl,
+        metadata: {
+          type: "buyer_order",
+          order_id: params.orderId,
+          buyer_id: params.buyerId,
+        },
+      }),
+    });
+
+    const data = (await response.json()) as {
+      status: boolean;
+      message?: string;
+      data: { authorization_url: string; reference: string };
+    };
+
+    if (!data.status) {
+      throw new BadRequestException(
+        data.message ?? "Payment initialization failed",
+      );
+    }
+
+    return data.data;
+  }
+
   async handleWebhook(payload: Record<string, unknown>, signature: string) {
     const crypto = await import("crypto");
     const hash = crypto
@@ -101,6 +147,40 @@ export class PaymentService {
       const metadata = data.metadata as Record<string, unknown>;
       const agentId = metadata?.agent_id as number;
       const amount = (data.amount as number) / 100;
+
+      /*
+       * Buyer checkout. The order already exists as pending/unpaid - this is
+       * the confirmation. Matched on the stored reference rather than the id
+       * alone so a replayed webhook cannot confirm the wrong order.
+       */
+      if (metadata?.type === "buyer_order") {
+        const orderId = Number(metadata.order_id);
+        const reference = data.reference as string;
+
+        if (orderId) {
+          await this.db
+            .update(schema.orders)
+            .set({
+              payment_status: "paid",
+              status: "confirmed",
+              paid_at: new Date(),
+              payment_reference: reference,
+            })
+            .where(eq(schema.orders.id, orderId));
+
+          /* The cart has served its purpose once the order is paid. */
+          const buyerId = Number(metadata.buyer_id);
+          if (buyerId) {
+            await this.db
+              .delete(schema.cart_items)
+              .where(eq(schema.cart_items.user_id, buyerId));
+          }
+
+          this.logger.log(`Buyer order ${orderId} marked paid`);
+        }
+
+        return { message: "Webhook processed", data: null };
+      }
 
       if (agentId) {
         const commissionAmount = amount * this.commissionRate;

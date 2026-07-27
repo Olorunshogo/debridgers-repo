@@ -1,0 +1,165 @@
+import { z } from "zod";
+
+/*
+ * Reusable field-level schema factories. Compose these into whole-form schemas
+ * under schemas/<feature>/ instead of redeclaring field rules per form.
+ *
+ * These are factories rather than bare exported schemas so one rule can serve
+ * many forms while each caller still controls its own copy. Copy is the thing
+ * that legitimately varies between forms; the rule is not.
+ */
+
+// === Options
+
+export interface FieldSchemaOptions {
+  /** Overrides the default "required" message. */
+  requiredMessage?: string;
+  /** Overrides the default format/validity message. */
+  invalidMessage?: string;
+}
+
+export interface StringSchemaOptions extends FieldSchemaOptions {
+  min?: number;
+  max?: number;
+}
+
+// === Email
+
+export function createEmailSchema(
+  options: FieldSchemaOptions = {},
+): z.ZodString {
+  const {
+    requiredMessage = "Email is required",
+    invalidMessage = "Enter a valid email address",
+  } = options;
+
+  return z.string().min(1, requiredMessage).email(invalidMessage);
+}
+
+// === Generic strings
+
+export function createRequiredString(
+  label: string,
+  options: StringSchemaOptions = {},
+): z.ZodString {
+  const { min = 1, max, requiredMessage } = options;
+
+  let schema = z
+    .string()
+    .min(min, requiredMessage ?? messageForMin(label, min));
+
+  if (max !== undefined) {
+    schema = schema.max(max, `${label} must be at most ${max} characters`);
+  }
+
+  return schema;
+}
+
+export function createNameSchema(
+  label = "Full name",
+  options: StringSchemaOptions = {},
+): z.ZodString {
+  return createRequiredString(label, { min: 3, max: 100, ...options });
+}
+
+// === Phone
+
+/*
+ * Digits only, minimum 10. Deliberately not using libphonenumber-js: it is not
+ * a dependency of this package, and the backend accepts a plain string. If real
+ * international parsing is ever needed, change it here and every form inherits.
+ */
+export function createPhoneSchema(
+  options: FieldSchemaOptions = {},
+): z.ZodString {
+  const {
+    requiredMessage = "Phone number is required",
+    invalidMessage = "Digits only",
+  } = options;
+
+  return z
+    .string()
+    .min(1, requiredMessage)
+    .min(10, "Phone must be at least 10 digits")
+    .max(20, "Phone must be at most 20 digits")
+    .regex(/^\d+$/, invalidMessage);
+}
+
+// === Password
+
+/*
+ * These four rules mirror `passwordRule` in the backend's
+ * apps/debridgers-backend/src/app/auth/dto/register.dto.ts exactly, including
+ * message wording. They previously disagreed: the frontend only checked
+ * min(8), so a password could pass client validation and be rejected by the
+ * server. Keep the two in sync - this is the only reason this factory exists
+ * rather than an inline min(8) per form.
+ */
+export function createPasswordSchema(
+  options: FieldSchemaOptions = {},
+): z.ZodString {
+  const { requiredMessage = "Password is required" } = options;
+
+  return z
+    .string()
+    .min(1, requiredMessage)
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .regex(
+      /[^A-Za-z0-9]/,
+      "Password must contain at least one special character",
+    );
+}
+
+/**
+ * A plain string for the "confirm password" field. The equality rule is a
+ * cross-field concern, so it is applied at the object level by
+ * withPasswordConfirmation, not here.
+ */
+export function createConfirmPasswordSchema(): z.ZodString {
+  return z.string().min(1, "Please confirm your password");
+}
+
+/*
+ * The password === confirmPassword rule is a cross-field concern, so callers
+ * apply it themselves with `.refine(passwordsMatch, PASSWORDS_MATCH_ERROR)`.
+ * Exported as a predicate plus an error object rather than a schema wrapper
+ * because Zod 4's refine() return type makes a generic wrapper more trouble
+ * than the duplication it saves.
+ *
+ * The parameter is intentionally loose (optional, unknown) so this stays
+ * assignable to the refine callback of any object schema that extends the base
+ * signup shape, whose inferred type Zod does not expose in a narrowable form.
+ */
+export interface PasswordPair {
+  password?: unknown;
+  confirmPassword?: unknown;
+}
+
+export function passwordsMatch(data: PasswordPair): boolean {
+  return data.password === data.confirmPassword;
+}
+
+export const PASSWORDS_MATCH_ERROR: { message: string; path: PropertyKey[] } = {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+};
+
+// === OTP
+
+export function createOtpSchema(length = 6): z.ZodString {
+  return z
+    .string()
+    .min(1, "Verification code is required")
+    .length(length, `Code must be ${length} digits`)
+    .regex(/^\d+$/, "Code must be digits only");
+}
+
+// === Helpers
+
+function messageForMin(label: string, min: number): string {
+  return min === 1
+    ? `${label} is required`
+    : `${label} must be at least ${min} characters`;
+}

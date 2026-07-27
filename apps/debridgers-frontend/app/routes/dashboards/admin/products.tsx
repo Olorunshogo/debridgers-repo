@@ -16,6 +16,15 @@ import {
   getAccessToken,
   BASE_BACKEND_URL,
 } from "@debridgers/api-client";
+import {
+  formatFromKobo,
+  DashSelectInput,
+  productCategoryOptions,
+  fadeDownVariants,
+  staggerItemVariants,
+  staggerDelay,
+  transitionBase,
+} from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -29,6 +38,8 @@ export function meta() {
   ];
 }
 
+type MeasureUnit = "kg" | "litre" | "piece";
+
 interface Product {
   id: number;
   name: string;
@@ -36,6 +47,9 @@ interface Product {
   price_kobo: number;
   description: string | null;
   image_url: string | null;
+  category: string | null;
+  measure_value: number;
+  measure_unit: MeasureUnit;
   is_active: boolean;
   sort_order: number;
 }
@@ -46,6 +60,14 @@ interface ProductForm {
   price: string;
   description: string;
   image_url: string;
+  category: string;
+  measure_value: string;
+  measure_unit: MeasureUnit;
+}
+
+interface BundledImage {
+  file: string;
+  alt: string;
 }
 
 const emptyForm: ProductForm = {
@@ -54,17 +76,39 @@ const emptyForm: ProductForm = {
   price: "",
   description: "",
   image_url: "",
+  category: "",
+  measure_value: "",
+  measure_unit: "kg",
 };
 
-function fmt(kobo: number) {
-  return (
-    "₦" + (kobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 0 })
-  );
-}
+const measureUnitOptions: { value: MeasureUnit; label: string }[] = [
+  { value: "kg", label: "Kilogram (kg)" },
+  { value: "litre", label: "Litre" },
+  { value: "piece", label: "Piece" },
+];
+
+/*
+ * Photos shipped with the app under public/images/products. Held as a literal
+ * list rather than read at runtime because the folder is a build asset, and the
+ * alt text has to be written by a human anyway.
+ */
+const bundledImages: BundledImage[] = [
+  { file: "maize-1.jpg", alt: "Dried yellow maize grains in a heap" },
+  { file: "maize-3.jpg", alt: "Fresh maize cobs with husks pulled back" },
+  { file: "potatoes.jpg", alt: "Pile of unwashed brown potatoes" },
+  { file: "pouring-oil.jpg", alt: "Cooking oil being poured into a bowl" },
+  { file: "rice-bowl.jpg", alt: "Bowl filled with uncooked white rice" },
+  { file: "rice-grains.jpg", alt: "Close-up of long grain rice" },
+  { file: "rice-white.jpg", alt: "Spread of polished white rice grains" },
+  { file: "sweet-beans.jpg", alt: "Brown honey beans in a scoop" },
+  { file: "yams.jpg", alt: "Tubers of fresh yam laid side by side" },
+];
+
+const bundledImagePath = (file: string): string => `/images/products/${file}`;
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [showForm, setShowForm] = useState<boolean>(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
@@ -105,6 +149,9 @@ export default function AdminProductsPage() {
       price: String(p.price_kobo / 100),
       description: p.description ?? "",
       image_url: p.image_url ?? "",
+      category: p.category ?? "",
+      measure_value: p.measure_value ? String(p.measure_value) : "",
+      measure_unit: p.measure_unit ?? "kg",
     });
     setError(null);
     setShowForm(true);
@@ -154,6 +201,8 @@ export default function AdminProductsPage() {
       return;
     }
     const price_kobo = Math.round(priceNaira * 100);
+    const parsedMeasure = parseInt(form.measure_value, 10);
+    const measure_value = isNaN(parsedMeasure) ? undefined : parsedMeasure;
     setSaving(true);
     setError(null);
     try {
@@ -166,6 +215,9 @@ export default function AdminProductsPage() {
             price_kobo,
             description: form.description.trim() || undefined,
             image_url: form.image_url.trim() || null,
+            category: form.category || null,
+            measure_value,
+            measure_unit: form.measure_unit,
           }),
         });
       } else {
@@ -177,6 +229,9 @@ export default function AdminProductsPage() {
             price_kobo,
             description: form.description.trim() || undefined,
             image_url: form.image_url.trim() || undefined,
+            category: form.category || undefined,
+            measure_value,
+            measure_unit: form.measure_unit,
           }),
         });
       }
@@ -249,16 +304,20 @@ export default function AdminProductsPage() {
       <AnimatePresence>
         {showForm && (
           <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="border-gray-border rounded-2xl border bg-white p-5"
+            variants={fadeDownVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={transitionBase}
+            className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5"
           >
-            <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center justify-between">
               <h3 className="font-syne text-heading font-semibold">
                 {editingId !== null ? "Edit Product" : "Add New Product"}
               </h3>
               <button
+                type="button"
+                aria-label="Close product form"
                 onClick={() => setShowForm(false)}
                 className="rounded-full p-1 hover:bg-black/5"
               >
@@ -267,12 +326,12 @@ export default function AdminProductsPage() {
             </div>
 
             {error && (
-              <p className="bg-status-cancelled-bg text-status-cancelled-text mb-4 rounded-xl px-4 py-3 text-sm">
+              <p className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm">
                 {error}
               </p>
             )}
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <div className="flex flex-col gap-1">
                 <label className="text-heading text-sm font-medium">
                   Product Name *
@@ -330,23 +389,71 @@ export default function AdminProductsPage() {
                   className={inputCls}
                 />
               </div>
+              <DashSelectInput
+                label="Category"
+                name="category"
+                placeholder="Select a category"
+                options={productCategoryOptions()}
+                value={form.category}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, category: e.target.value }))
+                }
+              />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="measure-value"
+                    className="text-heading text-sm font-medium"
+                  >
+                    Measure Value
+                  </label>
+                  <input
+                    id="measure-value"
+                    type="number"
+                    placeholder="e.g. 50"
+                    value={form.measure_value}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, measure_value: e.target.value }))
+                    }
+                    className={inputCls}
+                    min="0"
+                  />
+                </div>
+                <DashSelectInput
+                  label="Measure Unit"
+                  name="measure_unit"
+                  options={measureUnitOptions}
+                  value={form.measure_unit}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      measure_unit: e.target.value as MeasureUnit,
+                    }))
+                  }
+                />
+              </div>
             </div>
 
-            {/* Image upload */}
-            <div className="flex flex-col gap-2">
+            {/* Image upload, bundled gallery and manual URL */}
+            <div className="flex flex-col gap-4">
               <label className="text-heading text-sm font-medium">
                 Product Image
               </label>
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
                 {form.image_url ? (
                   <div className="border-gray-border relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border">
                     <img
                       src={form.image_url}
-                      alt="Product"
+                      alt={
+                        form.name.trim()
+                          ? `Current image for ${form.name.trim()}`
+                          : "Currently selected product image"
+                      }
                       className="h-full w-full object-cover"
                     />
                     <button
                       type="button"
+                      aria-label="Remove the selected product image"
                       onClick={() => setForm((p) => ({ ...p, image_url: "" }))}
                       className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
                     >
@@ -388,10 +495,76 @@ export default function AdminProductsPage() {
                   </p>
                 </div>
               </div>
+
+              {/* Bundled photo gallery */}
+              <div className="flex flex-col gap-2">
+                <p className="text-text text-xs font-medium">
+                  Or pick one of the photos that ship with the app
+                </p>
+                <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+                  {bundledImages.map((img, i) => {
+                    const path = bundledImagePath(img.file);
+                    const isSelected = form.image_url === path;
+                    return (
+                      <motion.button
+                        key={img.file}
+                        type="button"
+                        aria-pressed={isSelected}
+                        aria-label={`Use bundled photo: ${img.alt}`}
+                        onClick={() =>
+                          setForm((p) => ({ ...p, image_url: path }))
+                        }
+                        variants={staggerItemVariants}
+                        initial="initial"
+                        animate="animate"
+                        transition={staggerDelay(i)}
+                        className={`relative aspect-square overflow-hidden rounded-xl border-2 transition-colors ${
+                          isSelected
+                            ? "border-primary ring-primary/30 ring-2"
+                            : "border-gray-border hover:border-primary/50"
+                        }`}
+                      >
+                        <img
+                          src={path}
+                          alt={img.alt}
+                          loading="lazy"
+                          className="h-full w-full object-cover"
+                        />
+                        {isSelected && (
+                          <span className="bg-primary absolute right-1 bottom-1 flex h-5 w-5 items-center justify-center rounded-full text-white">
+                            <Check size={12} />
+                          </span>
+                        )}
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Manual URL fallback */}
+              <div className="flex flex-col gap-1">
+                <label
+                  htmlFor="image-url"
+                  className="text-heading text-sm font-medium"
+                >
+                  Image URL
+                </label>
+                <input
+                  id="image-url"
+                  type="text"
+                  placeholder="https://... or /images/products/rice-bowl.jpg"
+                  value={form.image_url}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, image_url: e.target.value }))
+                  }
+                  className={inputCls}
+                />
+              </div>
             </div>
 
-            <div className="mt-4 flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <button
+                type="button"
                 onClick={() => void handleSave()}
                 disabled={saving}
                 className="bg-primary flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
@@ -484,7 +657,7 @@ export default function AdminProductsPage() {
                   </td>
                   <td className="text-text px-5 py-4">{p.unit}</td>
                   <td className="text-heading px-5 py-4 font-semibold">
-                    {fmt(p.price_kobo)}
+                    {formatFromKobo(p.price_kobo)}
                   </td>
                   <td className="px-5 py-4">
                     <button

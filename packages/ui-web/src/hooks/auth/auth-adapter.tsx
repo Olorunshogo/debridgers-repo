@@ -1,0 +1,83 @@
+import { createContext, useContext, type ReactNode } from "react";
+
+/*
+ * Dependency injection boundary for the shared auth hooks.
+ *
+ * The hooks live here so any consumer can import them, but this package must
+ * never import the API client, a router, or an app's session context - doing so
+ * would drag transport and routing into a UI package and undo the boundary the
+ * auth refactor exists to create.
+ *
+ * So the app supplies these once via AuthAdapterProvider, and the hooks stay
+ * pure: form state, validation, error mapping, and nothing else.
+ */
+
+export type LoginVariant = "public" | "admin";
+
+export interface RegisterPayload {
+  first_name: string;
+  last_name: string;
+  email: string;
+  password: string;
+  role: string;
+  phone?: string;
+  referred_by_agent_code?: string;
+}
+
+export interface VerifiedSession {
+  accessToken?: string;
+  refreshToken?: string;
+}
+
+export interface AuthAdapter {
+  /** Resolves to the authenticated user's role. */
+  login: (
+    email: string,
+    password: string,
+    variant: LoginVariant,
+  ) => Promise<string>;
+  register: (payload: RegisterPayload) => Promise<unknown>;
+  forgotPassword: (email: string) => Promise<unknown>;
+  resetPassword: (token: string, password: string) => Promise<unknown>;
+  verifyEmail: (email: string, otp: string) => Promise<VerifiedSession>;
+  resendOtp: (email: string) => Promise<unknown>;
+  /** Persists a session returned by email verification, if one was issued. */
+  storeSession: (session: VerifiedSession) => string | null;
+  /** Navigates, so this package never imports a router. */
+  navigate: (path: string, state?: Record<string, unknown>) => void;
+  /** Sends the user to the right place for their role after authenticating. */
+  redirectAfterAuth: (role: string) => void;
+  /** Splits a single full-name field into the first/last the API expects. */
+  splitFullName: (fullName: string) => {
+    first_name: string;
+    last_name: string;
+  };
+}
+
+const AuthAdapterContext = createContext<AuthAdapter | null>(null);
+
+export interface AuthAdapterProviderProps {
+  adapter: AuthAdapter;
+  children: ReactNode;
+}
+
+export function AuthAdapterProvider({
+  adapter,
+  children,
+}: AuthAdapterProviderProps) {
+  return (
+    <AuthAdapterContext.Provider value={adapter}>
+      {children}
+    </AuthAdapterContext.Provider>
+  );
+}
+
+export function useAuthAdapter(): AuthAdapter {
+  const adapter = useContext(AuthAdapterContext);
+  if (!adapter) {
+    throw new Error(
+      "Auth hooks require <AuthAdapterProvider>. Wrap your app in it and supply an adapter.",
+    );
+  }
+  return adapter;
+}

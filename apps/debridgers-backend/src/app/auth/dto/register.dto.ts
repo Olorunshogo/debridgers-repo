@@ -11,13 +11,34 @@ export const passwordRule = z
     "Password must contain at least one special character",
   );
 
+/*
+ * Roles a user may create for themselves through the public register endpoint.
+ *
+ * This is a security boundary, not a convenience list. It is deliberately an
+ * explicit allow-list rather than the full user_role enum, so adding a role to
+ * the database never silently makes it self-registerable. Admin and company must
+ * never appear here.
+ */
+export const SELF_REGISTERABLE_ROLES = [
+  USER_ROLES.BUYER,
+  USER_ROLES.AGENT,
+] as const;
+
+export type SelfRegisterableRole = (typeof SELF_REGISTERABLE_ROLES)[number];
+
 export const registerSchema = z.object({
   first_name: z.string().min(2, "First name must be at least 2 characters"),
   last_name: z.string().min(2, "Last name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   phone: z.string().min(10, "Invalid phone number").optional(),
   password: passwordRule,
-  role: z.literal(USER_ROLES.BUYER).default(USER_ROLES.BUYER),
+  /*
+   * Defaults to buyer, the least-privileged self-registerable role, so a request
+   * that omits the field can only ever create a harmless account.
+   */
+  role: z
+    .enum(SELF_REGISTERABLE_ROLES as unknown as [string, ...string[]])
+    .default(USER_ROLES.BUYER),
   referred_by_agent_code: z.string().optional(),
 });
 

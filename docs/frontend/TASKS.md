@@ -1,23 +1,61 @@
-# Core Development Tasks (Remaining)
+# Core Development Tasks
 
-## Table of Contents
-
-- [1. Cart Sync on Login](#1-cart-sync-on-login)
-- [2. Shopping Cart Backend Sync](#2-shopping-cart-backend-sync)
-- [3. Favorites / Wishlist](#3-favorites--wishlist)
-- [4. Checkout and Payment Flow](#4-checkout-and-payment-flow)
-- [5. Error Handling & Edge Cases](#5-error-handling--edge-cases)
-- [6. Testing Scenarios](#6-testing-scenarios)
-- [7. Product Catalog Structure](#7-product-catalog-structure)
-- [8. Buyer Settings - Unimplemented Toggles](#8-buyer-settings--unimplemented-toggles)
-- [9. Wallet & Payment](#9-wallet--payment)
-- [10. Agent Stock Request - Hierarchical UX](#10-agent-stock-request--hierarchical-ux)
-- [11. Admin Commission & Referral System](#11-admin-commission--referral-system)
-- [12. Repeat Last Order - Server Persistence](#12-repeat-last-order---server-persistence)
+Kept in sync with `docs/frontend/PLAN.md`. Anything here is either **open** or
+**partially done with the gap named**. Completed items move to the Done list
+below rather than being deleted, so the reasoning stays findable.
 
 ---
 
+## Done
+
+Verified against the code on 2026-07-27.
+
+- **#1 Cart sync on login** - `POST /buyer/cart/merge`, higher quantity per line
+  rather than the sum.
+- **#2 Shopping cart backend sync** - `GET`/`PUT`/`DELETE /buyer/cart`, 2s
+  debounce while authenticated, localStorage stays authoritative. No guest cart
+  by design: an anonymous cart has no owner to key on.
+- **#3 Favourites / wishlist** - `favorites` table, endpoints, optimistic heart,
+  hidden for anonymous visitors. **Buy again** was split out separately as an
+  order-history-derived rail.
+- **#4 Checkout and payment flow** - `POST /buyer/orders/initialize-payment`,
+  `order_items` table (it did not exist, which is why this was broken), the
+  `buyer_order` webhook branch, and `FRONTEND_URL`. `PAYMENTS_SIMULATED=true`
+  stands in until Paystack credentials exist.
+- **#8.4 Change password** - shipped earlier.
+- **#11.1 system_settings / admin settings** - shipped earlier, except the
+  commission-rate wiring listed as partial below.
+
+Also shipped and not originally in this file: product categories, per-package
+delivery pricing with a per-zone free-delivery flag, the State to LGA to Zone
+checkout cascade, the dialog engine with two consumers, agent-requested payouts,
+the auth refactor with single-flight refresh, shared currency formatting, and a
+Nigerian states dataset.
+
+---
+
+## Partially done - gap named
+
+- **#5 Error handling and edge cases** - improved, not finished. Several empty
+  `catch {}` blocks remain. Fold into whichever week touches the flow.
+- **#7 Product catalog structure** - `category`, `measure_value` and
+  `measure_unit` now exist, so the two-tier model is partly real. A full
+  Category -> Variety model is still needed for a 3-level agent stock UX.
+- **#8.1 Email notification toggle** - column, DTO and profile read/update all
+  exist, but **no listener checks the flag**, so the toggle does nothing.
+- **#9.2 Agent wallet** - the payout _request_ now exists
+  (`POST /agent/withdrawals`). The bank-details form and the payout cron do not.
+- **#11.1 commission rate** - still read from the `AGENT_COMMISSION_RATE` env
+  var rather than `SystemSettingsService`, so the admin settings UI does not
+  affect it.
+
+---
+
+## Open
+
 ## 1. Cart Sync on Login
+
+> **DONE.** Kept for the merge-logic reasoning. See the Done list above.
 
 Cart browsing works (localStorage). The missing piece is merging the guest cart into the user's backend cart when they log in.
 
@@ -47,6 +85,8 @@ Clear localStorage cart
 
 ## 2. Shopping Cart Backend Sync (Authenticated Users)
 
+> **DONE.** Kept for the strategy notes. See the Done list above.
+
 For logged-in users, cart changes should sync to the backend so the cart survives across devices and browser clears.
 
 ### Strategy
@@ -59,6 +99,8 @@ For logged-in users, cart changes should sync to the backend so the cart survive
 ---
 
 ## 3. Favorites / Wishlist
+
+> **DONE**, and split into favourites plus a separate buy-again rail.
 
 Not started. No backend endpoints, no UI, no heart icon on product cards.
 
@@ -82,11 +124,16 @@ Not started. No backend endpoints, no UI, no heart icon on product cards.
 
 ## 4. Checkout and Payment Flow
 
-### Status: BROKEN - frontend/backend contract mismatch
+> **DONE.** The status below is superseded - checkout is built and the
+> root cause was a missing `order_items` table, not just a missing route.
+
+### Status: RESOLVED (was: BROKEN - frontend/backend contract mismatch)
 
 `buyer/checkout.tsx` calls `POST /buyer/orders/initialize-payment` with `{ delivery_address, delivery_time, notes, cart: [{ product_id, name, price_kobo, unit, qty }] }`, expects `authorization_url` back, redirects to it, then on Paystack callback (`?trxref=...`) clears cart, snapshots to `debridgers_last_order`, and shows the confirmed screen.
 
-That endpoint does not exist on the backend. `buyer.controller.ts` only has `POST orders` / `GET orders`. The only payment-initialize route is `payment.controller.ts > POST payment/initialize`, which is built for the agent stock-request flow (requires `agent_id`, validated against an approved agent) - it cannot accept a buyer cart payload. As wired today, checkout 404s in production.
+That endpoint did not exist. `buyer.controller.ts` had only `POST orders` / `GET orders`, and the sole payment-initialize route was `payment.controller.ts > POST payment/initialize`, built for the agent stock-request flow (requires `agent_id`, validated against an approved agent) and unable to accept a buyer cart payload. Checkout 404'd.
+
+**Why it had never been built:** there was no `order_items` table and no `product_id` on `orders`. The orders table stored `quantity`, `unit_price` and a total but never recorded _what_ was bought, because the schema was shaped for the single-product field flow. A multi-product buyer cart was unrepresentable, so the route could not be written against that schema. `order_items` was added and existing orders backfilled by matching `unit_price` to a product price.
 
 ### Backend needed
 
@@ -123,6 +170,9 @@ If balance insufficient → prompt top-up
 ---
 
 ## 6. Testing Scenarios
+
+> **NOT RUN.** No automated test covers any of the new endpoints; everything
+> shipped was verified by hand. This is the largest quality gap in the repo.
 
 ### Happy path
 

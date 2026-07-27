@@ -9,6 +9,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { apiFetch, ApiError } from "@debridgers/api-client";
+import { formatFromKobo } from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -80,9 +81,7 @@ const statusStyles: Record<
 };
 
 function fmt(kobo: number) {
-  return (
-    "₦" + (kobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 0 })
-  );
+  return formatFromKobo(kobo);
 }
 
 // Group products by description (category) then name (type/variety)

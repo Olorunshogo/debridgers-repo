@@ -9,6 +9,6 @@ import { AuthModule } from "../auth/auth.module";
   imports: [DatabaseModule, AuthModule],
   controllers: [PaymentController],
   providers: [PaymentService, SafeHavenService],
-  exports: [SafeHavenService],
+  exports: [SafeHavenService, PaymentService],
 })
 export class PaymentModule {}

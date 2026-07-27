@@ -57,6 +57,55 @@
       "when": 1781200000000,
       "tag": "0007_email_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785003666446,
+      "tag": "0008_fair_eternity",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1785023659387,
+      "tag": "0009_melodic_ironclad",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1785024161111,
+      "tag": "0010_daily_namorita",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1785024632904,
+      "tag": "0011_light_corsair",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1785025196444,
+      "tag": "0012_mixed_whiplash",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1785138804458,
+      "tag": "0013_broken_quicksilver",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1785141100501,
+      "tag": "0014_flat_payback",
+      "breakpoints": true
     }
   ]
 }

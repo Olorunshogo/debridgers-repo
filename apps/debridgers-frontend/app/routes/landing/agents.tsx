@@ -7,6 +7,7 @@ import { Header } from "../../components/landing/Header";
 import { HeroSection } from "../../components/landing/HeroSection";
 import { useAuth } from "../../contexts/AuthContext";
 import { BASE_BACKEND_URL } from "@debridgers/api-client";
+import { formatCurrency } from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -168,19 +169,21 @@ function buildEarningsRows(commissionRate: number) {
   const sampleTotal = 75000;
   const agentEarns = Math.round((sampleTotal * commissionRate) / 100);
   const companyKeeps = sampleTotal - agentEarns;
-  const fmt = (n: number) =>
-    "₦" + n.toLocaleString("en-NG", { minimumFractionDigits: 0 });
   return [
     { label: "Sales closed", value: "5 orders", highlight: false },
-    { label: "Total sale amount", value: fmt(sampleTotal), highlight: false },
+    {
+      label: "Total sale amount",
+      value: formatCurrency(sampleTotal),
+      highlight: false,
+    },
     {
       label: `Your commission (${commissionRate}%)`,
-      value: fmt(agentEarns),
+      value: formatCurrency(agentEarns),
       highlight: true,
     },
     {
       label: `Company keeps (${100 - commissionRate}%)`,
-      value: fmt(companyKeeps),
+      value: formatCurrency(companyKeeps),
       highlight: false,
     },
   ];
@@ -235,7 +238,7 @@ export default function AgentsPage() {
           <div className="from-primary -mt-navbar-h via-primary to-primary absolute inset-0 z-0 overflow-hidden bg-linear-to-b" />
           <section className="font-syne relative mx-auto flex h-full min-h-screen w-full flex-col overflow-hidden">
             <HeroSection
-              images={["/images/hero-1.jpg"]}
+              images={["/images/landing/hero-1.jpg"]}
               servingLocation="Now Hiring in Kaduna"
               headingParts={{
                 top: [{ text: "Earn While You" }],

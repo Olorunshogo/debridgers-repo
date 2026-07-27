@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
+import { formatFromKobo } from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -52,7 +53,7 @@ function mapApiOrder(o: ApiOrder): Order {
       day: "numeric",
       year: "numeric",
     }),
-    amount: `₦${(o.total_amount / 100).toLocaleString("en-NG", { minimumFractionDigits: 0 })}`,
+    amount: formatFromKobo(o.total_amount),
     status: dbToUi(o.status),
   };
 }

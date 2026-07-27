@@ -16,6 +16,7 @@ import { USER_EVENTS } from "../../events/event-types/user.event.types";
 import { ApplyAgentDto } from "./dto/apply-agent.dto";
 import { SubmitReportDto } from "./dto/submit-report.dto";
 import { UpdateAgentProfileDto } from "./dto/update-agent-profile.dto";
+import { RequestWithdrawalDto } from "./dto/request-withdrawal.dto";
 import { JwtPayload } from "../../interfaces/users/jwt.type";
 
 @Injectable()
@@ -25,6 +26,43 @@ export class AgentService {
     private readonly db: NodePgDatabase<typeof schema>,
     private readonly eventEmitter: EventEmitter2,
   ) {}
+
+  /*
+   * Resolves an agent's delivery zone from the location string they supplied.
+   *
+   * Matches on EITHER the zone's own name OR one of its areas, because the
+   * `agent_profiles.lga` column has carried both over time:
+   *  - Signup originally collected an AREA ("Narayi", "Kakuri") and stored it
+   *    here, which is what zones.areas holds.
+   *  - The settings form now offers real LGA names, and the seeded zones are
+   *    themselves named after LGAs ("Kaduna South", "Kaduna North").
+   *
+   * Matching both keeps existing agent rows resolving exactly as before while
+   * letting LGA selection work. Returns null when nothing matches, which is
+   * normal for LGAs that have no zone seeded yet.
+   */
+  private async resolveZoneId(
+    location?: string | null,
+  ): Promise<number | null> {
+    if (!location?.trim()) return null;
+
+    const value = location.trim();
+    const [zone] = await this.db
+      .select({ id: schema.zones.id })
+      .from(schema.zones)
+      .where(
+        and(
+          sql`(lower(${schema.zones.name}) = lower(${value}) or exists (
+                select 1 from unnest(${schema.zones.areas}) as area
+                where lower(area) = lower(${value})
+              ))`,
+          eq(schema.zones.is_active, true),
+        ),
+      )
+      .limit(1);
+
+    return zone?.id ?? null;
+  }
 
   async apply(dto: ApplyAgentDto, cvUrl?: string) {
     const existing = await this.db
@@ -37,17 +75,8 @@ export class AgentService {
       throw new ConflictException("Email already registered");
     }
 
-    // Auto-assign zone from LGA
-    const [zone] = await this.db
-      .select()
-      .from(schema.zones)
-      .where(
-        and(
-          sql`${dto.lga} = ANY(${schema.zones.areas})`,
-          eq(schema.zones.is_active, true),
-        ),
-      )
-      .limit(1);
+    // Auto-assign zone from the supplied LGA/area
+    const zoneId = await this.resolveZoneId(dto.lga);
 
     // Resolve recruiter from referral agent code if provided
     let referredByAgentId: number | null = null;
@@ -81,7 +110,7 @@ export class AgentService {
           phone: dto.phone,
           password: hashed,
           role: "agent",
-          zone_id: zone?.id ?? null,
+          zone_id: zoneId,
         })
         .returning();
 
@@ -140,6 +169,7 @@ export class AgentService {
         avatar_url: schema.users.avatar_url,
         cv_url: schema.agent_profiles.cv_url,
         address: schema.agent_profiles.address,
+        state: schema.agent_profiles.state,
         lga: schema.agent_profiles.lga,
       })
       .from(schema.users)
@@ -176,11 +206,31 @@ export class AgentService {
         .where(eq(schema.users.id, user.sub));
     }
 
-    if (dto.address !== undefined) {
+    const profileUpdates: Partial<typeof schema.agent_profiles.$inferInsert> =
+      {};
+    if (dto.address !== undefined) profileUpdates.address = dto.address;
+    if (dto.state !== undefined) profileUpdates.state = dto.state;
+    if (dto.lga !== undefined) profileUpdates.lga = dto.lga;
+
+    if (Object.keys(profileUpdates).length > 0) {
       await this.db
         .update(schema.agent_profiles)
-        .set({ address: dto.address })
+        .set(profileUpdates)
         .where(eq(schema.agent_profiles.user_id, user.sub));
+    }
+
+    /*
+     * Zone is derived from LGA, and agents registering through /auth/register no
+     * longer supply an LGA at signup, so they start with zone_id null. Re-resolve
+     * it here whenever the LGA changes, otherwise those agents would stay
+     * permanently zone-less and drop out of zone-scoped stock and commission
+     * routing. Same lookup as `apply`.
+     */
+    if (dto.lga !== undefined) {
+      await this.db
+        .update(schema.users)
+        .set({ zone_id: await this.resolveZoneId(dto.lga) })
+        .where(eq(schema.users.id, user.sub));
     }
 
     return { message: "Profile updated", data: null };
@@ -350,5 +400,98 @@ export class AgentService {
         recent_reports: recentReports,
       },
     };
+  }
+
+  // === Withdrawals
+
+  /*
+   * An agent asks to be paid out. Creates a `pending` withdrawal for admin
+   * review and debits the available balance immediately, so the same money
+   * cannot be requested twice while the first request is still in the queue.
+   *
+   * Admin approval and the actual transfer stay where they already are, in
+   * PaymentService's payout route - this only opens the request path.
+   */
+  async requestWithdrawal(dto: RequestWithdrawalDto, user: JwtPayload) {
+    const [profile] = await this.db
+      .select({
+        status: schema.agent_profiles.status,
+        bank_name: schema.agent_profiles.bank_name,
+        bank_code: schema.agent_profiles.bank_code,
+        bank_account_number: schema.agent_profiles.bank_account_number,
+        bank_account_name: schema.agent_profiles.bank_account_name,
+      })
+      .from(schema.agent_profiles)
+      .where(eq(schema.agent_profiles.user_id, user.sub))
+      .limit(1);
+
+    if (!profile) throw new NotFoundException("Agent profile not found");
+    if (profile.status !== "approved") {
+      throw new BadRequestException(
+        "Your account must be approved before you can request a payout.",
+      );
+    }
+
+    if (
+      !profile.bank_name ||
+      !profile.bank_code ||
+      !profile.bank_account_number ||
+      !profile.bank_account_name
+    ) {
+      throw new BadRequestException(
+        "Add your bank details in settings before requesting a payout.",
+      );
+    }
+
+    const [wallet] = await this.db
+      .select({ available_balance: schema.wallets.available_balance })
+      .from(schema.wallets)
+      .where(eq(schema.wallets.agent_id, user.sub))
+      .limit(1);
+
+    const available = wallet?.available_balance ?? 0;
+    if (dto.amount_kobo > available) {
+      throw new BadRequestException(
+        "That is more than your available balance.",
+      );
+    }
+
+    /* One transaction: never debit without a matching request row. */
+    const withdrawal = await this.db.transaction(async (tx) => {
+      const [created] = await tx
+        .insert(schema.withdrawals)
+        .values({
+          agent_id: user.sub,
+          amount: dto.amount_kobo,
+          bank_name: profile.bank_name as string,
+          bank_code: profile.bank_code as string,
+          bank_account_number: profile.bank_account_number as string,
+          bank_account_name: profile.bank_account_name as string,
+          status: "pending",
+        })
+        .returning();
+
+      await tx
+        .update(schema.wallets)
+        .set({ available_balance: available - dto.amount_kobo })
+        .where(eq(schema.wallets.agent_id, user.sub));
+
+      return created;
+    });
+
+    return {
+      message: "Payout requested. We will review it shortly.",
+      data: withdrawal,
+    };
+  }
+
+  async getWithdrawals(user: JwtPayload) {
+    const rows = await this.db
+      .select()
+      .from(schema.withdrawals)
+      .where(eq(schema.withdrawals.agent_id, user.sub))
+      .orderBy(desc(schema.withdrawals.created_at));
+
+    return { message: "Withdrawals retrieved", data: rows };
   }
 }

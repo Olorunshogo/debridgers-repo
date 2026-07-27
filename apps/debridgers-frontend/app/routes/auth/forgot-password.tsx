@@ -1,16 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router";
-import { motion, AnimatePresence } from "framer-motion";
-import { z } from "zod";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  AppLogo,
-  DashEmailInput,
-  DashTextInput,
-  DashPasswordInput,
-  SubmitButton,
+  AuthFormShell,
+  AuthCredentialsForm,
+  DialogSuccessPanel,
+  swappedContentVariants,
+  swappedContentTransition,
+  type AuthFieldDescriptor,
 } from "@debridgers/ui-web";
-import AuthSuccessModal from "../../components/auth/AuthSuccessModal";
-import { BASE_BACKEND_URL } from "@debridgers/api-client";
+import { useForgotPassword, useResetPassword } from "../../features/auth";
 
 export function meta() {
   return [
@@ -18,7 +17,7 @@ export function meta() {
     {
       name: "description",
       content:
-        "Reset your Debridgers password. Enter your email and we will send you a reset token to get back into your account.",
+        "Reset your Debridgers account password. We'll email you a reset code to set a new password.",
     },
     // === Author and Robots
     { name: "author", content: "Debridgers Team" },
@@ -26,368 +25,128 @@ export function meta() {
   ];
 }
 
-const TOKEN_TTL = 15 * 60 * 1000;
+const REQUEST_FIELDS: readonly AuthFieldDescriptor[] = [
+  {
+    name: "email",
+    label: "Email address",
+    type: "email",
+    placeholder: "you@example.com",
+    autoComplete: "email",
+  },
+];
 
-const emailSchema = z.object({
-  email: z.string().email("Enter a valid email address"),
-});
+const RESET_FIELDS: readonly AuthFieldDescriptor[] = [
+  {
+    name: "token",
+    label: "Reset code",
+    type: "text",
+    placeholder: "Code from your email",
+    autoComplete: "one-time-code",
+  },
+  {
+    name: "password",
+    label: "New password",
+    type: "password",
+    placeholder: "Create a new password",
+    autoComplete: "new-password",
+  },
+  {
+    name: "confirmPassword",
+    label: "Confirm new password",
+    type: "password",
+    placeholder: "Repeat your password",
+    autoComplete: "new-password",
+  },
+];
 
-const resetSchema = z
-  .object({
-    token: z.string().min(1, "Please enter your reset token."),
-    password: z.string().min(8, "Password must be at least 8 characters"),
-    confirmPassword: z.string(),
-  })
-  .refine((d) => d.password === d.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
-
+/*
+ * Two steps: request the reset code, then use it. Each step is one hook, so this
+ * page holds only the step marker. Which step is showing is genuinely page UI
+ * state, unlike the form and request state the hooks own.
+ */
 export default function ForgotPasswordPage() {
-  // Step 1 state
   const [step, setStep] = useState<1 | 2>(1);
-  const [email, setEmail] = useState("");
-  const [emailError, setEmailError] = useState<string | undefined>();
-  const [step1ApiError, setStep1ApiError] = useState<string | null>(null);
-  const [step1Loading, setStep1Loading] = useState<boolean>(false);
 
-  // Step 2 state
-  const [tokenReceivedAt, setTokenReceivedAt] = useState<number>(0);
-  const [token, setToken] = useState("");
-  const [tokenError, setTokenError] = useState<string | undefined>();
-  const [password, setPassword] = useState("");
-  const [passwordError, setPasswordError] = useState<string | undefined>();
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [confirmPasswordError, setConfirmPasswordError] = useState<
-    string | undefined
-  >();
-  const [showPasswordFields, setShowPasswordFields] = useState<boolean>(false);
-  const [step2ApiError, setStep2ApiError] = useState<string | null>(null);
-  const [step2Loading, setStep2Loading] = useState<boolean>(false);
-  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
+  const request = useForgotPassword();
+  const reset = useResetPassword();
 
-  async function handleStep1Submit(e: React.FormEvent) {
-    e.preventDefault();
-    setStep1ApiError(null);
+  // Advance once the code has actually been sent
+  useEffect(() => {
+    if (request.sent) setStep(2);
+  }, [request.sent]);
 
-    const result = emailSchema.safeParse({ email });
-    if (!result.success) {
-      setEmailError(result.error.issues[0]?.message);
-      return;
-    }
-    setEmailError(undefined);
-    setStep1Loading(true);
+  const isRequestStep = step === 1;
+  const activeError = isRequestStep ? request.apiError : reset.apiError;
 
-    try {
-      const res = await fetch(`${BASE_BACKEND_URL}/auth/forgot-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      if (res.ok) {
-        setTokenReceivedAt(Date.now());
-        setStep(2);
-      } else {
-        const json = await res.json().catch(() => ({}));
-        setStep1ApiError(
-          (json as { message?: string }).message ?? "Something went wrong.",
-        );
-      }
-    } catch {
-      setStep1ApiError("Network error. Please try again.");
-    } finally {
-      setStep1Loading(false);
-    }
-  }
-
-  async function handleStep2Submit(e: React.FormEvent) {
-    e.preventDefault();
-    setStep2ApiError(null);
-    setTokenError(undefined);
-    setPasswordError(undefined);
-    setConfirmPasswordError(undefined);
-
-    if (!token) {
-      setTokenError("Please enter your reset token.");
-      setShowPasswordFields(false);
-      return;
-    }
-
-    if (Date.now() - tokenReceivedAt >= TOKEN_TTL) {
-      setTokenError("This token has expired. Please request a new one.");
-      setShowPasswordFields(false);
-      return;
-    }
-
-    const result = resetSchema.safeParse({ token, password, confirmPassword });
-    if (!result.success) {
-      const issues = result.error.issues;
-      for (const issue of issues) {
-        const field = issue.path[0];
-        if (field === "token") setTokenError(issue.message);
-        if (field === "password") setPasswordError(issue.message);
-        if (field === "confirmPassword") setConfirmPasswordError(issue.message);
-      }
-      setShowPasswordFields(true);
-      return;
-    }
-
-    setShowPasswordFields(true);
-    setStep2Loading(true);
-
-    try {
-      const res = await fetch(`${BASE_BACKEND_URL}/auth/reset-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password }),
-      });
-
-      if (res.ok) {
-        setShowSuccessModal(true);
-      } else if (res.status === 401) {
-        setStep2ApiError("This token is invalid or has expired.");
-      } else {
-        const json = await res.json().catch(() => ({}));
-        setStep2ApiError(
-          (json as { message?: string }).message ?? "Something went wrong.",
-        );
-      }
-    } catch {
-      setStep2ApiError("Network error. Please try again.");
-    } finally {
-      setStep2Loading(false);
-    }
-  }
-
-  function handleTokenChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setToken(e.target.value);
-    if (tokenError) setTokenError(undefined);
-    // Reset password fields visibility when token changes
-    setShowPasswordFields(false);
-    setPasswordError(undefined);
-    setConfirmPasswordError(undefined);
-  }
-
-  function goBackToStep1() {
+  function restart(): void {
+    request.reset();
     setStep(1);
-    setToken("");
-    setTokenError(undefined);
-    setPassword("");
-    setPasswordError(undefined);
-    setConfirmPassword("");
-    setConfirmPasswordError(undefined);
-    setShowPasswordFields(false);
-    setStep2ApiError(null);
   }
 
   return (
-    <>
-      {showSuccessModal && (
-        <AuthSuccessModal
-          title="Password Reset"
-          description="Your password has been updated successfully."
-          submitButtonText="Sign In"
-          redirectUrl="/login"
-        />
-      )}
-
-      <div className="flex min-h-screen w-full">
-        {/* Brand panel */}
-        <div className="bg-primary hidden flex-col justify-center p-12 lg:flex lg:w-100">
-          <Link to="/" className="mb-12 flex items-center gap-2">
-            <span className="font-syne text-xl font-bold text-white">
-              Debridgers
-            </span>
-          </Link>
-          <div className="flex flex-1 flex-col justify-center gap-6">
-            <h2 className="font-syne text-4xl leading-tight font-bold text-white xl:text-5xl">
-              No worries,
-              <br />
-              we&apos;ll get you
-              <br />
-              <span className="text-secondary">back in.</span>
-            </h2>
-            <p className="max-w-80 text-lg leading-relaxed text-white">
-              Enter your email and we&apos;ll send you a reset token right away.
-            </p>
-          </div>
-        </div>
-
-        {/* Form panel */}
-        <div className="flex min-h-screen flex-1 flex-col items-center justify-center overflow-y-auto bg-white px-6 py-12 lg:px-16">
-          <div className="flex w-full max-w-120 flex-col gap-6">
-            <div className="flex justify-center lg:hidden">
-              <AppLogo />
-            </div>
-
-            <AnimatePresence mode="wait">
-              {step === 1 ? (
-                <motion.div
-                  key="step1"
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -16 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex flex-col gap-6"
+    <AuthFormShell
+      heading={isRequestStep ? "Forgot your password?" : "Set a new password"}
+      apiError={activeError}
+      subheading={
+        isRequestStep ? (
+          <>
+            Remembered it?{" "}
+            <Link
+              to="/login"
+              className="text-primary font-semibold underline underline-offset-2"
+            >
+              Log in
+            </Link>
+          </>
+        ) : (
+          `Enter the code we sent to ${request.sentTo ?? "your email"}.`
+        )
+      }
+    >
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={reset.done ? "done" : step}
+          variants={swappedContentVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={swappedContentTransition}
+        >
+          {reset.done ? (
+            <DialogSuccessPanel
+              title="Password updated"
+              description="You can now log in with your new password."
+            />
+          ) : isRequestStep ? (
+            <AuthCredentialsForm
+              fields={REQUEST_FIELDS}
+              form={request.form}
+              onSubmit={request.submit}
+              isSubmitting={request.isSubmitting}
+              submitLabel="Send reset code"
+              submittingLabel="Sending..."
+            />
+          ) : (
+            <AuthCredentialsForm
+              fields={RESET_FIELDS}
+              form={reset.form}
+              onSubmit={reset.submit}
+              isSubmitting={reset.isSubmitting}
+              submitLabel="Update password"
+              submittingLabel="Updating..."
+              footer={
+                <button
+                  type="button"
+                  onClick={restart}
+                  className="text-primary cursor-pointer self-end text-xs font-medium underline underline-offset-2"
                 >
-                  <div className="flex flex-col gap-1">
-                    <h1 className="font-syne text-heading text-2xl font-bold">
-                      Forgot your password?
-                    </h1>
-                    <p className="text-text text-sm">
-                      Enter your email and we&apos;ll send you a reset token.
-                    </p>
-                  </div>
-
-                  <form
-                    onSubmit={handleStep1Submit}
-                    noValidate
-                    className="flex flex-col gap-5"
-                  >
-                    <AnimatePresence>
-                      {step1ApiError && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0 }}
-                          className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
-                        >
-                          {step1ApiError}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
-                    <DashEmailInput
-                      label="Email address"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        if (emailError) setEmailError(undefined);
-                      }}
-                      error={emailError}
-                      required
-                    />
-
-                    <SubmitButton
-                      loading={step1Loading}
-                      loadingText="Sending..."
-                      className="rounded-full"
-                    >
-                      Send reset link
-                    </SubmitButton>
-                  </form>
-
-                  <Link
-                    to="/login"
-                    className="text-text text-center text-sm font-medium underline underline-offset-2"
-                  >
-                    Back to sign in
-                  </Link>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="step2"
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -16 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex flex-col gap-6"
-                >
-                  <div className="flex flex-col gap-1">
-                    <h1 className="font-syne text-heading text-2xl font-bold">
-                      Reset your password
-                    </h1>
-                    <p className="text-text text-sm">
-                      Enter the token from your email and set a new password.
-                    </p>
-                  </div>
-
-                  <form
-                    onSubmit={handleStep2Submit}
-                    noValidate
-                    className="flex flex-col gap-5"
-                  >
-                    <AnimatePresence>
-                      {step2ApiError && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0 }}
-                          className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
-                        >
-                          {step2ApiError}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
-                    <DashTextInput
-                      label="Reset token"
-                      placeholder="Paste your reset token"
-                      value={token}
-                      onChange={handleTokenChange}
-                      error={tokenError}
-                      required
-                    />
-
-                    <AnimatePresence>
-                      {showPasswordFields && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -8 }}
-                          transition={{ duration: 0.2 }}
-                          className="flex flex-col gap-5"
-                        >
-                          <DashPasswordInput
-                            label="New password"
-                            placeholder="Min. 8 characters"
-                            value={password}
-                            onChange={(e) => {
-                              setPassword(e.target.value);
-                              if (passwordError) setPasswordError(undefined);
-                            }}
-                            error={passwordError}
-                            required
-                          />
-                          <DashPasswordInput
-                            label="Confirm new password"
-                            placeholder="Repeat your password"
-                            value={confirmPassword}
-                            onChange={(e) => {
-                              setConfirmPassword(e.target.value);
-                              if (confirmPasswordError)
-                                setConfirmPasswordError(undefined);
-                            }}
-                            error={confirmPasswordError}
-                            required
-                          />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
-                    <SubmitButton
-                      loading={step2Loading}
-                      loadingText="Resetting..."
-                      className="rounded-full"
-                    >
-                      Reset password
-                    </SubmitButton>
-                  </form>
-
-                  <button
-                    type="button"
-                    onClick={goBackToStep1}
-                    className="text-text text-center text-sm font-medium underline underline-offset-2"
-                  >
-                    Back to step 1
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-      </div>
-    </>
+                  Use a different email
+                </button>
+              }
+            />
+          )}
+        </motion.div>
+      </AnimatePresence>
+    </AuthFormShell>
   );
 }

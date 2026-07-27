@@ -11,7 +11,18 @@ import {
   Search,
 } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
-import { Pagination, ProductCard } from "@debridgers/ui-web";
+import { useCart } from "../../../features/cart";
+import { useFavorites, useBuyAgain } from "../../../features/favorites";
+import {
+  Pagination,
+  ProductCard,
+  stickyBarVariants,
+  springPanel,
+  formatCurrency,
+  categoryFilterChips,
+  ALL_CATEGORIES,
+  formatFromKobo,
+} from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -34,69 +45,63 @@ interface ApiProduct {
   price_kobo: number;
   description: string | null;
   image_url: string | null;
-}
-
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  unit: string;
-  image_url: string | null;
-  qty: number;
-}
-
-function fmt(naira: number) {
-  return "₦" + naira.toLocaleString("en-NG", { minimumFractionDigits: 0 });
+  category: string | null;
 }
 
 const ITEMS_PER_PAGE = 9;
 
 export default function BuyerShop() {
+  const {
+    items: cart,
+    itemCount: cartProductCount,
+    subtotal: cartTotal,
+    addItem,
+    updateQuantity: updateQty,
+    removeItem,
+    quantityOf,
+  } = useCart();
+
+  function addToCart(product: ApiProduct) {
+    addItem({
+      id: String(product.id),
+      name: product.name,
+      price: product.price_kobo / 100,
+      unit: product.unit,
+      image_url: product.image_url,
+    });
+  }
+
+  const { isFavorite, toggleFavorite, canFavorite } = useFavorites();
+  const { products: buyAgain, hasHistory } = useBuyAgain();
+
   const [products, setProducts] = useState<ApiProduct[]>([]);
   const [loading, setLoading] = useState(true);
-  const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState<boolean>(false);
-  const [qtys, setQtys] = useState<Record<number, number>>({});
   const [search, setSearch] = useState<string>("");
-  const [activeCategory, setActiveCategory] = useState<string>("All");
+  const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORIES);
   const [currentPage, setCurrentPage] = useState<number>(1);
-
-  // Restore cart from localStorage on mount
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("debridgers_cart");
-      if (saved) setCart(JSON.parse(saved) as CartItem[]);
-    } catch {
-      /* ignore */
-    }
-  }, []);
 
   useEffect(() => {
     apiFetch<ApiProduct[]>("/buyer/products")
       .then((rows) => {
         setProducts(rows);
-        const init: Record<number, number> = {};
-        rows.forEach((p) => {
-          init[p.id] = 1;
-        });
-        setQtys(init);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  // Derive categories from description field
-  const categories = useMemo(() => {
-    const cats = Array.from(
-      new Set(products.map((p) => p.description).filter(Boolean)),
-    ) as string[];
-    return ["All", ...cats];
-  }, [products]);
+  /* From the real category column, and only chips that have products behind
+     them. This used to derive from `description`, which is unique per product,
+     so every chip matched exactly one item. */
+  const categories = useMemo(
+    () => categoryFilterChips(products.map((p) => p.category ?? null)),
+    [products],
+  );
 
   const filtered = useMemo(() => {
     let list = products;
-    if (activeCategory !== "All") {
-      list = list.filter((p) => p.description === activeCategory);
+    if (activeCategory !== ALL_CATEGORIES) {
+      list = list.filter((p) => p.category === activeCategory);
     }
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -114,65 +119,56 @@ export default function BuyerShop() {
     currentPage * ITEMS_PER_PAGE,
   );
 
-  const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const cartProductCount = cart.length;
-
-  useEffect(() => {
-    if (cart.length > 0) {
-      localStorage.setItem("debridgers_cart", JSON.stringify(cart));
-    } else {
-      localStorage.removeItem("debridgers_cart");
-    }
-  }, [cart]);
-
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(1);
     }
   }, [currentPage, totalPages]);
 
-  function addToCart(product: ApiProduct) {
-    const qty = qtys[product.id] ?? 1;
-    const priceNaira = product.price_kobo / 100;
-    setCart((prev) => {
-      const ex = prev.find((i) => i.id === String(product.id));
-      if (ex)
-        return prev.map((i) =>
-          i.id === String(product.id) ? { ...i, qty: i.qty + qty } : i,
-        );
-      return [
-        ...prev,
-        {
-          id: String(product.id),
-          name: product.name,
-          price: priceNaira,
-          unit: product.unit,
-          image_url: product.image_url,
-          qty,
-        },
-      ];
-    });
-  }
-
-  function updateQty(id: string, delta: number) {
-    setCart((prev) =>
-      prev
-        .map((i) =>
-          i.id === id ? { ...i, qty: Math.max(0, i.qty + delta) } : i,
-        )
-        .filter((i) => i.qty > 0),
-    );
-  }
-
-  function removeItem(id: string) {
-    setCart((prev) => prev.filter((i) => i.id !== id));
-  }
-
   return (
     // === Relative container so cart drawer can use absolute positioning
     <div className="relative h-full">
       {/* Scrollable content */}
       <div className="flex h-full flex-col gap-4 overflow-y-auto pb-28">
+        {/* === Buy again - only once there is order history to rank */}
+        {hasHistory && (
+          <section className="flex flex-col gap-3">
+            <h2 className="font-syne text-heading text-base font-bold">
+              Buy again
+            </h2>
+            {/* Horizontal rail on mobile, wraps into the grid from lg up */}
+            <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+              {buyAgain.map((product) => (
+                <button
+                  key={product.id}
+                  type="button"
+                  onClick={() =>
+                    addItem({
+                      id: String(product.id),
+                      name: product.name,
+                      price: product.price_kobo / 100,
+                      unit: product.unit,
+                      image_url: product.image_url,
+                    })
+                  }
+                  aria-label={`Add ${product.name} to cart`}
+                  className="border-gray-border hover:border-primary flex w-40 shrink-0 cursor-pointer flex-col gap-2 rounded-xl border bg-white p-3 text-left transition-colors"
+                >
+                  <span className="font-syne text-heading line-clamp-2 text-sm font-semibold">
+                    {product.name}
+                  </span>
+                  <span className="text-text text-xs">
+                    Ordered {product.times_ordered}x
+                  </span>
+                  <span className="font-syne text-heading text-sm font-bold">
+                    {formatFromKobo(product.price_kobo)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Search bar */}
         <div className="relative w-full">
           <Search
@@ -192,7 +188,7 @@ export default function BuyerShop() {
         </div>
 
         {/* Category filter pills */}
-        {/* {!loading && categories.length > 1 && (
+        {!loading && categories.length > 1 && (
           <div className="flex flex-wrap gap-2">
             {categories.map((cat) => {
               const active = cat === activeCategory;
@@ -214,7 +210,7 @@ export default function BuyerShop() {
               );
             })}
           </div>
-        )} */}
+        )}
 
         {loading ? (
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
@@ -244,29 +240,22 @@ export default function BuyerShop() {
           >
             {paginatedProducts.map((product, i) => {
               const priceNaira = product.price_kobo / 100;
-              const inCart = cart.find((c) => c.id === String(product.id));
-
               return (
                 <ProductCard
                   key={product.id}
                   product={product}
-                  quantity={qtys[product.id] ?? 1}
-                  inCart={Boolean(inCart)}
-                  formattedPrice={fmt(priceNaira)}
-                  animationDelay={i * 0.04}
-                  onDecreaseQuantity={() =>
-                    setQtys((prev) => ({
-                      ...prev,
-                      [product.id]: Math.max(1, (prev[product.id] ?? 1) - 1),
-                    }))
-                  }
-                  onIncreaseQuantity={() =>
-                    setQtys((prev) => ({
-                      ...prev,
-                      [product.id]: (prev[product.id] ?? 1) + 1,
-                    }))
-                  }
+                  quantityInCart={quantityOf(String(product.id))}
+                  formattedPrice={formatCurrency(priceNaira)}
+                  animationIndex={i}
                   onAddToCart={() => addToCart(product)}
+                  onIncrement={() => updateQty(String(product.id), 1)}
+                  onDecrement={() => updateQty(String(product.id), -1)}
+                  isFavorite={isFavorite(product.id)}
+                  onToggleFavorite={
+                    canFavorite
+                      ? () => void toggleFavorite(product.id)
+                      : undefined
+                  }
                 />
               );
             })}
@@ -284,36 +273,42 @@ export default function BuyerShop() {
         )}
       </div>
 
-      {/* === Bottom cart bar - absolute so it stays at the visible bottom */}
+      {/* === Bottom cart bar - absolute within the relative shell, so it stays
+          inside the dashboard's bounds instead of spanning the viewport */}
       <AnimatePresence>
         {cartProductCount > 0 && (
           <motion.div
-            initial={{ y: 80, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 80, opacity: 0 }}
-            className="border-gray-border fixed right-0 bottom-0 left-0 z-30 flex flex-wrap items-center justify-center gap-4 border-t bg-white px-6 py-4 shadow-lg sm:justify-between"
+            variants={stickyBarVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={springPanel}
+            className="border-gray-border absolute right-0 bottom-0 left-0 z-30 border-t bg-white shadow-lg"
           >
-            <div className="flex w-full items-center justify-between gap-4">
-              <p className="text-text text-sm">
-                {cartProductCount} item{cartProductCount > 1 ? "s" : ""} in cart
-              </p>
-              <p className="font-syne text-primary font-bold">
-                Total: {fmt(cartTotal)}
-              </p>
-            </div>
-            <div className="flex w-full justify-end gap-3 sm:w-auto">
-              <button
-                onClick={() => setCartOpen(true)}
-                className="border-gray-border text-heading flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
-              >
-                <ShoppingCart size={16} /> View Cart
-              </button>
-              <Link
-                to="/buyer-dashboard/checkout"
-                className="bg-primary rounded-full px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-              >
-                Checkout
-              </Link>
+            <div className="flex flex-wrap items-center justify-center gap-4 px-6 py-4 sm:justify-between">
+              <div className="flex w-full items-center justify-between gap-4">
+                <p className="text-text text-sm">
+                  {cartProductCount} item{cartProductCount > 1 ? "s" : ""} in
+                  cart
+                </p>
+                <p className="font-syne text-primary font-bold">
+                  Total: {formatCurrency(cartTotal)}
+                </p>
+              </div>
+              <div className="flex w-full justify-end gap-3 sm:w-auto">
+                <button
+                  onClick={() => setCartOpen(true)}
+                  className="border-gray-border text-heading flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
+                >
+                  <ShoppingCart size={16} /> View Cart
+                </button>
+                <Link
+                  to="/buyer-dashboard/checkout"
+                  className="bg-primary rounded-full px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                >
+                  Checkout
+                </Link>
+              </div>
             </div>
           </motion.div>
         )}
@@ -328,7 +323,7 @@ export default function BuyerShop() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 cursor-pointer bg-black/40"
+              className="absolute inset-0 z-40 cursor-pointer bg-black/40"
               onClick={() => setCartOpen(false)}
             />
             <motion.div
@@ -337,7 +332,7 @@ export default function BuyerShop() {
               animate={{ x: 0 }}
               exit={{ x: "100vw" }}
               transition={{ type: "tween", duration: 0.28 }}
-              className="fixed top-0 right-0 z-50 flex h-screen w-full max-w-120 flex-col bg-white shadow-2xl"
+              className="absolute top-0 right-0 z-50 flex h-full w-full max-w-120 flex-col bg-white shadow-2xl"
             >
               <div className="border-gray-border flex items-center justify-between border-b px-5 py-4">
                 <h3 className="font-syne text-heading font-bold">
@@ -377,7 +372,7 @@ export default function BuyerShop() {
                         {item.name}
                       </p>
                       <p className="text-text text-xs">
-                        {item.unit} · {fmt(item.price)} each
+                        {item.unit} · {formatCurrency(item.price)} each
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -411,7 +406,7 @@ export default function BuyerShop() {
                 <div className="flex justify-between">
                   <span className="text-text text-sm">Total</span>
                   <span className="font-syne text-heading font-bold">
-                    {fmt(cartTotal)}
+                    {formatCurrency(cartTotal)}
                   </span>
                 </div>
                 <Link

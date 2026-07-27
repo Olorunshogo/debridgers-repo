@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Wallet, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
+import { formatFromKobo, useDialog } from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -28,12 +29,6 @@ function getNextPayoutDate(): string {
     month: "short",
     day: "numeric",
   });
-}
-
-function fmt(kobo: number) {
-  return (
-    "₦" + (kobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 0 })
-  );
 }
 
 interface ApiWallet {
@@ -99,19 +94,27 @@ export default function AgentWalletPage() {
   const [commissions, setCommissions] = useState<CommissionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const nextPayoutDate = getNextPayoutDate();
+  const { triggerDialog } = useDialog();
+
+  /* Extracted so the payout dialog can refresh the balance after requesting. */
+  const load = useCallback(async (): Promise<void> => {
+    try {
+      const [w, cs] = await Promise.all([
+        apiFetch<ApiWallet>("/agent/wallet"),
+        apiFetch<ApiCommission[]>("/agent/commissions"),
+      ]);
+      setWallet(w);
+      setCommissions(cs.map(mapCommission));
+    } catch {
+      /* Leave the last known values on screen rather than blanking the page. */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    Promise.all([
-      apiFetch<ApiWallet>("/agent/wallet"),
-      apiFetch<ApiCommission[]>("/agent/commissions"),
-    ])
-      .then(([w, cs]) => {
-        setWallet(w);
-        setCommissions(cs.map(mapCommission));
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+    void load();
+  }, [load]);
 
   if (loading) {
     return (
@@ -137,13 +140,27 @@ export default function AgentWalletPage() {
         <div className="flex flex-col gap-3">
           <p className="text-sm text-white/70">Available Balance</p>
           <p className="font-syne text-4xl font-extrabold text-white">
-            {fmt(availableBalance)}
+            {formatFromKobo(availableBalance)}
           </p>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="text-secondary flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-semibold">
               <Wallet size={14} />
-              {fmt(pendingBalance)} pending
+              {formatFromKobo(pendingBalance)} pending
             </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                triggerDialog("REQUEST_PAYOUT", {
+                  availableBalanceKobo: availableBalance,
+                  onRequested: () => void load(),
+                })
+              }
+              disabled={availableBalance <= 0}
+              className="text-primary flex cursor-pointer items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-sm font-semibold transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ArrowUpRight size={14} /> Request payout
+            </button>
           </div>
         </div>
         <div className="flex flex-col gap-1 sm:items-end">
@@ -206,7 +223,7 @@ export default function AgentWalletPage() {
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <p className="font-syne text-heading font-semibold">
-                      {fmt(c.amount)}
+                      {formatFromKobo(c.amount)}
                     </p>
                     <span
                       className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.bgClass} ${badge.textClass}`}

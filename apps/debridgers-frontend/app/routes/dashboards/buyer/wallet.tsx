@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, ArrowDownLeft, Plus } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
+import { formatCurrency } from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -72,7 +73,7 @@ function buildWalletData(stats: ApiDashStats, orders: ApiOrder[]): WalletData {
 }
 
 function fmt(n: number) {
-  return "₦" + n.toLocaleString();
+  return formatCurrency(n);
 }
 
 export default function BuyerWallet() {

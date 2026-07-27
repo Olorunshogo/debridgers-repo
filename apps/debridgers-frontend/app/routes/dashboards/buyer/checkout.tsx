@@ -1,8 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useSearchParams } from "react-router";
 import { motion } from "framer-motion";
-import { CheckCircle2 } from "lucide-react";
-import { apiFetch } from "@debridgers/api-client";
+import { CheckCircle2, ArrowRight } from "lucide-react";
+import { apiFetch, publicRequest } from "@debridgers/api-client";
+import { useCart, LAST_ORDER_STORAGE_KEY } from "../../../features/cart";
+import {
+  formatCurrency,
+  formatFromKobo,
+  DashSelectInput,
+  defaultStateName,
+  stateSelectOptions,
+  lgaSelectOptions,
+} from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -18,24 +27,36 @@ export function meta() {
 
 type Step = "delivery" | "confirmed";
 
-interface CartItem {
-  id: string;
+interface DeliveryZone {
+  id: number;
   name: string;
-  price: number;
-  unit: string;
-  qty: number;
+  delivery_fee: number;
+  free_delivery: boolean;
+  areas: string[];
 }
+
+/* Mirrors the quote endpoint's response - see delivery-fee.ts on the backend. */
+interface OrderQuote {
+  itemsTotalKobo: number;
+  deliveryFeeKobo: number;
+  deliveryFeeBeforePromoKobo: number;
+  handlingFeeKobo: number;
+  totalKobo: number;
+  freeDelivery: boolean;
+  extraPackages: number;
+  package_count: number;
+}
+
+/* Long enough that changing zone or quantity a few times is one request. */
+const QUOTE_DEBOUNCE_MS = 400;
 
 const steps: { key: Step; label: string }[] = [
   { key: "delivery", label: "Delivery" },
   { key: "confirmed", label: "Confirmed" },
 ];
 
-function formatNaira(n: number) {
-  return `₦${n.toLocaleString()}`;
-}
-
 export default function BuyerCheckout() {
+  const { items: cartItems, subtotal, clear } = useCart();
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState<Step>("delivery");
   const [deliveryAddress, setDeliveryAddress] = useState("");
@@ -45,36 +66,106 @@ export default function BuyerCheckout() {
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [zones, setZones] = useState<DeliveryZone[]>([]);
+  /* State is fixed to the launch state by default; LGA narrows the zone list. */
+  const [stateName, setStateName] = useState<string>(defaultStateName);
+  const [lga, setLga] = useState<string>("");
+  const [zoneId, setZoneId] = useState<string>("");
+  /* Kept while a new quote is in flight so the totals never flash empty. */
+  const [quote, setQuote] = useState<OrderQuote | null>(null);
+  const [quoting, setQuoting] = useState<boolean>(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
 
+  // === Delivery zones
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("debridgers_cart");
-      if (saved) setCartItems(JSON.parse(saved) as CartItem[]);
-    } catch {
-      setCartItems([]);
-    }
+    publicRequest<DeliveryZone[]>("/zones")
+      .then(setZones)
+      .catch(() => setZones([]));
   }, []);
+
+  /*
+   * Zones that serve the chosen LGA. The seeded zones are named after LGAs
+   * ("Kaduna South") and also list their areas, so match on either - the same
+   * rule the backend uses to resolve a zone, kept in step deliberately.
+   */
+  const zonesForLga = useMemo(() => {
+    if (!lga) return [];
+    const target = lga.trim().toLowerCase();
+    return zones.filter(
+      (zone) =>
+        zone.name.trim().toLowerCase() === target ||
+        zone.areas.some((area) => area.trim().toLowerCase() === target),
+    );
+  }, [zones, lga]);
+
+  /* Auto-select the only serving zone, and drop a stale one when LGA changes. */
+  useEffect(() => {
+    if (zonesForLga.length === 1) {
+      setZoneId(String(zonesForLga[0].id));
+      return;
+    }
+    setZoneId((current) =>
+      zonesForLga.some((z) => String(z.id) === current) ? current : "",
+    );
+  }, [zonesForLga]);
+
+  /*
+   * Live quote. The server owns the pricing - delivery is a zone base plus a
+   * per-package charge, and a promo can zero it - so the summary asks rather
+   * than recomputing it here and risking a number that differs from the charge.
+   */
+  useEffect(() => {
+    if (!zoneId || cartItems.length === 0) {
+      setQuote(null);
+      return;
+    }
+
+    setQuoting(true);
+    const timer = window.setTimeout(() => {
+      apiFetch<OrderQuote>("/buyer/cart/quote", {
+        method: "POST",
+        body: JSON.stringify({
+          zone_id: Number(zoneId),
+          cart: cartItems.map((i) => ({
+            product_id: Number(i.id),
+            qty: i.qty,
+          })),
+        }),
+      })
+        .then((next) => {
+          setQuote(next);
+          setQuoteError(null);
+        })
+        .catch((err: unknown) => {
+          setQuoteError(
+            err instanceof Error
+              ? err.message
+              : "Could not price this order right now.",
+          );
+        })
+        .finally(() => setQuoting(false));
+    }, QUOTE_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [zoneId, cartItems]);
 
   // Detect return from Paystack - trxref or reference appended to callback URL
   useEffect(() => {
     const ref = searchParams.get("trxref") ?? searchParams.get("reference");
     if (ref) {
-      const cartSnapshot = localStorage.getItem("debridgers_cart");
-      if (cartSnapshot) {
-        localStorage.setItem("debridgers_last_order", cartSnapshot);
+      /* Snapshot before clearing so "repeat last order" has something to
+         restore. Taken from the shared cart rather than re-reading storage. */
+      if (cartItems.length > 0) {
+        localStorage.setItem(LAST_ORDER_STORAGE_KEY, JSON.stringify(cartItems));
       }
-      localStorage.removeItem("debridgers_cart");
-      setCartItems([]);
+      clear();
       setStep("confirmed");
     }
-  }, [searchParams]);
-
-  const subtotal = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
+  }, [searchParams, cartItems, clear]);
 
   async function handleContinue(e: React.FormEvent) {
     e.preventDefault();
-    if (cartItems.length === 0 || !deliveryAddress.trim()) return;
+    if (cartItems.length === 0 || !deliveryAddress.trim() || !zoneId) return;
     setError(null);
     setLoading(true);
     try {
@@ -84,6 +175,7 @@ export default function BuyerCheckout() {
         method: "POST",
         body: JSON.stringify({
           delivery_address: deliveryAddress.trim(),
+          zone_id: zoneId ? Number(zoneId) : undefined,
           delivery_time: deliveryTime,
           notes: note.trim() || undefined,
           cart: cartItems.map((i) => ({
@@ -160,6 +252,59 @@ export default function BuyerCheckout() {
             <h3 className="font-syne text-heading font-semibold">
               Delivery Address
             </h3>
+
+            {/* State -> LGA -> Zone, narrowing at each step for a precise address */}
+            <div className="grid gap-4 lg:grid-cols-2">
+              <DashSelectInput
+                label="State"
+                required
+                value={stateName}
+                options={stateSelectOptions()}
+                onChange={(e) => {
+                  setStateName(e.target.value);
+                  /* LGAs are state-specific, so a stale one must not survive. */
+                  setLga("");
+                  setZoneId("");
+                }}
+              />
+
+              <DashSelectInput
+                label="LGA"
+                required
+                value={lga}
+                placeholder="Choose your LGA"
+                options={lgaSelectOptions(stateName)}
+                onChange={(e) => setLga(e.target.value)}
+              />
+            </div>
+
+            <DashSelectInput
+              label="Delivery area"
+              required
+              value={zoneId}
+              placeholder={
+                !lga
+                  ? "Choose an LGA first"
+                  : zonesForLga.length === 0
+                    ? "We do not deliver here yet"
+                    : "Choose your area"
+              }
+              disabled={!lga || zonesForLga.length === 0}
+              options={zonesForLga.map((zone) => ({
+                value: String(zone.id),
+                label: zone.free_delivery
+                  ? `${zone.name} - free delivery`
+                  : `${zone.name} - ${formatFromKobo(zone.delivery_fee)}`,
+              }))}
+              onChange={(e) => setZoneId(e.target.value)}
+            />
+
+            {lga && zonesForLga.length === 0 && (
+              <p className="text-status-cancelled-text text-xs">
+                We do not deliver to {lga} yet. Pick another LGA or contact
+                support.
+              </p>
+            )}
             <div className="flex flex-col gap-1.5">
               <label className="text-heading text-sm font-medium">
                 Full delivery address <span className="text-error-red">*</span>
@@ -170,6 +315,7 @@ export default function BuyerCheckout() {
                 placeholder="Enter your full delivery address..."
                 rows={3}
                 required
+                aria-required="true"
                 className="border-gray-border focus:border-primary text-heading w-full resize-none rounded-xl border bg-white px-4 py-3 text-sm transition-all duration-200 outline-none"
               />
             </div>
@@ -256,7 +402,7 @@ export default function BuyerCheckout() {
                     {item.name} x{item.qty} {item.unit}
                   </span>
                   <span className="text-heading">
-                    {formatNaira(item.price * item.qty)}
+                    {formatCurrency(item.price * item.qty)}
                   </span>
                 </div>
               ))
@@ -267,16 +413,67 @@ export default function BuyerCheckout() {
             <div className="border-gray-border flex flex-col gap-2 border-t pt-3">
               <div className="text-text flex justify-between text-sm">
                 <span>Subtotal</span>
-                <span>{formatNaira(subtotal)}</span>
+                <span>
+                  {quote
+                    ? formatFromKobo(quote.itemsTotalKobo)
+                    : formatCurrency(subtotal)}
+                </span>
               </div>
-              <div className="text-text flex justify-between text-sm">
-                <span>Delivery</span>
-                <span className="text-status-delivered-text">Free</span>
+
+              {/*
+                Delivery is priced server-side and only known once an area is
+                chosen. Saying "Free" before then, as this used to, was simply
+                wrong once per-package pricing landed.
+              */}
+              <div className="text-text flex justify-between gap-3 text-sm">
+                <span>
+                  Delivery
+                  {quote && quote.extraPackages > 0 && (
+                    <span className="text-text-placeholder">
+                      {" "}
+                      ({quote.package_count} packages)
+                    </span>
+                  )}
+                </span>
+                {!zoneId ? (
+                  <span className="text-text-placeholder">Choose an area</span>
+                ) : quote?.freeDelivery ? (
+                  <span className="flex items-center gap-1.5">
+                    <s className="text-text-placeholder">
+                      {formatFromKobo(quote.deliveryFeeBeforePromoKobo)}
+                    </s>
+                    <span className="text-status-delivered-text font-semibold">
+                      FREE
+                    </span>
+                  </span>
+                ) : quote ? (
+                  <span>{formatFromKobo(quote.deliveryFeeKobo)}</span>
+                ) : (
+                  <span className="text-text-placeholder">...</span>
+                )}
               </div>
+
+              {quote && (
+                <div className="text-text flex justify-between text-sm">
+                  <span>Handling</span>
+                  <span>{formatFromKobo(quote.handlingFeeKobo)}</span>
+                </div>
+              )}
+
               <div className="font-syne text-heading flex justify-between text-lg font-bold">
                 <span>Total</span>
-                <span>{formatNaira(subtotal)}</span>
+                <span className={quoting ? "opacity-50" : undefined}>
+                  {quote
+                    ? formatFromKobo(quote.totalKobo)
+                    : formatCurrency(subtotal)}
+                </span>
               </div>
+
+              {quoteError && (
+                <p className="text-status-cancelled-text text-xs">
+                  {quoteError}
+                </p>
+              )}
             </div>
           )}
 
@@ -289,11 +486,21 @@ export default function BuyerCheckout() {
           <button
             type="submit"
             disabled={
-              loading || cartItems.length === 0 || !deliveryAddress.trim()
+              loading ||
+              cartItems.length === 0 ||
+              !deliveryAddress.trim() ||
+              !zoneId
             }
-            className="bg-primary flex items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+            className="bg-primary flex cursor-pointer items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? "Initializing payment..." : "Pay with Paystack →"}
+            {loading ? (
+              "Initializing payment..."
+            ) : (
+              <>
+                Pay with Paystack
+                <ArrowRight size={16} />
+              </>
+            )}
           </button>
           <p className="text-text text-center text-xs">
             You&apos;ll be redirected to Paystack to complete payment securely.

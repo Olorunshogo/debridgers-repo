@@ -107,33 +107,48 @@ const whatWeDeliverCategories: WhatWeDeliverCategory[] = [
     variants: [
       {
         name: "Local White Rice",
-        image: "/images/deliver-grains-staples-1.jpg",
+        image: "/images/landing/deliver-grains-staples-1.jpg",
       },
-      { name: "Ofada Rice", image: "/images/deliver-grains-staples-2.jpg" },
-      { name: "Tuwo Rice", image: "/images/deliver-grains-staples-3.jpg" },
+      {
+        name: "Ofada Rice",
+        image: "/images/landing/deliver-grains-staples-2.jpg",
+      },
+      {
+        name: "Tuwo Rice",
+        image: "/images/landing/deliver-grains-staples-3.jpg",
+      },
     ],
   },
   {
     title: "Beans",
     variants: [
-      { name: "Wake Gida", image: "/images/deliver-grains-1.jpg" },
-      { name: "Cowpea", image: "/images/deliver-grains-2.jpg" },
-      { name: "Soya Beans", image: "/images/deliver-grains-3.jpg" },
+      { name: "Wake Gida", image: "/images/landing/deliver-grains-1.jpg" },
+      { name: "Cowpea", image: "/images/landing/deliver-grains-2.jpg" },
+      { name: "Soya Beans", image: "/images/landing/deliver-grains-3.jpg" },
     ],
   },
   {
     title: "Oil & Protein",
     variants: [
-      { name: "Fresh Palm Oil", image: "/images/deliver-oil-protein-1.jpg" },
-      { name: "Groundnut Oil", image: "/images/deliver-oil-protein-2.jpg" },
-      { name: "Vegetable Oil", image: "/images/deliver-oil-protein-3.jpg" },
+      {
+        name: "Fresh Palm Oil",
+        image: "/images/landing/deliver-oil-protein-1.jpg",
+      },
+      {
+        name: "Groundnut Oil",
+        image: "/images/landing/deliver-oil-protein-2.jpg",
+      },
+      {
+        name: "Vegetable Oil",
+        image: "/images/landing/deliver-oil-protein-3.jpg",
+      },
     ],
   },
   {
     title: "Tubers",
     variants: [
-      { name: "Yam", image: "/images/deliver-tubers-1.jpg" },
-      { name: "Irish Potato", image: "/images/deliver-tubers-2.jpg" },
+      { name: "Yam", image: "/images/landing/deliver-tubers-1.jpg" },
+      { name: "Irish Potato", image: "/images/landing/deliver-tubers-2.jpg" },
     ],
   },
 ];
@@ -381,6 +396,7 @@ const stats: Stat[] = [
 const statsFormatters: Array<(v: number) => string> = [
   (v) => `${v}%`,
   (v) => `${v}+`,
+
   (v) => String(Number(v) + 0),
 ];
 
@@ -451,7 +467,7 @@ export default function Home() {
   const [activeWhyCardIndex, setActiveWhyCardIndex] = useState<number>(0);
   const currentIndex = useImageCycle(1);
   const activeTrustIndex = useTrustCycle(4);
-  const images = ["/images/hero-1.jpg"];
+  const images = ["/images/landing/hero-1.jpg"];
 
   const trustItems = [
     { icon: "lucide:check", label: "Guarantee fresh produce" },
@@ -526,7 +542,7 @@ export default function Home() {
                         <div className="relative inline-block">
                           <span>Zero</span>
                           <img
-                            src="/images/curved-underline.png"
+                            src="/images/landing/curved-underline.png"
                             className="absolute -mt-2 w-fit"
                           />
                         </div>
@@ -682,7 +698,7 @@ export default function Home() {
             >
               <div className="group relative overflow-hidden rounded-3xl shadow-2xl">
                 <img
-                  src="/images/market-lady.jpg"
+                  src="/images/landing/market-lady.jpg"
                   alt="Smiling Nigerian woman at fresh produce market"
                   className="h-full max-h-130 w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-105 lg:max-h-132"
                 />

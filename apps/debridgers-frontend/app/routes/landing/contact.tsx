@@ -277,7 +277,7 @@ export default function ContactPage() {
           <div className="from-primary -mt-navbar-h via-primary to-primary absolute inset-0 z-0 overflow-hidden bg-linear-to-b" />
           <section className="font-syne relative mx-auto flex h-full min-h-screen w-full flex-col overflow-hidden">
             <HeroSection
-              images={["/images/hero-1.jpg"]}
+              images={["/images/landing/hero-1.jpg"]}
               servingLocation="Now Serving in Kaduna"
               headingParts={{
                 top: [{ text: "Get In" }],

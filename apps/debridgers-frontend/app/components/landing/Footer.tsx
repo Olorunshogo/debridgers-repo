@@ -57,7 +57,7 @@ export default function Footer() {
               <div className="relative inline-block">
                 <span>Zero</span>
                 <img
-                  src="/images/curved-underline.png"
+                  src="/images/landing/curved-underline.png"
                   className="absolute -mt-2 w-fit"
                 />
               </div>

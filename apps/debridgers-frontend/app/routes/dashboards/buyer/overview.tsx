@@ -22,6 +22,12 @@ import {
 } from "lucide-react";
 import { HeroGreetingCard } from "../shared/HeroGreetingCard";
 import { apiFetch } from "@debridgers/api-client";
+import {
+  useCart,
+  LAST_ORDER_STORAGE_KEY,
+  type CartItem,
+} from "../../../features/cart";
+import { formatFromKobo, formatCurrency } from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -118,9 +124,6 @@ interface ApiDashboard {
 }
 
 function mapApiToDashboard(api: ApiDashboard): DashboardData {
-  const formatKobo = (kobo: number) =>
-    `₦${(kobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-
   const dbStatusToUi = (s: string): RecentOrder["status"] => {
     if (s === "out_for_delivery" || s === "confirmed") return "on-the-way";
     if (s === "delivered") return "delivered";
@@ -138,7 +141,7 @@ function mapApiToDashboard(api: ApiDashboard): DashboardData {
       hour: "2-digit",
       minute: "2-digit",
     }),
-    amount: formatKobo(o.total_amount),
+    amount: formatFromKobo(o.total_amount),
     status: dbStatusToUi(o.status),
   }));
 
@@ -184,7 +187,7 @@ function mapApiToDashboard(api: ApiDashboard): DashboardData {
       },
       {
         label: "Total Spent",
-        value: formatKobo(api.stats.total_spent_kobo),
+        value: formatFromKobo(api.stats.total_spent_kobo),
         trend: "All time",
         icon: "lucide:banknote",
       },
@@ -287,16 +290,23 @@ function OrderRow({ order }: { order: RecentOrder }) {
 
 export default function BuyerOverview() {
   const navigate = useNavigate();
+  const { replaceItems } = useCart();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
   function repeatLastOrder() {
-    const last = localStorage.getItem("debridgers_last_order");
+    const last = localStorage.getItem(LAST_ORDER_STORAGE_KEY);
     if (!last) {
       navigate("/buyer-dashboard/shop");
       return;
     }
-    localStorage.setItem("debridgers_cart", last);
+    /* Through the shared cart, so the shop reflects it immediately rather than
+       waiting for a remount to re-read storage. */
+    try {
+      replaceItems(JSON.parse(last) as CartItem[]);
+    } catch {
+      /* corrupt snapshot - fall through to the shop with the cart untouched */
+    }
     navigate("/buyer-dashboard/shop");
   }
 
@@ -430,7 +440,7 @@ export default function BuyerOverview() {
                     {inner}
                   </button>
                 ) : (
-                  <Link to={action.href!} className={tileClass}>
+                  <Link to={action.href ?? "#"} className={tileClass}>
                     {inner}
                   </Link>
                 )}
@@ -543,7 +553,7 @@ export default function BuyerOverview() {
             />
             <YAxis hide />
             <Tooltip
-              formatter={(v: number) => [`₦${v.toLocaleString()}`, "Spent"]}
+              formatter={(v: number) => [formatCurrency(v), "Spent"]}
               contentStyle={{
                 borderRadius: 8,
                 border: "1px solid var(--border-gray)",

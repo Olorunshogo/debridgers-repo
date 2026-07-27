@@ -50,12 +50,36 @@ export class PublicController {
         price_kobo: schema.products.price_kobo,
         description: schema.products.description,
         image_url: schema.products.image_url,
+        category: schema.products.category,
       })
       .from(schema.products)
       .where(eq(schema.products.is_active, true))
       .orderBy(schema.products.sort_order);
 
     return { message: "Products retrieved", data: rows };
+  }
+
+  @Get("zones")
+  @ApiOperation({
+    summary: "Active delivery zones - no auth required",
+    description:
+      "Checkout needs these before a buyer signs in, and the fee shown must match what the quote endpoint charges.",
+  })
+  @ApiResponse({ status: 200, description: "Zones retrieved" })
+  async getZones() {
+    const rows = await this.db
+      .select({
+        id: schema.zones.id,
+        name: schema.zones.name,
+        delivery_fee: schema.zones.delivery_fee,
+        free_delivery: schema.zones.free_delivery,
+        areas: schema.zones.areas,
+      })
+      .from(schema.zones)
+      .where(eq(schema.zones.is_active, true))
+      .orderBy(schema.zones.name);
+
+    return { message: "Zones retrieved", data: rows };
   }
 
   @Get("config/public")
@@ -115,7 +139,8 @@ export class PublicController {
           ? `Source: ${dto.how_heard}`
           : null,
       collected_by: "web-form",
-      visit_date: new Date().toISOString().split("T")[0]!, // YYYY-MM-DD text
+      // toISOString always yields YYYY-MM-DDTHH:mm:ss.sssZ, so slice is exact
+      visit_date: new Date().toISOString().slice(0, 10),
     });
 
     return {

@@ -30,6 +30,7 @@ import { KycService } from "./kyc.service";
 import { CloudinaryService } from "../../infrastructure/cloudinary/cloudinary.service";
 import { ZodValidationPipe } from "../../infrastructure/pipeline/validation.pipeline";
 import { applyAgentSchema, ApplyAgentDto } from "./dto/apply-agent.dto";
+import { requestWithdrawalSchema } from "./dto/request-withdrawal.dto";
 import {
   updateAgentProfileSchema,
   UpdateAgentProfileDto,
@@ -628,5 +629,32 @@ export class AgentController {
   })
   getKycStatus(@CurrentUser() user: JwtPayload) {
     return this.kycService.getKycStatus(user);
+  }
+
+  // === Withdrawals
+
+  @Post("withdrawals")
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("agent")
+  @ApiBearerAuth("access-token")
+  @ApiOperation({
+    summary: "Request a payout",
+    description:
+      "Creates a pending withdrawal for admin review and debits the available balance immediately, so the same money cannot be requested twice.",
+  })
+  @ApiResponse({ status: 201, description: "Payout requested" })
+  requestWithdrawal(@Body() body: unknown, @CurrentUser() user: JwtPayload) {
+    const dto = requestWithdrawalSchema.parse(body);
+    return this.agentService.requestWithdrawal(dto, user);
+  }
+
+  @Get("withdrawals")
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("agent")
+  @ApiBearerAuth("access-token")
+  @ApiOperation({ summary: "List this agent's payout requests" })
+  @ApiResponse({ status: 200, description: "Withdrawals retrieved" })
+  getWithdrawals(@CurrentUser() user: JwtPayload) {
+    return this.agentService.getWithdrawals(user);
   }
 }

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Settings } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
+import { formatFromKobo } from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -20,12 +21,6 @@ interface PlatformSettings {
   agent_commission_rate: number;
   buyer_referral_discount_kobo: number;
   buyer_referral_discount_type: string;
-}
-
-function fmt(kobo: number) {
-  return (
-    "₦" + (kobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 0 })
-  );
 }
 
 export default function AdminSettings() {
@@ -179,7 +174,9 @@ export default function AdminSettings() {
           The flat discount a buyer earns when a friend they referred places
           their first order. Current:{" "}
           <strong>
-            {settings ? fmt(settings.buyer_referral_discount_kobo) : "—"}
+            {settings
+              ? formatFromKobo(settings.buyer_referral_discount_kobo)
+              : "—"}
           </strong>
         </p>
 

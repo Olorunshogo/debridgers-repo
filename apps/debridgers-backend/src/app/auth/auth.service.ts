@@ -17,7 +17,8 @@ import * as schema from "../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../infrastructure/database/database.provider";
 import { JwtPayload } from "../../interfaces/users/jwt.type";
 import { USER_EVENTS } from "../../events/event-types/user.event.types";
-import { RegisterDto } from "./dto/register.dto";
+import { RegisterDto, type SelfRegisterableRole } from "./dto/register.dto";
+import { USER_ROLES } from "../../interfaces/users/roles.type";
 import { LoginDto } from "./dto/login.dto";
 
 @Injectable()
@@ -69,6 +70,8 @@ export class AuthService {
 
     const isTestMode = process.env.NODE_ENV === "test";
 
+    const role = dto.role as SelfRegisterableRole;
+
     const [user] = await this.db.transaction(async (tx) => {
       const [createdUser] = await tx
         .insert(schema.users)
@@ -78,12 +81,41 @@ export class AuthService {
           email: dto.email.toLowerCase(),
           phone: dto.phone,
           password: hashed,
-          role: "buyer",
-          referred_by_agent_id: referredByAgentId,
+          /*
+           * Always explicit. The users.role column defaults to buyer, but relying
+           * on a column default while the role is caller-supplied is how you
+           * silently create the wrong kind of account.
+           */
+          role,
+          /*
+           * Only buyers carry a permanent referral link to a recruiting agent.
+           * resolveBuyerReferrerId already returns null when no code was given.
+           */
+          referred_by_agent_id:
+            role === USER_ROLES.BUYER ? referredByAgentId : null,
           // Auto-verify email in test mode so e2e tests can login immediately
           is_email_verified: isTestMode,
         })
         .returning();
+
+      /*
+       * Per-role setup. Kept as an explicit switch on a narrow union rather than
+       * scattered ifs so the compiler flags this spot when a role is added.
+       */
+      if (role === USER_ROLES.AGENT) {
+        /*
+         * address, state, and lga are intentionally left null: they are collected
+         * later in agent settings, not at signup, so one register endpoint serves
+         * every role. zone_id therefore stays null until the agent supplies an
+         * LGA, at which point updateProfile resolves it. See
+         * docs/frontend/AuthPLAN.md phases 3 and 6.
+         */
+        await tx.insert(schema.agent_profiles).values({
+          user_id: createdUser.id,
+          status: "pending",
+          referred_by_agent_id: referredByAgentId,
+        });
+      }
 
       if (!isTestMode) {
         await tx.insert(schema.email_verification).values({

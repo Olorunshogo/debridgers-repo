@@ -13,10 +13,17 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { Header } from "../../components/landing/Header";
-import { AuthModal } from "../../components/auth/AuthModal";
 import { useAuth } from "../../contexts/AuthContext";
 import { BASE_BACKEND_URL, apiFetch } from "@debridgers/api-client";
-import { Pagination, ProductCard } from "@debridgers/ui-web";
+import { useCart, type CartItem } from "../../features/cart";
+import {
+  Pagination,
+  ProductCard,
+  formatCurrency,
+  categoryFilterChips,
+  ALL_CATEGORIES,
+  useDialog,
+} from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -80,19 +87,7 @@ interface ApiProduct {
   price_kobo: number;
   description: string | null;
   image_url: string | null;
-}
-
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  unit: string;
-  image_url: string | null;
-  qty: number;
-}
-
-function fmt(naira: number) {
-  return "₦" + naira.toLocaleString("en-NG", { minimumFractionDigits: 0 });
+  category: string | null;
 }
 
 const ITEMS_PER_PAGE = 12;
@@ -128,7 +123,7 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
   const subtotal = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
 
   function formatNaira(n: number) {
-    return `₦${n.toLocaleString()}`;
+    return formatCurrency(n);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -362,19 +357,37 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
 
 // === Public Shop
 export default function PublicShop() {
+  const {
+    items: cart,
+    subtotal: cartTotal,
+    addItem,
+    updateQuantity: updateQty,
+    removeItem,
+    clear,
+    quantityOf,
+  } = useCart();
+  const { triggerDialog } = useDialog();
+
+  function addToCart(product: ApiProduct) {
+    addItem({
+      id: String(product.id),
+      name: product.name,
+      price: product.price_kobo / 100,
+      unit: product.unit,
+      image_url: product.image_url,
+    });
+  }
+
   const { isAuthenticated, isLoading, dashboardPath } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const [products, setProducts] = useState<ApiProduct[]>([]);
   const [loading, setLoading] = useState(true);
-  const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [qtys, setQtys] = useState<Record<number, number>>({});
   const [search, setSearch] = useState<string>("");
-  const [activeCategory, setActiveCategory] = useState<string>("All");
-  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORIES);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   // Re-open checkout in confirmed state when Paystack redirects back
@@ -390,46 +403,20 @@ export default function PublicShop() {
       .then((json) => {
         const rows: ApiProduct[] = (json.data ?? json) as ApiProduct[];
         setProducts(rows);
-        const init: Record<number, number> = {};
-        rows.forEach((p) => {
-          init[p.id] = 1;
-        });
-        setQtys(init);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  // Load cart from localStorage
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("debridgers_cart");
-      if (saved) setCart(JSON.parse(saved) as CartItem[]);
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  // Persist cart to localStorage
-  useEffect(() => {
-    if (cart.length > 0) {
-      localStorage.setItem("debridgers_cart", JSON.stringify(cart));
-    } else {
-      localStorage.removeItem("debridgers_cart");
-    }
-  }, [cart]);
-
-  const categories = useMemo(() => {
-    const cats = Array.from(
-      new Set(products.map((p) => p.description).filter(Boolean)),
-    ) as string[];
-    return ["All", ...cats];
-  }, [products]);
+  const categories = useMemo(
+    () => categoryFilterChips(products.map((p) => p.category ?? null)),
+    [products],
+  );
 
   const filtered = useMemo(() => {
     let list = products;
     if (activeCategory !== "All")
-      list = list.filter((p) => p.description === activeCategory);
+      list = list.filter((p) => p.category === activeCategory);
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -446,7 +433,6 @@ export default function PublicShop() {
     currentPage * ITEMS_PER_PAGE,
   );
 
-  const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const cartProductCount = cart.length;
 
   useEffect(() => {
@@ -455,55 +441,19 @@ export default function PublicShop() {
     }
   }, [currentPage, totalPages]);
 
-  function addToCart(product: ApiProduct) {
-    const qty = qtys[product.id] ?? 1;
-    const priceNaira = product.price_kobo / 100;
-    setCart((prev) => {
-      const ex = prev.find((i) => i.id === String(product.id));
-      if (ex)
-        return prev.map((i) =>
-          i.id === String(product.id) ? { ...i, qty: i.qty + qty } : i,
-        );
-      return [
-        ...prev,
-        {
-          id: String(product.id),
-          name: product.name,
-          price: priceNaira,
-          unit: product.unit,
-          image_url: product.image_url,
-          qty,
-        },
-      ];
-    });
-  }
-
-  function updateQty(id: string, delta: number) {
-    setCart((prev) =>
-      prev
-        .map((i) =>
-          i.id === id ? { ...i, qty: Math.max(0, i.qty + delta) } : i,
-        )
-        .filter((i) => i.qty > 0),
-    );
-  }
-
-  function removeItem(id: string) {
-    setCart((prev) => prev.filter((i) => i.id !== id));
-  }
-
   function handleCheckout() {
     if (!isLoading && isAuthenticated) {
       setCartOpen(false);
       setCheckoutOpen(true);
     } else {
-      setAuthModalOpen(true);
+      /* Auth gate runs through the dialog engine - see dialog-registry.ts. */
+      triggerDialog("AUTH_GATE", {
+        onAuthenticated: () => {
+          setCartOpen(false);
+          setCheckoutOpen(true);
+        },
+      });
     }
-  }
-
-  function handleAuthSuccess() {
-    setAuthModalOpen(false);
-    setCheckoutOpen(true);
   }
 
   function handleCheckoutBack() {
@@ -512,21 +462,11 @@ export default function PublicShop() {
   }
 
   function handleCheckoutConfirmed() {
-    setCart([]);
+    clear();
   }
 
   return (
     <>
-      {/* Auth modal - fixed, overlays the full viewport */}
-      <AnimatePresence>
-        {authModalOpen && (
-          <AuthModal
-            onClose={() => setAuthModalOpen(false)}
-            onSuccess={handleAuthSuccess}
-          />
-        )}
-      </AnimatePresence>
-
       <div className="flex min-h-screen flex-col bg-white">
         {/* Header - outside the relative container so drawer never covers it */}
         <div className="z-40 shrink-0 bg-white pt-3">
@@ -629,34 +569,16 @@ export default function PublicShop() {
                 >
                   {paginatedProducts.map((product, i) => {
                     const priceNaira = product.price_kobo / 100;
-                    const inCart = cart.find(
-                      (c) => c.id === String(product.id),
-                    );
-
                     return (
                       <ProductCard
                         key={product.id}
                         product={product}
-                        quantity={qtys[product.id] ?? 1}
-                        inCart={Boolean(inCart)}
-                        formattedPrice={fmt(priceNaira)}
-                        animationDelay={i * 0.04}
-                        onDecreaseQuantity={() =>
-                          setQtys((prev) => ({
-                            ...prev,
-                            [product.id]: Math.max(
-                              1,
-                              (prev[product.id] ?? 1) - 1,
-                            ),
-                          }))
-                        }
-                        onIncreaseQuantity={() =>
-                          setQtys((prev) => ({
-                            ...prev,
-                            [product.id]: (prev[product.id] ?? 1) + 1,
-                          }))
-                        }
+                        quantityInCart={quantityOf(String(product.id))}
+                        formattedPrice={formatCurrency(priceNaira)}
+                        animationIndex={i}
                         onAddToCart={() => addToCart(product)}
+                        onIncrement={() => updateQty(String(product.id), 1)}
+                        onDecrement={() => updateQty(String(product.id), -1)}
                       />
                     );
                   })}
@@ -690,7 +612,7 @@ export default function PublicShop() {
                       in cart
                     </p>
                     <p className="font-syne text-primary font-bold">
-                      Total: {fmt(cartTotal)}
+                      Total: {formatCurrency(cartTotal)}
                     </p>
                   </div>
                   <div className="flex gap-3">
@@ -770,7 +692,7 @@ export default function PublicShop() {
                               {item.name}
                             </p>
                             <p className="text-text text-xs">
-                              {item.unit} · {fmt(item.price)} each
+                              {item.unit} · {formatCurrency(item.price)} each
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
@@ -804,7 +726,7 @@ export default function PublicShop() {
                       <div className="flex justify-between">
                         <span className="text-text text-sm">Total</span>
                         <span className="font-syne text-heading font-bold">
-                          {fmt(cartTotal)}
+                          {formatCurrency(cartTotal)}
                         </span>
                       </div>
                       <button
