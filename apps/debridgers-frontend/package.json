@@ -12,8 +12,10 @@
     "analyze": "vite-bundle-visualizer"
   },
   "dependencies": {
+    "@debridgers/api-client": "workspace:*",
     "@debridgers/shared-theme": "workspace:*",
     "@debridgers/ui-web": "workspace:*",
+    "@hookform/resolvers": "^5.4.3",
     "@iconify/react": "^6.0.2",
     "@react-router/node": "7.13.2",
     "@react-router/serve": "7.13.2",
@@ -25,10 +27,10 @@
     "react": "^18.3.1",
     "react-confetti": "^6.4.0",
     "react-dom": "^18.3.1",
+    "react-hook-form": "^7.83.0",
     "react-router": "7.13.2",
     "recharts": "^2.15.4",
-    "zod": "^4.3.6",
-    "@debridgers/api-client": "workspace:*"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@react-router/dev": "7.13.2",

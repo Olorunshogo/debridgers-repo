@@ -14,6 +14,10 @@ Welcome to Debridgers. This document covers everything you need to understand th
 
 ---
 
+## What is Debridgers?
+
+Debridgers is a food commodity aggregator and distributor. We source agricultural products directly from smallholder farmers and deliver them to households, businesses, restaurants, and institutional buyers within Kaduna metropolis. By placing an Order, you agree to be bound by these Terms.
+
 ## Vision & Mission
 
 Start here. Everything else - the product decisions, the tech choices, the commission structure, the agent model - flows from this.
@@ -48,7 +52,7 @@ Debridgers is a B2B agricultural supply chain marketplace focused on Nigerian fa
 1. **Debridgers sources stock** from farmers/suppliers (warehouse inventory tracking)
 2. **Agents** (sales distributors) apply, get admin-approved, complete KYC, request stock packs, sell locally (markets/caterers), remit proceeds
 3. **Buyers** (businesses/end-users) purchase via agents or platform (direct orders in progress)
-4. **Commissions automated**: direct sales %, buyer referrals (₦20/order), agent overrides (5% multi-level, max depth 2), state managers (2%)
+4. **Commissions automated**: direct sales (30%), agent overrides (5%, single-level only - recruiter earns on their direct recruit's earnings; multi-level payout to depth 2 is not yet built), state managers (2%). Buyer referral commission (₦20/order) is scaffolded in the schema but not yet wired up - see `docs/frontend/TASKS.md` #11
 5. **Wallets track** owes/earnings in kobo (Paystack integration)
 6. **Admin dashboard** manages approvals, KYC reviews, stock fulfillment, payouts
 

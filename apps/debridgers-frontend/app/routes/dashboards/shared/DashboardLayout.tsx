@@ -38,6 +38,7 @@ const titleMaps: Record<string, Record<string, string>> = {
     "/admin-dashboard/buyers": "Buyers",
     "/admin-dashboard/products": "Products",
     "/admin-dashboard/outreach": "Outreach Records",
+    "/admin-dashboard/payouts": "Payouts",
     "/admin-dashboard/settings": "Settings",
   },
 };
@@ -61,6 +62,7 @@ export default function DashboardLayout() {
   const [userProfile, setUserProfile] = useState<{
     name: string;
     sub: string;
+    avatar_url?: string | null;
   } | null>(null);
 
   useEffect(() => {
@@ -77,11 +79,12 @@ export default function DashboardLayout() {
       last_name: string;
       lga?: string | null;
       email?: string;
+      avatar_url?: string | null;
     }>(endpoint)
       .then((p) => {
         const name = `${p.first_name} ${p.last_name}`.trim();
         const sub = isAgent ? (p.lga ?? "") : (p.email ?? "");
-        setUserProfile({ name, sub });
+        setUserProfile({ name, sub, avatar_url: p.avatar_url });
       })
       .catch(() => {});
   }, [isAgent, isBuyer, isAdmin]);
@@ -177,8 +180,18 @@ export default function DashboardLayout() {
 
           {/* User card */}
           <div className="flex items-center gap-3 rounded-xl bg-[#FAFAFB] px-4 py-2">
-            <div className="bg-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white">
-              {userProfile ? getInitials(userProfile.name) : "-"}
+            <div className="bg-primary flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-semibold text-white">
+              {userProfile?.avatar_url ? (
+                <img
+                  src={userProfile.avatar_url}
+                  alt={userProfile.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : userProfile ? (
+                getInitials(userProfile.name)
+              ) : (
+                "-"
+              )}
             </div>
             <div className="flex min-w-0 flex-col">
               <span className="text-heading truncate text-sm font-semibold">
@@ -204,7 +217,7 @@ export default function DashboardLayout() {
   }
 
   return (
-    <div className="relative h-screen overflow-hidden bg-black">
+    <div className="relative h-screen bg-black">
       <div className="layout-max-width relative flex h-screen flex-col">
         <div className="bg-dash-page-bg px-section-px flex h-screen w-full gap-6">
           {/* Desktop sidebar */}
@@ -230,7 +243,7 @@ export default function DashboardLayout() {
                   animate={{ x: 0 }}
                   exit={{ x: "-100%" }}
                   transition={{ type: "tween", duration: 0.28 }}
-                  className="fixed top-0 left-0 z-50 h-full w-70 bg-[#FCFDFD] lg:hidden"
+                  className="fixed top-0 left-0 z-50 h-full w-full max-w-120 bg-[#FCFDFD] lg:hidden"
                 >
                   <button
                     onClick={() => setMobileOpen(false)}
@@ -299,7 +312,7 @@ export default function DashboardLayout() {
             </header>
 
             {/* Page content */}
-            <main className="flex-1">
+            <main className="min-h-0 flex-1">
               <Outlet />
             </main>
           </div>

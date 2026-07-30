@@ -26,6 +26,8 @@ import {
   ApiResponse,
 } from "@nestjs/swagger";
 import { AdminService } from "./admin.service";
+import { BankDetailsService } from "../agent/bank-details.service";
+import { TaxonomyService } from "../catalog/taxonomy.service";
 import { AuthGuard } from "../auth/guards/auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -53,6 +55,23 @@ import {
   updateProductSchema,
   UpdateProductDto,
 } from "./dto/update-product.dto";
+import { createCategorySchema, updateCategorySchema } from "./dto/category.dto";
+import { UsePipes } from "@nestjs/common";
+import { z } from "zod";
+
+const createOutreachSchema = z.object({
+  full_name: z.string().min(2),
+  phone: z.string().min(6),
+  shop_name: z.string().optional(),
+  lga: z.string().optional(),
+  area: z.string().optional(),
+  product_interest: z.string().optional(),
+  estimated_quantity: z.number().optional(),
+  how_heard: z.string().optional(),
+  notes: z.string().optional(),
+  visit_date: z.string().optional(),
+});
+type CreateOutreachDto = z.infer<typeof createOutreachSchema>;
 
 @ApiTags("Admin")
 @ApiBearerAuth("access-token")
@@ -62,6 +81,8 @@ import {
 export class AdminController {
   constructor(
     private readonly adminService: AdminService,
+    private readonly bankDetailsService: BankDetailsService,
+    private readonly taxonomy: TaxonomyService,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
@@ -316,6 +337,38 @@ export class AdminController {
     return this.adminService.setAgentTarget(id, target);
   }
 
+  // ─── Orders ──────────────────────────────────────────────────────────────────
+
+  @Get("orders")
+  @ApiOperation({
+    summary: "List all orders — with buyer name, amount, payment status",
+    description:
+      "Supports ?status=pending|confirmed|delivered|cancelled, ?payment_status=unpaid|paid, ?search=name/email, ?page=1&limit=50",
+  })
+  getAllOrders(
+    @Query("status") status?: string,
+    @Query("payment_status") payment_status?: string,
+    @Query("search") search?: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ) {
+    return this.adminService.getAllOrders({
+      status,
+      payment_status,
+      search,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? Math.min(parseInt(limit, 10), 100) : 50,
+    });
+  }
+
+  @Get("orders/:id")
+  @ApiOperation({
+    summary: "Get a single order with full buyer and payment detail",
+  })
+  getOrderById(@Param("id", ParseIntPipe) id: number) {
+    return this.adminService.getOrderById(id);
+  }
+
   // ─── Buyers ─────────────────────────────────────────────────────────────────
 
   @Get("buyers")
@@ -552,11 +605,47 @@ export class AdminController {
 
   @Post("outreach")
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: "Record a new outreach / offline customer visit" })
-  createOutreachRecord(@Body() body: Record<string, unknown>) {
-    return this.adminService.createOutreachRecord(
-      body as Parameters<typeof this.adminService.createOutreachRecord>[0],
-    );
+  @Roles("admin", "agent") // agents do field outreach; overrides class-level @Roles("admin")
+  @ApiOperation({
+    summary: "Record a new outreach / offline customer visit (admin + agent)",
+  })
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["full_name", "phone", "visit_date"],
+      properties: {
+        full_name: { type: "string", example: "Musa Ibrahim" },
+        phone: { type: "string", example: "08012345678" },
+        shop_name: { type: "string", example: "Ibrahim Grains" },
+        lga: { type: "string", example: "Chikun" },
+        area: { type: "string", example: "Barnawa" },
+        product_interest: { type: "string", example: "Maize" },
+        estimated_quantity: { type: "number", example: 5 },
+        how_heard: { type: "string", example: "Word of mouth" },
+        notes: { type: "string" },
+        visit_date: { type: "string", example: "2026-06-10" },
+      },
+    },
+  })
+  @UsePipes(new ZodValidationPipe(createOutreachSchema))
+  createOutreachRecord(
+    @Body() dto: CreateOutreachDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.adminService.createOutreachRecord({
+      shop_name: dto.shop_name ?? dto.full_name,
+      owner_name: dto.full_name,
+      phone: dto.phone,
+      lga: dto.lga,
+      product_interest: dto.product_interest,
+      quantity: dto.estimated_quantity,
+      notes:
+        [dto.how_heard ? `How heard: ${dto.how_heard}` : "", dto.notes ?? ""]
+          .filter(Boolean)
+          .join(" | ") || undefined,
+      collected_by: `${user.role}:${user.sub}`,
+      visit_date: dto.visit_date ?? new Date().toISOString().split("T")[0],
+    });
   }
 
   @Get("outreach")
@@ -699,5 +788,178 @@ export class AdminController {
   @ApiOperation({ summary: "Delete a product" })
   deleteProduct(@Param("id", ParseIntPipe) id: number) {
     return this.adminService.deleteProduct(id);
+  }
+
+  // ─── Platform Settings ───────────────────────────────────────────────────────
+
+  @Get("settings")
+  @ApiOperation({
+    summary: "Get current platform settings (commission rate etc.)",
+  })
+  getSettings() {
+    return this.adminService.getSettings();
+  }
+
+  @Patch("settings")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Update a platform setting (key + value)" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["key", "value"],
+      properties: {
+        key: { type: "string", example: "agent_commission_rate" },
+        value: { type: "string", example: "25" },
+      },
+    },
+  })
+  updateSetting(@Body("key") key: string, @Body("value") value: string) {
+    return this.adminService.updateSetting(key, value);
+  }
+
+  // === Product taxonomy
+
+  @Get("categories")
+  @ApiOperation({
+    summary: "Full taxonomy tree, including deactivated nodes",
+  })
+  getCategoryTree() {
+    return this.taxonomy.getTreeResponse(false);
+  }
+
+  @Get("categories/leaves")
+  @ApiOperation({
+    summary: "Selectable leaf categories with their full path",
+    description:
+      "What the product form binds to. Only leaves are offered, because attaching a product to 'Grains' rather than 'Grains > Rice > Ofada' is what the old flat category column already did badly.",
+  })
+  getCategoryLeaves() {
+    return this.taxonomy.getLeaves();
+  }
+
+  @Post("categories")
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Create a category, type or variety" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["name"],
+      properties: {
+        name: { type: "string", example: "Ofada" },
+        parent_id: {
+          type: "number",
+          nullable: true,
+          example: 4,
+          description: "Omit or null for a top-level category.",
+        },
+        description: { type: "string", nullable: true },
+        image_url: { type: "string", nullable: true },
+        sort_order: { type: "number", example: 2 },
+      },
+    },
+  })
+  createCategory(@Body() body: unknown) {
+    const dto = createCategorySchema.parse(body);
+    return this.taxonomy.createCategory(dto);
+  }
+
+  @Patch("categories/:id")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Rename or restyle a taxonomy node" })
+  @ApiParam({ name: "id", example: 12 })
+  updateCategory(@Param("id", ParseIntPipe) id: number, @Body() body: unknown) {
+    const dto = updateCategorySchema.parse(body);
+    return this.taxonomy.updateCategory(id, dto);
+  }
+
+  @Delete("categories/:id")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Deactivate a taxonomy node",
+    description:
+      "Soft delete. A hard delete would cascade to every descendant and null the taxonomy on all products beneath it.",
+  })
+  @ApiParam({ name: "id", example: 12 })
+  deactivateCategory(@Param("id", ParseIntPipe) id: number) {
+    return this.taxonomy.deactivateCategory(id);
+  }
+
+  // === Withdrawals
+
+  @Get("withdrawals")
+  @ApiOperation({
+    summary: "List agent payout requests",
+    description:
+      "Optionally filter by status: pending, approved, rejected, paid.",
+  })
+  @ApiQuery({ name: "status", required: false, example: "pending" })
+  getWithdrawals(@Query("status") status?: string) {
+    return this.adminService.getWithdrawals(status);
+  }
+
+  @Patch("withdrawals/:id/approve")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Approve a payout request",
+    description:
+      "Marks a pending payout as payable. Does not transfer: the Friday sweep or an explicit payout call does that, so approving cannot move money by misclick.",
+  })
+  @ApiParam({ name: "id", example: 7 })
+  @ApiResponse({ status: 200, description: "Payout approved" })
+  @ApiResponse({ status: 400, description: "Payout is not pending" })
+  approveWithdrawal(@Param("id", ParseIntPipe) id: number) {
+    return this.adminService.approveWithdrawal(id);
+  }
+
+  @Patch("withdrawals/:id/reject")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Reject a payout request",
+    description:
+      "Rejects the payout and returns the amount to the agent's available balance, which the request had debited up front.",
+  })
+  @ApiParam({ name: "id", example: 7 })
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        reason: { type: "string", example: "Bank details do not match KYC" },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: "Payout rejected" })
+  rejectWithdrawal(
+    @Param("id", ParseIntPipe) id: number,
+    @CurrentUser() admin: JwtPayload,
+    @Body("reason") reason?: string,
+  ) {
+    return this.adminService.rejectWithdrawal(id, admin.sub, reason);
+  }
+
+  // === Maintenance
+
+  @Post("agents/backfill-bank-codes")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Fill in missing agent bank codes",
+    description:
+      "One-off repair for agents who submitted KYC before bank codes were captured. Matches each stored bank name against the live bank list and fills the code only where the match is unambiguous; anything else is returned for manual review rather than guessed.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Backfill complete",
+    schema: {
+      example: {
+        statusCode: 200,
+        message: "Backfill complete",
+        data: {
+          updated: 12,
+          unmatched: [{ user_id: 41, bank_name: "First bank" }],
+        },
+      },
+    },
+  })
+  backfillBankCodes() {
+    return this.bankDetailsService.backfillBankCodes();
   }
 }

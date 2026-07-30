@@ -1,0 +1,36 @@
+{
+  "recommendations": [
+    // === Core formatting and linting
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+
+    // === TypeScript and React
+    "ms-vscode.vscode-typescript-next",
+    "dsznajder.es7-react-js-snippets",
+
+    // === Tailwind CSS
+    "bradlc.vscode-tailwindcss",
+
+    // === Nx monorepo
+    "nrwl.angular-console",
+
+    // === Git
+    "eamodio.gitlens",
+    "mhutchie.git-graph",
+
+    // === DX utilities
+    "christian-kohler.path-intellisense",
+    "streetsidesoftware.code-spell-checker",
+    "usernamehw.errorlens",
+    "antfu.iconify",
+    "mikestead.dotenv",
+
+    // === Editor polish
+    "pkief.material-icon-theme",
+    "naumovs.color-highlight"
+  ],
+  "unwantedRecommendations": [
+    "hookyqr.beautify",
+    "ms-vscode.vscode-typescript-tslint-plugin"
+  ]
+}

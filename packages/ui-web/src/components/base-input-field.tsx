@@ -6,6 +6,14 @@ export interface BaseInputFieldProps {
   required?: boolean;
   className?: string;
   inputId: string;
+  /*
+   * Hides the visible label without removing it from the accessibility tree.
+   *
+   * For compact contexts like a filter bar, where a stacked label would break
+   * the row and the control's purpose is already obvious from its placeholder.
+   * The label stays required so it can never be dropped entirely.
+   */
+  hideLabel?: boolean;
   children: React.ReactNode;
 }
 
@@ -20,16 +28,19 @@ export function BaseInputField({
   required = false,
   className = "",
   inputId,
+  hideLabel = false,
   children,
 }: BaseInputFieldProps) {
   return (
     <div className={`font-syne flex flex-col gap-1.5 ${className}`}>
       <label
         htmlFor={inputId}
-        className="flex cursor-pointer items-center gap-1"
+        className={
+          hideLabel ? "sr-only" : "flex cursor-pointer items-center gap-1"
+        }
       >
         <span className="text-heading font-syne font-medium">{label}</span>
-        {!required && (
+        {!required && !hideLabel && (
           <span className="font-open-sans text-text text-sm">(optional)</span>
         )}
       </label>

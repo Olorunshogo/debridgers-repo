@@ -1,0 +1,1 @@
+ALTER TABLE "zones" ADD COLUMN "free_delivery" boolean DEFAULT false NOT NULL;

@@ -62,13 +62,41 @@ export async function logout(): Promise<void> {
   clearTokens();
 }
 
+// === Single-flight refresh
+
+/*
+ * The backend rotates the refresh token on every use and stores exactly one
+ * bcrypt hash per user (auth.service.ts saveRefreshToken). Two concurrent
+ * refreshes therefore invalidate each other: the first rotates the stored
+ * hash, the second fails bcrypt.compare, gets a 401, and clears the session.
+ * Pages that fire parallel requests (agent/overview.tsx does three in one
+ * Promise.all) hit this the moment the access token expires.
+ *
+ * Every caller shares one in-flight request so only one rotation happens.
+ * Each caller then retries its own original request with the new token.
+ */
+let inFlightRefresh: Promise<AuthTokens> | null = null;
+
 /**
  * Attempt a silent token refresh.
- * Sends the stored refresh token to POST /api/v1/auth/refresh using
- * the `Authorization: Refresh <token>` header.
+ * Concurrent callers share a single in-flight request - see the note above.
  * On 401, clears all tokens and throws so the caller can redirect to /login.
  */
-export async function refreshTokens(): Promise<AuthTokens> {
+export function refreshTokens(): Promise<AuthTokens> {
+  if (inFlightRefresh) return inFlightRefresh;
+
+  inFlightRefresh = performRefresh().finally(() => {
+    inFlightRefresh = null;
+  });
+
+  return inFlightRefresh;
+}
+
+/**
+ * Sends the stored refresh token to POST /api/v1/auth/refresh using
+ * the `Authorization: Refresh <token>` header.
+ */
+async function performRefresh(): Promise<AuthTokens> {
   const refreshToken = getRefreshToken();
   if (!refreshToken) {
     clearTokens();

@@ -7,6 +7,7 @@ import {
   UseGuards,
   UsePipes,
 } from "@nestjs/common";
+import { Throttle } from "@nestjs/throttler";
 import {
   ApiTags,
   ApiOperation,
@@ -95,6 +96,7 @@ export class AuthController {
 
   @Post("login")
   @HttpCode(HttpStatus.OK)
+  @Throttle({ short: { ttl: 60000, limit: 10 } })
   @ApiOperation({ summary: "Login with email and password" })
   @ApiBody({
     schema: {
@@ -149,6 +151,7 @@ export class AuthController {
 
   @Post("admin/login")
   @HttpCode(HttpStatus.OK)
+  @Throttle({ short: { ttl: 60000, limit: 5 } })
   @ApiOperation({ summary: "Admin login with email and password" })
   @ApiBody({
     schema: {
@@ -237,6 +240,7 @@ export class AuthController {
 
   @Post("forgot-password")
   @HttpCode(HttpStatus.OK)
+  @Throttle({ short: { ttl: 60000, limit: 5 } })
   @ApiOperation({
     summary: "Request a password reset email",
     description: "Always returns 200 - prevents email enumeration.",
@@ -301,6 +305,7 @@ export class AuthController {
 
   @Post("verify-email")
   @HttpCode(HttpStatus.OK)
+  @Throttle({ short: { ttl: 60000, limit: 5 } })
   @ApiOperation({ summary: "Verify account email address using OTP" })
   @ApiBody({
     schema: {

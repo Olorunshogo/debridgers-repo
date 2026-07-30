@@ -1,5 +1,6 @@
 export * from "./schemas/users.schema";
 export * from "./schemas/products.schema";
+export * from "./schemas/product_categories.schema";
 export * from "./schemas/agent_profiles.schema";
 export * from "./schemas/leads.schema";
 export * from "./schemas/sales_reports.schema";
@@ -17,3 +18,7 @@ export * from "./schemas/audit_log.schema";
 export * from "./schemas/inventory_records.schema";
 export * from "./schemas/outreach_records.schema";
 export * from "./schemas/notifications.schema";
+export * from "./schemas/system_settings.schema";
+export * from "./schemas/carts.schema";
+export * from "./schemas/favorites.schema";
+export * from "./schemas/order_items.schema";

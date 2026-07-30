@@ -1,729 +1,283 @@
 # Core Development Tasks
 
-## Table of Contents
-
-- [0. Shop/Catalog on Landing Page](#0-shopcatalog-on-landing-page--browse-free-login-only-at-checkout)
-- [1. Move Shop/Buyer from Dashboard to Landing Page](#1-move-shopbuyer-from-dashboard-to-landing-page)
-- [2. Shopping Cart Implementation](#2-shopping-cart-implementation)
-- [1.4 Landing Outreach / Lead Capture Page](#14-landing-outreach--lead-capture-page)
-- [2.4 Save as Favorites / Wishlist](#24-save-as-favorites--wishlist)
-- [3. Authentication Status Management](#3-authentication-status-management)
-- [4. Header Navigation Authentication Link](#4-header-navigation-authentication-link)
-- [5. Checkout Authentication Modal](#5-checkout-authentication-modal)
-- [6. Cart Preservation on Signup/Login](#6-cart-preservation-on-signuplogin)
-- [6. Checkout and Payment Flow](#6-checkout-and-payment-flow)
-- [7. Error Handling & Edge Cases](#7-error-handling--edge-cases)
-- [8. Global Auth Context Architecture](#8-global-auth-context-architecture)
-- [9. API Integration Points](#9-api-integration-points)
-- [10. Testing Scenarios](#10-testing-scenarios)
-- [11. Product Catalog Structure](#11-product-catalog-structure)
-- [12. "What We Deliver" Card Animation](#12-what-we-deliver-card-animation-hover-subtitle-reveal)
-- [Implementation Priority](#implementation-priority)
-- [Notes & Considerations](#notes--considerations)
-- [13. Buyer Settings - Unimplemented Toggles & Password Change](#13-buyer-settings--unimplemented-toggles--password-change)
-- [14. Wallet & Payment](#14-wallet--payment)
-- [15. Agent Stock Request - Hierarchical Category-Based UX](#15-agent-stock-request--hierarchical-category-based-ux)
-- [16. Admin-Controlled Commission Rate and Referral System](#16-admin-controlled-commission-rate-and-referral-system)
+Kept in sync with `docs/frontend/PLAN.md`. Anything here is either **open** or
+**partially done with the gap named**. Completed items move to the Done list
+below rather than being deleted, so the reasoning stays findable.
 
 ---
 
-## 0. Shop/Catalog on Landing Page — Browse Free, Login Only at Checkout
+## Done
 
-> **Decision confirmed 2026-06-08**
+Verified against the code on 2026-07-27.
 
-The shop/catalog will live on the **public landing page**, not behind the buyer dashboard login. Anyone can browse products and add items to cart without an account. Login is only required at the moment they proceed to checkout and payment.
+- **#1 Cart sync on login** - `POST /buyer/cart/merge`, higher quantity per line
+  rather than the sum.
+- **#2 Shopping cart backend sync** - `GET`/`PUT`/`DELETE /buyer/cart`, 2s
+  debounce while authenticated, localStorage stays authoritative. No guest cart
+  by design: an anonymous cart has no owner to key on.
+- **#3 Favourites / wishlist** - `favorites` table, endpoints, optimistic heart,
+  hidden for anonymous visitors. **Buy again** was split out separately as an
+  order-history-derived rail.
+- **#4 Checkout and payment flow** - `POST /buyer/orders/initialize-payment`,
+  `order_items` table (it did not exist, which is why this was broken), the
+  `buyer_order` webhook branch, and `FRONTEND_URL`. `PAYMENTS_SIMULATED=true`
+  stands in until Paystack credentials exist.
+- **#8.4 Change password** - shipped earlier.
+- **#11.1 system_settings / admin settings** - shipped earlier; the
+  commission-rate wiring was closed on 2026-07-30.
 
-### The Flow
-
-```
-Landing page → /shop (public, no auth)
-  ↓
-User browses products, adds to cart
-  ↓
-User clicks "Checkout" or "Place Order"
-  ↓
-App checks: is user logged in?
-  ├── YES → go straight to checkout/payment
-  └── NO  → show Login / Sign Up modal
-              ↓ on success
-           Cart is preserved, proceed to checkout
-```
-
-### What This Means for Implementation
-
-- `GET /buyer/products` must be accessible **without a token** (make it a public endpoint — remove `AuthGuard` from that one route, or create a separate public products endpoint).
-- The `/shop` route on the landing page uses the **landing page layout**, not the buyer dashboard layout.
-- Cart state lives in **localStorage** for unauthenticated users. On login, merge it into the user's backend cart.
-- The buyer dashboard `/buyer-dashboard/shop` route can be kept as a shortcut into the same shop page for already-logged-in users, or removed once the landing page shop is live.
-- The "Login / Sign Up" prompt at checkout is a **modal** (not a full redirect), so the cart and the page context are preserved when the user comes back.
-
-### Auth Gate: Only These Actions Require Login
-
-| Action                             | Auth required? |
-| ---------------------------------- | -------------- |
-| Browse products                    | No             |
-| Add to cart                        | No             |
-| View cart                          | No             |
-| Proceed to checkout                | Yes            |
-| Place order (`POST /buyer/orders`) | Yes            |
-| View order history                 | Yes            |
-| Access buyer dashboard             | Yes            |
-
-### Related Tasks
-
-- Section 1 — extracting the shop component and landing page route
-- Section 2 — cart implementation (localStorage for guests)
-- Section 5 — checkout authentication modal
-- Section 6 — cart preservation across login
+Also shipped and not originally in this file: product categories, per-package
+delivery pricing with a per-zone free-delivery flag, the State to LGA to Zone
+checkout cascade, the dialog engine with two consumers, agent-requested payouts,
+the auth refactor with single-flight refresh, shared currency formatting, and a
+Nigerian states dataset.
 
 ---
 
-## 1. Move Shop/Buyer from Dashboard to Landing Page
+## Partially done - gap named
 
-### 1.1 Extract Shop/Buyer Component
-
-- **Goal**: Move the product shop/buyer interface from the buyer dashboard to the landing page
-- **Location**: Currently at `/apps/debridgers-frontend/app/routes/dashboards/buyer/shop`
-- **Target**: Create a new route `/apps/debridgers-frontend/app/routes/landing/shop`
-- **Considerations**:
-  - Ensure the component is self-contained and doesn't depend on dashboard-specific layouts
-  - Review any dashboard-only styling or state management
-  - Maintain all product browsing, filtering, and selection functionality
-  - Should work standalone without requiring user authentication at this stage
-
-### 1.2 Update Landing Page Navigation
-
-- **Goal**: Add shop/buyer access to the landing page
-- **Actions**:
-  - Add navigation link or CTA button to shop from landing page
-  - Integrate shop route into landing page routing structure
-  - Ensure visual consistency with landing page design system
-
-### 1.3 Shopping Cart State Management
-
-- **Goal**: Implement cart persistence across pages
-- **Requirements**:
-  - Cart should be accessible from landing page and shop routes
-  - Cart state should survive navigation and page refreshes
-  - Cart should maintain state even before user authenticates
-  - **Implementation Options**:
-    - Store in localStorage for persistence
-    - Use React Context API with localStorage sync
-    - Consider using Zustand or similar for global state
+Nothing outstanding from the previous list. All five items below were closed on
+2026-07-30; see the Done section for what each turned out to involve.
 
 ---
 
-## 2. Shopping Cart Implementation
+## Closed 2026-07-30
 
-### 2.1 Cart UI Components
+Each of these was flagged partial. Working through them surfaced four separate
+dead links where a feature existed on both sides but nothing joined them.
 
-- **Goal**: Create cart management interface
-- **Components Needed**:
-  - Cart badge/icon showing item count
-  - Cart drawer/modal to view items
-  - Item quantity controls (increment/decrement)
-  - Remove item from cart functionality
-  - Cart total calculation
-  - "Proceed to Checkout" button
+- **#5 Error handling** - the description was stale: no truly empty `catch {}`
+  blocks remained. What did remain were five catches whose body was
+  `// silently fail` (admin products x2, admin outreach, agent settings, buyer
+  settings). All now surface a message. Two admin list loads were also swallowing
+  failures and rendering an empty table, which reads as "no records" rather than
+  "load failed". Two catches that are empty on purpose were left alone with their
+  reasons documented.
 
-### 2.2 Cart Data Structure
+- **#7 Product catalog** - replaced the flat `category` text with a
+  `product_categories` tree (migration `0015_product_taxonomy`). Self-referencing
+  rather than three fixed tables, because the catalogue is not uniformly three
+  deep: Grains reaches Grains > Rice > Ofada, Oil stops at Oil > Palm Oil. The
+  agent stock page now drills to whatever depth a branch has instead of grouping
+  products by their **description** text, which is what it was actually doing.
+  `products.category` is retained and derived from the root ancestor so the shop
+  filter keeps working.
+  - Found on the way: `createProduct` and `updateProduct` never persisted
+    `category`, `measure_value` or `measure_unit`. The DTO accepted them and the
+    form sent them; the insert dropped them. So "category exists" was only ever
+    half true.
+  - Also fixed: `updateProduct`'s `image_url` used `z.string().url()`, rejecting
+    bundled `/images/...` paths. A product with a bundled image could be created
+    but never edited. The create DTO already documented this exact fix.
 
-- **Schema** (minimum):
+- **#8.1 Email notification toggle** - `UserListeners` now checks the flag before
+  optional mail. Account and security mail (welcome, verification, password
+  reset, agent application outcomes) always sends. Worth stating plainly: there
+  are still **no order or delivery emails anywhere**, so the toggle governs only
+  sign-in notices and contact confirmations. It is honest now rather than
+  decorative, but it stays thin until order-lifecycle email exists.
 
-  ```typescript
-  interface CartItem {
-    productId: string;
-    productName: string;
-    price: number;
-    quantity: number;
-    image?: string;
-    [key: string]: any; // Additional product fields
-  }
+- **#9.2 Agent wallet** - the payout request was not merely incomplete, it was
+  **impossible to use**. `agent_profiles.bank_code` had no write path anywhere in
+  the codebase, and `requestWithdrawal` requires it to be non-null, so every
+  agent got "Add your bank details in settings" against a settings page with no
+  such field. Added `GET /agent/banks`, `POST /agent/bank-details/resolve`,
+  `PATCH /agent/bank-details`, a bank picker on the wallet page, `bank_code` in
+  the KYC flow, and `POST /admin/agents/backfill-bank-codes` for existing agents.
+  Account names come from the provider's name-enquiry, never from the client.
+  - The provider is **SafeHaven, not Paystack** - this file previously said
+    Paystack. `getBanks()` and `nameEnquiry()` already existed and were unused.
+  - Second dead link: nothing could approve a withdrawal. `POST /payment/payout/:id`
+    requires status `approved`, but no endpoint moved a row off `pending`. Added
+    `GET /admin/withdrawals` and approve/reject, where reject returns the balance
+    the request had debited up front.
 
-  interface Cart {
-    items: CartItem[];
-    lastUpdated: timestamp;
-  }
-  ```
+- **#11.1 commission rate** - `SystemSettingsService` now exists (this file
+  previously referred to it as though it did; settings were actually read by
+  inline queries in four places). `PaymentService` reads the rate at call time
+  instead of caching it in its constructor.
+  - Unit mismatch worth knowing: the setting is stored as a **percentage**
+    (1-100, validated in `updateSetting`) while payment code needs a **fraction**
+    (0.30). Wiring them naively would have multiplied commission by 30. The
+    conversion lives in one place, `getAgentCommissionRate()`.
+  - `createSubaccount` was posting a hardcoded `settlement_bank: "058"` and
+    `account_number: "0000000000"`, creating subaccounts that could never settle.
+    It now uses the agent's real details and refuses if they are absent.
 
-### 2.3 Cart Persistence Strategy — Full Analysis
+### Also added
 
-#### Storage Option Comparison
+- **Admin payouts page** (`/admin-dashboard/payouts`). The approve/reject
+  endpoints existed with no interface behind them, so the queue still had no
+  exit in practice. Lists requests by status, approves, rejects with a reason
+  (stating that the amount goes back to the agent), and can trigger the weekly
+  sweep on demand rather than waiting for Friday.
+- **`PlatformConfigContext`** - one fetch of `/config/public`, shared. It exposes
+  the commission as **both** `commissionPercent` (5, for display) and
+  `commissionRate` (0.05, for maths), because the percentage/fraction ambiguity
+  already caused one real bug server-side.
+  - `landing/agents.tsx` previously defaulted to a hardcoded `30` while its own
+    fetch was in flight, rendering an earnings table at 6x the real rate on the
+    page whose whole purpose is stating what agents earn. It now shows a skeleton
+    until the live figure arrives.
+  - That page's SEO metadata also hardcoded "Earn 30% Commission" in its title,
+    description, keywords and social cards. `meta()` is static and the rate is an
+    admin setting, so the figure was removed rather than left to go stale again.
+- **Migration `0016`** pushes products from their type node down onto their
+  variety leaf, so the grains branch actually drills three levels. `0015` could
+  only match on the old flat text and stopped at the type. Deliberately skips
+  ambiguous names: "Wake Gida (Honey Beans)" names two varieties and stays on
+  Beans rather than being guessed at. Verified idempotent.
 
-| Option               | Survives Device Shutdown       | Cross-Device   | Cleared by User          | Auth Required | Notes                                  |
-| -------------------- | ------------------------------ | -------------- | ------------------------ | ------------- | -------------------------------------- |
-| `sessionStorage`     | ❌ Clears on tab/browser close | ❌             | N/A                      | No            | Worst option for cart                  |
-| `localStorage`       | ✅ Persists through shutdowns  | ❌ Device-only | Yes (clear browser data) | No            | Good for guests                        |
-| Cookie (session)     | ❌ Clears on browser close     | ❌             | Yes                      | No            | No advantage over sessionStorage       |
-| Cookie (persistent)  | ✅ Up to expiry date           | ❌             | Yes                      | No            | 4KB limit, not practical for cart data |
-| **Backend endpoint** | ✅ Always                      | ✅ Any device  | Never (server-stored)    | ✅ Yes        | Best for authenticated users           |
-
-#### Recommended: Hybrid Approach
-
-```
-Unauthenticated user  → localStorage cart (fast, no API calls needed)
-Authenticated user    → Backend cart endpoint (persists everywhere)
-On login/signup       → Merge localStorage cart INTO backend cart → clear localStorage
-```
-
-This gives the best UX:
-
-- Guest browsing is fast (no API on every add)
-- Logged-in users get their cart on any device, any browser, after any reset
-- Cart survives device shutdown, browser clear, new device login
-
-#### Why Not Cookie-Only?
-
-- Cookies max out at 4KB — a cart with images/metadata blows that fast
-- httpOnly cookies can't be read by JS, defeating cart state management
-- Persistent cookies still don't solve the cross-device problem
-
-#### Debounced Batch Sync Strategy (for authenticated users)
-
-Rather than hitting the cart endpoint on every single interaction (every add, every qty change), debounce the sync:
-
-```
-User adds item → update local state immediately (optimistic UI)
-                 ↓
-         start/reset 3s debounce timer
-                 ↓
-         3 seconds of no changes?
-                 ↓
-         PATCH /cart with full current cart state → server confirms
-```
-
-**Advantages of debounce approach:**
-
-- ✅ UI feels instant (no waiting for API response)
-- ✅ Reduces API load massively (1 call per "session of changes" vs 1 per action)
-- ✅ If user adds 5 items quickly, only 1 API call goes out
-- ✅ On page unload, flush immediately (don't wait for debounce)
-
-**Considerations:**
-
-- Need to handle the race condition: if user closes tab mid-debounce, use `beforeunload` to flush
-- Show a subtle "saving..." indicator so user knows it's syncing
-- On error, retry once then fall back to localStorage backup
-
-#### Cart Endpoint Design
-
-- `GET /cart` — fetch user's saved cart (on login)
-- `PUT /cart` — replace entire cart (debounced batch update, sends full cart state)
-- `DELETE /cart` — clear cart (on order completion or user action)
-
-Using `PUT` with full cart state (not individual `POST/DELETE` per item) is simpler and idempotent — the debounce just sends whatever the current state is. No need for per-item endpoints.
-
-#### Pre-login Cart Merge Logic
-
-```
-1. User has localStorage cart: [itemA x2, itemB x1]
-2. User logs in → fetch their backend cart: [itemA x1, itemC x3]
-3. Merge: itemA → take max qty (x2), itemB → add, itemC → add
-4. Result: [itemA x2, itemB x1, itemC x3]
-5. PUT /cart with merged cart
-6. Clear localStorage cart
-```
-
-- **Storage**: localStorage for guests, backend for authenticated users
-- **Sync**: Debounced 3s batch sync to backend when authenticated
-- **Recovery**: On login, `GET /cart` from backend; on app init (guest), load from localStorage
-- **Expiration**: Backend cart: 30 days TTL server-side; localStorage: 7-day TTL check on load
+- Weekly payout cron (`PayoutService`, Friday 09:00 `Africa/Lagos`), which the
+  wallet page had always advertised but nothing performed. It pays only
+  already-approved withdrawals; approval stays human. `processWithdrawal` gained
+  an atomic claim so an admin clicking payout during the sweep cannot double-pay,
+  and the transfer reference is now deterministic so a retry cannot pay twice.
+- `DashSelectInput` rebuilt with `AnimatePresence`, keyboard navigation and an
+  `isBank` mode that adds search, for bank lists that run to hundreds of entries.
 
 ---
 
-## 1.4 Landing Outreach / Lead Capture Page
+## Open
 
-> **Context:** The admin dashboard already has a fully working outreach page at
-> `apps/debridgers-frontend/app/routes/dashboards/admin/outreach.tsx`.
-> That page is for internal staff to log OFFLINE field visits (agents going door-to-door
-> and recording shops/leads they spoke with). The landing page version is the PUBLIC-FACING
-> counterpart: potential customers, sellers, or distributors submitting their interest ONLINE
-> directly, without needing an agent to record it for them.
+## 1. Cart Sync on Login
 
-### 1.4.1 Purpose and Distinction
+> **DONE.** Kept for the merge-logic reasoning. See the Done list above.
 
-|                  | Admin Outreach Page                                      | Landing Outreach Page                                |
-| ---------------- | -------------------------------------------------------- | ---------------------------------------------------- |
-| Who fills it     | Internal staff / field agents                            | Public visitors (leads)                              |
-| Auth required    | Yes (admin dashboard)                                    | No (public landing page)                             |
-| Endpoint         | `POST /admin/outreach`                                   | `POST /outreach/submit` (new public endpoint)        |
-| Purpose          | Log a visit that already happened                        | Capture self-generated interest online               |
-| Data collected   | Full field visit data (who collected, visit date, notes) | Simplified - name, phone, location, product interest |
-| Visible to admin | Yes, in outreach records table                           | Yes, should feed into same or adjacent table         |
+Cart browsing works (localStorage). The missing piece is merging the guest cart into the user's backend cart when they log in.
 
-### 1.4.2 What the Landing Outreach Page Should Include
+### What's missing
 
-**Route:** `/routes/landing/outreach.tsx` (or integrate into `/contact` if that makes more sense UX-wise)
+- On login success, fetch `GET /cart` from backend, merge with current localStorage cart (take max qty per item), then `PUT /cart` with merged result, then clear localStorage cart.
+- On app init for authenticated users, load cart from `GET /cart` instead of localStorage.
+- On logout, persist the current cart to localStorage so it survives.
 
-**Page goal:** "Register your interest" / "We come to you" lead capture form
-
-**Form fields (public-facing, simplified from admin version):**
-
-- Full name (required)
-- Phone number (required)
-- Business / shop name (optional)
-- LGA - Local Government Area (reuse `kadunaLgas` model, already exists)
-- Area (dependent on LGA, reuse `kadunaAreasByLga`)
-- Products interested in (text input - same as admin version)
-- Estimated quantity needed (optional)
-- How they heard about us (optional: dropdown - "Word of mouth", "Social media", "Flyer/Ad", "Agent visit", "Other")
-- Notes / message (optional textarea)
-
-**What happens on submit:**
-
-- `POST /outreach/submit` (public, no auth token required)
-- Show success confirmation ("We've received your information. An agent will reach out to you within 24 hours.")
-- No delete or list functionality on the public page
-
-### 1.4.3 Admin Side - Viewing Public Submissions
-
-- Public submissions from the landing page should appear in the admin outreach table
-- Either: same `/admin/outreach` endpoint returns both (server adds a `source: "web"` vs `source: "field"` field)
-- Or: separate tab/filter in the admin outreach page for "Web Leads" vs "Field Visits"
-- Recommended: add a `source` column to the outreach records table and filter by it in the admin UI
-
-### 1.4.4 Existing Admin Outreach Data Structure (for reference)
-
-From `admin/outreach.tsx`, the `OutreachRecord` interface:
-
-```typescript
-interface OutreachRecord {
-  id: number;
-  shop_name: string;
-  owner_name: string | null;
-  phone: string | null;
-  lga: string | null;
-  area: string | null;
-  address: string | null;
-  product_interest: string | null;
-  quantity: number | null;
-  notes: string | null;
-  collected_by: string | null; // for field: staff name; for web: "web-form"
-  visit_date: string; // for web submissions: date of submission
-  created_at: string;
-}
-```
-
-The public form maps cleanly onto this schema. `collected_by` would be set server-side to `"web-form"` for public submissions.
-
-### 1.4.5 UX Considerations
-
-- Page should NOT feel like a dry form. Wrap it in a value proposition section above the form: "Tell us what you need, we'll bring it to you" or similar
-- Show the LGA/area dropdowns (same models already in use in admin page: `kadunaLgas`, `kadunaAreas`, `kadunaAreasByLga`)
-- On mobile, ensure phone input type is `tel` for native keyboard
-- After successful submit, optionally show a WhatsApp CTA ("Prefer to chat? Message us on WhatsApp") using the existing `whatsapp-button` component in `packages/ui-web`
-- Loading state on submit button
-- Error state if API call fails
-
-### 1.4.6 Navigation Entry Point
-
-- Add "Register Interest" or "Get In Touch" link to landing page header/nav
-- Also accessible from the shop page (after viewing products: "Want bulk orders? Register your interest")
-- Can reuse or merge with existing `/contact` route - evaluate whether to merge or keep separate
-
-### 1.4.7 API Endpoints Needed
-
-- `POST /outreach/submit` - public, no auth, accepts simplified lead form
-  - Server sets `collected_by: "web-form"`, `visit_date: today`, `source: "web"`
-  - Returns `{ success: true, message: "..." }`
-- Backend optionally sends notification email/SMS to admin on new web submission
-
----
-
-## 2.4 Save as Favorites / Wishlist
-
-### 2.4.1 Favorites vs Cart — Key Difference
-
-Cart is **transient** (intent to buy now). Favorites are **persistent** (save for later / wishlist). They need different treatment:
-
-|                  | Cart                                  | Favorites                                                                          |
-| ---------------- | ------------------------------------- | ---------------------------------------------------------------------------------- |
-| Guest support    | Yes (localStorage)                    | Yes (localStorage, limited)                                                        |
-| Cross-device     | Only when authenticated               | Only when authenticated                                                            |
-| Endpoint pattern | `PUT /cart` (full replace, debounced) | `POST /favorites/:productId`, `DELETE /favorites/:productId` (per-item, immediate) |
-| Merge on login   | Merge guest into user cart            | Merge guest favorites into user favorites                                          |
-| TTL              | 30 days                               | No expiry (long-term saves)                                                        |
-
-### 2.4.2 Why Per-Item Endpoints for Favorites (not batch)?
-
-Favorites are toggled deliberately, not rapidly changed. Unlike cart (where you might adjust qty multiple times quickly), favorites are one-shot actions. Immediate per-item calls are fine and give clearer feedback ("Saved!").
-
-- `GET /favorites` — fetch all favorites
-- `POST /favorites/:productId` — add to favorites
-- `DELETE /favorites/:productId` — remove from favorites
-
-### 2.4.3 Guest Favorites
-
-- Store as array of product IDs in localStorage (not full product data — too large)
-- On login: `POST /favorites/batch` with the IDs list → server merges with existing favorites
-- Clear localStorage favorites after merge
-
-### 2.4.4 UI Behavior
-
-- Heart/bookmark icon on each product card
-- Toggling fills/unfills the icon immediately (optimistic)
-- Favorites count in header (optional)
-- Dedicated "My Favorites" page or drawer in dashboard/profile
-- When viewing a favorited item in shop → icon should appear active
-
----
-
-## 3. Authentication Status Management
-
-### 3.1 Global Auth Context (RECOMMENDED APPROACH)
-
-- **Why Global Context?**:
-  - ✅ **Accessibility**: Auth status needed across entire app (landing, shop, checkout, modals)
-  - ✅ **Efficiency**: Single source of truth prevents prop-drilling
-  - ✅ **Performance**: Avoid redundant auth checks
-  - ✅ **Checkout Flow**: Modal needs instant access to auth status
-  - ✅ **Signup Redirect**: Need to persist cart location and return seamlessly
-
-- **Implementation**:
-
-  ```typescript
-  interface AuthContext {
-    isAuthenticated: boolean;
-    user: User | null;
-    loading: boolean;
-    login: (credentials) => Promise<void>;
-    signup: (data) => Promise<void>;
-    logout: () => Promise<void>;
-    checkAuthStatus: () => Promise<void>;
-  }
-  ```
-
-- **Storage Layers**:
-  1. **Session/Token Storage**: Store auth token in httpOnly cookie or secure storage
-  2. **Context**: Share auth state across app
-  3. **Sync**: On app load, verify token validity and hydrate auth context
-
-### 3.2 Auth Status Verification
-
-- **On App Load**: Check if user has valid auth token
-- **On Route Change**: Verify auth status for protected routes
-- **On Checkout Click**: Query auth context to determine modal behavior
-- **Error Handling**: Handle expired tokens, network errors gracefully
-
----
-
-## 4. Header Navigation Authentication Link
-
-> **Status: Ready to implement** — depends on global auth context (section 8)
-
-### 4.1 Dynamic Header Link Behavior
-
-- **Goal**: The "Sign Up" link/button in the landing page header must become a "Dashboard" link when the user is authenticated
-- **Trigger**: `isUserAuthenticated` value from global auth context
-- **Current Location**: Header/navigation bar of landing page
-- **Dynamic Behavior**:
-  - **If `isUserAuthenticated === false`**: Display as "Sign Up" link
-    - Clicking scrolls to signup modal or navigates to signup page
-    - Visual state: Primary button/link styling
-  - **If `isUserAuthenticated === true`**: Display as "Go to Dashboard" link
-    - Clicking navigates to user's role-specific dashboard (see 4.2)
-    - Visual state: Secondary or profile button styling (different color to signal "you're logged in")
-
-### 4.2 Role-Based Dashboard Routing
-
-- **Determine User Role**: On auth context hydration, fetch user role from profile
-- **Dashboard Mapping**:
-  - `role: "buyer"` → Route to `/dashboards/buyer`
-  - `role: "seller"` → Route to `/dashboards/seller`
-  - `role: "agent"` → Route to `/dashboards/agent`
-  - `role: "admin"` → Route to `/dashboards/admin`
-  - Default/Unknown → Route to `/dashboards` or profile page
-
-### 4.3 Implementation Details
-
-- **Access**: Use global auth context to check `isAuthenticated` and `user.role`
-- **Link Component**: Create reusable header link component
-  - Props: Takes authenticated state and user role
-  - Returns appropriate link/button with href or onClick handler
-- **Styling**:
-  - Show different visual states for authenticated vs unauthenticated
-  - Consider adding user avatar/profile indicator when authenticated
-- **Mobile**: Ensure button is accessible on mobile navigation
-
-### 4.4 State Transition Handling
-
-- **On Login**: Update auth context → Header link automatically updates
-- **On Logout**: Clear auth context → Header link reverts to "Sign Up"
-- **On Role Change** (if applicable): Fetch new role → Dashboard link points to new dashboard
-
-### 4.5 Related Component Updates
-
-- **Navbar/Header Component**: Add auth context hook
-- **Routes**: Ensure all role-based dashboards exist and are protected
-- **Navigation Guards** (optional): Redirect to signup if unauthenticated user tries to access dashboard directly
-
----
-
-## 5. Checkout Authentication Modal
-
-### 5.1 Modal Trigger Logic
-
-- **When**: User clicks "Proceed to Checkout" button
-- **Action**: System checks global auth context
-- **Conditions**:
-  - If `isAuthenticated === true`: Proceed directly to checkout/payment
-  - If `isAuthenticated === false`: Show authentication modal
-
-### 5.2 Authentication Modal (Not Authenticated)
-
-- **Title**: "Sign up or Log in to Checkout"
-- **Message**: "Please create an account or log in to complete your purchase"
-- **Options**:
-  - Tab 1: Login form
-    - Email input
-    - Password input
-    - "Forgot Password?" link
-    - Login button
-  - Tab 2: Signup form
-    - Email input
-    - Password input
-    - Confirm password input
-    - First name (optional)
-    - Last name (optional)
-    - Terms & conditions checkbox
-    - Signup button
-  - Close/Cancel button
-
-### 5.3 Modal State Flow
+### Merge logic
 
 ```
-User Clicks "Checkout"
-  ↓
-Check auth context → isAuthenticated?
-  ├─ YES → Proceed to payment
-  └─ NO → Show modal
-        ├─ User Logs In
-        │   ├─ Success → Close modal, proceed to payment
-        │   └─ Error → Show error, stay in modal
-        └─ User Signs Up
-            ├─ Success → Close modal, proceed to payment
-            └─ Error → Show error, stay in modal
+localStorage cart: [itemA x2, itemB x1]
+backend cart on login: [itemA x1, itemC x3]
+merged: [itemA x2, itemB x1, itemC x3]   ← take max qty
+PUT /cart with merged result
+Clear localStorage cart
 ```
 
-### 5.4 Modal UI Requirements
+### Backend endpoints needed
 
-- **Accessibility**:
-  - Proper ARIA labels
-  - Keyboard navigation support
-  - Focus management
-- **Visual Design**: Match landing page design system
-- **Error Handling**: Display form validation errors and API errors
-- **Loading States**: Show loading indicator during auth requests
+- `GET /cart` - fetch user's saved cart
+- `PUT /cart` - replace full cart (idempotent)
+- `DELETE /cart` - clear cart on order completion
 
 ---
 
-## 6. Cart Preservation on Signup/Login
+## 2. Shopping Cart Backend Sync (Authenticated Users)
 
-### 6.1 Cart Persistence Strategy
+> **DONE.** Kept for the strategy notes. See the Done list above.
 
-- **Before Auth**: Cart stored in localStorage
-- **During Signup/Login**:
-  - Keep cart data in localStorage
-  - Do NOT clear cart on successful authentication
-- **After Auth**:
-  - Migrate cart to user's account (optional enhancement)
-  - OR maintain localStorage cart and sync with user's saved cart on next visit
+For logged-in users, cart changes should sync to the backend so the cart survives across devices and browser clears.
 
-### 5.2 User Experience Flow
+### Strategy
+
+- Debounce 3 seconds: every cart mutation resets a timer; after 3s of no changes, `PUT /cart` fires with the full current cart.
+- On page unload (`beforeunload`), flush immediately without waiting for debounce.
+- On error, retry once then fall back to localStorage.
+- Show a subtle "saving..." indicator while sync is in flight.
+
+---
+
+## 3. Favorites / Wishlist
+
+> **DONE**, and split into favourites plus a separate buy-again rail.
+
+Not started. No backend endpoints, no UI, no heart icon on product cards.
+
+### What's needed
+
+**Backend:**
+
+- `GET /favorites` - list all favorites
+- `POST /favorites/:productId` - add
+- `DELETE /favorites/:productId` - remove
+- `POST /favorites/batch` - bulk add on login (for guest merge)
+
+**Frontend:**
+
+- Heart/bookmark icon on each product card (optimistic toggle)
+- Guest favorites stored as product ID array in localStorage
+- On login: batch merge localStorage favorites with backend, then clear localStorage
+- "My Favorites" page or drawer in dashboard
+
+---
+
+## 4. Checkout and Payment Flow
+
+> **DONE.** The status below is superseded - checkout is built and the
+> root cause was a missing `order_items` table, not just a missing route.
+
+### Status: RESOLVED (was: BROKEN - frontend/backend contract mismatch)
+
+`buyer/checkout.tsx` calls `POST /buyer/orders/initialize-payment` with `{ delivery_address, delivery_time, notes, cart: [{ product_id, name, price_kobo, unit, qty }] }`, expects `authorization_url` back, redirects to it, then on Paystack callback (`?trxref=...`) clears cart, snapshots to `debridgers_last_order`, and shows the confirmed screen.
+
+That endpoint did not exist. `buyer.controller.ts` had only `POST orders` / `GET orders`, and the sole payment-initialize route was `payment.controller.ts > POST payment/initialize`, built for the agent stock-request flow (requires `agent_id`, validated against an approved agent) and unable to accept a buyer cart payload. Checkout 404'd.
+
+**Why it had never been built:** there was no `order_items` table and no `product_id` on `orders`. The orders table stored `quantity`, `unit_price` and a total but never recorded _what_ was bought, because the schema was shaped for the single-product field flow. A multi-product buyer cart was unrepresentable, so the route could not be written against that schema. `order_items` was added and existing orders backfilled by matching `unit_price` to a product price.
+
+### Backend needed
 
 ```
-1. User browses shop on landing page (not authenticated)
-2. User adds items to cart (stored in localStorage)
-3. User clicks "Checkout" → Auth modal appears
-4. User completes signup/login
-5. Modal closes automatically
-6. Cart remains intact with all items
-7. User proceeds to payment/checkout page
+Buyer places order
+→ POST /buyer/orders/initialize-payment
+→ Backend calls Paystack initialize → returns authorization_url + reference
+→ Frontend redirects buyer to Paystack
+→ Paystack webhook: charge.success → create order with status "confirmed"
+→ Buyer redirected back → confirmed screen already handled on frontend
 ```
 
-### 5.3 Implementation Details
+1. New endpoint `POST /buyer/orders/initialize-payment` (auth: buyer) - accept `{ delivery_address, delivery_time, notes, cart }`, look up buyer email from JWT, call Paystack `transaction/initialize` with `{ email, amount, callback_url: FRONTEND_URL + "/buyer-dashboard/checkout", metadata: { type: "buyer_order", cart, delivery_address, delivery_time, notes } }`, return `{ data: { authorization_url, reference } }`.
+2. Paystack webhook (`payment.service.ts > handleWebhook`): on `charge.success` where `metadata.type === "buyer_order"`, create the order row + order_items rows, notify buyer via email.
+3. Set `FRONTEND_URL` env var on backend so the callback URL is correct per environment.
 
-- **Modal Close**: On successful signup/login, automatically close modal
-- **Navigation**: After modal closes, either:
-  - Auto-navigate to checkout page, OR
-  - Return focus to "Proceed to Checkout" button for manual click
-- **Data Sync**: When creating user account, optionally sync cart items to user profile (for future enhancements)
+### Option A - Pay from wallet (later, after buyer wallet exists)
 
----
-
-## 6. Checkout and Payment Flow
-
-### 6.1 Checkout Page Requirements
-
-- **Access**: Only accessible after successful authentication
-- **Display**:
-  - Cart items summary
-  - Order total
-  - Delivery address
-  - Payment method selection
-- **Actions**:
-  - Edit cart (remove/modify quantities)
-  - Proceed to payment
-
-### 6.2 Payment Integration
-
-- **Provider**: Specify payment gateway (Stripe, Paystack, etc.)
-- **Security**: Ensure PCI compliance
-- **Verification**: Process payment and confirm order
-
----
-
-## 7. Error Handling & Edge Cases
-
-### 7.1 Session Expiration
-
-- **Scenario**: User logs in, but session expires during checkout
-- **Behavior**:
-  - Detect expired token
-  - Show re-authentication modal
-  - Preserve cart and checkout progress
-  - Allow user to re-login and continue
-
-### 7.2 Network Errors
-
-- **Scenario**: API call fails during signup/login
-- **Behavior**:
-  - Display user-friendly error message
-  - Allow retry
-  - Keep modal open
-
-### 7.3 Cart Limits
-
-- **Max Quantity**: Define per-item limits
-- **Out of Stock**: Handle unavailable items gracefully
-- **Price Changes**: Verify prices haven't changed since adding to cart
-
-### 7.4 Browser/Storage Issues
-
-- **localStorage Unavailable**: Fall back to in-memory cart
-- **Quota Exceeded**: Handle storage errors gracefully
-- **Incognito Mode**: Detect and warn user about cart not persisting
-
----
-
-## 8. Global Auth Context Architecture
-
-### 8.1 Context Provider Setup
-
-- **Location**: Root component (`root.tsx` or layout wrapper)
-- **Hydration**: On app initialization:
-  1. Check for existing auth token
-  2. Verify token validity with backend
-  3. Fetch user profile if valid
-  4. Update context state
-- **Loading**: Show loading indicator during initial hydration
-
-### 8.2 Auth Context Exports
-
-- **Hooks**:
-  - `useAuth()` - Access auth state and methods
-  - `useAuthStatus()` - Only check if authenticated
-  - `useUser()` - Get current user data
-- **Methods**:
-  - `login(email, password)`
-  - `signup(data)`
-  - `logout()`
-  - `refreshToken()`
-  - `checkAuthStatus()`
-
-### 8.3 Token Management
-
-- **Storage**:
-  - Access token: httpOnly cookie (if backend supports) or secure localStorage
-  - Refresh token: httpOnly cookie preferred
-- **Refresh Strategy**:
-  - Automatically refresh before expiry
-  - OR refresh on 401 response
-- **Logout**: Clear tokens and reset auth context
-
-### 8.4 Type Safety
-
-```typescript
-interface User {
-  id: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  role?: string;
-  createdAt?: timestamp;
-}
-
-interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  error: Error | null;
-  login: (credentials: LoginCredentials) => Promise<void>;
-  signup: (data: SignupData) => Promise<void>;
-  logout: () => Promise<void>;
-  checkAuthStatus: () => Promise<void>;
-  clearError: () => void;
-}
+```
+Buyer tops up wallet → balance stored in DB
+At checkout → deduct balance → create order as "confirmed"
+If balance insufficient → prompt top-up
 ```
 
 ---
 
-## 9. API Integration Points
+## 5. Error Handling & Edge Cases
 
-### 9.1 Required Endpoints
-
-- `POST /auth/signup` - Create new user account
-- `POST /auth/login` - Authenticate user
-- `POST /auth/logout` - End session
-- `GET /auth/status` - Check current auth status
-- `POST /auth/refresh-token` - Refresh access token
-- `GET /auth/profile` - Get logged-in user profile
-
-### 9.2 Request/Response Formats
-
-- **Login/Signup Response**:
-  ```json
-  {
-    "success": true,
-    "user": { "id", "email", "firstName", "lastName" },
-    "token": "jwt_token",
-    "refreshToken": "refresh_token"
-  }
-  ```
-- **Error Response**:
-  ```json
-  {
-    "success": false,
-    "error": "Error message",
-    "code": "ERROR_CODE"
-  }
-  ```
+- **Session expiry during checkout** - detect expired token, show re-auth modal, preserve cart and checkout progress.
+- **Network errors** - user-friendly messages on API failure, allow retry, keep modal open.
+- **Cart limits** - max quantity per item, out-of-stock handling, price change detection.
+- **localStorage unavailable** - fall back to in-memory cart, warn on incognito mode.
 
 ---
 
-## 10. Testing Scenarios
+## 6. Testing Scenarios
 
-### 10.1 Happy Path
+> **NOT RUN.** No automated test covers any of the new endpoints; everything
+> shipped was verified by hand. This is the largest quality gap in the repo.
 
-- [ ] User browses shop without authentication
-- [ ] User adds items to cart
-- [ ] User clicks checkout
-- [ ] Auth modal appears
-- [ ] User signs up
-- [ ] Cart remains intact
-- [ ] User proceeds to payment
+### Happy path
 
-### 10.2 Alternative Path
+- [ ] Browse shop without authentication
+- [ ] Add items to cart
+- [ ] Click checkout → auth modal appears
+- [ ] Sign up → cart remains intact → proceed to payment
+- [ ] Log in instead of signing up → same result
 
-- [ ] User logs in instead of signing up
-- [ ] User updates quantities before checkout
-- [ ] User removes items from cart
-- [ ] User abandons checkout and returns later (cart persists)
+### Alternative path
 
-### 10.3 Error Cases
+- [ ] Update quantities before checkout
+- [ ] Remove items from cart
+- [ ] Abandon checkout and return later (cart persists)
 
-- [ ] Signup with invalid email
-- [ ] Signup with weak password
+### Error cases
+
+- [ ] Signup with invalid email / weak password
 - [ ] Login with wrong credentials
 - [ ] Session expires during checkout
 - [ ] Network error during signup
@@ -731,989 +285,324 @@ interface AuthContextType {
 
 ---
 
-## 11. Product Catalog Structure
+## 7. Product Catalog Structure
 
-### 11.1 Decision: Two-Tier Category + Varieties
+Kept as reference - both shop and agent stock request consume this.
 
-The catalog uses a two-tier model: **Category** at the top level, **Variety** within each category. This matches how buyers in Kaduna markets actually think ("I want beans" first, then "Wake Gida or cowpea?"). A flat list of 25+ products would be confusing on mobile and slow to browse.
+### Two-tier model: Category → Variety
 
 ```
 Category: Grains
-  Variety: Rice
-    - Local White Rice
-    - Ofada Rice
-    - Tuwo Rice
-    - Long Grain / Parboiled
-
-  Variety: Beans
-    - Wake Gida
-    - Cowpea
-    - Soya Beans
-    - Ameria (Brown Beans)
-    - Honey Beans
-
-  Variety: Garri
-    - White Garri
-    - Yellow Garri (toasted)
-    - Ijebu Garri
+  Variety: Rice - Local White, Ofada, Tuwo, Long Grain
+  Variety: Beans - Wake Gida, Cowpea, Soya Beans, Ameria, Honey Beans
+  Variety: Garri - White, Yellow (toasted), Ijebu
 
 Category: Oil
-    - Palm Oil (litre / keg sizes)
-    - Groundnut Oil
-    - Vegetable Oil
+  Palm Oil, Groundnut Oil, Vegetable Oil
 
 Category: Tubers
-    - Yam (tuber / bag)
-    - Irish Potato
-    - Sweet Potato
-
-Category: Protein / Others (future)
-    - Eggs
-    - Dried Fish
-    - Crayfish
+  Yam, Irish Potato, Sweet Potato
 ```
 
-### 11.2 Per-Variety Data Shape (for shop catalog and product pages)
-
-Each individual variety needs:
+### Per-variety data shape
 
 ```typescript
 interface ProductVariety {
   id: string;
-  slug: string; // "wake-gida-beans"
-  name: string; // "Wake Gida"
-  categoryId: string; // "beans"
-  parentCategory: string; // "Grains"
-  images: string[]; // multiple images of this specific variety
-  pricePerUnit: number; // in Naira
-  unit: "bag" | "kg" | "litre" | "keg" | "tuber" | "crate";
-  unitSizes: string[]; // ["5kg", "10kg", "50kg bag"] - available sizes
-  description: string; // short description of this variety
-  inStock: boolean;
-  featured?: boolean; // show in homepage carousel
-}
-```
-
-### 11.3 Category-Level Data Shape (for navigation and "What We Deliver" cards)
-
-```typescript
-interface ProductCategory {
-  id: string; // "beans"
-  name: string; // "Beans"
-  parentCategory: string; // "Grains"
-  icon?: string; // iconify icon key
-  description?: string; // short one-liner
-  variants: ProductVariety[];
-}
-```
-
-### 11.4 "What We Deliver" Cards: Updated Data Structure
-
-The homepage cards currently use `subtitle: string` (single string for all images). This must change to `variants` so each image has its own variety name label (see section 12 for the animation that depends on this):
-
-```typescript
-// OLD (current)
-interface WhatWeDeliverCategory {
-  title: string; // "Beans"
-  subtitle: string; // "Wake Gida, Cowpea" — single string
+  slug: string;
+  name: string;
+  categoryId: string;
   images: string[];
-}
-
-// NEW (required for animation + accuracy)
-interface DeliverVariant {
-  name: string; // "Wake Gida" — shown as delayed subtitle per image
-  image: string; // one image per variety
-}
-
-interface WhatWeDeliverCategory {
-  title: string; // "Beans" — always visible, never animates
-  variants: DeliverVariant[]; // each variant has its own image + label
+  pricePerUnit: number;
+  unit: "bag" | "kg" | "litre" | "keg" | "tuber" | "crate";
+  unitSizes: string[];
+  description: string;
+  inStock: boolean;
+  featured?: boolean;
 }
 ```
 
-**Updated card data (example):**
+### Notes
+
+- Images per variety are critical - Wake Gida looks different from cowpea, Ofada from long grain. Get real photos.
+- Pricing is at variety level, not category level.
+- The shop catalog and homepage "What We Deliver" cards share the same underlying data.
+
+---
+
+## 8. Buyer Settings - Unimplemented Toggles
+
+### 8.1 Email Notification Toggle
+
+Frontend hydrates and sends the toggle correctly. Backend is missing:
+
+1. `users` table: add `email_notifications boolean NOT NULL DEFAULT true` column + migration.
+2. `updateProfile` DTO: add `email_notifications?: boolean`.
+3. `BuyerService.updateProfile`: include `email_notifications` in updates.
+4. `BuyerService.getProfile`: return `email_notifications` in profile response.
+5. `UserListeners` / `EmailService`: before every transactional email to a buyer, check `email_notifications` flag and skip if `false`. Welcome and verification emails always send.
+
+### 8.2 SMS Notification Toggle
+
+Toggle is pure UI - no SMS service exists anywhere.
+
+1. Choose SMS provider: Africa's Talking (recommended for Nigeria), Termii, or Twilio.
+2. Build `SmsService` under `notification/features/sms/`.
+3. `users` table: add `sms_notifications boolean NOT NULL DEFAULT false` + migration.
+4. Wire `sms_notifications` into `updateProfile` DTO + service + `getProfile`.
+5. Add SMS sends in `UserListeners` for order placed, out-for-delivery, delivered events. Only send if `sms_notifications === true` AND user has a `phone` on file.
+6. Frontend: show helper note "You must have a phone number saved to receive SMS."
+
+### 8.3 Two-Factor Authentication Toggle
+
+Toggle is pure UI - no TOTP implementation exists.
+
+1. `users` table: add `two_factor_enabled boolean NOT NULL DEFAULT false` and `two_factor_secret text` (nullable) + migration.
+2. Install `otplib` for TOTP.
+3. New endpoints:
+   - `POST /buyer/2fa/setup` - generate TOTP secret, return QR code URL.
+   - `POST /buyer/2fa/verify-setup` - confirm first TOTP code, persist secret, set `two_factor_enabled = true`.
+   - `DELETE /buyer/2fa` - disable (requires current TOTP code).
+4. `AuthService.login`: if `two_factor_enabled`, do NOT return tokens - return `{ requires2fa: true, tempToken }`.
+5. New `POST /auth/2fa/login` - accepts `tempToken` + `totpCode`, verifies, issues real tokens.
+6. Frontend settings: clicking toggle opens setup flow (QR code + confirm code), not just a boolean flip. Disabling also requires entering current TOTP code.
+7. Frontend login page: if `requires2fa` returned, show second step for TOTP code.
+
+| Feature                   | Backend missing                           | Complexity |
+| ------------------------- | ----------------------------------------- | ---------- |
+| Email notification        | Schema col, DTO, listener gate            | Low        |
+| SMS notifications         | Full SMS provider + schema + listeners    | High       |
+| Two-factor authentication | Full TOTP flow + 3 endpoints + login step | High       |
+
+---
+
+## 9. Wallet & Payment
+
+### 9.1 Buyer Wallet - Not Built
+
+Balance is hardcoded to 0. "Add Funds" is disabled/fake. No `GET /buyer/wallet` endpoint exists. No buyer row in the `wallets` table.
+
+**Backend needed:**
+
+1. Create `buyer_wallets` table: `id, buyer_id FK, balance_kobo, total_funded_kobo, updated_at`. Create row on buyer registration.
+2. `GET /buyer/wallet` - return `{ balance_kobo, total_funded_kobo }`.
+3. `POST /buyer/wallet/topup/initialize` - accepts `{ amount_kobo }`, calls Paystack `transaction/initialize`, returns `{ authorization_url, reference }`.
+4. Paystack webhook: on `charge.success` with `metadata.type = "buyer_topup"`, credit buyer wallet.
+5. `wallet_transactions` table: `id, wallet_id, type (credit|debit), amount_kobo, description, reference, created_at`. Credit on top-up, debit on order.
+
+**Frontend (`buyer/wallet.tsx`):**
+
+- Fetch from `GET /buyer/wallet` for real balance.
+- "Add Funds" calls initialize endpoint, redirects to `authorization_url`.
+- Show real credit/debit history from transaction log.
+
+### 9.2 Agent Wallet - Bank Details & Payout Missing
+
+`GET /agent/wallet` and commissions work. Missing:
+
+1. `PATCH /agent/bank-details` - accepts `{ bank_code, account_number }`, verifies via Paystack account resolution API, updates profile and Paystack subaccount. Currently hardcoded to `"0000000000"`.
+2. Payout cron job (`@Cron`, every Friday 9am Nigeria time):
+   - Find agents with `pending_balance > 0` and approved Paystack subaccount.
+   - Call Paystack `POST /transfer`.
+   - On success, move pending to available balance, record payout transaction.
+3. Frontend `agent/wallet.tsx`: replace "Contact admin" placeholder with bank name (from Paystack bank list) + account number form. Show resolved account name before saving.
+
+---
+
+## 10. Agent Stock Request - Hierarchical UX
+
+Current page lists products flat. Goal: three-level drill-down.
+
+### Desired flow
+
+```
+Step 1 - Category buttons (always visible):  [ Grains ]  [ Oil ]  [ Tubers ]
+
+↓ click "Grains"
+
+Step 2 - Type pills appear below:  [ Beans ]  [ Rice ]  [ Garri ]
+
+↓ click "Beans"
+
+Step 3 - Variety list (inline accordion):
+  Wake Gida
+  Cowpea
+  Soya Beans
+
+↓ select "Wake Gida"
+
+Step 4 - Inline qty stepper appears:
+  Wake Gida  [ - ]  [ 3 ]  [ + ]   Add to Request
+```
+
+### State shape
 
 ```typescript
-const whatWeDeliverCategories: WhatWeDeliverCategory[] = [
-  {
-    title: "Beans",
-    variants: [
-      { name: "Wake Gida", image: "/images/beans-wake-gida.jpg" },
-      { name: "Cowpea", image: "/images/beans-cowpea.jpg" },
-      { name: "Soya Beans", image: "/images/beans-soya.jpg" },
-      { name: "Ameria", image: "/images/beans-ameria.jpg" },
-    ],
-  },
-  {
-    title: "Rice",
-    variants: [
-      { name: "Local White Rice", image: "/images/rice-local.jpg" },
-      { name: "Ofada Rice", image: "/images/rice-ofada.jpg" },
-      { name: "Tuwo Rice", image: "/images/rice-tuwo.jpg" },
-    ],
-  },
-  {
-    title: "Garri",
-    variants: [
-      { name: "White Garri", image: "/images/garri-white.jpg" },
-      { name: "Yellow Garri", image: "/images/garri-yellow.jpg" },
-      { name: "Ijebu Garri", image: "/images/garri-ijebu.jpg" },
-    ],
-  },
-  {
-    title: "Palm Oil",
-    variants: [
-      { name: "Fresh Palm Oil", image: "/images/oil-palm-fresh.jpg" },
-      { name: "Groundnut Oil", image: "/images/oil-groundnut.jpg" },
-    ],
-  },
-  {
-    title: "Tubers",
-    variants: [
-      { name: "Yam", image: "/images/tubers-yam.jpg" },
-      { name: "Irish Potato", image: "/images/tubers-irish.jpg" },
-    ],
-  },
-];
-```
-
-### 11.5 Considerations
-
-- **Images per variety are critical** - buyers need to visually confirm they're ordering the right type. Wake Gida looks different from cowpea. Ofada rice looks different from long grain. Get real photos.
-- **Pricing lives at variety level**, not category level. Different beans have different prices.
-- **Units vary by variety** - garri is sold by kg or bag, palm oil by litre or keg. `unitSizes` captures this.
-- **The shop catalog and the homepage "What We Deliver" cards share the same underlying data** - the admin product management should feed both. No duplication.
-
----
-
-## 12. "What We Deliver" Card Animation (Hover Subtitle Reveal)
-
-### 12.1 Desired Behavior
-
-When hovering a DeliverCard:
-
-1. Images cycle as they do now (every 900ms, right-to-left slide, 600ms transition)
-2. The **category title** ("Beans", "Rice", "Garri") stays visible at ALL times - it never hides or animates
-3. The **variety subtitle** ("Wake Gida", "Cowpea", etc.) animates per cycle:
-   - When the index changes: subtitle **fades out immediately** (as the next image begins sliding in)
-   - After the new image has fully arrived: **wait 1 second**
-   - Then: subtitle **fades in** with the new variety name
-
-On hover end: snap back to `variants[0]`, title and subtitle[0] immediately visible, no delay.
-
-### 12.2 State Requirements
-
-Current `DeliverCard` state:
-
-```typescript
-const [activeImageIndex, setActiveImageIndex] = useState(0);
-const [isHovered, setIsHovered] = useState(false);
-const intervalRef = useRef(null);
-```
-
-New state needed:
-
-```typescript
-const [activeIndex, setActiveIndex] = useState(0); // drives both image and variant name
-const [isHovered, setIsHovered] = useState(false);
-const [subtitleVisible, setSubtitleVisible] = useState(true); // drives subtitle fade
-const intervalRef = useRef<NodeJS.Timeout | null>(null);
-const subtitleTimerRef = useRef<NodeJS.Timeout | null>(null); // for the 1s delay
-```
-
-### 12.3 Timing Logic
-
-```
-ON index change (inside interval callback):
-  1. setSubtitleVisible(false)             — subtitle fades out immediately
-  2. Wait 600ms (image transition duration)
-     + 1000ms (the 1 second "hold" after image arrives)
-     = 1600ms total delay before showing subtitle
-  3. setSubtitleVisible(true)              — subtitle fades in
-
-ON hover end:
-  1. Clear interval
-  2. Clear subtitle timer
-  3. setActiveIndex(0)
-  4. setSubtitleVisible(true)              — show subtitle immediately on reset
-```
-
-### 12.4 Animation Values for the Subtitle Element
-
-```typescript
-// Subtitle animated with framer-motion AnimatePresence or simple motion.p
-<motion.p
-  key={activeIndex}          // key change triggers re-animation
-  animate={{ opacity: subtitleVisible ? 1 : 0 }}
-  transition={{ duration: 0.35, ease: "easeOut" }}
-  className="text-base text-white"
->
-  {category.variants[activeIndex].name}
-</motion.p>
-```
-
-Alternative without `key` change - just opacity:
-
-```typescript
-<motion.p
-  animate={{ opacity: subtitleVisible ? 1 : 0, y: subtitleVisible ? 0 : 4 }}
-  transition={{ duration: 0.35 }}
->
-  {category.variants[activeIndex].name}
-</motion.p>
-```
-
-The `y: 4` on exit adds a slight downward drift as it fades out, making the reveal feel more natural.
-
-### 12.5 What Does NOT Change
-
-- The category title (`category.title`) — renders as a plain `<p>`, no animation, always fully visible
-- The image slide mechanic (right-to-left, 600ms ease-in-out) — unchanged
-- The dot indicators at bottom — now keyed to `activeIndex` instead of `activeImageIndex`
-- The carousel auto-scroll and snap-back logic in `WhatWeDeliver` parent — unchanged
-
-### 12.6 Implementation Files
-
-- Primary change: `apps/debridgers-frontend/app/routes/landing/home.tsx`
-  - `DeliverCard` component (lines 140-229 currently)
-  - `whatWeDeliverCategories` data (lines 99-136 currently) - restructure to variants
-- No other files affected
-
----
-
-## Implementation Priority
-
-### Confirmed Flow (Option A)
-
-```
-1. Landing page → /shop (public, no auth required)
-2. Browse products, add to cart (localStorage, no API calls)
-3. Click "Checkout" → modal prompts login or signup
-4. On auth success → modal closes, cart intact, proceed to payment
-5. Header link: unauthenticated → "Sign Up" | authenticated → "Dashboard" (role-based)
-```
-
-### Dependency-Ordered Implementation
-
-**Layer 0 - Foundation (blocks everything)**
-
-- [ ] **§8** Global auth context (`useAuth`, `isAuthenticated`, `user.role`) - root-level provider, no other layer can ship without this
-- [ ] **§11** Confirm product catalog data structure and seed data - shop and agent stock request both consume this
-
-**Layer 1 - Core user-facing surface (depends on Layer 0)**
-
-- [ ] **§1.1** Extract shop component to landing page route - public route, no auth guard
-- [ ] **§1.2** Add shop link to landing page header/nav
-- [ ] **§2.1/2.2** Cart state: Zustand store with localStorage for guests - badge, drawer, quantity controls, totals, checkout button
-- [ ] **§4** Header link: "Sign Up" | "Dashboard" toggle based on auth context and user role
-- [ ] **§12** "What We Deliver" card animation and variant data structure update (no external deps)
-
-**Layer 2 - Auth gate (depends on Layer 1 + Layer 0)**
-
-- [ ] **§5** Checkout auth modal - trigger on unauthenticated checkout click, login/signup tabs, state flow
-- [ ] **§6** Cart preservation on auth - keep localStorage cart through signup/login, auto-close modal on success
-
-**Layer 3 - Backend integration (depends on Layer 2)**
-
-- [ ] **§9** Auth endpoints wired: `POST /auth/login`, `POST /auth/signup`, `GET /auth/profile`, token refresh
-- [ ] **§2.3** Backend cart: `PUT /cart` (full replace), `GET /cart`, debounced 3s sync for authenticated users
-- [ ] Cart merge on login: `GET /cart` from backend + merge with localStorage + `PUT /cart` + clear localStorage
-- [ ] **§14.3** Buyer payment at checkout - Paystack per-order flow (Option B): initialize → redirect → webhook → confirm order
-
-**Layer 4 - Buyer settings and wallet (depends on Layer 3)**
-
-- [ ] **§13.4** Change password: `PATCH /buyer/password` endpoint + wire into settings submit handler
-- [ ] **§13.1** Email notification toggle: add DB column, DTO, gate in `UserListeners`, hydrate toggle on load
-- [ ] **§14.2** Buyer wallet: `buyer_wallets` table, `GET /buyer/wallet`, top-up via Paystack, webhook credit handler
-
-**Layer 5 - Favorites (depends on Layer 3, independent of Layer 4)**
-
-- [ ] **§2.4** Favorites: `POST/DELETE /favorites/:productId`, heart icon on product cards (optimistic), guest localStorage with merge-on-login, My Favorites page
-
-**Layer 6 - Agent and admin features (mostly independent, can run in parallel with Layers 1-5)**
-
-- [ ] **§1.4** Landing outreach / lead capture: public `POST /outreach/submit`, `source` field in admin table - no auth deps
-- [ ] **§15** Agent stock request hierarchical UX - category row, type pills, variety drill-down, inline qty stepper
-- [ ] **§16.1** `system_settings` table + migration
-- [ ] **§16.2** `SystemSettingsService`, `GET /config/public`, `PATCH /admin/settings`, admin settings UI
-- [ ] **§16.3** Agent referral: capture `?ref=` on signup, commission on referred buyer's order
-- [ ] **§16.4** Buyer referral: `buyer_discounts` table, create discount on referee's first order, apply at checkout
-- [ ] **§16.5** Dynamic commission rate in `agents.tsx` earnings section from `/config/public`
-- [ ] **§16.6** `/refer` landing page
-
-**Layer 7 - Polish and high-complexity features (lowest urgency)**
-
-- [ ] **§13.2** SMS notifications - requires choosing and integrating an SMS provider (Africa's Talking recommended)
-- [ ] **§13.3** Two-factor authentication - full TOTP flow, login second step, setup wizard
-- [ ] **§14.4** Agent bank details self-service + payout cron job (Friday disbursement)
-- [ ] **§7** Edge cases: session expiry re-auth modal, network error retry, localStorage quota handling
-- [ ] **§10** Comprehensive testing: happy path, alternatives, error cases
-
----
-
-## Notes & Considerations
-
-- **Auth Status**: YES, use global context - essential for this flow
-- **Cart Data**: Keep separate from auth state for flexibility
-- **Offline Support**: Consider service workers for cart persistence in offline mode
-- **A/B Testing**: Track conversion rates through checkout flow
-- **Performance**: Lazy load checkout page to reduce initial bundle
-- **Mobile UX**: Ensure modal and checkout are mobile-optimized
-
----
-
-## 13. Buyer Settings — Unimplemented Toggles & Password Change
-
-> **Audit date: 2026-06-08**
-> All three toggles (Email Notification, SMS Notification, Two-Factor Authentication) and the Change Password section in `apps/debridgers-frontend/app/routes/dashboards/buyer/settings.tsx` are **UI-only**. None of them are wired to the backend.
-
----
-
-### 13.1 Email Notification Toggle — Not Wired
-
-**Current state:**
-
-- The `emailNotification` boolean lives in frontend `useState` only.
-- `handleSubmit` calls `PATCH /buyer/profile` with only `first_name`, `last_name`, and `delivery_address`. The `emailNotification` value is never sent.
-- The backend `updateProfile` DTO and handler has no field for notification preferences.
-- The `users` schema has no `email_notifications` column.
-
-**What happens if user toggles it off:**
-Nothing. The backend will keep sending login confirmation emails, order update emails, and any future transactional emails regardless of the toggle state. The setting is lost on page refresh.
-
-**What needs to be done:**
-
-1. **Backend — DB schema**: Add `email_notifications boolean NOT NULL DEFAULT true` to the `users` table. Run a migration.
-2. **Backend — `updateProfile` DTO** (`buyer/dto/update-profile.dto.ts`): Add `email_notifications?: boolean` field.
-3. **Backend — `BuyerService.updateProfile`**: Include `email_notifications` in the `updates` object.
-4. **Backend — `BuyerService.getProfile`**: Return `email_notifications` in the profile response so the frontend can hydrate the toggle on load.
-5. **Backend — `UserListeners` / `EmailService`**: Before every transactional email sent to a buyer (login notification, order updates), fetch the user's `email_notifications` flag and skip the send if it is `false`. This check is needed at the listener level, not the email template level.
-6. **Frontend — `settings.tsx`**: Load `email_notifications` from `GET /buyer/me` and set `emailNotification` state. Include it in the PATCH body on submit.
-
-**Note:** Welcome and email-verification emails during signup should always be sent regardless of this flag (user hasn't opted out yet at that point).
-
----
-
-### 13.2 SMS Notification Toggle — Not Built
-
-**Current state:**
-
-- The `smsNotification` toggle is pure UI state, never saved anywhere.
-- There is **no SMS service** in the backend codebase — no Twilio, no Africa's Talking, no Termii, nothing.
-- No SMS sending code exists anywhere in `apps/debridgers-backend/src/`.
-- The `users` schema has no `sms_notifications` column and no `phone` field used for outbound SMS.
-
-**What needs to be done:**
-
-1. **Choose an SMS provider**: Africa's Talking (popular in Nigeria), Termii, or Twilio. Africa's Talking has strong NG coverage and competitive pricing.
-2. **Backend — Install SDK** and wire up a `SmsService` (similar pattern to `EmailService`) under `notification/features/sms/`.
-3. **Backend — DB schema**: Add `sms_notifications boolean NOT NULL DEFAULT false` to `users`. Default `false` because users have not opted in.
-4. **Backend — `updateProfile` DTO + service**: Accept and persist `sms_notifications`.
-5. **Backend — `getProfile`**: Return `sms_notifications`.
-6. **Backend — Event listeners**: Add SMS sends in `UserListeners` for events where SMS makes sense (order placed, order delivered, order out-for-delivery). Only send if `sms_notifications === true` AND the user has a `phone` number on file.
-7. **Frontend — `settings.tsx`**: Hydrate toggle from profile on load. Include in PATCH body. Show a helper note: "You must have a phone number saved to receive SMS."
-
----
-
-### 13.3 Two-Factor Authentication Toggle — Not Built
-
-**Current state:**
-
-- The `twoFactor` toggle is pure UI state, never saved.
-- There is **no 2FA implementation** anywhere in the backend — no TOTP library (no `speakeasy`, `otplib`, etc.), no authenticator app flow, no 2FA OTP table, no 2FA enforcement at login.
-- The existing email OTP in `email_verification` is for signup email verification only — it is not a 2FA login step.
-- The `users` schema has no `two_factor_enabled` or `two_factor_secret` column.
-
-**What needs to be done (TOTP approach — recommended):**
-
-1. **Backend — DB schema**: Add `two_factor_enabled boolean NOT NULL DEFAULT false` and `two_factor_secret text` (nullable) to `users`.
-2. **Backend — Install `otplib`** (or `speakeasy`) for TOTP generation and verification.
-3. **Backend — New endpoints** (under `auth` or `buyer` controller):
-   - `POST /buyer/2fa/setup` — generate a TOTP secret, return QR code URL for authenticator app. Store secret temporarily (or in DB as unconfirmed).
-   - `POST /buyer/2fa/verify-setup` — user submits first TOTP code to confirm setup. Mark `two_factor_enabled = true`, persist secret.
-   - `DELETE /buyer/2fa` — disable 2FA (requires current TOTP code to confirm).
-4. **Backend — `AuthService.login`**: After password check, if `user.two_factor_enabled === true`, do NOT return tokens. Instead return `{ requires2fa: true, tempToken: ... }`. The frontend then shows a TOTP prompt.
-5. **Backend — New endpoint** `POST /auth/2fa/login` — accepts `tempToken` + `totpCode`, verifies TOTP, then issues real access/refresh tokens.
-6. **Frontend — `settings.tsx`**: Clicking the 2FA toggle should open a setup flow (QR code display + confirm code step), not just flip a boolean. Disable toggle cannot just POST a boolean either — require the user to enter their current TOTP code to turn it off.
-7. **Frontend — login page**: After password submit, if `requires2fa` is returned, show a second step input for the TOTP code.
-
-**Alternative (SMS-based 2FA):** Simpler but requires SMS provider from 13.2. Send a 6-digit OTP to `user.phone` on login. Only viable once SMS infrastructure is built.
-
----
-
-### 13.4 Change Password — Not Wired
-
-**Current state:**
-
-- `oldPassword` and `newPassword` fields are rendered in the UI.
-- `handleSubmit` does **not** include them in the `PATCH /buyer/profile` call. The fields are entirely ignored on submit.
-- There is no `changePassword` method in `BuyerService` and no endpoint for in-dashboard password change. The only password change mechanism is the forgot-password reset flow (`POST /auth/forgot-password` → email link → `POST /auth/reset-password`).
-
-**What needs to be done:**
-
-1. **Backend — `BuyerService`**: Add `changePassword(dto: { old_password: string; new_password: string }, user: JwtPayload)`. Fetch user, `bcrypt.compare` old password, hash new password, update `users.password`.
-2. **Backend — `BuyerController`**: Add `PATCH /buyer/password` endpoint, guarded by `AuthGuard + RolesGuard("buyer")`. Use a new DTO with zod validation (min 8 chars for new password).
-3. **Frontend — `settings.tsx`**: In `handleSubmit`, if `oldPassword` and `newPassword` are both present, call `PATCH /buyer/password` separately (or chain it). Show specific error if old password is wrong. Clear both fields on success.
-
----
-
-### 13.5 Implementation Priority
-
-| Feature                                  | Backend missing                                  | Frontend missing                      | Complexity |
-| ---------------------------------------- | ------------------------------------------------ | ------------------------------------- | ---------- |
-| Email notification toggle save + respect | Schema col, DTO update, gate in listeners        | Hydrate on load, include in PATCH     | Low        |
-| Change password endpoint                 | New service method + endpoint                    | Wire in submit handler                | Low        |
-| SMS notifications                        | Full SMS provider + service + schema + listeners | Hydrate on load, phone number warning | High       |
-| Two-factor authentication                | Full TOTP flow, login step, 3 new endpoints      | Setup wizard, login second step       | High       |
-
----
-
-## 14. Wallet & Payment
-
-> **Audit date: 2026-06-08**
-
----
-
-### 14.1 Current State — What Actually Works
-
-| Feature                                                                      | Status                                                      |
-| ---------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| Agent wallet balance display (`GET /agent/wallet`)                           | Works — reads from `wallets` table                          |
-| Agent commission history (`GET /agent/commissions`)                          | Works                                                       |
-| Agent Paystack subaccount creation (`POST /payment/subaccount/:agentId`)     | Works — admin-only                                          |
-| Paystack payment init for agent referral splits (`POST /payment/initialize`) | Works                                                       |
-| Paystack webhook → records agent commission on `charge.success`              | Works                                                       |
-| Buyer total-spent display                                                    | Works — derived from delivered orders in `/buyer/dashboard` |
-| Buyer transaction history display                                            | Works — built from `/buyer/orders`                          |
-
----
-
-### 14.2 Buyer Wallet — Not Built
-
-**Current state:**
-
-- The `wallets` table has an `agent_id` column only — there is no buyer wallet row anywhere in the DB.
-- `buyer/wallet.tsx` shows "Total Spent" (from delivered orders) and a transaction list (from order history). These work, but they are not a real wallet — there is no balance, no top-up, and no payment flow.
-- The "Add Funds" button is **disabled** and labeled "coming soon". The modal behind it has a fake `setTimeout` — no API call is made.
-- `balance` and `totalFunded` are hardcoded to `0`.
-- There is no `GET /buyer/wallet` endpoint.
-- There is no `POST /buyer/wallet/topup` or Paystack initialization endpoint for buyers.
-
-**What a buyer wallet needs:**
-
-1. **DB schema**: Create a `buyer_wallets` table (or extend `wallets` with a `buyer_id` column):
-
-   ```
-   id, buyer_id (FK → users), balance_kobo, total_funded_kobo, updated_at
-   ```
-
-   A wallet row should be created automatically when a buyer registers (event-driven or on first top-up).
-
-2. **Backend — `GET /buyer/wallet`**: Return `{ balance_kobo, total_funded_kobo }`. Frontend converts to naira.
-
-3. **Backend — `POST /buyer/wallet/topup/initialize`**: Accepts `{ amount_kobo }`. Calls Paystack `transaction/initialize` with the buyer's email and amount. Returns `{ authorization_url, reference }`. Frontend redirects buyer to Paystack checkout page.
-
-4. **Backend — Paystack webhook**: Extend `handleWebhook` to detect buyer top-up events (distinguish from agent commission events via `metadata.type = "buyer_topup"` set during initialization). On `charge.success`, credit the buyer's wallet balance and record the transaction.
-
-5. **Backend — Transaction log**: Add a `wallet_transactions` table:
-
-   ```
-   id, wallet_id, type (credit|debit), amount_kobo, description, reference, created_at
-   ```
-
-   Credit on top-up. Debit when an order is placed from wallet balance.
-
-6. **Frontend — `buyer/wallet.tsx`**:
-   - Fetch from `GET /buyer/wallet` to show real balance.
-   - "Add Funds" → call `POST /buyer/wallet/topup/initialize`, redirect to `authorization_url`.
-   - After Paystack redirects back (`callback_url`), show success and refresh balance.
-   - Show real credit/debit transactions from the transaction log endpoint.
-
----
-
-### 14.3 Buyer Payment at Checkout — Not Built
-
-**Current state:**
-
-- `POST /buyer/orders` creates an order with `status: "pending"` immediately with no payment step.
-- The `total_amount_kobo` is sent by the frontend but no Paystack call is made — the order is created whether or not the user has paid.
-- There is no checkout → payment → order confirmation flow. Orders are created on trust.
-
-**Two approaches — choose one:**
-
-**Option A — Pay from wallet balance (pre-funded)**
-
-```
-Buyer tops up wallet → balance stored in DB
-At checkout → deduct balance → create order as "confirmed"
-If balance insufficient → show error, prompt top-up
-```
-
-Simpler UX (no Paystack redirect per order). Requires the buyer wallet from 14.2.
-
-**Option B — Pay per order via Paystack (card/transfer each time)**
-
-```
-Buyer places order → POST /buyer/orders/initialize-payment
-Backend calls Paystack initialize → returns authorization_url
-Frontend redirects → buyer pays on Paystack
-Paystack webhook → charge.success → confirm order, change status to "confirmed"
-```
-
-No pre-funding needed. Each order goes through Paystack.
-
-**Recommended: Option B first** (simpler to ship, no wallet pre-funding complexity), then add Option A (wallet top-up) as a later convenience feature.
-
-**What needs to be built for Option B:**
-
-1. **Backend** — New endpoint `POST /buyer/orders` should not create the order immediately. Instead:
-   - Validate the cart, calculate total.
-   - Call Paystack `transaction/initialize` with `metadata: { type: "buyer_order", order_details: ... }`.
-   - Store a pending order draft (or pass all details in metadata).
-   - Return `{ authorization_url, reference }` to frontend.
-
-2. **Backend — Paystack webhook**: On `charge.success` with `metadata.type = "buyer_order"`:
-   - Create the order with `status: "confirmed"`.
-   - Send buyer a notification (in-app + email: "Order confirmed, payment received").
-
-3. **Frontend — `buyer/checkout.tsx`**:
-   - On "Place Order", call the initialize endpoint.
-   - Redirect to `authorization_url`.
-   - On Paystack callback, show "Payment received, order confirmed" screen.
-
----
-
-### 14.4 Agent Wallet — Partially Built, Bank Details Missing
-
-**Current state:**
-
-- `GET /agent/wallet` and `GET /agent/commissions` work.
-- Paystack subaccount creation works but uses a **hardcoded account number `"0000000000"`** — this is a placeholder and will fail on a real Paystack account.
-- Agents cannot update their own bank account details from the dashboard. The `bank_details` section in `agent/wallet.tsx` says "Contact admin to update your payout details."
-- There is no endpoint for agents to submit or update their bank account number.
-- Automatic payout disbursement (every Friday 9am as shown in the UI) is **not implemented** — no cron job, no payout trigger, no Paystack transfer call.
-
-**What needs to be built:**
-
-1. **Agent bank details endpoint**: `PATCH /agent/bank-details` — accepts `{ bank_code, account_number }`. Verifies account via Paystack's account resolution API (`GET https://api.paystack.co/bank/resolve`), then updates the agent profile and re-creates or updates the Paystack subaccount.
-
-2. **Agent payout cron job**: A scheduled job (NestJS `@Cron`) that runs every Friday at 9am Nigeria time:
-   - Finds all agents with `pending_balance > 0` and an approved Paystack subaccount.
-   - Calls Paystack `POST /transfer` to disburse.
-   - On success, moves `pending_balance` to `available_balance`, records a payout transaction.
-
-3. **Frontend — `agent/wallet.tsx`**: Replace the "Contact admin" placeholder with a form to enter bank name (from Paystack bank list) and account number. Show the resolved account name for confirmation before saving.
-
----
-
-### 14.5 Implementation Priority
-
-| Feature                                          | Complexity | Blocks                     |
-| ------------------------------------------------ | ---------- | -------------------------- |
-| Option B: per-order Paystack payment at checkout | Medium     | Buyers placing real orders |
-| Paystack webhook for buyer orders                | Medium     | Order confirmation flow    |
-| Agent bank details self-service                  | Medium     | Real agent payouts         |
-| Buyer wallet table + `GET /buyer/wallet`         | Low        | Wallet balance display     |
-| Buyer wallet top-up via Paystack                 | Medium     | Pre-funded wallet UX       |
-| Agent payout cron job (Friday disbursement)      | Medium     | Automated agent payouts    |
-
----
-
-## 15. Agent Stock Request — Hierarchical Category-Based UX
-
-> **Context: 2026-06-08**
-> The current stock request page (`apps/debridgers-frontend/app/routes/dashboards/agent/request-stock.tsx`) lists products in a flat or unstructured way. The goal is to rework the selection UX into a three-level drill-down: Category → Subcategory/Type → Variety + Quantity.
-
----
-
-### 15.1 Desired Flow
-
-```
-Step 1 — Category buttons (top level, always visible)
-  e.g.  [ Grains ]  [ Oil ]  [ Tubers ]
-
-  ↓ Agent clicks "Grains"
-
-Step 2 — Type/Subcategory pills appear below the category row
-  e.g.  [ Beans ]  [ Rice ]  [ Garri ]
-  (listed as inline buttons/pills directly under the active category)
-
-  ↓ Agent clicks "Beans"
-
-Step 3 — Variety dropdown opens (inline or popover beneath the type button)
-  e.g.  Wake Gida
-        Cowpea
-        Soya Beans
-        Ameria (Brown Beans)
-        Honey Beans
-
-  ↓ Agent selects e.g. "Wake Gida"
-
-Step 4 — Quantity input appears (inline, alongside the selected item)
-  e.g.  Wake Gida  [ - ]  [ 3 ]  [ + ]  Add to Request
-```
-
-The agent can repeat this flow to add multiple items to a single stock request before submitting.
-
----
-
-### 15.2 UI Structure
-
-- **Category row**: Horizontal scrollable row of buttons. Active category is highlighted. Only one category active at a time.
-- **Type pills**: Appear below the category row when a category is selected. Clicking a type pill expands its variety list (dropdown or accordion — TBD, but inline accordion preferred on mobile).
-- **Variety list**: Renders below the active type pill. Each variety is a pressable row or card. Tapping one opens the quantity input inline within that row.
-- **Quantity input**: Stepper (`-` / number / `+`) with a minimum of 1. Unit label (bag, kg, litre, etc.) shown next to the stepper so the agent knows what they're ordering.
-- **Add to Request button**: Appears once a variety and a valid quantity are selected. Adds the item to a running cart/request list visible at the bottom or in a sidebar.
-
----
-
-### 15.3 State Shape
-
-```typescript
-// Selection state during the drill-down
 interface StockSelectionState {
-  activeCategoryId: string | null; // e.g. "grains"
-  activeTypeId: string | null; // e.g. "beans"
-  activeVarietyId: string | null; // e.g. "wake-gida"
+  activeCategoryId: string | null;
+  activeTypeId: string | null;
+  activeVarietyId: string | null;
   quantity: number;
 }
 
-// An item already added to the request
 interface RequestLineItem {
   varietyId: string;
-  varietyName: string; // "Wake Gida"
-  typeName: string; // "Beans"
-  categoryName: string; // "Grains"
-  unit: string; // "bag"
+  varietyName: string;
+  typeName: string;
+  categoryName: string;
+  unit: string;
   quantity: number;
 }
 ```
 
+### UX notes
+
+- Category row: horizontally scrollable on mobile, no wrapping.
+- Active category and type have clear visual distinction.
+- Type is an accordion toggle - clicking active type collapses it.
+- Already-added varieties show a checkmark.
+- Running request list at bottom (sticky or collapsible sheet) with remove option.
+- File to modify: `apps/debridgers-frontend/app/routes/dashboards/agent/request-stock.tsx`
+
 ---
 
-### 15.4 Data Source
+## 11. Admin Commission & Referral System
 
-The same product catalog structure from section 11 drives this UI. No separate data model needed:
+### 11.1 Backend - system_settings Table
+
+`system_settings` table, `SystemSettingsService`, `GET`/`PATCH /admin/settings`, and `GET /config/public` are all built. The admin settings UI (`admin/settings.tsx`) is wired on the frontend.
+
+### What's still missing
+
+- `PaymentService` still reads the agent commission rate from the `AGENT_COMMISSION_RATE` env var, not from `SystemSettingsService.getSetting("agent_commission_rate")`. Wire it to the DB-backed setting so admin changes actually take effect.
+- Seed rows for `buyer_referral_discount_kobo` (`50000`) and `buyer_referral_discount_type` (`flat`) - needed once section 11.4 (buyer referral discounts) is built.
+
+### 11.2 Referral Tracking Columns
+
+`users` table additions (migration needed):
 
 ```
-Category (section 11.3 → ProductCategory)
-  └─ Type/Subcategory (e.g. "Beans", "Rice") — middle tier
-       └─ Variety (section 11.2 → ProductVariety) — leaf, has price + unit
+referral_code:   varchar UNIQUE    Generated on account activation. Format: "DBR-<ULID-short>"
+referred_by:     integer FK -> users.id (nullable)
 ```
 
-The catalog data (currently seeded/static) should be loaded from the backend via the product endpoints when those are live. Until then, the same hardcoded structure from `home.tsx` / `shop.tsx` can be reused.
+### 11.3 Agent Referral System
+
+Agent earns commission when a referred buyer places an order.
+
+**Backend:**
+
+1. `POST /auth/signup`: if `referred_by_code` in body, resolve to user ID, persist as `users.referred_by`.
+2. Paystack webhook: on `charge.success` for buyer order, check if buyer has `referred_by`. If so, create `commissions` row with `type: "buyer_referral"`.
+3. `GET /agent/profile` must return `referral_code`.
+
+**Frontend:**
+
+- Show agent's referral link in `agent/overview.tsx` or `agent/wallet.tsx` with copy-to-clipboard button.
+
+### 11.4 Buyer Referral System
+
+Buyer earns a discount (not cash) when a referred friend places their first order.
+
+**Backend:**
+
+1. New `buyer_discounts` table:
+   ```
+   id, buyer_id FK, amount_kobo, reason, status (pending|applied|expired),
+   expires_at, order_id FK (nullable), created_at
+   ```
+2. Paystack webhook: on `charge.success` for buyer order, if it is the buyer's first order AND buyer has `referred_by`, create a `buyer_discounts` row for the referrer. Notify referrer.
+3. Checkout flow: before calling Paystack initialize, query `buyer_discounts` for pending discounts. If one exists, subtract from total. Mark as `applied` after Paystack confirms.
+4. `GET /buyer/discounts` - pending discounts for authenticated buyer.
+
+**Business rules:**
+
+- One discount per referral (only on referee's first order).
+- Discounts stack if multiple referrals - apply oldest first at checkout.
+- Discount cannot bring total below ₦0; remainder is forfeited.
+- 90-day expiry.
+
+**Frontend:**
+
+- Show buyer's referral link in `buyer/overview.tsx` or `buyer/settings.tsx` with copy button and explanation.
+- Checkout shows pending discount if available.
+
+### 11.5 /refer Landing Page
+
+New route: `apps/debridgers-frontend/app/routes/landing/refer.tsx`
+
+**Sections:**
+
+1. Hero - "Invite a friend, both of you win."
+2. For Buyers - how it works (3 steps), ₦500 discount, 90-day expiry note, CTA.
+3. For Agents - how it works (3 steps), live commission rate from `/config/public`, CTA.
+4. FAQ - limits, timing, buyer vs agent distinction.
+
+**Navigation entry points:**
+
+- Landing page header nav.
+- Buyer dashboard sidebar.
+- Agent dashboard sidebar under Wallet section.
+
+### 11.6 Implementation Order
+
+| Step | What                                                | Complexity |
+| ---- | --------------------------------------------------- | ---------- |
+| 1    | `system_settings` table + migration                 | Low        |
+| 2    | `SystemSettingsService` + `GET /config/public`      | Low        |
+| 3    | `PATCH /admin/settings` endpoint                    | Low        |
+| 4    | Wire `PaymentService` to `system_settings`          | Low        |
+| 5    | `referral_code` + `referred_by` columns + migration | Low        |
+| 6    | Generate `referral_code` on user activation         | Low        |
+| 7    | Capture `?ref=` on signup, persist `referred_by`    | Low        |
+| 8    | Agent referral commission on referred buyer order   | Medium     |
+| 9    | `buyer_discounts` table + migration                 | Low        |
+| 10   | Buyer referral discount on referee's first order    | Medium     |
+| 11   | Apply discount at checkout before Paystack init     | Medium     |
+| 12   | `GET /buyer/discounts` + checkout UI                | Low        |
+| 13   | `/refer` landing page                               | Medium     |
+| 14   | Referral link in buyer + agent dashboards           | Low        |
 
 ---
 
-### 15.5 UX Considerations
-
-- On mobile the category row should be horizontally scrollable with no wrapping — agents will use this on phones in the field.
-- Active category and active type should have clear visual distinction (filled button vs outline, or colour change).
-- The drill-down should be collapsible — clicking an already-active type closes its variety list (accordion toggle).
-- Already-added items should show a checkmark or badge on their variety row so the agent can tell what they've already added without scrolling down to the cart.
-- The running request list at the bottom should be always accessible (sticky footer or collapsible sheet). It should show item name, quantity, unit, and an option to remove.
-- On submit, the full `RequestLineItem[]` list is sent as the stock request payload.
-
----
-
-### 15.6 Files to Modify
-
-- Primary: `apps/debridgers-frontend/app/routes/dashboards/agent/request-stock.tsx`
-- May need: shared product catalog data (currently duplicated in `home.tsx` and `shop.tsx` — consider extracting to a shared module under `app/data/products.ts` or similar)
-
----
-
-### 15.7 Implementation Priority
-
-This is a UX improvement to an existing page — not blocked by any other task. Can be done independently of the shop/cart work in sections 1–6. Lower urgency than payment/wallet, but improves daily agent workflow.
-
-| Sub-task                                  | Complexity                                     |
-| ----------------------------------------- | ---------------------------------------------- |
-| Category row component with active state  | Low                                            |
-| Type pills with accordion toggle          | Low                                            |
-| Variety list with inline quantity stepper | Medium                                         |
-| Running request list (sticky cart)        | Medium                                         |
-| Submit request to backend                 | Low (endpoint already exists or near-complete) |
-
----
-
-## 16. Admin-Controlled Commission Rate and Referral System
-
-> **Decision confirmed: 2026-06-08**
-
-Two separate referral systems exist in this app - one for agents, one for buyers. They work differently:
-
-- **Agent referral** - an agent shares their referral link. When someone signs up as a buyer through that link and places orders, the agent earns a commission (cash, credited to their wallet).
-- **Buyer referral** - a buyer shares their referral link. When someone signs up as a buyer through that link and makes a purchase, the referring buyer gets a **discount** applied to their next order, not cash.
-
-The commission rate that governs how much agents earn per sale is set by the admin from the admin settings page - not hardcoded in code or env vars.
-
----
-
-### 16.1 Database Changes
-
-#### 16.1.1 `system_settings` table (new)
-
-A key-value store for admin-controlled configuration. One row per setting.
-
-```
-system_settings
-  key:         varchar PRIMARY KEY     e.g. "agent_commission_rate"
-  value:       text                    e.g. "30"  (stored as string, parsed by consumer)
-  updated_at:  timestamp
-  updated_by:  integer FK -> users.id  (which admin last changed it)
-```
-
-Initial seed rows:
-
-| key                            | value   | description                                                                               |
-| ------------------------------ | ------- | ----------------------------------------------------------------------------------------- |
-| `agent_commission_rate`        | `30`    | Percentage of order value agent earns on a direct sale                                    |
-| `buyer_referral_discount_kobo` | `50000` | Flat discount (in kobo) the referring buyer gets on their next order - equivalent to ₦500 |
-| `buyer_referral_discount_type` | `flat`  | `flat` or `percent` - determines how the discount value is interpreted                    |
-
-#### 16.1.2 `users` table additions (migration)
-
-```
-referral_code:   varchar UNIQUE    Generated on agent/buyer approval. Format: "DBR-<ULID-short>"
-referred_by:     integer FK -> users.id (nullable)  The user who referred this signup
-```
-
-`referral_code` is generated for both agents and buyers when their account is activated. All users can share a referral link; the difference is what the referrer earns (see 16.2 vs 16.3).
-
-#### 16.1.3 `buyer_discounts` table (new)
-
-Stores pending discount credits owed to buyers from referrals. Separate from commissions - commissions are for agents only.
-
-```
-id:           serial PRIMARY KEY
-buyer_id:     integer FK -> users.id
-amount_kobo:  integer NOT NULL
-reason:       text                   e.g. "Referral: buyer #42 placed first order"
-status:       enum (pending, applied, expired)
-expires_at:   timestamp              Discounts expire after 90 days if unused
-order_id:     integer FK -> orders.id (nullable)   Set when the discount is applied at checkout
-created_at:   timestamp
-```
-
----
-
-### 16.2 Agent Commission - Admin Controlled
-
-#### 16.2.1 Current problem
-
-The commission rate is currently hardcoded in two places:
-
-- `apps/debridgers-backend/src/app/payment/payment.service.ts` line 28-29: `commissionRate` defaults to `0.30`, overridable by `AGENT_COMMISSION_RATE` env var.
-- `apps/debridgers-frontend/app/routes/landing/agents.tsx` lines 165-170: the `earningsRows` array hardcodes `"Your commission (30%)"` and the calculated amounts.
-
-Both of these need to read from `system_settings` instead.
-
-#### 16.2.2 Backend changes
-
-1. **`SystemSettingsService`** - new service under `app/admin/settings/`:
-   - `getSetting(key: string): Promise<string>` - reads from `system_settings` table
-   - `setSetting(key: string, value: string, adminId: number): Promise<void>` - writes to `system_settings`
-   - `getPublicConfig(): Promise<{ agent_commission_rate: number; buyer_referral_discount_kobo: number; buyer_referral_discount_type: string }>` - returns the subset of settings safe to expose publicly (no auth required)
-
-2. **`PaymentService`**: Replace the `AGENT_COMMISSION_RATE` env fallback with a call to `SystemSettingsService.getSetting("agent_commission_rate")` at the point of commission calculation.
-
-3. **Admin endpoints**:
-   - `GET /admin/settings` - returns all `system_settings` rows. Admin auth required.
-   - `PATCH /admin/settings` - body `{ key: string; value: string }`. Validates the value (e.g. commission rate must be a number between 1 and 100). Admin auth required.
-
-4. **Public endpoint** (no auth):
-   - `GET /config/public` - calls `getPublicConfig()`, returns commission rate and referral discount values. Used by the landing page loader.
-
-#### 16.2.3 Admin UI - `admin/settings.tsx`
-
-Currently an empty placeholder. Wire it up with:
-
-- A form showing all configurable settings
-- Commission rate input: number field, min 1, max 100, suffix `%`. Shows current value fetched from `GET /admin/settings`.
-- Buyer referral discount input: number field in Naira (converted to kobo on submit). Toggle between flat (₦) and percent (%).
-- Save button: calls `PATCH /admin/settings`. Shows success toast.
-- "Last updated by [admin name] on [date]" label beneath each field.
-
----
-
-### 16.3 Agent Referral System
-
-An agent earns a commission when a buyer they referred places an order.
-
-#### How it works
-
-1. Agent shares their referral link: `https://debridgers.com/signup?ref=<agent_referral_code>`
-2. Buyer signs up via that link - the `?ref=` param is captured and stored as `referred_by` on the new user's row.
-3. When the referred buyer places a confirmed order (Paystack `charge.success` webhook fires), the backend:
-   - Looks up the buyer's `referred_by` field
-   - Finds the referring agent
-   - Creates a `commissions` row with `type: "buyer_referral"`, `amount` = fixed ₦20 per order (or a configurable amount from `system_settings`)
-4. Commission is credited to the agent's wallet as a pending commission, same as the existing flow.
-
-#### Backend changes needed
-
-- `POST /auth/signup` - if `referred_by_code` is in the request body, resolve the code to a user ID and persist as `users.referred_by`.
-- Paystack webhook handler (`payment.service.ts`) - on `charge.success` for a buyer order, check if `buyer.referred_by` is set. If so, create the referral commission.
-- The commission row already uses `type: "buyer_referral"` (the enum already exists in `commissions.schema.ts`) - just wire it up.
-
-#### Agent referral link display
-
-- In `agent/overview.tsx` or `agent/wallet.tsx`: show the agent's referral link with a copy-to-clipboard button.
-- `GET /agent/profile` must return `referral_code`.
-
----
-
-### 16.4 Buyer Referral System - Discount, Not Commission
-
-A buyer earns a discount on their next purchase when a friend they referred places their first order.
-
-#### How it works - in detail
-
-1. Buyer (referrer) shares their referral link: `https://debridgers.com/signup?ref=<buyer_referral_code>`
-2. New buyer (referee) signs up via that link - `referred_by` is stored on their user row.
-3. When the referee places and pays for their **first order**, the backend:
-   - Checks if the referee has `referred_by` set and if it is their first confirmed order.
-   - If yes: creates a `buyer_discounts` row for the **referrer** (not the referee) with the configured discount amount and a 90-day expiry.
-   - Sends the referrer a notification: "Your friend just placed their first order. You have a ₦500 discount waiting on your next purchase."
-4. At checkout, if the buyer has a `pending` discount in `buyer_discounts`, the discount is automatically deducted from the order total before payment is initialized with Paystack.
-5. Once applied, the `buyer_discounts` row is updated to `status: "applied"` and linked to the order via `order_id`.
-
-#### Why discount and not cash
-
-- Buyers are customers, not sales people. Giving them a discount incentivises reuse (they have to shop again to claim it) rather than just paying them out.
-- It is simpler to implement than a buyer wallet top-up - no payout flow needed.
-- The discount expires, creating urgency.
-
-#### Key business rules
-
-- One discount per referral - the referrer earns the discount only once per referred buyer (on the referee's first order only, not every order).
-- Discounts stack: if a buyer has referred 3 friends who all placed first orders, they have 3 pending discounts. At checkout, only one is applied per order (the oldest one first).
-- Discount cannot bring order total below ₦0. If the order is smaller than the discount, the full order is free and the remaining discount is forfeited (no cash change).
-- Discount amount is configurable from admin settings (`buyer_referral_discount_kobo`).
-
-#### Backend changes needed
-
-1. **Paystack webhook** - on `charge.success` for a buyer order: check if it is the buyer's first order AND the buyer has `referred_by` set. If so, create a `buyer_discounts` row for the referrer.
-2. **`POST /buyer/orders` or checkout flow** - before calling Paystack `transaction/initialize`, query `buyer_discounts` for `{ buyer_id, status: "pending" }`. If a discount exists, subtract it from the total before passing to Paystack. Mark the discount as `applied` after Paystack confirms payment.
-3. **`GET /buyer/discounts`** - returns pending discounts for the authenticated buyer, used to show available discount credits in the checkout UI and buyer dashboard.
-4. **Notification** - when a discount is created for a referrer, create an in-app notification and send an email via the existing `EmailService`.
-
-#### Buyer referral link display
-
-- In `buyer/overview.tsx` or `buyer/settings.tsx`: show the buyer's referral link with a copy-to-clipboard button and a short explanation ("Share this link. When your friend places their first order, you get ₦500 off your next one.").
-- `GET /buyer/me` must return `referral_code`.
-
----
-
-### 16.5 Landing Page - Dynamic Agents Earnings Section
-
-The `earningsRows` in `apps/debridgers-frontend/app/routes/landing/agents.tsx` (lines 165-170) are currently hardcoded at 30%. They must be driven by the live commission rate from the backend.
-
-#### Loader change
-
-```typescript
-// agents.tsx loader
-export async function loader() {
-  const config = await fetch(`${API_BASE}/config/public`).then((r) => r.json());
-  return { commissionRate: config.agent_commission_rate }; // e.g. 30
-}
-```
-
-#### Dynamic earningsRows
-
-```typescript
-const { commissionRate } = useLoaderData<typeof loader>();
-const companyRate = 100 - commissionRate;
-const sampleSaleTotal = 75000; // ₦75,000 example
-
-const earningsRows = [
-  { label: "Sales closed", value: "5 orders", highlight: false },
-  { label: "Total sale amount", value: "₦75,000", highlight: false },
-  {
-    label: `Your commission (${commissionRate}%)`,
-    value: fmt(naira((sampleSaleTotal * commissionRate) / 100)),
-    highlight: true,
-  },
-  {
-    label: `Company keeps (${companyRate}%)`,
-    value: fmt(naira((sampleSaleTotal * companyRate) / 100)),
-    highlight: false,
-  },
-];
-```
-
-If the admin changes the commission rate from 30% to 25%, the agents page reflects this automatically without a code deploy.
-
----
-
-### 16.6 Landing Page - Referral Page (`/refer`)
-
-A new public landing page explaining both referral programs. Route: `apps/debridgers-frontend/app/routes/landing/refer.tsx`.
-
-#### Page sections
-
-1. **Hero** - headline and subheadline explaining the referral concept. "Invite a friend, both of you win."
-
-2. **For Buyers section**
-   - Heading: "Refer a friend, get money off your next order"
-   - How it works (3 steps):
-     1. Copy your unique referral link from your dashboard
-     2. Share it with friends or family
-     3. When they place their first order, you get ₦500 off your next purchase
-   - CTA: "Log in to get your referral link" (if unauthenticated) or "Copy my referral link" (if authenticated as buyer)
-   - Note: "Discount is applied automatically at checkout. Expires 90 days after it is earned."
-
-3. **For Agents section**
-   - Heading: "Refer buyers, earn on every order they place"
-   - How it works (3 steps):
-     1. Get your agent referral link from your dashboard
-     2. Share it with potential buyers in your area
-     3. Every time a buyer you referred places an order, you earn a commission
-   - CTA: "Apply to become an agent" (links to `/agents`) or "Go to your dashboard" (if already an agent)
-   - Show live commission rate from `/config/public`: "Earn [X]% commission per sale"
-
-4. **FAQ section** - short answers to obvious questions:
-   - "How many friends can I refer?" - No limit.
-   - "When do I get my discount / commission?" - After your friend places their first confirmed order.
-   - "Can I refer agents too?" - Only agents can earn commissions. Buyers earn discounts.
-
-#### Loader
-
-```typescript
-export async function loader() {
-  const config = await fetch(`${API_BASE}/config/public`).then((r) => r.json());
-  return {
-    commissionRate: config.agent_commission_rate,
-    discountKobo: config.buyer_referral_discount_kobo,
-  };
-}
-```
-
-#### Navigation entry point
-
-- Add "Refer & Earn" link to the landing page header nav (between existing links).
-- Add a link in the buyer dashboard sidebar: "Refer a Friend" under the Earnings or Quick Actions section.
-- Add a link in the agent dashboard sidebar: "Your Referral Link" under the Wallet section.
-
----
-
-### 16.7 Implementation Order
-
-| Step | What                                                                                | Complexity | Blocks                              |
-| ---- | ----------------------------------------------------------------------------------- | ---------- | ----------------------------------- |
-| 1    | `system_settings` table + migration                                                 | Low        | Everything else                     |
-| 2    | `SystemSettingsService` + `GET /config/public` endpoint                             | Low        | Landing page dynamic values         |
-| 3    | `PATCH /admin/settings` endpoint + admin settings UI                                | Low        | Admin can set commission rate       |
-| 4    | Wire `PaymentService` commission calc to `system_settings` instead of env           | Low        | Commission reflects admin setting   |
-| 5    | Add `referral_code` + `referred_by` columns to `users` + migration                  | Low        | All referral tracking               |
-| 6    | Generate `referral_code` on user activation (agent + buyer)                         | Low        | Referral links work                 |
-| 7    | Capture `?ref=` on signup, persist `referred_by`                                    | Low        | Referral attribution                |
-| 8    | Agent referral commission: wire `buyer_referral` commission on referred buyer order | Medium     | Agent earns from referrals          |
-| 9    | `buyer_discounts` table + migration                                                 | Low        | Buyer discount system               |
-| 10   | Buyer referral discount: create discount row on referee's first order               | Medium     | Buyer earns discount                |
-| 11   | Apply discount at checkout before Paystack init                                     | Medium     | Discount redeemable                 |
-| 12   | `GET /buyer/discounts` endpoint + checkout UI shows discount                        | Low        | Buyer sees and uses discount        |
-| 13   | Dynamic `earningsRows` on agents.tsx landing page                                   | Low        | Live commission rate on landing     |
-| 14   | `/refer` landing page                                                               | Medium     | Referral program visible publicly   |
-| 15   | Referral link display in buyer + agent dashboards                                   | Low        | Users can find and share their link |
+## 12. Repeat Last Order - Server Persistence
+
+The "Repeat Last" quick action on the buyer overview currently reads from `debridgers_last_order` in localStorage, which is snapshotted from `debridgers_cart` at checkout. This works per-device but is lost if the browser data is cleared or the user switches devices.
+
+### What's missing
+
+**Backend:**
+
+1. New endpoint `GET /buyer/orders/last/items` - returns the line items of the buyer's most recent confirmed order:
+   ```json
+   [
+     {
+       "product_id": 3,
+       "name": "Rice - Local White",
+       "price_kobo": 250000,
+       "unit": "50kg bag",
+       "qty": 2
+     },
+     {
+       "product_id": 7,
+       "name": "Palm Oil",
+       "price_kobo": 80000,
+       "unit": "keg",
+       "qty": 1
+     }
+   ]
+   ```
+   Query: join `orders` with `order_items` and `products`, filter by `buyer_id`, order by `created_at DESC`, limit 1.
+   Returns `[]` if the buyer has no orders yet.
+
+**Frontend (`buyer/overview.tsx`):**
+
+1. On mount (authenticated), call `GET /buyer/orders/last/items`.
+2. If the result is non-empty, map to `CartItem[]` and write to `localStorage.setItem("debridgers_last_order", JSON.stringify(items))`.
+3. The existing `repeatLastOrder()` function already reads from `debridgers_last_order` and copies it to `debridgers_cart`, so no other changes needed.
+
+### Notes
+
+- The localStorage snapshot at checkout (`checkout.tsx`) remains as an immediate fallback for the session in which the order was just placed, before the next app load.
+- If the API call fails, silently skip - the localStorage snapshot (if present) still works.
+- The `order_items` table must exist and be populated when orders are created. Verify the backend's `POST /buyer/orders` is writing line items, not just the order header.

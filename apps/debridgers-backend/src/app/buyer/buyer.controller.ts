@@ -8,6 +8,8 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Put,
+  Delete,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -27,6 +29,9 @@ import {
   UpdateProfileDto,
 } from "./dto/update-profile.dto";
 import { createOrderSchema, CreateOrderDto } from "./dto/create-order.dto";
+import { syncCartSchema } from "./dto/sync-cart.dto";
+import { initializeOrderPaymentSchema } from "./dto/initialize-order-payment.dto";
+import { quoteCartSchema } from "./dto/quote-cart.dto";
 import { AuthGuard } from "../auth/guards/auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -132,5 +137,130 @@ export class BuyerController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.buyerService.markNotificationRead(id, user);
+  }
+
+  @Patch("password")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Change buyer password (requires current password)",
+  })
+  @ApiResponse({ status: 200, description: "Password updated" })
+  @ApiResponse({ status: 401, description: "Current password incorrect" })
+  changePassword(
+    @Body() body: { old_password: string; new_password: string },
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.buyerService.changePassword(body, user);
+  }
+
+  // === Cart
+
+  @Get("cart")
+  @ApiOperation({ summary: "Get the buyer's saved cart" })
+  @ApiResponse({ status: 200, description: "Cart retrieved" })
+  getCart(@CurrentUser() user: JwtPayload) {
+    return this.buyerService.getCart(user);
+  }
+
+  @Put("cart")
+  @ApiOperation({
+    summary: "Replace the saved cart",
+    description:
+      "Full replace, not a delta. The client holds the authoritative cart in localStorage and syncs the whole thing on a debounce, so this is idempotent and safe to retry.",
+  })
+  @ApiResponse({ status: 200, description: "Cart synced" })
+  syncCart(@Body() body: unknown, @CurrentUser() user: JwtPayload) {
+    const dto = syncCartSchema.parse(body);
+    return this.buyerService.replaceCart(dto, user);
+  }
+
+  @Post("cart/merge")
+  @ApiOperation({
+    summary: "Merge a local cart into the saved one",
+    description:
+      "Called once on login. Takes the higher quantity per product rather than summing, so adding the same item on two devices does not double the order.",
+  })
+  @ApiResponse({ status: 200, description: "Cart merged" })
+  mergeCart(@Body() body: unknown, @CurrentUser() user: JwtPayload) {
+    const dto = syncCartSchema.parse(body);
+    return this.buyerService.mergeCart(dto, user);
+  }
+
+  @Delete("cart")
+  @ApiOperation({ summary: "Clear the saved cart" })
+  @ApiResponse({ status: 200, description: "Cart cleared" })
+  clearCart(@CurrentUser() user: JwtPayload) {
+    return this.buyerService.clearCart(user);
+  }
+
+  // === Favorites
+
+  @Get("favorites")
+  @ApiOperation({ summary: "List favourited products" })
+  @ApiResponse({ status: 200, description: "Favorites retrieved" })
+  getFavorites(@CurrentUser() user: JwtPayload) {
+    return this.buyerService.getFavorites(user);
+  }
+
+  @Post("favorites/:productId")
+  @ApiOperation({ summary: "Favourite a product (idempotent)" })
+  @ApiResponse({ status: 201, description: "Added to favorites" })
+  addFavorite(
+    @Param("productId", ParseIntPipe) productId: number,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.buyerService.addFavorite(productId, user);
+  }
+
+  @Delete("favorites/:productId")
+  @ApiOperation({ summary: "Remove a product from favourites" })
+  @ApiResponse({ status: 200, description: "Removed from favorites" })
+  removeFavorite(
+    @Param("productId", ParseIntPipe) productId: number,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.buyerService.removeFavorite(productId, user);
+  }
+
+  // === Buy again
+
+  @Get("buy-again")
+  @ApiOperation({
+    summary: "Products this buyer orders most",
+    description:
+      "Derived from order history, ranked by frequency then recency. Distinct from favourites, which are explicit bookmarks.",
+  })
+  @ApiResponse({ status: 200, description: "Buy again retrieved" })
+  getBuyAgain(@CurrentUser() user: JwtPayload) {
+    return this.buyerService.getBuyAgain(user);
+  }
+
+  // === Checkout
+
+  @Post("orders/initialize-payment")
+  @ApiOperation({
+    summary: "Create a pending order and start Paystack checkout",
+    description:
+      "Re-prices every cart line from the products table before charging - client-supplied prices are ignored.",
+  })
+  @ApiResponse({ status: 201, description: "Payment initialized" })
+  initializeOrderPayment(
+    @Body() body: unknown,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    const dto = initializeOrderPaymentSchema.parse(body);
+    return this.buyerService.initializeOrderPayment(dto, user);
+  }
+
+  @Post("cart/quote")
+  @ApiOperation({
+    summary: "Price a basket without creating an order",
+    description:
+      "Returns items total, delivery fee (zone base + weight surcharge), handling fee and grand total, so checkout can show fees before payment.",
+  })
+  @ApiResponse({ status: 200, description: "Quote generated" })
+  quoteCart(@Body() body: unknown, @CurrentUser() user: JwtPayload) {
+    const dto = quoteCartSchema.parse(body);
+    return this.buyerService.quoteCart(dto, user);
   }
 }

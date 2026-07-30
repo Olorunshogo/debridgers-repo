@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { motion } from "framer-motion";
 import { Users, UserCheck, ShoppingBag, TrendingUp } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
+import { formatFromKobo } from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -39,7 +40,7 @@ function mapStats(api: ApiAdminStats): AdminStats {
     totalAgents: api.total_agents,
     pendingAgents: api.pending_agents,
     totalBuyers: api.total_buyers,
-    totalRevenue: `₦${(revenue / 100).toLocaleString("en-NG", { minimumFractionDigits: 0 })}`,
+    totalRevenue: formatFromKobo(revenue),
   };
 }
 

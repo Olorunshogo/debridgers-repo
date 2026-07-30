@@ -13,6 +13,7 @@ import {
   Trophy,
   Package,
   MapPin,
+  Banknote,
 } from "lucide-react";
 
 export interface NavItem {
@@ -140,6 +141,7 @@ const adminNavGroups: NavGroup[] = [
       { label: "Buyers", icon: ShoppingCart, href: "/admin-dashboard/buyers" },
       { label: "Products", icon: Package, href: "/admin-dashboard/products" },
       { label: "Outreach", icon: MapPin, href: "/admin-dashboard/outreach" },
+      { label: "Payouts", icon: Banknote, href: "/admin-dashboard/payouts" },
     ],
   },
   {

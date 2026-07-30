@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import {
@@ -22,6 +22,12 @@ import {
 } from "lucide-react";
 import { HeroGreetingCard } from "../shared/HeroGreetingCard";
 import { apiFetch } from "@debridgers/api-client";
+import {
+  useCart,
+  LAST_ORDER_STORAGE_KEY,
+  type CartItem,
+} from "../../../features/cart";
+import { formatFromKobo, formatCurrency } from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -56,7 +62,8 @@ interface RecentOrder {
 interface QuickAction {
   label: string;
   icon: LucideIcon;
-  href: string;
+  href?: string;
+  onClick?: () => void;
 }
 
 interface TrackingStep {
@@ -117,9 +124,6 @@ interface ApiDashboard {
 }
 
 function mapApiToDashboard(api: ApiDashboard): DashboardData {
-  const formatKobo = (kobo: number) =>
-    `₦${(kobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-
   const dbStatusToUi = (s: string): RecentOrder["status"] => {
     if (s === "out_for_delivery" || s === "confirmed") return "on-the-way";
     if (s === "delivered") return "delivered";
@@ -137,7 +141,7 @@ function mapApiToDashboard(api: ApiDashboard): DashboardData {
       hour: "2-digit",
       minute: "2-digit",
     }),
-    amount: formatKobo(o.total_amount),
+    amount: formatFromKobo(o.total_amount),
     status: dbStatusToUi(o.status),
   }));
 
@@ -183,7 +187,7 @@ function mapApiToDashboard(api: ApiDashboard): DashboardData {
       },
       {
         label: "Total Spent",
-        value: formatKobo(api.stats.total_spent_kobo),
+        value: formatFromKobo(api.stats.total_spent_kobo),
         trend: "All time",
         icon: "lucide:banknote",
       },
@@ -217,15 +221,10 @@ function mapApiToDashboard(api: ApiDashboard): DashboardData {
   };
 }
 
-const quickActions: QuickAction[] = [
+const staticQuickActions: QuickAction[] = [
   { label: "New Order", icon: ShoppingCart, href: "/buyer-dashboard/shop" },
-  { label: "Repeat Last", icon: RefreshCcw, href: "/buyer-dashboard/shop" },
   { label: "Add Funds", icon: Wallet, href: "/buyer-dashboard/wallet" },
-  {
-    label: "Get help",
-    icon: Headphones,
-    href: "https://chat.whatsapp.com/GjMvQOIbO9qAFjUGR3ZYVK?s=sw&p=i&mlu=2",
-  },
+  { label: "Get help", icon: Headphones, href: "/buyer-dashboard/help" },
 ];
 
 const statusStyles: Record<
@@ -290,8 +289,26 @@ function OrderRow({ order }: { order: RecentOrder }) {
 }
 
 export default function BuyerOverview() {
+  const navigate = useNavigate();
+  const { replaceItems } = useCart();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  function repeatLastOrder() {
+    const last = localStorage.getItem(LAST_ORDER_STORAGE_KEY);
+    if (!last) {
+      navigate("/buyer-dashboard/shop");
+      return;
+    }
+    /* Through the shared cart, so the shop reflects it immediately rather than
+       waiting for a remount to re-read storage. */
+    try {
+      replaceItems(JSON.parse(last) as CartItem[]);
+    } catch {
+      /* corrupt snapshot - fall through to the shop with the cart untouched */
+    }
+    navigate("/buyer-dashboard/shop");
+  }
 
   useEffect(() => {
     apiFetch<ApiDashboard>("/buyer/dashboard")
@@ -393,23 +410,43 @@ export default function BuyerOverview() {
 
         {/* Quick actions */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {quickActions.map((action) => (
-            <motion.div
-              key={action.label}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-            >
-              <Link
-                to={action.href}
-                className="border-gray-border hover:border-primary hover:bg-dash-quick-action-hover flex flex-col items-center gap-2 rounded-2xl border bg-white p-4 text-center transition-colors duration-200"
-              >
+          {[
+            ...staticQuickActions.slice(0, 1),
+            {
+              label: "Repeat Last",
+              icon: RefreshCcw,
+              onClick: repeatLastOrder,
+            },
+            ...staticQuickActions.slice(1),
+          ].map((action) => {
+            const tileClass =
+              "border-gray-border hover:border-primary hover:bg-dash-quick-action-hover flex w-full flex-col items-center gap-2 rounded-2xl border bg-white p-4 text-center transition-colors duration-200 cursor-pointer";
+            const inner = (
+              <>
                 <action.icon size={22} className="text-primary" />
                 <span className="text-heading text-xs font-medium">
                   {action.label}
                 </span>
-              </Link>
-            </motion.div>
-          ))}
+              </>
+            );
+            return (
+              <motion.div
+                key={action.label}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                {action.onClick ? (
+                  <button onClick={action.onClick} className={tileClass}>
+                    {inner}
+                  </button>
+                ) : (
+                  <Link to={action.href ?? "#"} className={tileClass}>
+                    {inner}
+                  </Link>
+                )}
+              </motion.div>
+            );
+          })}
         </div>
       </div>
 
@@ -516,7 +553,7 @@ export default function BuyerOverview() {
             />
             <YAxis hide />
             <Tooltip
-              formatter={(v: number) => [`₦${v.toLocaleString()}`, "Spent"]}
+              formatter={(v: number) => [formatCurrency(v), "Spent"]}
               contentStyle={{
                 borderRadius: 8,
                 border: "1px solid var(--border-gray)",

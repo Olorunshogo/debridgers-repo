@@ -9,6 +9,7 @@ import {
   DashTextareaInput,
   SubmitButton,
   getTodayDateString,
+  formatCurrency,
 } from "@debridgers/ui-web";
 import { kadunaStateLgas, unsoldReasons } from "@/models/models";
 import { apiFetch, ApiError } from "@debridgers/api-client";
@@ -58,7 +59,7 @@ function mapApiReport(r: ApiReport): ReportHistoryEntry {
     }),
     bagsSold: r.pages_sold,
     area: r.notes ?? "—",
-    amount: `₦${naira.toLocaleString("en-NG", { minimumFractionDigits: 0 })}`,
+    amount: formatCurrency(naira),
     status: "approved",
   };
 }
@@ -133,7 +134,9 @@ interface ReportForm {
   unsoldReason: string;
 }
 
-function formatCurrency(raw: string): string {
+/* Groups digits as the user types in the amount field. This is input masking,
+   not money display - use formatCurrency from @debridgers/ui-web for that. */
+function formatAmountInput(raw: string): string {
   const digits = raw.replace(/[^0-9]/g, "");
   if (!digits) return "";
   return Number(digits).toLocaleString("en-NG");
@@ -175,7 +178,10 @@ export default function AgentDailyReportPage() {
   }
 
   function handleCashCollected(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm((p) => ({ ...p, cashCollected: formatCurrency(e.target.value) }));
+    setForm((p) => ({
+      ...p,
+      cashCollected: formatAmountInput(e.target.value),
+    }));
   }
 
   async function handleSubmit(e: React.FormEvent) {

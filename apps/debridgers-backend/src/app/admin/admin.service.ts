@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, desc, count, sum, and } from "drizzle-orm";
+import { eq, desc, count, sum, and, ilike, isNull, sql } from "drizzle-orm";
 import * as crypto from "crypto";
 import * as schema from "../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../infrastructure/database/database.provider";
@@ -16,6 +16,9 @@ import { PromoteManagerDto } from "./dto/promote-manager.dto";
 import { ReviewKycDto } from "./dto/review-kyc.dto";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
+import { SystemSettingsService } from "../settings/system-settings.service";
+import { WalletService } from "../agent/wallet.service";
+import { TaxonomyService } from "../catalog/taxonomy.service";
 
 @Injectable()
 export class AdminService {
@@ -23,6 +26,9 @@ export class AdminService {
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
     private readonly eventEmitter: EventEmitter2,
+    private readonly settings: SystemSettingsService,
+    private readonly wallet: WalletService,
+    private readonly taxonomy: TaxonomyService,
   ) {}
 
   async getAdminMe(userId: number) {
@@ -452,6 +458,122 @@ export class AdminService {
 
   // ─── Buyers ─────────────────────────────────────────────────────────────────
 
+  // ─── Orders ──────────────────────────────────────────────────────────────────
+
+  async getAllOrders(
+    filters: {
+      status?: string;
+      payment_status?: string;
+      search?: string; // buyer name or email
+      page?: number;
+      limit?: number;
+    } = {},
+  ) {
+    const { status, payment_status, search, page = 1, limit = 50 } = filters;
+    const offset = (page - 1) * limit;
+
+    const buyer = schema.users;
+    const rows = await this.db
+      .select({
+        id: schema.orders.id,
+        status: schema.orders.status,
+        payment_status: schema.orders.payment_status,
+        order_mode: schema.orders.order_mode,
+        quantity: schema.orders.quantity,
+        unit_price: schema.orders.unit_price,
+        handling_fee: schema.orders.handling_fee,
+        delivery_fee: schema.orders.delivery_fee,
+        total_amount: schema.orders.total_amount,
+        delivery_address: schema.orders.delivery_address,
+        payment_reference: schema.orders.payment_reference,
+        paid_at: schema.orders.paid_at,
+        delivered_at: schema.orders.delivered_at,
+        created_at: schema.orders.created_at,
+        zone_name: schema.zones.name,
+        buyer_id: buyer.id,
+        buyer_first_name: buyer.first_name,
+        buyer_last_name: buyer.last_name,
+        buyer_email: buyer.email,
+        buyer_phone: buyer.phone,
+      })
+      .from(schema.orders)
+      .innerJoin(buyer, eq(schema.orders.buyer_id, buyer.id))
+      .leftJoin(schema.zones, eq(schema.orders.zone_id, schema.zones.id))
+      .where(
+        and(
+          status
+            ? eq(
+                schema.orders.status,
+                status as typeof schema.orders.status._.data,
+              )
+            : undefined,
+          payment_status
+            ? eq(
+                schema.orders.payment_status,
+                payment_status as typeof schema.orders.payment_status._.data,
+              )
+            : undefined,
+          search
+            ? sql`(lower(${buyer.first_name}) || ' ' || lower(${buyer.last_name}) like ${"%" + search.toLowerCase() + "%"} or lower(${buyer.email}) like ${"%" + search.toLowerCase() + "%"})`
+            : undefined,
+        ),
+      )
+      .orderBy(desc(schema.orders.created_at))
+      .limit(limit)
+      .offset(offset);
+
+    const [{ total }] = await this.db
+      .select({ total: count() })
+      .from(schema.orders);
+
+    return {
+      message: "Orders retrieved",
+      data: rows,
+      meta: { total, page, limit, pages: Math.ceil(total / limit) },
+    };
+  }
+
+  async getOrderById(orderId: number) {
+    const buyer = schema.users;
+    const [order] = await this.db
+      .select({
+        id: schema.orders.id,
+        status: schema.orders.status,
+        payment_status: schema.orders.payment_status,
+        order_mode: schema.orders.order_mode,
+        quantity: schema.orders.quantity,
+        unit_price: schema.orders.unit_price,
+        handling_fee: schema.orders.handling_fee,
+        delivery_fee: schema.orders.delivery_fee,
+        total_amount: schema.orders.total_amount,
+        delivery_address: schema.orders.delivery_address,
+        payment_reference: schema.orders.payment_reference,
+        virtual_account_number: schema.orders.virtual_account_number,
+        virtual_account_bank: schema.orders.virtual_account_bank,
+        virtual_account_expires_at: schema.orders.virtual_account_expires_at,
+        paid_at: schema.orders.paid_at,
+        delivered_at: schema.orders.delivered_at,
+        cancellation_reason: schema.orders.cancellation_reason,
+        notes: schema.orders.notes,
+        created_at: schema.orders.created_at,
+        zone_name: schema.zones.name,
+        zone_id: schema.orders.zone_id,
+        buyer_id: buyer.id,
+        buyer_first_name: buyer.first_name,
+        buyer_last_name: buyer.last_name,
+        buyer_email: buyer.email,
+        buyer_phone: buyer.phone,
+      })
+      .from(schema.orders)
+      .innerJoin(buyer, eq(schema.orders.buyer_id, buyer.id))
+      .leftJoin(schema.zones, eq(schema.orders.zone_id, schema.zones.id))
+      .where(eq(schema.orders.id, orderId))
+      .limit(1);
+
+    if (!order) throw new NotFoundException("Order not found");
+    return { message: "Order retrieved", data: order };
+  }
+
   async getBuyers() {
     const buyers = await this.db
       .select({
@@ -639,12 +761,30 @@ export class AdminService {
   // ─── Products ────────────────────────────────────────────────────────────────
 
   async createProduct(dto: CreateProductDto) {
+    /*
+     * `category`, `measure_value` and `measure_unit` were accepted by the DTO and
+     * sent by the admin form but never included here, so every new product was
+     * silently created uncategorised and with a zero measure.
+     */
+    /* Keeps the flat column the shop filters on in step with the taxonomy. */
+    const derivedCategory = dto.category_id
+      ? await this.taxonomy.rootCategoryName(dto.category_id)
+      : null;
+
     const [product] = await this.db
       .insert(schema.products)
       .values({
         name: dto.name,
         unit: dto.unit,
         price_kobo: dto.price_kobo,
+        category: dto.category ?? derivedCategory,
+        category_id: dto.category_id ?? null,
+        ...(dto.measure_value !== undefined
+          ? { measure_value: dto.measure_value }
+          : {}),
+        ...(dto.measure_unit !== undefined
+          ? { measure_unit: dto.measure_unit }
+          : {}),
         description: dto.description ?? null,
         image_url: dto.image_url ?? null,
         sort_order: dto.sort_order ?? 0,
@@ -655,9 +795,33 @@ export class AdminService {
   }
 
   async listProducts() {
+    /*
+     * Joins the taxonomy so the admin list can show the full path
+     * ("Grains > Rice > Ofada") rather than just the leaf name, which is
+     * ambiguous on its own: "White" is both a garri and a bean.
+     */
     const rows = await this.db
-      .select()
+      .select({
+        id: schema.products.id,
+        name: schema.products.name,
+        unit: schema.products.unit,
+        price_kobo: schema.products.price_kobo,
+        category: schema.products.category,
+        category_id: schema.products.category_id,
+        category_name: schema.product_categories.name,
+        measure_value: schema.products.measure_value,
+        measure_unit: schema.products.measure_unit,
+        description: schema.products.description,
+        image_url: schema.products.image_url,
+        is_active: schema.products.is_active,
+        sort_order: schema.products.sort_order,
+        created_at: schema.products.created_at,
+      })
       .from(schema.products)
+      .leftJoin(
+        schema.product_categories,
+        eq(schema.product_categories.id, schema.products.category_id),
+      )
       .orderBy(schema.products.sort_order, schema.products.name);
 
     return { message: "Products retrieved", data: rows };
@@ -668,6 +832,20 @@ export class AdminService {
     if (dto.name !== undefined) updates.name = dto.name;
     if (dto.unit !== undefined) updates.unit = dto.unit;
     if (dto.price_kobo !== undefined) updates.price_kobo = dto.price_kobo;
+    /* Same omission as createProduct: these were dropped on every edit. */
+    if (dto.category !== undefined) updates.category = dto.category;
+    if (dto.category_id !== undefined) {
+      updates.category_id = dto.category_id;
+      /* Re-derive the flat column unless this request set it explicitly. */
+      if (dto.category === undefined) {
+        updates.category = dto.category_id
+          ? await this.taxonomy.rootCategoryName(dto.category_id)
+          : null;
+      }
+    }
+    if (dto.measure_value !== undefined)
+      updates.measure_value = dto.measure_value;
+    if (dto.measure_unit !== undefined) updates.measure_unit = dto.measure_unit;
     if (dto.description !== undefined) updates.description = dto.description;
     if (dto.image_url !== undefined) updates.image_url = dto.image_url;
     if (dto.is_active !== undefined) updates.is_active = dto.is_active;
@@ -743,5 +921,180 @@ export class AdminService {
       .delete(schema.outreach_records)
       .where(eq(schema.outreach_records.id, id));
     return { message: "Record deleted", data: null };
+  }
+
+  // ─── Platform Settings (persisted in system_settings table) ─────────────────
+
+  async getSettings() {
+    const stored = await this.settings.getAll();
+
+    return {
+      message: "Settings retrieved",
+      data: {
+        agent_commission_rate: await this.settings.getAgentCommissionPercent(),
+        buyer_referral_discount_kobo: parseInt(
+          stored["buyer_referral_discount_kobo"] ?? "50000",
+          10,
+        ),
+        buyer_referral_discount_type:
+          stored["buyer_referral_discount_type"] ?? "flat",
+      },
+    };
+  }
+
+  async updateSetting(key: string, value: string) {
+    const allowed = [
+      "agent_commission_rate",
+      "buyer_referral_discount_kobo",
+      "buyer_referral_discount_type",
+    ];
+    if (!allowed.includes(key))
+      throw new BadRequestException(`Unknown setting key: ${key}`);
+
+    if (key === "agent_commission_rate") {
+      const n = parseFloat(value);
+      if (isNaN(n) || n < 1 || n > 100)
+        throw new BadRequestException(
+          "Commission rate must be a number between 1 and 100",
+        );
+    }
+
+    await this.db
+      .insert(schema.system_settings)
+      .values({ key, value })
+      .onConflictDoUpdate({
+        target: schema.system_settings.key,
+        set: { value, updated_at: new Date() },
+      });
+
+    /* Drop the cached read so the change is live immediately, not in 30s. */
+    this.settings.invalidate(key);
+
+    return { message: "Setting updated", data: { key, value } };
+  }
+
+  // === Withdrawals
+
+  /*
+   * The approval step that was missing entirely.
+   *
+   * `POST /payment/payout/:id` and the weekly cron both require a withdrawal to
+   * be "approved", but nothing could move a row off "pending": agents could
+   * request payouts into a queue that had no exit. These three methods are that
+   * exit.
+   */
+
+  async getWithdrawals(status?: string) {
+    const rows = await this.db
+      .select({
+        id: schema.withdrawals.id,
+        agent_id: schema.withdrawals.agent_id,
+        agent_first_name: schema.users.first_name,
+        agent_last_name: schema.users.last_name,
+        agent_email: schema.users.email,
+        amount: schema.withdrawals.amount,
+        bank_name: schema.withdrawals.bank_name,
+        bank_account_number: schema.withdrawals.bank_account_number,
+        bank_account_name: schema.withdrawals.bank_account_name,
+        status: schema.withdrawals.status,
+        rejection_reason: schema.withdrawals.rejection_reason,
+        payout_reference: schema.withdrawals.payout_reference,
+        processed_at: schema.withdrawals.processed_at,
+        created_at: schema.withdrawals.created_at,
+      })
+      .from(schema.withdrawals)
+      .leftJoin(schema.users, eq(schema.users.id, schema.withdrawals.agent_id))
+      .where(
+        status
+          ? eq(
+              schema.withdrawals.status,
+              status as "pending" | "approved" | "rejected" | "paid",
+            )
+          : undefined,
+      )
+      .orderBy(desc(schema.withdrawals.created_at));
+
+    return { message: "Withdrawals retrieved", data: rows };
+  }
+
+  async approveWithdrawal(id: number) {
+    const [withdrawal] = await this.db
+      .select()
+      .from(schema.withdrawals)
+      .where(eq(schema.withdrawals.id, id))
+      .limit(1);
+
+    if (!withdrawal) throw new NotFoundException("Withdrawal not found");
+    if (withdrawal.status !== "pending") {
+      throw new BadRequestException(
+        `Only pending payouts can be approved; this one is ${withdrawal.status}.`,
+      );
+    }
+
+    /*
+     * Approval only marks it payable. The transfer itself is left to the Friday
+     * sweep or an explicit payout call, so approving can never move money as a
+     * side effect of a misclick.
+     */
+    const [updated] = await this.db
+      .update(schema.withdrawals)
+      .set({ status: "approved" })
+      .where(
+        and(
+          eq(schema.withdrawals.id, id),
+          eq(schema.withdrawals.status, "pending"),
+        ),
+      )
+      .returning();
+
+    if (!updated) {
+      throw new BadRequestException("That payout was just changed elsewhere.");
+    }
+
+    return { message: "Payout approved", data: updated };
+  }
+
+  async rejectWithdrawal(id: number, adminId: number, reason?: string) {
+    const [withdrawal] = await this.db
+      .select()
+      .from(schema.withdrawals)
+      .where(eq(schema.withdrawals.id, id))
+      .limit(1);
+
+    if (!withdrawal) throw new NotFoundException("Withdrawal not found");
+    if (withdrawal.status !== "pending" && withdrawal.status !== "approved") {
+      throw new BadRequestException(
+        `A ${withdrawal.status} payout cannot be rejected.`,
+      );
+    }
+
+    const [updated] = await this.db
+      .update(schema.withdrawals)
+      .set({
+        status: "rejected",
+        rejection_reason: reason ?? null,
+        processed_at: new Date(),
+        processed_by: adminId,
+      })
+      .where(
+        and(
+          eq(schema.withdrawals.id, id),
+          isNull(schema.withdrawals.processed_at),
+        ),
+      )
+      .returning();
+
+    if (!updated) {
+      throw new BadRequestException("That payout was just changed elsewhere.");
+    }
+
+    /*
+     * The request debited available balance up front so the same money could not
+     * be requested twice. A rejection means it was never sent, so it has to go
+     * back or the agent quietly loses it.
+     */
+    await this.wallet.refundAvailable(withdrawal.agent_id, withdrawal.amount);
+
+    return { message: "Payout rejected and balance returned", data: updated };
   }
 }

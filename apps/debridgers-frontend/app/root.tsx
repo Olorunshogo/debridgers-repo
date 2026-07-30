@@ -11,6 +11,12 @@ import type { Route } from "./+types/root";
 import type { MetaFunction } from "react-router";
 import "./styles.css";
 import { IntroAnimation } from "./components/landing/IntroAnimation";
+import { DialogProvider } from "@debridgers/ui-web";
+import { AuthProvider } from "./contexts/AuthContext";
+import { PlatformConfigProvider } from "./contexts/PlatformConfigContext";
+import { DIALOG_REGISTRY } from "./providers/dialog-registry";
+import { AppAuthAdapterProvider } from "./providers/auth-adapter";
+import { CartProvider } from "./features/cart";
 
 export const meta: MetaFunction = () => [
   { title: "Debridgers | Fresh Foodstuff at Market Prices in Kaduna" },
@@ -58,10 +64,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <>
-      <IntroAnimation />
-      <Outlet />
-    </>
+    <AuthProvider>
+      {/* Outermost of the data providers: the commission rate is read by the
+          public agents page as well as the dashboards, signed in or not. */}
+      <PlatformConfigProvider>
+        {/* Inside AuthProvider so a dialog can read the session */}
+        <DialogProvider registry={DIALOG_REGISTRY}>
+          {/* Inside the router and AuthProvider - the adapter needs both */}
+          <AppAuthAdapterProvider>
+            {/* One cart for every page - landing shop, buyer shop, checkout */}
+            <CartProvider>
+              <IntroAnimation />
+              <Outlet />
+            </CartProvider>
+          </AppAuthAdapterProvider>
+        </DialogProvider>
+      </PlatformConfigProvider>
+    </AuthProvider>
   );
 }
 

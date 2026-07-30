@@ -203,21 +203,27 @@ These are used for order/account status chips.
 <div className="shadow-yellow" />
 ```
 
-### Input tokens (CSS vars only - not mapped to @theme)
+### Input tokens
 
-These live in `tokens.css` but are **not** mapped in `@theme inline`, so no Tailwind class is generated for them. Use as CSS vars in component styles or inline.
+`--input-border`, `--input-border-focus`, `--input-error-red`, and `--input-bg`
+are now mapped in `@theme inline` (`styles.css`), so they generate Tailwind
+color classes like any other token. `--input-radius` is the one remaining
+CSS-var-only token - there's no `--radius-*` mapping for it, so it has no
+Tailwind utility class.
 
-| CSS var                | Value     | Purpose                          |
-| ---------------------- | --------- | -------------------------------- |
-| `--input-border`       | `#d1d5db` | Default input border colour      |
-| `--input-border-focus` | `#1a4a2e` | Input border on focus            |
-| `--input-error-red`    | `#ef4444` | Input border when in error state |
-| `--input-bg`           | `#ffffff` | Input background                 |
-| `--input-radius`       | `0.5rem`  | Input border radius              |
+| CSS var                | Value     | Tailwind class(es)                                            |
+| ---------------------- | --------- | ------------------------------------------------------------- |
+| `--input-border`       | `#d1d5db` | `border-input-border` `text-input-border` `bg-input-border`   |
+| `--input-border-focus` | `#1a4a2e` | `border-input-border-focus` `focus:border-input-border-focus` |
+| `--input-error-red`    | `#ef4444` | `border-input-error-red` `text-input-error-red`               |
+| `--input-bg`           | `#ffffff` | `bg-input-bg`                                                 |
+| `--input-radius`       | `0.5rem`  | CSS-var only - no Tailwind class                              |
 
 ```tsx
-// Use directly as CSS vars
-<input style={{ borderColor: "var(--input-border)" }} />
+<input className="border-input-border bg-input-bg focus:border-input-border-focus" />
+<input className="border-input-error-red" /> // error state
+
+// input-radius is still CSS-var-only
 <input style={{ borderRadius: "var(--input-radius)" }} />
 ```
 
@@ -291,12 +297,12 @@ Three reusable max-width container classes are defined in `styles.css`.
 
 | Class                  | Equivalent                 | Use                                    |
 | ---------------------- | -------------------------- | -------------------------------------- |
-| `.default-max-width`   | `mx-auto w-full max-w-350` | Default landing page content container |
+| `.landing-max-width`   | `mx-auto w-full max-w-350` | Default landing page content container |
 | `.layout-max-width`    | `mx-auto w-full max-w-500` | Wider full-page layout wrapper         |
 | `.dashboard-max-width` | `mx-auto w-full max-w-355` | Dashboard content container            |
 
 ```tsx
-<div className="default-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg" />
+<div className="landing-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg" />
 <main className="layout-max-width" />
 <div className="dashboard-max-width" />
 ```
@@ -429,15 +435,15 @@ export const colors = {
 
 ## Common Gotchas
 
-| Problem                                     | Fix                                                                 |
-| ------------------------------------------- | ------------------------------------------------------------------- |
-| Heading looks too small on mobile           | Use `text-hero` / `text-h2` etc. - they clamp automatically         |
-| Named spacing class not working             | Check `@theme inline` in `styles.css` has the `--spacing-*` mapping |
-| Color not applying                          | Check `@theme inline` in `styles.css` has the `--color-*` mapping   |
-| Input token not available as Tailwind class | Input tokens are CSS-var-only - use `style={{ ... }}` or `var()`    |
-| Font not loading                            | `@import url(...)` must be before `@import "tailwindcss"`           |
-| `tailwind.config.ts` missing                | Intentionally deleted - v4 uses `@theme` in CSS only                |
-| Autofill shows blue/yellow tint             | Handled globally in `@layer base` - no extra class needed           |
-| Number input arrows showing                 | Handled globally - no extra class needed                            |
-| Scrollbar too wide or themed wrong          | Override `scrollbar-width` / `scrollbar-color` in the component     |
-| Dark mode not applying                      | It uses `prefers-color-scheme: dark` - system-level, not a class    |
+| Problem                                     | Fix                                                                       |
+| ------------------------------------------- | ------------------------------------------------------------------------- |
+| Heading looks too small on mobile           | Use `text-hero` / `text-h2` etc. - they clamp automatically               |
+| Named spacing class not working             | Check `@theme inline` in `styles.css` has the `--spacing-*` mapping       |
+| Color not applying                          | Check `@theme inline` in `styles.css` has the `--color-*` mapping         |
+| Input token not available as Tailwind class | Only `--input-radius` is CSS-var-only now; the rest have Tailwind classes |
+| Font not loading                            | `@import url(...)` must be before `@import "tailwindcss"`                 |
+| `tailwind.config.ts` missing                | Intentionally deleted - v4 uses `@theme` in CSS only                      |
+| Autofill shows blue/yellow tint             | Handled globally in `@layer base` - no extra class needed                 |
+| Number input arrows showing                 | Handled globally - no extra class needed                                  |
+| Scrollbar too wide or themed wrong          | Override `scrollbar-width` / `scrollbar-color` in the component           |
+| Dark mode not applying                      | It uses `prefers-color-scheme: dark` - system-level, not a class          |

@@ -27,8 +27,11 @@ import { AgentService } from "./agent.service";
 import { WalletService } from "./wallet.service";
 import { StockService } from "./stock.service";
 import { KycService } from "./kyc.service";
+import { BankDetailsService } from "./bank-details.service";
+import { CloudinaryService } from "../../infrastructure/cloudinary/cloudinary.service";
 import { ZodValidationPipe } from "../../infrastructure/pipeline/validation.pipeline";
 import { applyAgentSchema, ApplyAgentDto } from "./dto/apply-agent.dto";
+import { requestWithdrawalSchema } from "./dto/request-withdrawal.dto";
 import {
   updateAgentProfileSchema,
   UpdateAgentProfileDto,
@@ -37,6 +40,10 @@ import { submitReportSchema, SubmitReportDto } from "./dto/submit-report.dto";
 import { stockRequestSchema, StockRequestDto } from "./dto/stock-request.dto";
 import { remitStockSchema, RemitStockDto } from "./dto/remit-stock.dto";
 import { submitKycSchema, SubmitKycDto } from "./dto/submit-kyc.dto";
+import {
+  updateBankDetailsSchema,
+  resolveBankAccountSchema,
+} from "./dto/update-bank-details.dto";
 import { AuthGuard } from "../auth/guards/auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -51,6 +58,8 @@ export class AgentController {
     private readonly walletService: WalletService,
     private readonly stockService: StockService,
     private readonly kycService: KycService,
+    private readonly bankDetailsService: BankDetailsService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   // ─── Public ─────────────────────────────────────────────────────────────────
@@ -221,6 +230,26 @@ export class AgentController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.agentService.updateProfile(dto, user);
+  }
+
+  @Post("avatar")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("agent")
+  @ApiBearerAuth("access-token")
+  @UseInterceptors(FileInterceptor("file"))
+  @ApiOperation({ summary: "Upload agent profile photo" })
+  @ApiResponse({ status: 200, description: "Avatar uploaded" })
+  async uploadAvatar(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    const url = await this.cloudinaryService.uploadBuffer(
+      file.buffer,
+      "debridgers/avatars",
+    );
+    await this.agentService.updateAvatar(url, user);
+    return { message: "Avatar updated", data: { url } };
   }
 
   // ─── Reports & Commissions ───────────────────────────────────────────────────
@@ -606,5 +635,150 @@ export class AgentController {
   })
   getKycStatus(@CurrentUser() user: JwtPayload) {
     return this.kycService.getKycStatus(user);
+  }
+
+  // === Bank details
+
+  @Get("banks")
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("agent")
+  @ApiBearerAuth("access-token")
+  @ApiOperation({
+    summary: "List payable banks",
+    description:
+      "Bank codes accepted for payouts. Cached server-side; the agent picks from this list rather than typing a bank name.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Banks retrieved",
+    schema: {
+      example: {
+        statusCode: 200,
+        message: "Banks retrieved",
+        data: [{ bankCode: "058", name: "Guaranty Trust Bank" }],
+      },
+    },
+  })
+  getBanks() {
+    return this.bankDetailsService.getBanks();
+  }
+
+  @Get("bank-details")
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("agent")
+  @ApiBearerAuth("access-token")
+  @ApiOperation({ summary: "Get my saved payout bank details" })
+  @ApiResponse({
+    status: 200,
+    description: "Bank details retrieved",
+    schema: {
+      example: {
+        statusCode: 200,
+        message: "Bank details retrieved",
+        data: {
+          bank_name: "Guaranty Trust Bank",
+          bank_code: "058",
+          bank_account_number: "0123456789",
+          bank_account_name: "Amina Yusuf",
+          is_complete: true,
+        },
+      },
+    },
+  })
+  getBankDetails(@CurrentUser() user: JwtPayload) {
+    return this.bankDetailsService.getBankDetails(user);
+  }
+
+  @Post("bank-details/resolve")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("agent")
+  @ApiBearerAuth("access-token")
+  @ApiOperation({
+    summary: "Resolve an account name before saving",
+    description:
+      "Verifies the account exists and returns the name on it, so the agent can confirm before saving. Nothing is persisted.",
+  })
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["bank_code", "account_number"],
+      properties: {
+        bank_code: { type: "string", example: "058" },
+        account_number: { type: "string", example: "0123456789" },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Account resolved",
+    schema: {
+      example: {
+        statusCode: 200,
+        message: "Account resolved",
+        data: {
+          account_name: "Amina Yusuf",
+          bank_name: "Guaranty Trust Bank",
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: "Account could not be verified" })
+  resolveBankAccount(@Body() body: unknown) {
+    const dto = resolveBankAccountSchema.parse(body);
+    return this.bankDetailsService.resolve(dto);
+  }
+
+  @Patch("bank-details")
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("agent")
+  @ApiBearerAuth("access-token")
+  @ApiOperation({
+    summary: "Save my payout bank details",
+    description:
+      "Re-resolves the account server-side and stores the resolved name, so the saved details always match the account that will be paid. Required before a payout can be requested.",
+  })
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["bank_code", "account_number"],
+      properties: {
+        bank_code: { type: "string", example: "058" },
+        account_number: { type: "string", example: "0123456789" },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: "Bank details saved" })
+  @ApiResponse({ status: 400, description: "Account could not be verified" })
+  updateBankDetails(@Body() body: unknown, @CurrentUser() user: JwtPayload) {
+    const dto = updateBankDetailsSchema.parse(body);
+    return this.bankDetailsService.updateBankDetails(dto, user);
+  }
+
+  // === Withdrawals
+
+  @Post("withdrawals")
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("agent")
+  @ApiBearerAuth("access-token")
+  @ApiOperation({
+    summary: "Request a payout",
+    description:
+      "Creates a pending withdrawal for admin review and debits the available balance immediately, so the same money cannot be requested twice.",
+  })
+  @ApiResponse({ status: 201, description: "Payout requested" })
+  requestWithdrawal(@Body() body: unknown, @CurrentUser() user: JwtPayload) {
+    const dto = requestWithdrawalSchema.parse(body);
+    return this.agentService.requestWithdrawal(dto, user);
+  }
+
+  @Get("withdrawals")
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("agent")
+  @ApiBearerAuth("access-token")
+  @ApiOperation({ summary: "List this agent's payout requests" })
+  @ApiResponse({ status: 200, description: "Withdrawals retrieved" })
+  getWithdrawals(@CurrentUser() user: JwtPayload) {
+    return this.agentService.getWithdrawals(user);
   }
 }

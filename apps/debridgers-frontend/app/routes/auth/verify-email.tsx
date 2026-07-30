@@ -1,11 +1,15 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useLocation, Link } from "react-router";
-import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw } from "lucide-react";
-import { AppLogo, SubmitButton } from "@debridgers/ui-web";
-import AuthSuccessModal from "../../components/auth/AuthSuccessModal";
-import { BASE_BACKEND_URL } from "@debridgers/api-client";
-import { storeTokens } from "@debridgers/api-client";
+import { useEffect } from "react";
+import { Link, useLocation } from "react-router";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  AuthFormShell,
+  AuthOtpInput,
+  DialogSuccessPanel,
+  SubmitButton,
+  swappedContentVariants,
+  swappedContentTransition,
+} from "@debridgers/ui-web";
+import { useEmailVerification } from "../../features/auth";
 
 export function meta() {
   return [
@@ -21,390 +25,130 @@ export function meta() {
   ];
 }
 
-const RESEND_COOLDOWN = 60;
 const MAX_RESENDS = 2;
-const OTP_LENGTH = 6;
 
 export default function VerifyEmailPage() {
   const location = useLocation();
   const state = location.state as { email?: string; role?: string } | null;
   const queryParams = new URLSearchParams(location.search);
-  const queryEmail = queryParams.get("email") ?? "";
+  const email = state?.email ?? queryParams.get("email") ?? "";
   const queryOtp = queryParams.get("otp") ?? "";
-  const email = state?.email ?? queryEmail;
-  const role = state?.role ?? "buyer";
 
-  const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(""));
-  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [apiError, setApiError] = useState<string | null>(null);
-  const [showSuccess, setShowSuccess] = useState<boolean>(false);
+  const {
+    code,
+    setCode,
+    submit,
+    resend,
+    apiError,
+    isSubmitting,
+    isResending,
+    resent,
+    verified,
+    cooldown,
+    canResend,
+    maxResendsReached,
+  } = useEmailVerification({ email, maxResends: MAX_RESENDS });
 
-  // === Resend state
-  const [resendCooldown, setResendCooldown] = useState(RESEND_COOLDOWN);
-  const [resendCount, setResendCount] = useState<number>(0);
-  const [resendLoading, setResendLoading] = useState<boolean>(false);
-  const [maxResendReached, setMaxResendReached] = useState<boolean>(false);
-
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const autoVerifyAttempted = useRef(false);
-
-  // Auto-focus first slot on mount
+  /*
+   * A verification link can carry the code directly, so fill it and let
+   * onComplete auto-submit rather than making the user retype what they clicked.
+   */
   useEffect(() => {
-    inputRefs.current[0]?.focus();
-  }, []);
-
-  useEffect(() => {
-    if (queryOtp.length === OTP_LENGTH) {
-      setDigits(queryOtp.split(""));
-    }
-  }, [queryOtp]);
-
-  const verifyOtp = useCallback(
-    async (emailValue: string, otpValue: string) => {
-      if (!emailValue || otpValue.length !== OTP_LENGTH || loading) return;
-      setApiError(null);
-      setLoading(true);
-      try {
-        const res = await fetch(`${BASE_BACKEND_URL}/auth/verify-email`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ email: emailValue, otp: otpValue }),
-        });
-        const json = await res.json();
-        if (!res.ok) {
-          setApiError(json.message ?? "Verification failed. Please try again.");
-          return;
-        }
-        const { accessToken, refreshToken } = (json.data ?? {}) as {
-          accessToken?: string;
-          refreshToken?: string;
-        };
-        if (accessToken && refreshToken) {
-          storeTokens(accessToken, refreshToken);
-        }
-        setShowSuccess(true);
-      } catch {
-        setApiError("Network error. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [loading],
-  );
-
-  useEffect(() => {
-    if (autoVerifyAttempted.current) return;
-    if (!queryEmail || queryOtp.length !== OTP_LENGTH) return;
-    autoVerifyAttempted.current = true;
-    void verifyOtp(queryEmail, queryOtp);
-  }, [queryEmail, queryOtp, verifyOtp]);
-
-  // Countdown timer
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const timer = setInterval(() => {
-      setResendCooldown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [resendCooldown]);
-
-  const allFilled = digits.every((d) => d !== "");
-
-  const redirectUrl =
-    role === "agent"
-      ? "/agent-dashboard"
-      : role === "admin"
-        ? "/admin-dashboard"
-        : "/buyer-dashboard";
-
-  const handleDigitChange = useCallback(
-    (index: number, value: string) => {
-      const digit = value.replace(/\D/g, "").slice(-1);
-      const next = [...digits];
-      next[index] = digit;
-      setDigits(next);
-      if (apiError) setApiError(null);
-      if (digit && index < OTP_LENGTH - 1) {
-        inputRefs.current[index + 1]?.focus();
-      }
-    },
-    [digits, apiError],
-  );
-
-  const handleKeyDown = useCallback(
-    (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Backspace") {
-        if (digits[index] !== "") {
-          const next = [...digits];
-          next[index] = "";
-          setDigits(next);
-        } else if (index > 0) {
-          inputRefs.current[index - 1]?.focus();
-        }
-      }
-    },
-    [digits],
-  );
-
-  const handlePaste = useCallback(
-    (e: React.ClipboardEvent<HTMLInputElement>) => {
-      e.preventDefault();
-      const pasted = e.clipboardData
-        .getData("text")
-        .replace(/\D/g, "")
-        .slice(0, OTP_LENGTH);
-      if (!pasted) return;
-      const next = Array(OTP_LENGTH).fill("");
-      pasted.split("").forEach((ch, i) => {
-        next[i] = ch;
-      });
-      setDigits(next);
-      if (apiError) setApiError(null);
-      // Focus last filled slot or last slot
-      const focusIndex = Math.min(pasted.length, OTP_LENGTH - 1);
-      inputRefs.current[focusIndex]?.focus();
-    },
-    [apiError],
-  );
-
-  // ── Submit ────────────────────────────────────────────────────────────────
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!allFilled || loading) return;
-    await verifyOtp(email, digits.join(""));
-  }
-
-  // ── Resend ────────────────────────────────────────────────────────────────
-
-  async function handleResend() {
-    if (resendCooldown > 0 || resendLoading || maxResendReached) return;
-    setResendLoading(true);
-    setApiError(null);
-    try {
-      await fetch(`${BASE_BACKEND_URL}/auth/resend-verification`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email }),
-      });
-    } catch {
-      // silently ignore resend errors
-    } finally {
-      setResendLoading(false);
-      const newCount = resendCount + 1;
-      setResendCount(newCount);
-      if (newCount >= MAX_RESENDS) {
-        setMaxResendReached(true);
-      } else {
-        setResendCooldown(RESEND_COOLDOWN);
-      }
-    }
-  }
-
-  // ── Slot style ────────────────────────────────────────────────────────────
-
-  function slotClass(index: number): string {
-    return `h-[52px] w-12 rounded-lg border-[1.5px] bg-white text-center text-xl font-semibold text-heading outline-none transition-colors ${
-      focusedIndex === index ? "border-primary" : "border-gray-border"
-    }`;
-  }
-
-  // ── Render ────────────────────────────────────────────────────────────────
+    if (queryOtp) setCode(queryOtp);
+  }, [queryOtp, setCode]);
 
   return (
-    <>
-      <AnimatePresence>
-        {showSuccess && (
-          <AuthSuccessModal
-            title="Email Verified"
-            description="Your email has been verified successfully."
-            submitButtonText="Go to Dashboard"
-            redirectUrl={redirectUrl}
-          />
-        )}
-      </AnimatePresence>
-
-      <div className="flex min-h-screen w-full">
-        {/* Brand panel */}
-        <div className="bg-primary hidden flex-col justify-center p-12 lg:flex lg:w-[45%]">
-          <Link to="/" className="mb-12 flex items-center gap-2">
-            <span className="font-syne text-xl font-bold text-white">
-              Debridgers
-            </span>
-          </Link>
-          <div className="flex flex-1 flex-col justify-center gap-6">
-            <h2 className="font-syne text-4xl leading-tight font-bold text-white xl:text-5xl">
-              One step away
-              <br />
-              from fresh food,
-              <br />
-              <span className="text-secondary">delivered.</span>
-            </h2>
-            <p className="max-w-[80%] text-lg leading-relaxed text-white">
-              Verify your email to start enjoying fresh food at market prices.
-            </p>
-          </div>
-        </div>
-
-        {/* Form panel */}
-        <div className="flex flex-1 flex-col items-center justify-center bg-white px-6 py-12 lg:px-16">
-          <div className="flex w-full max-w-120 flex-col gap-6">
-            {/* Logo */}
-            <div className="flex justify-center">
-              <AppLogo />
-            </div>
-
-            {/* Heading */}
-            <div className="flex flex-col gap-1">
-              <h1 className="font-syne text-heading text-2xl font-bold">
-                Verify your email
-              </h1>
-              <p className="text-text text-sm">
-                Enter the 6-digit code we sent to{" "}
-                <span className="text-heading font-semibold">
-                  {email || "your email"}
-                </span>
-              </p>
-            </div>
-
+    <AuthFormShell
+      heading={verified ? "Email verified" : "Verify your email"}
+      apiError={apiError}
+      subheading={
+        verified
+          ? undefined
+          : email
+            ? `Enter the 6-digit code we sent to ${email}.`
+            : "Enter the 6-digit code we sent to your email."
+      }
+    >
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={verified ? "done" : "form"}
+          variants={swappedContentVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={swappedContentTransition}
+          className="flex flex-col gap-6"
+        >
+          {verified ? (
+            <DialogSuccessPanel
+              title="You're all set"
+              description="Taking you to your dashboard."
+            />
+          ) : (
             <form
-              onSubmit={handleSubmit}
+              onSubmit={(event) => {
+                event.preventDefault();
+                void submit();
+              }}
               noValidate
-              className="flex flex-col gap-5"
+              className="flex flex-col gap-6"
             >
-              {/* OTP field label row */}
-              <div className="flex items-center justify-between">
-                <label className="text-heading text-sm font-medium">
-                  Verification code
-                </label>
-
-                {/* Resend button */}
-                {!maxResendReached && (
-                  <button
-                    type="button"
-                    onClick={handleResend}
-                    disabled={resendCooldown > 0 || resendLoading}
-                    className="text-primary flex items-center gap-1.5 text-xs font-semibold transition-opacity disabled:opacity-50"
-                  >
-                    <RefreshCw
-                      size={13}
-                      className={resendLoading ? "animate-spin" : ""}
-                    />
-                    {resendLoading
-                      ? "Resending..."
-                      : resendCooldown > 0
-                        ? `Resend in ${resendCooldown}s`
-                        : "Resend Code"}
-                  </button>
-                )}
-              </div>
-
-              {/* OTP slots */}
-              <div className="flex items-center gap-2">
-                {/* Group 1 */}
-                <div className="flex gap-2">
-                  {[0, 1, 2].map((i) => (
-                    <input
-                      key={i}
-                      ref={(el) => {
-                        inputRefs.current[i] = el;
-                      }}
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={1}
-                      value={digits[i]}
-                      onChange={(e) => handleDigitChange(i, e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(i, e)}
-                      onPaste={handlePaste}
-                      onFocus={() => setFocusedIndex(i)}
-                      onBlur={() => setFocusedIndex(null)}
-                      className={slotClass(i)}
-                      aria-label={`Digit ${i + 1}`}
-                    />
-                  ))}
-                </div>
-
-                {/* Separator */}
-                <span className="text-gray-border text-xl font-bold select-none">
-                  -
-                </span>
-
-                {/* Group 2 */}
-                <div className="flex gap-2">
-                  {[3, 4, 5].map((i) => (
-                    <input
-                      key={i}
-                      ref={(el) => {
-                        inputRefs.current[i] = el;
-                      }}
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={1}
-                      value={digits[i]}
-                      onChange={(e) => handleDigitChange(i, e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(i, e)}
-                      onPaste={handlePaste}
-                      onFocus={() => setFocusedIndex(i)}
-                      onBlur={() => setFocusedIndex(null)}
-                      className={slotClass(i)}
-                      aria-label={`Digit ${i + 1}`}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Max resend message */}
-              {maxResendReached && (
-                <p className="text-text text-xs">
-                  Maximum resend attempts reached.
-                </p>
-              )}
-
-              {/* Inline error */}
-              <AnimatePresence>
-                {apiError && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
-                  >
-                    {apiError}
-                  </motion.p>
-                )}
-              </AnimatePresence>
+              <AuthOtpInput
+                value={code}
+                onChange={setCode}
+                onComplete={() => void submit()}
+                disabled={isSubmitting}
+              />
 
               <SubmitButton
-                loading={loading}
+                loading={isSubmitting}
                 loadingText="Verifying..."
-                disabled={!allFilled}
-                className="mt-2 w-full rounded-full"
+                className="rounded-full"
               >
-                Verify Email
+                Verify email
               </SubmitButton>
-            </form>
 
-            <p className="text-text text-center text-sm">
-              Wrong email?{" "}
-              <Link
-                to="/signup"
-                className="text-primary font-semibold underline underline-offset-2"
-              >
-                Go back to sign up
-              </Link>
-            </p>
-          </div>
-        </div>
-      </div>
-    </>
+              <div className="flex flex-col items-center gap-2 text-center">
+                {resent && (
+                  <p className="text-good-green text-xs">
+                    A new code is on its way.
+                  </p>
+                )}
+
+                {maxResendsReached ? (
+                  <p className="text-text text-xs">
+                    Resend limit reached. Please contact support.
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => void resend()}
+                    disabled={!canResend || isResending}
+                    className={`text-xs font-medium underline underline-offset-2 ${
+                      canResend && !isResending
+                        ? "text-primary cursor-pointer"
+                        : "text-text-placeholder cursor-not-allowed"
+                    }`}
+                  >
+                    {isResending
+                      ? "Sending..."
+                      : cooldown > 0
+                        ? `Resend code in ${cooldown}s`
+                        : "Resend code"}
+                  </button>
+                )}
+
+                <Link
+                  to="/login"
+                  className="text-text-placeholder cursor-pointer text-xs underline underline-offset-2"
+                >
+                  Back to login
+                </Link>
+              </div>
+            </form>
+          )}
+        </motion.div>
+      </AnimatePresence>
+    </AuthFormShell>
   );
 }

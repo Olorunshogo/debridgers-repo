@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
+import { formatFromKobo } from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -52,7 +53,7 @@ function mapApiOrder(o: ApiOrder): Order {
       day: "numeric",
       year: "numeric",
     }),
-    amount: `₦${(o.total_amount / 100).toLocaleString("en-NG", { minimumFractionDigits: 0 })}`,
+    amount: formatFromKobo(o.total_amount),
     status: dbToUi(o.status),
   };
 }
@@ -214,7 +215,7 @@ export default function BuyerOrders() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black/30"
+              className="fixed inset-0 z-40 cursor-pointer bg-black/30"
               onClick={() => setSelected(null)}
             />
             <motion.div

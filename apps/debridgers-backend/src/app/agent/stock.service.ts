@@ -19,10 +19,31 @@ export class StockService {
     private readonly db: NodePgDatabase<typeof schema>,
   ) {}
 
+  /*
+   * Carries `category_id` and the leaf name so the stock page can drill down
+   * Category > Type > Variety instead of listing every product flat.
+   */
   async getProducts() {
     const rows = await this.db
-      .select()
+      .select({
+        id: schema.products.id,
+        name: schema.products.name,
+        unit: schema.products.unit,
+        price_kobo: schema.products.price_kobo,
+        category: schema.products.category,
+        category_id: schema.products.category_id,
+        category_name: schema.product_categories.name,
+        measure_value: schema.products.measure_value,
+        measure_unit: schema.products.measure_unit,
+        description: schema.products.description,
+        image_url: schema.products.image_url,
+        sort_order: schema.products.sort_order,
+      })
       .from(schema.products)
+      .leftJoin(
+        schema.product_categories,
+        eq(schema.product_categories.id, schema.products.category_id),
+      )
       .where(eq(schema.products.is_active, true))
       .orderBy(schema.products.sort_order, schema.products.name);
 

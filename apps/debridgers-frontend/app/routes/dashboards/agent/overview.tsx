@@ -14,6 +14,7 @@ import {
   Cell,
 } from "recharts";
 import { HeroGreetingCard } from "../shared/HeroGreetingCard";
+import { formatCurrency } from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -119,7 +120,7 @@ function mapToDashboard(
 
   const fmtNaira = (val: string | number) => {
     const n = typeof val === "string" ? parseFloat(val) : val;
-    return `₦${n.toLocaleString("en-NG", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+    return formatCurrency(n);
   };
 
   const pendingNaira = parseFloat(stats.commission_pending);

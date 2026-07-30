@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Icon } from "@iconify/react";
-import { WhatsAppButton } from "@debridgers/ui-web";
+import { WhatsAppLink } from "@debridgers/ui-web";
 
 export type HeadingPart = { text: string; highlight?: boolean };
 export type TrustItem = { icon: string | React.ReactNode; label: string };
@@ -86,9 +86,9 @@ export function HeroSection({
       </div>
 
       {/* Content Wrapper */}
-      <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex h-screen w-full flex-col justify-between gap-12">
+      <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex h-screen w-full flex-col justify-between gap-6">
         <div className="relative flex flex-1 flex-col pt-20 sm:pt-24 lg:pt-32">
-          <div className="flex flex-1 flex-col justify-center gap-8 lg:gap-12">
+          <div className="flex flex-1 flex-col justify-center gap-6 lg:gap-8">
             {/* Location badge */}
             <div className="text-primary border-primary bg-text2 font-open-sans shadow-50 inline-flex w-fit items-center gap-1 rounded-full border p-2 text-sm font-semibold backdrop-blur-lg">
               <span className="bg-primary h-1.5 w-1.5 rounded-full" />
@@ -115,7 +115,7 @@ export function HeroSection({
                         <div key={index} className="relative inline-block">
                           <span className="text-secondary">{part.text}</span>
                           <img
-                            src="/images/curved-underline.jpg"
+                            src="/images/landing/curved-underline.jpg"
                             alt="Curved Underline"
                             className="absolute -bottom-3 left-1/2 w-[85%] -translate-x-1/2 md:w-[78%] lg:w-[82%]"
                             style={{
@@ -141,14 +141,14 @@ export function HeroSection({
               </h1>
 
               {/* Subtext */}
-              <p className="w-full max-w-90 text-base leading-relaxed font-semibold text-white sm:text-lg lg:max-w-144 lg:text-xl">
+              <p className="w-full max-w-120 text-base leading-relaxed font-semibold text-white sm:text-lg lg:max-w-144 lg:text-xl">
                 {subtext}
               </p>
             </div>
 
             {/* CTAs */}
             <div className="flex flex-col items-center justify-center gap-4 lg:flex-row lg:justify-start lg:gap-18">
-              <WhatsAppButton className="w-auto" />
+              <WhatsAppLink shadowYellow className="w-auto" />
               <a
                 href={secondaryCta.href}
                 className="font-open-sans flex items-center gap-1 text-base text-white transition-all duration-300 ease-in-out hover:text-white lg:gap-2.5 lg:text-lg"

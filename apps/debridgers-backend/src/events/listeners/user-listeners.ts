@@ -1,5 +1,10 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
+import { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { eq } from "drizzle-orm";
+import * as schema from "../../infrastructure/persistence/index";
+import { lower } from "../../infrastructure/persistence/schemas/users.schema";
+import { DATABASE_CONNECTION } from "../../infrastructure/database/database.provider";
 import { EmailService } from "../../notification/features/email/email.service";
 import {
   USER_EVENTS,
@@ -18,7 +23,46 @@ import {
 export class UserListeners {
   private readonly logger = new Logger(UserListeners.name);
 
-  constructor(private readonly emailService: EmailService) {}
+  constructor(
+    private readonly emailService: EmailService,
+    @Inject(DATABASE_CONNECTION)
+    private readonly db: NodePgDatabase<typeof schema>,
+  ) {}
+
+  // === Notification preference gate
+
+  /*
+   * Whether an optional email may be sent to this address.
+   *
+   * Only applies to emails the user can reasonably live without. Account and
+   * security mail - welcome, verification, password reset, agent application
+   * outcomes - ignores this flag entirely, because switching off notifications
+   * must not lock someone out of their own account.
+   *
+   * Events carry an email rather than a user id, and the unique index is on
+   * lower(email), so the lookup matches case-insensitively. An address with no
+   * user row (a contact form from a non-customer) is allowed through: there is
+   * no preference to respect.
+   */
+  private async optionalEmailAllowed(email: string): Promise<boolean> {
+    try {
+      const [row] = await this.db
+        .select({ email_notifications: schema.users.email_notifications })
+        .from(schema.users)
+        .where(eq(lower(schema.users.email), email.toLowerCase()))
+        .limit(1);
+
+      if (!row) return true;
+      return row.email_notifications;
+    } catch (error) {
+      /* A lookup failure must not silently swallow mail the user expects. */
+      this.logger.warn(
+        `Could not read notification preference for ${email}; sending anyway`,
+      );
+      this.logger.debug(error);
+      return true;
+    }
+  }
 
   @OnEvent(USER_EVENTS.USER_REGISTERED)
   async onUserRegistered(payload: UserRegisteredPayload): Promise<void> {
@@ -42,6 +86,13 @@ export class UserListeners {
 
   @OnEvent(USER_EVENTS.CONTACT_SUBMITTED)
   async onContactSubmitted(payload: ContactSubmittedPayload): Promise<void> {
+    if (!(await this.optionalEmailAllowed(payload.email))) {
+      this.logger.log(
+        `Contact confirmation skipped for ${payload.email} - notifications off`,
+      );
+      return;
+    }
+
     try {
       await this.emailService.sendContactConfirmation(
         payload.email,
@@ -139,6 +190,13 @@ export class UserListeners {
 
   @OnEvent(USER_EVENTS.USER_LOGGED_IN)
   async onUserLoggedIn(payload: UserLoggedInPayload): Promise<void> {
+    if (!(await this.optionalEmailAllowed(payload.email))) {
+      this.logger.log(
+        `Login notice skipped for ${payload.email} - notifications off`,
+      );
+      return;
+    }
+
     try {
       if (payload.role === "agent") {
         await this.emailService.sendAgentLoginMessage(

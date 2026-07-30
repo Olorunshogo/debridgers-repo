@@ -5,12 +5,21 @@ import {
   Phone,
   Plus,
   Trash2,
-  Search,
   Users,
   ShoppingBag,
   X,
 } from "lucide-react";
 import { apiFetch, ApiError } from "@debridgers/api-client";
+import {
+  fadeDownVariants,
+  transitionBase,
+  DashTextInput,
+  DashNumberInput,
+  DashDateInput,
+  DashSelectInput,
+  DashTextareaInput,
+  DashSearchInput,
+} from "@debridgers/ui-web";
 import { kadunaLgas, kadunaAreas, kadunaAreasByLga } from "@/models/models";
 
 export function meta() {
@@ -73,9 +82,6 @@ function todayString() {
   return new Date().toISOString().slice(0, 10);
 }
 
-const inputCls =
-  "border-gray-border bg-bg-light text-heading w-full rounded-xl border px-4 py-2.5 text-sm outline-none transition-colors";
-
 export default function AdminOutreachPage() {
   const [records, setRecords] = useState<OutreachRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,14 +95,23 @@ export default function AdminOutreachPage() {
   const [search, setSearch] = useState("");
   const [filterLga, setFilterLga] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  /* `formError` sits inside the add panel, so list-level failures need their own. */
+  const [actionError, setActionError] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
     try {
       const rows = await apiFetch<OutreachRecord[]>("/admin/outreach");
       setRecords(rows);
-    } catch {
+      setActionError(null);
+    } catch (err) {
+      /* An empty table would read as "no outreach yet", which is misleading. */
       setRecords([]);
+      setActionError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not load outreach records. Check your connection and retry.",
+      );
     } finally {
       setLoading(false);
     }
@@ -177,11 +192,16 @@ export default function AdminOutreachPage() {
 
   async function handleDelete(id: number) {
     setDeletingId(id);
+    setActionError(null);
     try {
       await apiFetch(`/admin/outreach/${id}`, { method: "DELETE" });
       setRecords((prev) => prev.filter((r) => r.id !== id));
-    } catch {
-      // silently fail
+    } catch (err) {
+      setActionError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not delete that record. Please try again.",
+      );
     } finally {
       setDeletingId(null);
     }
@@ -213,6 +233,30 @@ export default function AdminOutreachPage() {
           <Plus size={16} /> Record Visit
         </button>
       </div>
+
+      {/* Page-level failures: load, delete */}
+      <AnimatePresence>
+        {actionError && (
+          <motion.div
+            variants={fadeDownVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={transitionBase}
+            className="bg-status-cancelled-bg text-status-cancelled-text flex items-start justify-between gap-3 rounded-xl px-4 py-3 text-sm"
+          >
+            <span>{actionError}</span>
+            <button
+              type="button"
+              aria-label="Dismiss error"
+              onClick={() => setActionError(null)}
+              className="shrink-0 rounded-full p-0.5 hover:bg-black/5"
+            >
+              <X size={16} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
@@ -270,174 +314,103 @@ export default function AdminOutreachPage() {
             <form onSubmit={handleSave} className="flex flex-col gap-4">
               {/* Row 1 */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="flex flex-col gap-1">
-                  <label className="text-heading text-sm font-medium">
-                    Shop / Customer Name{" "}
-                    <span className="text-error-red">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Mama Ngozi's Store"
-                    value={form.shop_name}
-                    onChange={handleChange("shop_name")}
-                    className={inputCls}
-                    required
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-heading text-sm font-medium">
-                    Owner / Contact Name
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Ngozi Eze"
-                    value={form.owner_name}
-                    onChange={handleChange("owner_name")}
-                    className={inputCls}
-                  />
-                </div>
+                <DashTextInput
+                  label="Shop / Customer Name"
+                  placeholder="e.g. Mama Ngozi's Store"
+                  value={form.shop_name}
+                  onChange={handleChange("shop_name")}
+                  required
+                />
+                <DashTextInput
+                  label="Owner / Contact Name"
+                  placeholder="e.g. Ngozi Eze"
+                  value={form.owner_name}
+                  onChange={handleChange("owner_name")}
+                />
               </div>
 
               {/* Row 2 */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="flex flex-col gap-1">
-                  <label className="text-heading text-sm font-medium">
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    placeholder="08012345678"
-                    value={form.phone}
-                    onChange={handleChange("phone")}
-                    className={inputCls}
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-heading text-sm font-medium">
-                    LGA
-                  </label>
-                  <select
-                    value={form.lga}
-                    onChange={(e) => {
-                      setForm((p) => ({ ...p, lga: e.target.value, area: "" }));
-                    }}
-                    className={inputCls}
-                  >
-                    <option value="">Select LGA</option>
-                    {kadunaLgas.map((l) => (
-                      <option key={l.value} value={l.value}>
-                        {l.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-heading text-sm font-medium">
-                    Area
-                  </label>
-                  <select
-                    value={form.area}
-                    onChange={handleChange("area")}
-                    className={inputCls}
-                    disabled={!form.lga || !kadunaAreasByLga[form.lga]}
-                  >
-                    <option value="">
-                      {form.lga && kadunaAreasByLga[form.lga]
-                        ? "Select area"
-                        : "Select LGA first"}
-                    </option>
-                    {(kadunaAreasByLga[form.lga] ?? []).map((a) => (
-                      <option key={a.value} value={a.value}>
-                        {a.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Row 3 */}
-              <div className="flex flex-col gap-1">
-                <label className="text-heading text-sm font-medium">
-                  Address / Landmark
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. No. 5 Kaura Market, near GTBank"
-                  value={form.address}
-                  onChange={handleChange("address")}
-                  className={inputCls}
+                <DashTextInput
+                  label="Phone Number"
+                  type="tel"
+                  inputMode="tel"
+                  placeholder="08012345678"
+                  value={form.phone}
+                  onChange={handleChange("phone")}
+                />
+                <DashSelectInput
+                  label="LGA"
+                  placeholder="Select LGA"
+                  options={kadunaLgas}
+                  value={form.lga}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, lga: e.target.value, area: "" }))
+                  }
+                />
+                <DashSelectInput
+                  label="Area"
+                  placeholder={
+                    form.lga && kadunaAreasByLga[form.lga]
+                      ? "Select area"
+                      : "Select LGA first"
+                  }
+                  options={kadunaAreasByLga[form.lga] ?? []}
+                  value={form.area}
+                  onChange={handleChange("area")}
+                  disabled={!form.lga || !kadunaAreasByLga[form.lga]}
                 />
               </div>
 
+              {/* Row 3 */}
+              <DashTextInput
+                label="Address / Landmark"
+                placeholder="e.g. No. 5 Kaura Market, near GTBank"
+                value={form.address}
+                onChange={handleChange("address")}
+              />
+
               {/* Row 4 */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div className="flex flex-col gap-1 sm:col-span-2">
-                  <label className="text-heading text-sm font-medium">
-                    Products Interested In
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Rice, Palm Oil, Beans"
-                    value={form.product_interest}
-                    onChange={handleChange("product_interest")}
-                    className={inputCls}
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-heading text-sm font-medium">
-                    Quantity (bags)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    placeholder="0"
-                    value={form.quantity}
-                    onChange={handleChange("quantity")}
-                    className={inputCls}
-                  />
-                </div>
+                <DashTextInput
+                  label="Products Interested In"
+                  className="sm:col-span-2"
+                  placeholder="e.g. Rice, Palm Oil, Beans"
+                  value={form.product_interest}
+                  onChange={handleChange("product_interest")}
+                />
+                <DashNumberInput
+                  label="Quantity (bags)"
+                  min={1}
+                  placeholder="0"
+                  value={form.quantity}
+                  onChange={handleChange("quantity")}
+                />
               </div>
 
               {/* Row 5 */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="flex flex-col gap-1">
-                  <label className="text-heading text-sm font-medium">
-                    Collected By
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Staff or agent name"
-                    value={form.collected_by}
-                    onChange={handleChange("collected_by")}
-                    className={inputCls}
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-heading text-sm font-medium">
-                    Visit Date
-                  </label>
-                  <input
-                    type="date"
-                    value={form.visit_date}
-                    onChange={handleChange("visit_date")}
-                    className={inputCls}
-                  />
-                </div>
+                <DashTextInput
+                  label="Collected By"
+                  placeholder="Staff or agent name"
+                  value={form.collected_by}
+                  onChange={handleChange("collected_by")}
+                />
+                <DashDateInput
+                  label="Visit Date"
+                  value={form.visit_date}
+                  onChange={handleChange("visit_date")}
+                />
               </div>
 
               {/* Notes */}
-              <div className="flex flex-col gap-1">
-                <label className="text-heading text-sm font-medium">
-                  Notes / Feedback
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Any additional observations, customer feedback, follow-up needed..."
-                  value={form.notes}
-                  onChange={handleChange("notes")}
-                  className="border-gray-border bg-bg-light text-heading w-full resize-none rounded-xl border px-4 py-2.5 text-sm outline-none"
-                />
-              </div>
+              <DashTextareaInput
+                label="Notes / Feedback"
+                rows={3}
+                placeholder="Any additional observations, customer feedback, follow-up needed..."
+                value={form.notes}
+                onChange={handleChange("notes")}
+              />
 
               {/* Actions */}
               <div className="flex gap-3 pt-1">
@@ -463,37 +436,35 @@ export default function AdminOutreachPage() {
 
       {/* Filters */}
       <div className="flex flex-col gap-3 sm:flex-row">
-        <div className="border-gray-border flex flex-1 items-center gap-2 rounded-full border bg-white px-4 py-2">
-          <Search size={15} className="text-text" />
-          <input
-            type="text"
-            placeholder="Search by name, phone, area..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="text-heading w-full bg-transparent text-sm outline-none"
-          />
-        </div>
-        <select
+        <DashSearchInput
+          placeholder="Search by name, phone, area..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="flex-1"
+        />
+        {/*
+          LGAs and areas flattened into one list: DashSelectInput has no
+          optgroup, and the LGA entries are suffixed instead so the two kinds
+          stay tellable apart.
+        */}
+        <DashSelectInput
+          label="Location filter"
+          hideLabel
+          placeholder="All Locations"
+          className="sm:w-64"
+          searchable
+          options={[
+            /* Explicit reset entry: without it there is no way back to unfiltered. */
+            { value: "", label: "All Locations" },
+            ...kadunaLgas.map((l) => ({
+              value: l.value,
+              label: `${l.label} LGA`,
+            })),
+            ...kadunaAreas,
+          ]}
           value={filterLga}
           onChange={(e) => setFilterLga(e.target.value)}
-          className="border-gray-border text-heading rounded-full border bg-white px-4 py-2 text-sm outline-none"
-        >
-          <option value="">All Locations</option>
-          <optgroup label="── By LGA ──">
-            {kadunaLgas.map((l) => (
-              <option key={l.value} value={l.value}>
-                {l.label} LGA
-              </option>
-            ))}
-          </optgroup>
-          <optgroup label="── By Area ──">
-            {kadunaAreas.map((a) => (
-              <option key={a.value} value={a.value}>
-                {a.label}
-              </option>
-            ))}
-          </optgroup>
-        </select>
+        />
       </div>
 
       {/* Records table */}

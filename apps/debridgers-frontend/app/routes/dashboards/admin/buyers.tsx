@@ -1,6 +1,7 @@
+import { DashSearchInput } from "@debridgers/ui-web";
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, Search } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
 
 export function meta() {
@@ -106,16 +107,11 @@ export default function AdminBuyers() {
           </div>
         </div>
 
-        <div className="border-gray-border flex items-center gap-2 rounded-full border bg-white px-4 py-2">
-          <Search size={15} className="text-text" />
-          <input
-            type="text"
-            placeholder="Search buyers…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="text-heading w-full bg-transparent text-sm outline-none"
-          />
-        </div>
+        <DashSearchInput
+          placeholder="Search buyers…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
       <div className="border-gray-border overflow-hidden rounded-2xl border bg-white">

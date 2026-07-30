@@ -1,16 +1,21 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  X,
-  ShoppingCart,
-  Minus,
-  Plus,
-  Trash2,
-  Package,
-  Search,
-} from "lucide-react";
+import { X, ShoppingCart, Minus, Plus, Trash2, Package } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
+import { useCart } from "../../../features/cart";
+import { useFavorites, useBuyAgain } from "../../../features/favorites";
+import {
+  Pagination,
+  ProductCard,
+  stickyBarVariants,
+  springPanel,
+  formatCurrency,
+  categoryFilterChips,
+  ALL_CATEGORIES,
+  formatFromKobo,
+  DashSearchInput,
+} from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -33,56 +38,63 @@ interface ApiProduct {
   price_kobo: number;
   description: string | null;
   image_url: string | null;
+  category: string | null;
 }
 
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  unit: string;
-  image_url: string | null;
-  qty: number;
-}
-
-function fmt(naira: number) {
-  return "₦" + naira.toLocaleString("en-NG", { minimumFractionDigits: 0 });
-}
+const ITEMS_PER_PAGE = 9;
 
 export default function BuyerShop() {
+  const {
+    items: cart,
+    itemCount: cartProductCount,
+    subtotal: cartTotal,
+    addItem,
+    updateQuantity: updateQty,
+    removeItem,
+    quantityOf,
+  } = useCart();
+
+  function addToCart(product: ApiProduct) {
+    addItem({
+      id: String(product.id),
+      name: product.name,
+      price: product.price_kobo / 100,
+      unit: product.unit,
+      image_url: product.image_url,
+    });
+  }
+
+  const { isFavorite, toggleFavorite, canFavorite } = useFavorites();
+  const { products: buyAgain, hasHistory } = useBuyAgain();
+
   const [products, setProducts] = useState<ApiProduct[]>([]);
   const [loading, setLoading] = useState(true);
-  const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState<boolean>(false);
-  const [qtys, setQtys] = useState<Record<number, number>>({});
-  const [search, setSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState("All");
+  const [search, setSearch] = useState<string>("");
+  const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORIES);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   useEffect(() => {
     apiFetch<ApiProduct[]>("/buyer/products")
       .then((rows) => {
         setProducts(rows);
-        const init: Record<number, number> = {};
-        rows.forEach((p) => {
-          init[p.id] = 1;
-        });
-        setQtys(init);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  // Derive categories from description field
-  const categories = useMemo(() => {
-    const cats = Array.from(
-      new Set(products.map((p) => p.description).filter(Boolean)),
-    ) as string[];
-    return ["All", ...cats];
-  }, [products]);
+  /* From the real category column, and only chips that have products behind
+     them. This used to derive from `description`, which is unique per product,
+     so every chip matched exactly one item. */
+  const categories = useMemo(
+    () => categoryFilterChips(products.map((p) => p.category ?? null)),
+    [products],
+  );
 
   const filtered = useMemo(() => {
     let list = products;
-    if (activeCategory !== "All") {
-      list = list.filter((p) => p.description === activeCategory);
+    if (activeCategory !== ALL_CATEGORIES) {
+      list = list.filter((p) => p.category === activeCategory);
     }
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -94,250 +106,201 @@ export default function BuyerShop() {
     return list;
   }, [products, search, activeCategory]);
 
-  const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const cartCount = cart.reduce((s, i) => s + i.qty, 0);
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginatedProducts = filtered.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
 
   useEffect(() => {
-    if (cart.length > 0) {
-      localStorage.setItem("debridgers_cart", JSON.stringify(cart));
-    } else {
-      localStorage.removeItem("debridgers_cart");
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
     }
-  }, [cart]);
-
-  function addToCart(product: ApiProduct) {
-    const qty = qtys[product.id] ?? 1;
-    const priceNaira = product.price_kobo / 100;
-    setCart((prev) => {
-      const ex = prev.find((i) => i.id === String(product.id));
-      if (ex)
-        return prev.map((i) =>
-          i.id === String(product.id) ? { ...i, qty: i.qty + qty } : i,
-        );
-      return [
-        ...prev,
-        {
-          id: String(product.id),
-          name: product.name,
-          price: priceNaira,
-          unit: product.unit,
-          image_url: product.image_url,
-          qty,
-        },
-      ];
-    });
-  }
-
-  function updateQty(id: string, delta: number) {
-    setCart((prev) =>
-      prev
-        .map((i) =>
-          i.id === id ? { ...i, qty: Math.max(0, i.qty + delta) } : i,
-        )
-        .filter((i) => i.qty > 0),
-    );
-  }
-
-  function removeItem(id: string) {
-    setCart((prev) => prev.filter((i) => i.id !== id));
-  }
+  }, [currentPage, totalPages]);
 
   return (
-    <div className="flex flex-col gap-4 pb-28">
-      {/* Search bar */}
-      <div className="relative w-full">
-        <Search
-          size={16}
-          className="text-text absolute top-1/2 left-3.5 -translate-y-1/2 opacity-40"
-        />
-        <input
-          type="text"
+    // === Relative container so cart drawer can use absolute positioning
+    <div className="relative h-full">
+      {/* Scrollable content */}
+      <div className="flex h-full flex-col gap-4 overflow-y-auto pb-28">
+        {/* === Buy again - only once there is order history to rank */}
+        {hasHistory && (
+          <section className="flex flex-col gap-3">
+            <h2 className="font-syne text-heading text-base font-bold">
+              Buy again
+            </h2>
+            {/* Horizontal rail on mobile, wraps into the grid from lg up */}
+            <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+              {buyAgain.map((product) => (
+                <button
+                  key={product.id}
+                  type="button"
+                  onClick={() =>
+                    addItem({
+                      id: String(product.id),
+                      name: product.name,
+                      price: product.price_kobo / 100,
+                      unit: product.unit,
+                      image_url: product.image_url,
+                    })
+                  }
+                  aria-label={`Add ${product.name} to cart`}
+                  className="border-gray-border hover:border-primary flex w-40 shrink-0 cursor-pointer flex-col gap-2 rounded-xl border bg-white p-3 text-left transition-colors"
+                >
+                  <span className="font-syne text-heading line-clamp-2 text-sm font-semibold">
+                    {product.name}
+                  </span>
+                  <span className="text-text text-xs">
+                    Ordered {product.times_ordered}x
+                  </span>
+                  <span className="font-syne text-heading text-sm font-bold">
+                    {formatFromKobo(product.price_kobo)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Search bar */}
+        <DashSearchInput
+          className="w-full"
           placeholder="Search products..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="border-gray-border text-heading w-full rounded-xl border bg-white py-2.5 pr-4 pl-10 text-sm outline-none"
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setCurrentPage(1);
+          }}
         />
+
+        {/* Category filter pills */}
+        {!loading && categories.length > 1 && (
+          <div className="flex flex-wrap gap-2">
+            {categories.map((cat) => {
+              const active = cat === activeCategory;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    setActiveCategory(cat);
+                    setCurrentPage(1);
+                  }}
+                  className={`cursor-pointer rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
+                    active
+                      ? "border-primary bg-primary text-white"
+                      : "border-gray-border text-heading bg-white"
+                  }`}
+                >
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-gray-border h-64 animate-pulse rounded-2xl"
+              />
+            ))}
+          </div>
+        ) : products.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 py-20">
+            <Package size={48} className="text-text opacity-20" />
+            <p className="text-text text-sm">
+              No products available yet. Check back soon.
+            </p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <p className="text-text py-10 text-center text-sm">
+            No products match &quot;{search}&quot;
+          </p>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="grid grid-cols-[repeat(auto-fit,minmax(min(280px,100%),1fr))] gap-4 lg:grid-cols-3 xl:grid-cols-4"
+          >
+            {paginatedProducts.map((product, i) => {
+              const priceNaira = product.price_kobo / 100;
+              return (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  quantityInCart={quantityOf(String(product.id))}
+                  formattedPrice={formatCurrency(priceNaira)}
+                  animationIndex={i}
+                  onAddToCart={() => addToCart(product)}
+                  onIncrement={() => updateQty(String(product.id), 1)}
+                  onDecrement={() => updateQty(String(product.id), -1)}
+                  isFavorite={isFavorite(product.id)}
+                  onToggleFavorite={
+                    canFavorite
+                      ? () => void toggleFavorite(product.id)
+                      : undefined
+                  }
+                />
+              );
+            })}
+          </motion.div>
+        )}
+
+        {!loading && filtered.length > 0 && totalPages > 1 && (
+          <div className="mt-8 flex justify-center pb-2">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Category filter pills */}
-      {!loading && categories.length > 1 && (
-        <div className="flex flex-wrap gap-2">
-          {categories.map((cat) => {
-            const active = cat === activeCategory;
-            return (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`cursor-pointer rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
-                  active
-                    ? "border-primary bg-primary text-white"
-                    : "border-gray-border text-heading bg-white"
-                }`}
-              >
-                {cat}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {loading ? (
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="bg-gray-border h-64 animate-pulse rounded-2xl"
-            />
-          ))}
-        </div>
-      ) : products.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-20">
-          <Package size={48} className="text-text opacity-20" />
-          <p className="text-text text-sm">
-            No products available yet. Check back soon.
-          </p>
-        </div>
-      ) : filtered.length === 0 ? (
-        <p className="text-text py-10 text-center text-sm">
-          No products match &quot;{search}&quot;
-        </p>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="grid grid-cols-2 gap-4 lg:grid-cols-3"
-        >
-          {filtered.map((product, i) => {
-            const priceNaira = product.price_kobo / 100;
-            const inCart = cart.find((c) => c.id === String(product.id));
-            return (
-              <motion.div
-                key={product.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04 }}
-                className="border-gray-border overflow-hidden rounded-2xl border bg-white"
-              >
-                {/* Product image */}
-                <div className="bg-bg-light relative h-44 overflow-hidden">
-                  {product.image_url ? (
-                    <img
-                      src={product.image_url}
-                      alt={product.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center">
-                      <Package size={44} className="text-text opacity-15" />
-                    </div>
-                  )}
-                  {/* Category label overlay */}
-                  {product.description && (
-                    <span className="text-heading absolute top-2.5 left-2.5 rounded-full bg-white/85 px-2.5 py-0.5 text-xs font-semibold backdrop-blur-sm">
-                      {product.description}
-                    </span>
-                  )}
-                </div>
-
-                {/* Card body */}
-                <div className="flex flex-col gap-2 p-3">
-                  <div className="flex flex-col gap-0.5">
-                    {product.description && (
-                      <p className="text-text text-xs">{product.description}</p>
-                    )}
-                    <p className="font-syne text-heading text-sm leading-snug font-bold">
-                      {product.name}
-                    </p>
-                  </div>
-
-                  <p className="font-syne text-heading text-lg font-bold">
-                    {fmt(priceNaira)}
-                  </p>
-
-                  {/* Controls */}
-                  <div className="flex items-center gap-2">
-                    {/* Unit pill */}
-                    <span className="border-gray-border bg-bg-light text-text shrink-0 rounded-lg border px-2 py-1 text-xs font-medium">
-                      {product.unit}
-                    </span>
-
-                    {/* Qty selector */}
-                    <select
-                      value={qtys[product.id] ?? 1}
-                      onChange={(e) =>
-                        setQtys((prev) => ({
-                          ...prev,
-                          [product.id]: Number(e.target.value),
-                        }))
-                      }
-                      className="border-gray-border bg-bg-light text-heading rounded-lg border px-2 py-1 text-xs outline-none"
-                    >
-                      {[1, 2, 3, 4, 5, 10].map((n) => (
-                        <option key={n} value={n}>
-                          {n}
-                        </option>
-                      ))}
-                    </select>
-
-                    {/* Add to cart / Add more */}
-                    <button
-                      onClick={() => addToCart(product)}
-                      className={`bg-primary ml-auto flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-85 ${inCart ? "pr-3" : ""}`}
-                    >
-                      {inCart ? (
-                        <>
-                          <Plus size={11} /> Add more
-                        </>
-                      ) : (
-                        <>
-                          <ShoppingCart size={11} /> Add to cart
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </motion.div>
-      )}
-
-      {/* Bottom cart bar */}
+      {/* === Bottom cart bar - absolute within the relative shell, so it stays
+          inside the dashboard's bounds instead of spanning the viewport */}
       <AnimatePresence>
-        {cartCount > 0 && (
+        {cartProductCount > 0 && (
           <motion.div
-            initial={{ y: 80, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 80, opacity: 0 }}
-            className="border-gray-border lg:left-w-70 fixed right-0 bottom-0 left-0 z-30 flex items-center justify-between border-t bg-white px-6 py-4 shadow-lg"
+            variants={stickyBarVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={springPanel}
+            className="border-gray-border absolute right-0 bottom-0 left-0 z-30 border-t bg-white shadow-lg"
           >
-            <div>
-              <p className="text-text text-sm">
-                {cartCount} item{cartCount > 1 ? "s" : ""} in cart
-              </p>
-              <p className="font-syne text-primary font-bold">
-                Total: {fmt(cartTotal)}
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setCartOpen(true)}
-                className="border-gray-border text-heading flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
-              >
-                <ShoppingCart size={16} /> View Cart
-              </button>
-              <Link
-                to="/buyer-dashboard/checkout"
-                className="bg-primary rounded-full px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-              >
-                Checkout
-              </Link>
+            <div className="flex flex-wrap items-center justify-center gap-4 px-6 py-4 sm:justify-between">
+              <div className="flex w-full items-center justify-between gap-4">
+                <p className="text-text text-sm">
+                  {cartProductCount} item{cartProductCount > 1 ? "s" : ""} in
+                  cart
+                </p>
+                <p className="font-syne text-primary font-bold">
+                  Total: {formatCurrency(cartTotal)}
+                </p>
+              </div>
+              <div className="flex w-full justify-end gap-3 sm:w-auto">
+                <button
+                  onClick={() => setCartOpen(true)}
+                  className="border-gray-border text-heading flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
+                >
+                  <ShoppingCart size={16} /> View Cart
+                </button>
+                <Link
+                  to="/buyer-dashboard/checkout"
+                  className="bg-primary rounded-full px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                >
+                  Checkout
+                </Link>
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Cart drawer */}
+      {/* === Cart drawer - absolute within this relative container */}
       <AnimatePresence>
         {cartOpen && (
           <>
@@ -346,24 +309,24 @@ export default function BuyerShop() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black/40"
+              className="absolute inset-0 z-40 cursor-pointer bg-black/40"
               onClick={() => setCartOpen(false)}
             />
             <motion.div
               key="panel"
-              initial={{ x: "100%" }}
+              initial={{ x: "100vw" }}
               animate={{ x: 0 }}
-              exit={{ x: "100%" }}
+              exit={{ x: "100vw" }}
               transition={{ type: "tween", duration: 0.28 }}
-              className="fixed top-0 right-0 z-50 flex h-full w-full max-w-sm flex-col bg-white shadow-2xl"
+              className="absolute top-0 right-0 z-50 flex h-full w-full max-w-120 flex-col bg-white shadow-2xl"
             >
               <div className="border-gray-border flex items-center justify-between border-b px-5 py-4">
                 <h3 className="font-syne text-heading font-bold">
-                  Your cart ({cartCount})
+                  Your cart ({cartProductCount})
                 </h3>
                 <button
                   onClick={() => setCartOpen(false)}
-                  className="rounded-full p-1.5 hover:bg-black/5"
+                  className="cursor-pointer rounded-full p-1.5 hover:bg-black/5"
                 >
                   <X size={18} className="text-text" />
                 </button>
@@ -395,13 +358,13 @@ export default function BuyerShop() {
                         {item.name}
                       </p>
                       <p className="text-text text-xs">
-                        {item.unit} · {fmt(item.price)} each
+                        {item.unit} · {formatCurrency(item.price)} each
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => updateQty(item.id, -1)}
-                        className="border-gray-border flex h-6 w-6 items-center justify-center rounded-full border text-xs"
+                        className="border-gray-border flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border text-xs"
                       >
                         <Minus size={10} />
                       </button>
@@ -410,13 +373,13 @@ export default function BuyerShop() {
                       </span>
                       <button
                         onClick={() => updateQty(item.id, 1)}
-                        className="border-gray-border flex h-6 w-6 items-center justify-center rounded-full border text-xs"
+                        className="border-gray-border flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border text-xs"
                       >
                         <Plus size={10} />
                       </button>
                       <button
                         onClick={() => removeItem(item.id)}
-                        className="ml-1 rounded-full p-1 hover:bg-red-50"
+                        className="ml-1 cursor-pointer rounded-full p-1 hover:bg-red-50"
                       >
                         <Trash2 size={13} className="text-red-400" />
                       </button>
@@ -429,13 +392,13 @@ export default function BuyerShop() {
                 <div className="flex justify-between">
                   <span className="text-text text-sm">Total</span>
                   <span className="font-syne text-heading font-bold">
-                    {fmt(cartTotal)}
+                    {formatCurrency(cartTotal)}
                   </span>
                 </div>
                 <Link
                   to="/buyer-dashboard/checkout"
                   onClick={() => setCartOpen(false)}
-                  className="bg-primary w-full rounded-full py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                  className="bg-primary w-full cursor-pointer rounded-full py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90"
                 >
                   Proceed to Checkout
                 </Link>

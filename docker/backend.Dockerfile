@@ -4,8 +4,8 @@ WORKDIR /app
 
 RUN corepack enable
 
-COPY package.json pnpm-lock.yaml ./
-COPY pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/debridgers-backend/package.json ./apps/debridgers-backend/
 
 RUN pnpm install --frozen-lockfile
 

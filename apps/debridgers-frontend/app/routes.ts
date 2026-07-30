@@ -9,6 +9,8 @@ export default [
   // === Landing Page Routes
   layout("routes/landing/layout.tsx", [
     index("routes/landing/home.tsx"),
+    route("shop", "routes/landing/shop.tsx"),
+    route("outreach", "routes/landing/outreach.tsx"),
     route("contact", "routes/landing/contact.tsx"),
     route("agents", "routes/landing/agents.tsx"),
   ]),
@@ -69,5 +71,6 @@ export default [
     route("admin-dashboard/settings", "routes/dashboards/admin/settings.tsx"),
     route("admin-dashboard/products", "routes/dashboards/admin/products.tsx"),
     route("admin-dashboard/outreach", "routes/dashboards/admin/outreach.tsx"),
+    route("admin-dashboard/payouts", "routes/dashboards/admin/payouts.tsx"),
   ]),
 ] satisfies RouteConfig;

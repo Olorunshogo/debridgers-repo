@@ -29,7 +29,12 @@ export const users = pgTable(
     email: text().notNull(),
     phone: varchar("phone", { length: 20 }),
     password: varchar("password", { length: 256 }),
-    role: userRoleEnum().notNull().default("agent"),
+    /*
+     * Buyer is the least-privileged self-registerable role, so a write that omits
+     * the role can only create a harmless account. This previously defaulted to
+     * "agent", which meant any such omission silently created an agent.
+     */
+    role: userRoleEnum().notNull().default("buyer"),
     is_email_verified: boolean().notNull().default(false),
     is_phone_verified: boolean().notNull().default(false),
     is_blocked: boolean().notNull().default(false),
@@ -41,6 +46,7 @@ export const users = pgTable(
     avatar_url: text(),
     mailtrap_contact_id: text(),
     refresh_token: text(),
+    email_notifications: boolean().notNull().default(true),
     ...timestamps,
   },
   (table) => [uniqueIndex("users_email_idx").on(lower(table.email))],

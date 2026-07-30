@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 import { Wallet, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
+import { formatFromKobo, useDialog } from "@debridgers/ui-web";
+import { BankDetailsCard } from "@/components/agent/BankDetailsCard";
 
 export function meta() {
   return [
@@ -28,12 +30,6 @@ function getNextPayoutDate(): string {
     month: "short",
     day: "numeric",
   });
-}
-
-function fmt(kobo: number) {
-  return (
-    "₦" + (kobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 0 })
-  );
 }
 
 interface ApiWallet {
@@ -97,21 +93,34 @@ const STATUS_BADGE: Record<
 export default function AgentWalletPage() {
   const [wallet, setWallet] = useState<ApiWallet | null>(null);
   const [commissions, setCommissions] = useState<CommissionRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
+  /*
+   * Payouts are rejected server-side without bank details, so the button is
+   * disabled rather than letting the agent hit a guaranteed error.
+   */
+  const [bankReady, setBankReady] = useState<boolean>(false);
   const nextPayoutDate = getNextPayoutDate();
+  const { triggerDialog } = useDialog();
+
+  /* Extracted so the payout dialog can refresh the balance after requesting. */
+  const load = useCallback(async (): Promise<void> => {
+    try {
+      const [w, cs] = await Promise.all([
+        apiFetch<ApiWallet>("/agent/wallet"),
+        apiFetch<ApiCommission[]>("/agent/commissions"),
+      ]);
+      setWallet(w);
+      setCommissions(cs.map(mapCommission));
+    } catch {
+      /* Leave the last known values on screen rather than blanking the page. */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    Promise.all([
-      apiFetch<ApiWallet>("/agent/wallet"),
-      apiFetch<ApiCommission[]>("/agent/commissions"),
-    ])
-      .then(([w, cs]) => {
-        setWallet(w);
-        setCommissions(cs.map(mapCommission));
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+    void load();
+  }, [load]);
 
   if (loading) {
     return (
@@ -137,14 +146,39 @@ export default function AgentWalletPage() {
         <div className="flex flex-col gap-3">
           <p className="text-sm text-white/70">Available Balance</p>
           <p className="font-syne text-4xl font-extrabold text-white">
-            {fmt(availableBalance)}
+            {formatFromKobo(availableBalance)}
           </p>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="text-secondary flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-semibold">
               <Wallet size={14} />
-              {fmt(pendingBalance)} pending
+              {formatFromKobo(pendingBalance)} pending
             </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                triggerDialog("REQUEST_PAYOUT", {
+                  availableBalanceKobo: availableBalance,
+                  onRequested: () => void load(),
+                })
+              }
+              disabled={availableBalance <= 0 || !bankReady}
+              title={
+                bankReady
+                  ? undefined
+                  : "Add your bank details below before requesting a payout"
+              }
+              className="text-primary flex cursor-pointer items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-sm font-semibold transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ArrowUpRight size={14} /> Request payout
+            </button>
           </div>
+
+          {!bankReady && availableBalance > 0 && (
+            <p className="text-xs text-white/70">
+              Add your bank details below to enable payouts.
+            </p>
+          )}
         </div>
         <div className="flex flex-col gap-1 sm:items-end">
           <p className="text-xs text-white/60">Automatic payout at</p>
@@ -206,7 +240,7 @@ export default function AgentWalletPage() {
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <p className="font-syne text-heading font-semibold">
-                      {fmt(c.amount)}
+                      {formatFromKobo(c.amount)}
                     </p>
                     <span
                       className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.bgClass} ${badge.textClass}`}
@@ -221,21 +255,9 @@ export default function AgentWalletPage() {
         )}
       </div>
 
-      {/* Bank details placeholder */}
-      <AnimatePresence>
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="border-gray-border flex flex-col gap-3 rounded-2xl border bg-white p-5"
-        >
-          <h3 className="font-syne text-heading font-semibold">Bank Details</h3>
-          <p className="text-text text-sm">
-            Bank account management coming soon. Contact admin to update your
-            payout details.
-          </p>
-        </motion.div>
-      </AnimatePresence>
+      <BankDetailsCard
+        onDetailsChange={(details) => setBankReady(details.is_complete)}
+      />
     </div>
   );
 }

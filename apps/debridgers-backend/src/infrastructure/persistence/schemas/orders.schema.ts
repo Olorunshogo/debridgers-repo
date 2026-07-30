@@ -5,6 +5,7 @@ import {
   integer,
   text,
   timestamp,
+  varchar,
 } from "drizzle-orm/pg-core";
 import { timestamps } from "../../helper/column.helper";
 import { users } from "./users.schema";
@@ -23,6 +24,13 @@ export const orderStatusEnum = pgEnum("order_status", [
 export const orderModeEnum = pgEnum("order_mode", [
   "field", // Mode 1 - agent submits, Debridgers delivers
   "referral", // Mode 3 - buyer ordered via referral link
+]);
+
+export const paymentStatusEnum = pgEnum("payment_status", [
+  "unpaid",
+  "awaiting", // virtual account created, waiting for transfer
+  "paid",
+  "failed",
 ]);
 
 export const orders = pgTable("orders", {
@@ -46,6 +54,14 @@ export const orders = pgTable("orders", {
   cancellation_reason: text(),
   notes: text(),
   delivered_at: timestamp(),
+  // SafeHaven payment
+  payment_status: paymentStatusEnum().notNull().default("unpaid"),
+  payment_reference: varchar("payment_reference", { length: 100 }),
+  virtual_account_number: varchar("virtual_account_number", { length: 20 }),
+  virtual_account_bank: text(),
+  virtual_account_account_name: text(),
+  virtual_account_expires_at: timestamp(),
+  paid_at: timestamp(),
   ...timestamps,
 });
 

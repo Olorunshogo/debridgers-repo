@@ -41,13 +41,13 @@ export default function Footer() {
   const [email, setEmail] = useState<string>("");
 
   return (
-    <footer className="bg-primary relative overflow-hidden text-white">
+    <footer className="bg-primary py-section-py sm:py-section-py-sm lg:py-section-py-lg relative overflow-hidden text-white">
       <FooterWordmark position="top" />
 
       <FooterWordmark position="bottom" />
 
       {/* Main footer content */}
-      <div className="px-section-px py-section-py sm:px-section-px-sm sm:py-section-py-sm lg:px-section-px-lg lg:py-section-py-lg relative z-10 mx-auto flex w-full flex-col gap-8 lg:gap-8">
+      <div className="landing-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex flex-col gap-8">
         {/* Top section: tagline + columns */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[repeat(auto-fit,minmax(280px,1fr))] lg:items-start">
           {/* Tagline */}
@@ -57,7 +57,7 @@ export default function Footer() {
               <div className="relative inline-block">
                 <span>Zero</span>
                 <img
-                  src="/images/curved-underline.png"
+                  src="/images/landing/curved-underline.png"
                   className="absolute -mt-2 w-fit"
                 />
               </div>

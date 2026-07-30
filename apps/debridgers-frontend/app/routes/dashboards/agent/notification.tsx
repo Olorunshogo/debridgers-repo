@@ -95,7 +95,7 @@ export default function AgentNotificationPage() {
         {unreadCount > 0 && (
           <button
             onClick={markAllRead}
-            className="text-primary text-sm font-medium underline underline-offset-2"
+            className="text-primary cursor-pointer text-sm font-medium underline underline-offset-2"
           >
             Mark all read
           </button>

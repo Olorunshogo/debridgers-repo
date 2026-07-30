@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, ArrowDownLeft, Plus } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
+import { formatCurrency, DashNumberInput } from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -72,7 +73,7 @@ function buildWalletData(stats: ApiDashStats, orders: ApiOrder[]): WalletData {
 }
 
 function fmt(n: number) {
-  return "₦" + n.toLocaleString();
+  return formatCurrency(n);
 }
 
 export default function BuyerWallet() {
@@ -238,7 +239,7 @@ export default function BuyerWallet() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ duration: 0.2 }}
-              className="fixed top-1/2 left-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-2xl"
+              className="fixed top-1/2 left-1/2 z-50 w-full max-w-112 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-2xl"
             >
               <h3 className="font-syne text-heading mb-4 text-lg font-bold">
                 Add Funds
@@ -249,20 +250,14 @@ export default function BuyerWallet() {
                 </p>
               ) : (
                 <form onSubmit={handleFund} className="flex flex-col gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-heading text-sm font-medium">
-                      Amount
-                    </label>
-                    <input
-                      type="number"
-                      min="100"
-                      value={fundAmount}
-                      onChange={(e) => setFundAmount(e.target.value)}
-                      placeholder="e.g. 5000"
-                      required
-                      className="border-gray-border focus:border-primary text-heading bg-bg-light w-full rounded-xl border px-4 py-3 text-sm transition-all outline-none"
-                    />
-                  </div>
+                  <DashNumberInput
+                    label="Amount"
+                    min={100}
+                    value={fundAmount}
+                    onChange={(e) => setFundAmount(e.target.value)}
+                    placeholder="e.g. 5000"
+                    required
+                  />
                   <div className="flex gap-3">
                     <button
                       type="button"

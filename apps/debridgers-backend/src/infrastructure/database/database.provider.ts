@@ -1,4 +1,6 @@
+import * as path from "path";
 import { drizzle, NodePgDatabase } from "drizzle-orm/node-postgres";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
 import { ConfigService } from "@nestjs/config";
 import * as schema from "../persistence/index";
@@ -23,8 +25,22 @@ const connectionProvider = {
       connectionTimeoutMillis: 72000,
     });
 
+    const db = drizzle(pool, { schema }) as NodePgDatabase<typeof schema>;
+
+    // Run any pending migrations before the app accepts requests.
+    // In production: migrations are copied to dist/ by nest-cli assets config.
+    // In development: path resolves to src/ via ts-node.
+    const migrationsFolder = path.join(__dirname, "../persistence/migrations");
+    try {
+      await migrate(db, { migrationsFolder });
+      logger.log("Database migrations up to date");
+    } catch (err) {
+      logger.error("Migration failed — server will not start", err);
+      throw err;
+    }
+
     logger.log("Database connection established");
-    return drizzle(pool, { schema }) as NodePgDatabase<typeof schema>;
+    return db;
   },
 };
 

@@ -17,11 +17,15 @@ import * as schema from "../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../infrastructure/database/database.provider";
 import { JwtPayload } from "../../interfaces/users/jwt.type";
 import { USER_EVENTS } from "../../events/event-types/user.event.types";
-import { RegisterDto } from "./dto/register.dto";
+import { RegisterDto, type SelfRegisterableRole } from "./dto/register.dto";
+import { USER_ROLES } from "../../interfaces/users/roles.type";
 import { LoginDto } from "./dto/login.dto";
 
 @Injectable()
 export class AuthService {
+  // Cached once per process — admin referrer ID never changes at runtime
+  private defaultReferrerIdCache: number | null | undefined = undefined;
+
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
@@ -31,11 +35,16 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const existing = await this.db
-      .select()
-      .from(schema.users)
-      .where(eq(sql`lower(${schema.users.email})`, dto.email.toLowerCase()))
-      .limit(1);
+    // Run email check, referrer lookup, and password hash concurrently
+    const [existing, referredByAgentId, hashed] = await Promise.all([
+      this.db
+        .select()
+        .from(schema.users)
+        .where(eq(sql`lower(${schema.users.email})`, dto.email.toLowerCase()))
+        .limit(1),
+      this.resolveBuyerReferrerId(dto.referred_by_agent_code),
+      bcrypt.hash(dto.password, 12),
+    ]);
 
     if (existing.length > 0) {
       const user = existing[0];
@@ -56,16 +65,12 @@ export class AuthService {
       throw new ConflictException("Email already registered");
     }
 
-    const referredByAgentId = await this.resolveBuyerReferrerId(
-      dto.referred_by_agent_code,
-    );
-
-    const hashed = await bcrypt.hash(dto.password, 12);
-
     const verificationToken = this.generateVerificationOtp();
     const verificationExpiresAt = new Date(Date.now() + 24 * 3600 * 1000);
 
     const isTestMode = process.env.NODE_ENV === "test";
+
+    const role = dto.role as SelfRegisterableRole;
 
     const [user] = await this.db.transaction(async (tx) => {
       const [createdUser] = await tx
@@ -76,12 +81,41 @@ export class AuthService {
           email: dto.email.toLowerCase(),
           phone: dto.phone,
           password: hashed,
-          role: "buyer",
-          referred_by_agent_id: referredByAgentId,
+          /*
+           * Always explicit. The users.role column defaults to buyer, but relying
+           * on a column default while the role is caller-supplied is how you
+           * silently create the wrong kind of account.
+           */
+          role,
+          /*
+           * Only buyers carry a permanent referral link to a recruiting agent.
+           * resolveBuyerReferrerId already returns null when no code was given.
+           */
+          referred_by_agent_id:
+            role === USER_ROLES.BUYER ? referredByAgentId : null,
           // Auto-verify email in test mode so e2e tests can login immediately
           is_email_verified: isTestMode,
         })
         .returning();
+
+      /*
+       * Per-role setup. Kept as an explicit switch on a narrow union rather than
+       * scattered ifs so the compiler flags this spot when a role is added.
+       */
+      if (role === USER_ROLES.AGENT) {
+        /*
+         * address, state, and lga are intentionally left null: they are collected
+         * later in agent settings, not at signup, so one register endpoint serves
+         * every role. zone_id therefore stays null until the agent supplies an
+         * LGA, at which point updateProfile resolves it. See
+         * docs/frontend/AuthPLAN.md phases 3 and 6.
+         */
+        await tx.insert(schema.agent_profiles).values({
+          user_id: createdUser.id,
+          status: "pending",
+          referred_by_agent_id: referredByAgentId,
+        });
+      }
 
       if (!isTestMode) {
         await tx.insert(schema.email_verification).values({
@@ -90,7 +124,8 @@ export class AuthService {
           expires_at: verificationExpiresAt,
         });
 
-        await this.eventEmitter.emitAsync(USER_EVENTS.USER_REGISTERED, {
+        // Fire-and-forget — don't block registration on email delivery
+        this.eventEmitter.emit(USER_EVENTS.USER_REGISTERED, {
           name: `${createdUser.first_name} ${createdUser.last_name}`,
           email: createdUser.email,
           otp: verificationToken,
@@ -393,12 +428,15 @@ export class AuthService {
       role: user.role as JwtPayload["role"],
     };
 
-    const accessSecret =
-      this.config.get<string>("AccessJwt.secret") ?? "fallback_access";
+    const accessSecret = this.config.get<string>("AccessJwt.secret");
+    const refreshSecret = this.config.get<string>("RefreshJwt.secret");
+    if (!accessSecret || !refreshSecret) {
+      throw new Error(
+        "JWT secrets not configured — set ACCESS_TOKEN_SECRET and REFRESH_TOKEN_SECRET",
+      );
+    }
     const accessExpiry =
       this.config.get<string>("AccessJwt.expiresIn") ?? "15m";
-    const refreshSecret =
-      this.config.get<string>("RefreshJwt.secret") ?? "fallback_refresh";
     const refreshExpiry =
       this.config.get<string>("RefreshJwt.expiresIn") ?? "7d";
 
@@ -431,6 +469,11 @@ export class AuthService {
       }
     }
 
+    // Cache the admin ID — it never changes between restarts
+    if (this.defaultReferrerIdCache !== undefined) {
+      return this.defaultReferrerIdCache;
+    }
+
     const adminEmail =
       this.config.get<string>("ADMIN_EMAIL") ?? "admin@debridgers.com";
     const [defaultReferrer] = await this.db
@@ -439,7 +482,8 @@ export class AuthService {
       .where(eq(sql`lower(${schema.users.email})`, adminEmail.toLowerCase()))
       .limit(1);
 
-    return defaultReferrer?.id ?? null;
+    this.defaultReferrerIdCache = defaultReferrer?.id ?? null;
+    return this.defaultReferrerIdCache;
   }
 
   private async refreshVerificationOtp(

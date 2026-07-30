@@ -1,5 +1,6 @@
 import type { Route } from "./+types/home";
 import { Header } from "../../components/landing/Header";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   renderIcon,
   useImageCycle,
@@ -8,7 +9,7 @@ import {
 import { Icon } from "@iconify/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
-import { PrimaryLink, WhatsAppButton } from "@debridgers/ui-web";
+import { PrimaryLink, WhatsAppLink } from "@debridgers/ui-web";
 
 // === Why Debridgers
 interface WhyCardData {
@@ -90,67 +91,92 @@ function WhyCard({ card, isActive, onHover }: WhyCardProps) {
 }
 
 // === Delivery Category
+interface DeliverVariant {
+  name: string;
+  image: string;
+}
+
 interface WhatWeDeliverCategory {
   title: string;
-  subtitle: string;
-  images: string[];
+  variants: DeliverVariant[];
 }
 
 const whatWeDeliverCategories: WhatWeDeliverCategory[] = [
   {
-    title: "Grain & Staples",
-    subtitle: "Rice, Beans, Garri",
-    images: [
-      "/images/deliver-grains-staples-1.jpg",
-      "/images/deliver-grains-staples-2.jpg",
-      "/images/deliver-grains-staples-3.jpg",
+    title: "Grains & Staples",
+    variants: [
+      {
+        name: "Local White Rice",
+        image: "/images/landing/deliver-grains-staples-1.jpg",
+      },
+      {
+        name: "Ofada Rice",
+        image: "/images/landing/deliver-grains-staples-2.jpg",
+      },
+      {
+        name: "Tuwo Rice",
+        image: "/images/landing/deliver-grains-staples-3.jpg",
+      },
     ],
   },
   {
-    title: "Grains",
-    subtitle: "Beans",
-    images: [
-      "/images/deliver-grains-1.jpg",
-      "/images/deliver-grains-2.jpg",
-      "/images/deliver-grains-3.jpg",
+    title: "Beans",
+    variants: [
+      { name: "Wake Gida", image: "/images/landing/deliver-grains-1.jpg" },
+      { name: "Cowpea", image: "/images/landing/deliver-grains-2.jpg" },
+      { name: "Soya Beans", image: "/images/landing/deliver-grains-3.jpg" },
     ],
   },
   {
     title: "Oil & Protein",
-    subtitle: "Groundnut oil, Palm Oil",
-    images: [
-      "/images/deliver-oil-protein-1.jpg",
-      "/images/deliver-oil-protein-2.jpg",
-      "/images/deliver-oil-protein-3.jpg",
+    variants: [
+      {
+        name: "Fresh Palm Oil",
+        image: "/images/landing/deliver-oil-protein-1.jpg",
+      },
+      {
+        name: "Groundnut Oil",
+        image: "/images/landing/deliver-oil-protein-2.jpg",
+      },
+      {
+        name: "Vegetable Oil",
+        image: "/images/landing/deliver-oil-protein-3.jpg",
+      },
     ],
   },
   {
     title: "Tubers",
-    subtitle: "Yam, Potato",
-    images: [
-      "/images/deliver-tubers-1.jpg",
-      "/images/deliver-tubers-2.jpg",
-      "/images/deliver-tubers-3.jpg",
+    variants: [
+      { name: "Yam", image: "/images/landing/deliver-tubers-1.jpg" },
+      { name: "Irish Potato", image: "/images/landing/deliver-tubers-2.jpg" },
     ],
   },
 ];
 
-// === WhatWeDeliver: 4 cards visible on lg, infinite marquee through all 6
 // === DeliverCard: images static on load, cycle right-to-left only on hover
+// === Subtitle fades out on index change, fades in 1.6s later (600ms transition + 1s hold)
 function DeliverCard({
   whatWeDeliverCategory,
 }: {
   whatWeDeliverCategory: WhatWeDeliverCategory;
 }) {
-  const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
+  const [activeIndex, setActiveIndex] = useState<number>(0);
   const [isHovered, setIsHovered] = useState<boolean>(false);
+  const [subtitleVisible, setSubtitleVisible] = useState<boolean>(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const subtitleTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { variants } = whatWeDeliverCategory;
 
   const startCycling = () => {
-    if (whatWeDeliverCategory.images.length <= 1) return;
+    if (variants.length <= 1) return;
     intervalRef.current = setInterval(() => {
-      setActiveImageIndex(
-        (prev) => (prev + 1) % whatWeDeliverCategory.images.length,
+      setActiveIndex((prev) => (prev + 1) % variants.length);
+      setSubtitleVisible(false);
+      if (subtitleTimerRef.current) clearTimeout(subtitleTimerRef.current);
+      subtitleTimerRef.current = setTimeout(
+        () => setSubtitleVisible(true),
+        1600,
       );
     }, 900);
   };
@@ -160,12 +186,18 @@ function DeliverCard({
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    setActiveImageIndex(0);
+    if (subtitleTimerRef.current) {
+      clearTimeout(subtitleTimerRef.current);
+      subtitleTimerRef.current = null;
+    }
+    setActiveIndex(0);
+    setSubtitleVisible(true);
   };
 
   useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
+      if (subtitleTimerRef.current) clearTimeout(subtitleTimerRef.current);
     };
   }, []);
 
@@ -184,19 +216,15 @@ function DeliverCard({
       className="group relative h-80 w-55 shrink-0 cursor-default overflow-hidden rounded-3xl shadow-lg sm:h-95 sm:w-65"
     >
       {/* Images - static until hover, then swipe right-to-left */}
-      {whatWeDeliverCategory.images.map((src, idx) => (
+      {variants.map(({ image, name }, idx) => (
         <motion.img
-          key={src}
-          src={src}
-          alt={`${whatWeDeliverCategory.title} - image ${idx + 1}`}
+          key={image}
+          src={image}
+          alt={`${whatWeDeliverCategory.title} — ${name}`}
           className="absolute inset-0 h-full w-full object-cover"
           animate={{
             x:
-              idx === activeImageIndex
-                ? "0%"
-                : idx < activeImageIndex
-                  ? "-100%"
-                  : "100%",
+              idx === activeIndex ? "0%" : idx < activeIndex ? "-100%" : "100%",
           }}
           transition={{ duration: 0.6, ease: "easeInOut" }}
         />
@@ -205,20 +233,29 @@ function DeliverCard({
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-linear-to-t from-black/60 via-[#666666]/30 to-transparent" />
 
-      {/* Label */}
+      {/* Label — title always visible, subtitle fades on index change */}
       <div className="font-open-sans absolute right-0 bottom-4 left-0 flex flex-col gap-1 p-4 text-white">
         <p className="text-lg font-semibold">{whatWeDeliverCategory.title}</p>
-        <p className="text-base">{whatWeDeliverCategory.subtitle}</p>
+        <motion.p
+          animate={{
+            opacity: subtitleVisible ? 1 : 0,
+            y: subtitleVisible ? 0 : 4,
+          }}
+          transition={{ duration: 0.35 }}
+          className="text-base"
+        >
+          {variants[activeIndex].name}
+        </motion.p>
       </div>
 
       {/* Image dots - visible on hover */}
-      {isHovered && whatWeDeliverCategory.images.length > 1 && (
+      {isHovered && variants.length > 1 && (
         <div className="absolute bottom-20 left-1/2 flex -translate-x-1/2 gap-1.5">
-          {whatWeDeliverCategory.images.map((_, i) => (
+          {variants.map((_, i) => (
             <div
               key={i}
               className={`h-1.5 w-1.5 rounded-full transition-all ${
-                i === activeImageIndex ? "scale-110 bg-white" : "bg-white/50"
+                i === activeIndex ? "scale-110 bg-white" : "bg-white/50"
               }`}
             />
           ))}
@@ -356,6 +393,7 @@ const stats: Stat[] = [
 const statsFormatters: Array<(v: number) => string> = [
   (v) => `${v}%`,
   (v) => `${v}+`,
+
   (v) => String(Number(v) + 0),
 ];
 
@@ -422,10 +460,11 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Home() {
+  const { isAuthenticated, dashboardPath } = useAuth();
   const [activeWhyCardIndex, setActiveWhyCardIndex] = useState<number>(0);
   const currentIndex = useImageCycle(1);
   const activeTrustIndex = useTrustCycle(4);
-  const images = ["/images/hero-1.jpg"];
+  const images = ["/images/landing/hero-1.jpg"];
 
   const trustItems = [
     { icon: "lucide:check", label: "Guarantee fresh produce" },
@@ -440,11 +479,14 @@ export default function Home() {
         <Header
           navLinks={[
             { label: "Home", href: "/" },
+            { label: "Shop", href: "/shop" },
             { label: "Agents", href: "/agents" },
             { label: "Contact Us", href: "/contact" },
           ]}
           signUpHref="/signup"
           heroSectionId="hero-section"
+          isAuthenticated={isAuthenticated}
+          dashboardPath={dashboardPath}
         />
       </div>
 
@@ -454,6 +496,7 @@ export default function Home() {
           <div className="font-syne -mt-navbar-h bg-primary absolute inset-0 z-0 overflow-hidden" />
           <section
             id="hero-section"
+            aria-label="Hero"
             className="font-syne relative mx-auto flex h-full min-h-screen w-full flex-col overflow-hidden"
           >
             {/* Background layer */}
@@ -496,7 +539,7 @@ export default function Home() {
                         <div className="relative inline-block">
                           <span>Zero</span>
                           <img
-                            src="/images/curved-underline.png"
+                            src="/images/landing/curved-underline.png"
                             className="absolute -mt-2 w-fit"
                           />
                         </div>
@@ -518,7 +561,7 @@ export default function Home() {
 
                   {/* CTAs */}
                   <div className="flex flex-col items-center justify-center gap-4 lg:flex-row lg:justify-start lg:gap-18.5">
-                    <WhatsAppButton className="w-auto" />
+                    <WhatsAppLink shadowYellow className="w-auto" />
                     <a
                       href="#how-it-works"
                       className="font-open-sans flex items-center gap-1 text-base text-white transition-all duration-300 ease-in-out hover:text-white sm:text-lg lg:gap-2.5 lg:text-xl"
@@ -790,7 +833,7 @@ export default function Home() {
               </p>
             </div>
 
-            <WhatsAppButton label="Chat with us on whatsApp" />
+            <WhatsAppLink label="Chat with us on whatsApp" />
           </div>
         </div>
       </section>

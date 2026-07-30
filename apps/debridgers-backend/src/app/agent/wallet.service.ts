@@ -91,6 +91,31 @@ export class WalletService {
       .where(eq(schema.wallets.agent_id, agentId));
   }
 
+  /*
+   * Internal - return money to available balance after a rejected payout.
+   *
+   * Deliberately not `credit`: that also increases `total_earned`, and handing
+   * back money the agent already earned is not a new earning. Using credit here
+   * would inflate lifetime earnings every time a payout was rejected.
+   */
+  async refundAvailable(agentId: number, amount: number) {
+    const [existing] = await this.db
+      .select()
+      .from(schema.wallets)
+      .where(eq(schema.wallets.agent_id, agentId))
+      .limit(1);
+
+    if (!existing) return;
+
+    await this.db
+      .update(schema.wallets)
+      .set({
+        available_balance: existing.available_balance + amount,
+        updated_at: new Date(),
+      })
+      .where(eq(schema.wallets.agent_id, agentId));
+  }
+
   // Internal - debit available balance (on withdrawal)
   async debit(agentId: number, amount: number) {
     const [existing] = await this.db
