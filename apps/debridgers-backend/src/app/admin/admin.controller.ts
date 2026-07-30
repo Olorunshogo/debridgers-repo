@@ -26,6 +26,8 @@ import {
   ApiResponse,
 } from "@nestjs/swagger";
 import { AdminService } from "./admin.service";
+import { BankDetailsService } from "../agent/bank-details.service";
+import { TaxonomyService } from "../catalog/taxonomy.service";
 import { AuthGuard } from "../auth/guards/auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -53,6 +55,7 @@ import {
   updateProductSchema,
   UpdateProductDto,
 } from "./dto/update-product.dto";
+import { createCategorySchema, updateCategorySchema } from "./dto/category.dto";
 import { UsePipes } from "@nestjs/common";
 import { z } from "zod";
 
@@ -78,6 +81,8 @@ type CreateOutreachDto = z.infer<typeof createOutreachSchema>;
 export class AdminController {
   constructor(
     private readonly adminService: AdminService,
+    private readonly bankDetailsService: BankDetailsService,
+    private readonly taxonomy: TaxonomyService,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
@@ -810,5 +815,151 @@ export class AdminController {
   })
   updateSetting(@Body("key") key: string, @Body("value") value: string) {
     return this.adminService.updateSetting(key, value);
+  }
+
+  // === Product taxonomy
+
+  @Get("categories")
+  @ApiOperation({
+    summary: "Full taxonomy tree, including deactivated nodes",
+  })
+  getCategoryTree() {
+    return this.taxonomy.getTreeResponse(false);
+  }
+
+  @Get("categories/leaves")
+  @ApiOperation({
+    summary: "Selectable leaf categories with their full path",
+    description:
+      "What the product form binds to. Only leaves are offered, because attaching a product to 'Grains' rather than 'Grains > Rice > Ofada' is what the old flat category column already did badly.",
+  })
+  getCategoryLeaves() {
+    return this.taxonomy.getLeaves();
+  }
+
+  @Post("categories")
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Create a category, type or variety" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["name"],
+      properties: {
+        name: { type: "string", example: "Ofada" },
+        parent_id: {
+          type: "number",
+          nullable: true,
+          example: 4,
+          description: "Omit or null for a top-level category.",
+        },
+        description: { type: "string", nullable: true },
+        image_url: { type: "string", nullable: true },
+        sort_order: { type: "number", example: 2 },
+      },
+    },
+  })
+  createCategory(@Body() body: unknown) {
+    const dto = createCategorySchema.parse(body);
+    return this.taxonomy.createCategory(dto);
+  }
+
+  @Patch("categories/:id")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Rename or restyle a taxonomy node" })
+  @ApiParam({ name: "id", example: 12 })
+  updateCategory(@Param("id", ParseIntPipe) id: number, @Body() body: unknown) {
+    const dto = updateCategorySchema.parse(body);
+    return this.taxonomy.updateCategory(id, dto);
+  }
+
+  @Delete("categories/:id")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Deactivate a taxonomy node",
+    description:
+      "Soft delete. A hard delete would cascade to every descendant and null the taxonomy on all products beneath it.",
+  })
+  @ApiParam({ name: "id", example: 12 })
+  deactivateCategory(@Param("id", ParseIntPipe) id: number) {
+    return this.taxonomy.deactivateCategory(id);
+  }
+
+  // === Withdrawals
+
+  @Get("withdrawals")
+  @ApiOperation({
+    summary: "List agent payout requests",
+    description:
+      "Optionally filter by status: pending, approved, rejected, paid.",
+  })
+  @ApiQuery({ name: "status", required: false, example: "pending" })
+  getWithdrawals(@Query("status") status?: string) {
+    return this.adminService.getWithdrawals(status);
+  }
+
+  @Patch("withdrawals/:id/approve")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Approve a payout request",
+    description:
+      "Marks a pending payout as payable. Does not transfer: the Friday sweep or an explicit payout call does that, so approving cannot move money by misclick.",
+  })
+  @ApiParam({ name: "id", example: 7 })
+  @ApiResponse({ status: 200, description: "Payout approved" })
+  @ApiResponse({ status: 400, description: "Payout is not pending" })
+  approveWithdrawal(@Param("id", ParseIntPipe) id: number) {
+    return this.adminService.approveWithdrawal(id);
+  }
+
+  @Patch("withdrawals/:id/reject")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Reject a payout request",
+    description:
+      "Rejects the payout and returns the amount to the agent's available balance, which the request had debited up front.",
+  })
+  @ApiParam({ name: "id", example: 7 })
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        reason: { type: "string", example: "Bank details do not match KYC" },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: "Payout rejected" })
+  rejectWithdrawal(
+    @Param("id", ParseIntPipe) id: number,
+    @CurrentUser() admin: JwtPayload,
+    @Body("reason") reason?: string,
+  ) {
+    return this.adminService.rejectWithdrawal(id, admin.sub, reason);
+  }
+
+  // === Maintenance
+
+  @Post("agents/backfill-bank-codes")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Fill in missing agent bank codes",
+    description:
+      "One-off repair for agents who submitted KYC before bank codes were captured. Matches each stored bank name against the live bank list and fills the code only where the match is unambiguous; anything else is returned for manual review rather than guessed.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Backfill complete",
+    schema: {
+      example: {
+        statusCode: 200,
+        message: "Backfill complete",
+        data: {
+          updated: 12,
+          unmatched: [{ user_id: 41, bank_name: "First bank" }],
+        },
+      },
+    },
+  })
+  backfillBankCodes() {
+    return this.bankDetailsService.backfillBankCodes();
   }
 }

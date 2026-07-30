@@ -1,13 +1,7 @@
+import { DashSearchInput } from "@debridgers/ui-web";
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  UserCheck,
-  Search,
-  CheckCircle,
-  XCircle,
-  Ban,
-  RotateCcw,
-} from "lucide-react";
+import { UserCheck, CheckCircle, XCircle, Ban, RotateCcw } from "lucide-react";
 import { apiFetch, ApiError } from "@debridgers/api-client";
 
 export function meta() {
@@ -207,16 +201,11 @@ export default function AdminAgents() {
             </p>
           </div>
         </div>
-        <div className="border-gray-border flex items-center gap-2 rounded-full border bg-white px-4 py-2">
-          <Search size={15} className="text-text" />
-          <input
-            type="text"
-            placeholder="Search agents..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="text-heading w-full bg-transparent text-sm outline-none"
-          />
-        </div>
+        <DashSearchInput
+          placeholder="Search agents..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
       <div className="border-gray-border overflow-hidden rounded-2xl border bg-white">

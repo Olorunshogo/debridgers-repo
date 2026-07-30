@@ -14,6 +14,10 @@ Welcome to Debridgers. This document covers everything you need to understand th
 
 ---
 
+## What is Debridgers?
+
+Debridgers is a food commodity aggregator and distributor. We source agricultural products directly from smallholder farmers and deliver them to households, businesses, restaurants, and institutional buyers within Kaduna metropolis. By placing an Order, you agree to be bound by these Terms.
+
 ## Vision & Mission
 
 Start here. Everything else - the product decisions, the tech choices, the commission structure, the agent model - flows from this.

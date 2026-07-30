@@ -38,6 +38,7 @@ const titleMaps: Record<string, Record<string, string>> = {
     "/admin-dashboard/buyers": "Buyers",
     "/admin-dashboard/products": "Products",
     "/admin-dashboard/outreach": "Outreach Records",
+    "/admin-dashboard/payouts": "Payouts",
     "/admin-dashboard/settings": "Settings",
   },
 };

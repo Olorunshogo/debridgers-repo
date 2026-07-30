@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Settings } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
-import { formatFromKobo } from "@debridgers/ui-web";
+import { formatFromKobo, DashNumberInput } from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -137,24 +137,17 @@ export default function AdminSettings() {
           <strong>{settings?.agent_commission_rate ?? "—"}%</strong>
         </p>
 
+        {/* The unit lives in the label, so no adornment is needed. */}
         <div className="flex max-w-80 flex-col gap-1.5">
-          <label className="text-heading text-sm font-medium">
-            Commission Rate (%)
-          </label>
-          <div className="border-gray-border flex items-center overflow-hidden rounded-xl border bg-white">
-            <input
-              type="number"
-              min={1}
-              max={100}
-              step={0.5}
-              value={commissionRate}
-              onChange={(e) => setCommissionRate(e.target.value)}
-              className="text-heading flex-1 px-4 py-2.5 text-sm outline-none"
-            />
-            <span className="border-gray-border bg-bg-light text-text border-l px-3 py-2.5 text-sm">
-              %
-            </span>
-          </div>
+          <DashNumberInput
+            label="Commission Rate (%)"
+            required
+            min={1}
+            max={100}
+            step={0.5}
+            value={commissionRate}
+            onChange={(e) => setCommissionRate(e.target.value)}
+          />
           <p className="text-text text-xs">
             Agents earn this % on every confirmed order. Range: 1–100.
           </p>
@@ -181,22 +174,14 @@ export default function AdminSettings() {
         </p>
 
         <div className="flex max-w-80 flex-col gap-1.5">
-          <label className="text-heading text-sm font-medium">
-            Discount Amount (₦)
-          </label>
-          <div className="border-gray-border flex items-center overflow-hidden rounded-xl border bg-white">
-            <span className="border-gray-border bg-bg-light text-text border-r px-3 py-2.5 text-sm">
-              ₦
-            </span>
-            <input
-              type="number"
-              min={0}
-              step={50}
-              value={discountKobo}
-              onChange={(e) => setDiscountKobo(e.target.value)}
-              className="text-heading flex-1 px-4 py-2.5 text-sm outline-none"
-            />
-          </div>
+          <DashNumberInput
+            label="Discount Amount (₦)"
+            required
+            min={0}
+            step={50}
+            value={discountKobo}
+            onChange={(e) => setDiscountKobo(e.target.value)}
+          />
           <p className="text-text text-xs">
             Applied as a flat discount at checkout. Expires 90 days after
             earning.

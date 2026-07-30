@@ -17,6 +17,7 @@ import { Request } from "express";
 import { SkipThrottle, Throttle } from "@nestjs/throttler";
 import { PaymentService } from "./payment.service";
 import { SafeHavenService } from "./safehaven.service";
+import { PayoutService } from "./payout.service";
 import { ZodValidationPipe } from "../../infrastructure/pipeline/validation.pipeline";
 import {
   initializePaymentSchema,
@@ -38,6 +39,7 @@ export class PaymentController {
   constructor(
     private readonly paymentService: PaymentService,
     private readonly safehavenService: SafeHavenService,
+    private readonly payoutService: PayoutService,
   ) {}
 
   @Post("initialize")
@@ -113,6 +115,23 @@ export class PaymentController {
       rawBody,
       signature,
     );
+  }
+
+  /*
+   * Manual trigger for the weekly sweep. Exists so a missed Friday can be
+   * caught up without waiting a week, and so the job is testable against a real
+   * environment rather than only ever firing on a schedule.
+   *
+   * Must stay declared above `payout/:withdrawalId`: Nest matches in declaration
+   * order, and the parameterised route would otherwise swallow this path and
+   * fail in ParseIntPipe on "run-weekly".
+   */
+  @Post("payout/run-weekly")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("admin")
+  runWeeklyPayouts() {
+    return this.payoutService.runWeeklyPayouts();
   }
 
   @Post("payout/:withdrawalId")

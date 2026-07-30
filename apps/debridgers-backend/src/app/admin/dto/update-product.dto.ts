@@ -7,10 +7,24 @@ export const updateProductSchema = z.object({
   /* One of productCategories in @debridgers/ui-web. Plain text, so adding a
      category needs no migration. */
   category: z.string().max(50).optional(),
+  /* Leaf id from the product_categories tree. See create-product.dto. */
+  category_id: z.number().int().positive().nullable().optional(),
   measure_value: z.number().int().min(0).optional(),
   measure_unit: z.enum(["kg", "litre", "piece"]).optional(),
   description: z.string().max(500).optional(),
-  image_url: z.string().url().optional().nullable(),
+  /*
+   * Same relative-path allowance as the create DTO. This was `.url()`, which
+   * rejected bundled images like /images/products/rice.jpg, so any product using
+   * one could be created but never edited.
+   */
+  image_url: z
+    .string()
+    .refine(
+      (value) => value.startsWith("/") || /^https?:\/\//.test(value),
+      "Must be a URL or a path starting with /",
+    )
+    .optional()
+    .nullable(),
   is_active: z.boolean().optional(),
   sort_order: z.number().int().min(0).optional(),
 });

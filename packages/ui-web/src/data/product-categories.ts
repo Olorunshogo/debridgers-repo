@@ -1,22 +1,18 @@
 import type { SelectOption } from "../types/location";
 
 /*
- * Merchandising categories for the product catalogue.
+ * Top-level merchandising categories for the shop's filter chips.
  *
- * Held here rather than derived from whatever happens to be in the database, so
- * the admin form and the shop filter offer the same fixed set and a typo cannot
- * fragment the filter into "Beans" and "beans".
+ * These are the ROOTS of the product_categories tree. `products.category` is
+ * populated server-side from a product's root ancestor, so these values and the
+ * database agree without anyone maintaining both by hand.
  *
- * Adding one is a change here plus an admin edit - no migration, because
- * products.category is plain text.
+ * The previous list mixed levels - Rice, Beans and Garri are types of Grains,
+ * not categories alongside Oil and Tubers - which is why a "Rice" chip and a
+ * "Grains" heading could never coexist. Deeper levels are not chips: the shop
+ * filters by category, and drilling to a variety is the agent stock flow's job.
  */
-export const productCategories = [
-  "Rice",
-  "Beans",
-  "Garri",
-  "Oil",
-  "Tubers",
-] as const;
+export const productCategories = ["Grains", "Oil", "Tubers"] as const;
 
 export type ProductCategory = (typeof productCategories)[number];
 

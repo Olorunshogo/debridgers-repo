@@ -19,6 +19,7 @@ import { QuoteCartDto } from "./dto/quote-cart.dto";
 import { computeDeliveryFee, computeOrderTotals } from "./delivery-fee";
 import { PaymentService } from "../payment/payment.service";
 import { ConfigService } from "@nestjs/config";
+import { SystemSettingsService } from "../settings/system-settings.service";
 
 @Injectable()
 export class BuyerService {
@@ -27,6 +28,7 @@ export class BuyerService {
     private readonly db: NodePgDatabase<typeof schema>,
     private readonly payment: PaymentService,
     private readonly config: ConfigService,
+    private readonly settings: SystemSettingsService,
   ) {}
 
   async getProfile(user: JwtPayload) {
@@ -553,14 +555,10 @@ export class BuyerService {
    * admin UI without a deploy. Absent or past means normal pricing.
    */
   private async isFreeDeliveryActive(): Promise<boolean> {
-    const [setting] = await this.db
-      .select({ value: schema.system_settings.value })
-      .from(schema.system_settings)
-      .where(eq(schema.system_settings.key, "free_delivery_until"))
-      .limit(1);
+    const value = await this.settings.get("free_delivery_until");
 
-    if (!setting?.value) return false;
-    const until = new Date(setting.value);
+    if (!value) return false;
+    const until = new Date(value);
     return !Number.isNaN(until.getTime()) && until.getTime() > Date.now();
   }
 

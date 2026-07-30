@@ -15,6 +15,8 @@ import * as schema from "../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../infrastructure/database/database.provider";
 import { z } from "zod";
 import { ZodValidationPipe } from "../../infrastructure/pipeline/validation.pipeline";
+import { SystemSettingsService } from "../settings/system-settings.service";
+import { TaxonomyService } from "../catalog/taxonomy.service";
 
 const webLeadSchema = z.object({
   owner_name: z.string().min(2, "Name required"),
@@ -36,6 +38,8 @@ export class PublicController {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
+    private readonly settings: SystemSettingsService,
+    private readonly taxonomy: TaxonomyService,
   ) {}
 
   @Get("products")
@@ -51,8 +55,18 @@ export class PublicController {
         description: schema.products.description,
         image_url: schema.products.image_url,
         category: schema.products.category,
+        measure_value: schema.products.measure_value,
+        measure_unit: schema.products.measure_unit,
+        /* Lets the shop and the agent stock flow group by the real taxonomy
+           instead of the flat text label. */
+        category_id: schema.products.category_id,
+        category_name: schema.product_categories.name,
       })
       .from(schema.products)
+      .leftJoin(
+        schema.product_categories,
+        eq(schema.product_categories.id, schema.products.category_id),
+      )
       .where(eq(schema.products.is_active, true))
       .orderBy(schema.products.sort_order);
 
@@ -82,31 +96,27 @@ export class PublicController {
     return { message: "Zones retrieved", data: rows };
   }
 
+  @Get("categories")
+  @SkipThrottle()
+  @ApiOperation({
+    summary: "Product taxonomy tree — no auth required",
+    description:
+      "Category > Type > Variety, nested. Branches are as deep as they need to be: Grains reaches three levels, Oil only two.",
+  })
+  @ApiResponse({ status: 200, description: "Categories retrieved" })
+  async getCategories() {
+    return this.taxonomy.getTreeResponse(true);
+  }
+
   @Get("config/public")
   @SkipThrottle()
   @ApiOperation({ summary: "Public platform config (commission rate etc.)" })
   async getPublicConfig() {
-    // Read from system_settings table; fall back to sensible defaults
-    const rows = await this.db
-      .select({
-        key: schema.system_settings.key,
-        value: schema.system_settings.value,
-      })
-      .from(schema.system_settings)
-      .where(eq(schema.system_settings.key, "agent_commission_rate"));
-
-    const discountRows = await this.db
-      .select({
-        key: schema.system_settings.key,
-        value: schema.system_settings.value,
-      })
-      .from(schema.system_settings)
-      .where(eq(schema.system_settings.key, "buyer_referral_discount_kobo"));
-
-    const commissionRate = rows[0] ? parseFloat(rows[0].value) : 30;
-    const discountKobo = discountRows[0]
-      ? parseInt(discountRows[0].value, 10)
-      : 50000;
+    const commissionRate = await this.settings.getAgentCommissionPercent();
+    const discountKobo = await this.settings.getInt(
+      "buyer_referral_discount_kobo",
+      50000,
+    );
 
     return {
       message: "Config retrieved",

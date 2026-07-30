@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Minus,
-  Plus,
-  CheckCircle2,
-  Package,
-  Trash2,
-  ChevronDown,
-} from "lucide-react";
+import { Minus, Plus, CheckCircle2, Package, Trash2 } from "lucide-react";
 import { apiFetch, ApiError } from "@debridgers/api-client";
-import { formatFromKobo } from "@debridgers/ui-web";
+import {
+  formatFromKobo,
+  fadeDownVariants,
+  transitionBase,
+} from "@debridgers/ui-web";
+import {
+  StockTaxonomyPicker,
+  type TaxonomyNode,
+} from "@/components/agent/StockTaxonomyPicker";
 
 export function meta() {
   return [
@@ -32,6 +33,8 @@ interface Product {
   price_kobo: number;
   description: string | null;
   image_url: string | null;
+  /* Leaf of the taxonomy tree. Null for products not yet categorised. */
+  category_id: number | null;
 }
 
 interface ApiStockRequest {
@@ -84,45 +87,47 @@ function fmt(kobo: number) {
   return formatFromKobo(kobo);
 }
 
-// Group products by description (category) then name (type/variety)
-function groupProducts(products: Product[]) {
-  const categories: Record<string, Product[]> = {};
-  for (const p of products) {
-    const cat = p.description ?? "Other";
-    if (!categories[cat]) categories[cat] = [];
-    categories[cat].push(p);
-  }
-  return categories;
-}
-
 export default function AgentRequestStockPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [activeProductId, setActiveProductId] = useState<number | null>(null);
-  const [inlineQty, setInlineQty] = useState(1);
+  const [tree, setTree] = useState<TaxonomyNode[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState<boolean>(true);
 
   const [requestItems, setRequestItems] = useState<RequestLineItem[]>([]);
 
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [submitted, setSubmitted] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const [pastRequests, setPastRequests] = useState<StockRequest[]>([]);
-  const [loadingRequests, setLoadingRequests] = useState(true);
+  const [loadingRequests, setLoadingRequests] = useState<boolean>(true);
   const [productMap, setProductMap] = useState<Record<number, Product>>({});
 
   useEffect(() => {
-    apiFetch<Product[]>("/agent/products")
-      .then((rows) => {
+    /*
+     * Products and taxonomy together: the picker needs both to place a product
+     * on a branch, and showing a half-loaded tree would hide categories.
+     */
+    Promise.all([
+      apiFetch<Product[]>("/agent/products"),
+      apiFetch<TaxonomyNode[]>("/categories"),
+    ])
+      .then(([rows, categories]) => {
         setProducts(rows);
+        setTree(categories);
         const map: Record<number, Product> = {};
         rows.forEach((p) => {
           map[p.id] = p;
         });
         setProductMap(map);
+        setSubmitError(null);
       })
-      .catch(() => {})
+      .catch((err) => {
+        setSubmitError(
+          err instanceof ApiError
+            ? err.message
+            : "Could not load the product catalogue. Reload the page to retry.",
+        );
+      })
       .finally(() => setLoadingProducts(false));
   }, []);
 
@@ -151,37 +156,19 @@ export default function AgentRequestStockPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productMap]);
 
-  const grouped = groupProducts(products);
-  const categoryNames = Object.keys(grouped);
-
-  function selectCategory(cat: string) {
-    setActiveCategory((prev) => (prev === cat ? null : cat));
-    setActiveProductId(null);
-    setInlineQty(1);
-  }
-
-  function selectProduct(id: number) {
-    setActiveProductId((prev) => (prev === id ? null : id));
-    setInlineQty(1);
-  }
-
-  function addToRequest() {
-    if (!activeProductId) return;
-    const product = products.find((p) => p.id === activeProductId);
-    if (!product) return;
+  /* The picker owns the drill-down and quantity, so it hands both back here. */
+  function addToRequest(product: Product, quantity: number) {
     setRequestItems((prev) => {
-      const existing = prev.find((i) => i.product.id === activeProductId);
+      const existing = prev.find((i) => i.product.id === product.id);
       if (existing) {
         return prev.map((i) =>
-          i.product.id === activeProductId
-            ? { ...i, quantity: i.quantity + inlineQty }
+          i.product.id === product.id
+            ? { ...i, quantity: i.quantity + quantity }
             : i,
         );
       }
-      return [...prev, { product, quantity: inlineQty }];
+      return [...prev, { product, quantity }];
     });
-    setActiveProductId(null);
-    setInlineQty(1);
   }
 
   function removeFromRequest(productId: number) {
@@ -224,8 +211,6 @@ export default function AgentRequestStockPage() {
       );
       setSubmitted(true);
       setRequestItems([]);
-      setActiveCategory(null);
-      setActiveProductId(null);
       await loadRequests();
       setTimeout(() => setSubmitted(false), 4000);
     } catch (err) {
@@ -239,18 +224,17 @@ export default function AgentRequestStockPage() {
     }
   }
 
-  const alreadyAdded = (id: number) =>
-    requestItems.some((i) => i.product.id === id);
-
   return (
     <div className="flex flex-col gap-6">
       {/* Success banner */}
       <AnimatePresence>
         {submitted && (
           <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
+            variants={fadeDownVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={transitionBase}
             className="bg-status-delivered-bg text-status-delivered-text flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium"
           >
             <CheckCircle2 size={16} /> Stock request submitted! Admin will
@@ -259,9 +243,11 @@ export default function AgentRequestStockPage() {
         )}
         {submitError && (
           <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
+            variants={fadeDownVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={transitionBase}
             className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
           >
             {submitError}
@@ -293,162 +279,12 @@ export default function AgentRequestStockPage() {
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
-              {/* Step 1 — Category row */}
-              <p className="text-heading text-xs font-semibold tracking-wider uppercase opacity-60">
-                Step 1 — Select category
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {categoryNames.map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => selectCategory(cat)}
-                    className={`cursor-pointer rounded-full border px-4 py-2 text-sm font-semibold transition-all ${
-                      activeCategory === cat
-                        ? "border-primary bg-primary text-white"
-                        : "border-gray-border text-heading hover:border-primary bg-white"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-
-              {/* Step 2 — Products in active category */}
-              <AnimatePresence>
-                {activeCategory && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="mt-2 flex flex-col gap-2">
-                      <p className="text-heading text-xs font-semibold tracking-wider uppercase opacity-60">
-                        Step 2 — Pick a product
-                      </p>
-                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        {(grouped[activeCategory] ?? []).map((product) => {
-                          const isActive = activeProductId === product.id;
-                          const added = alreadyAdded(product.id);
-                          return (
-                            <div
-                              key={product.id}
-                              className="flex flex-col gap-0"
-                            >
-                              <button
-                                type="button"
-                                onClick={() => selectProduct(product.id)}
-                                className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl border px-3 py-3 text-left transition-all ${
-                                  isActive
-                                    ? "border-primary bg-dash-quick-action-hover"
-                                    : added
-                                      ? "border-primary/30 bg-green-50"
-                                      : "border-gray-border bg-bg-light"
-                                }`}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white">
-                                    {product.image_url ? (
-                                      <img
-                                        src={product.image_url}
-                                        alt={product.name}
-                                        className="h-full w-full object-cover"
-                                      />
-                                    ) : (
-                                      <div className="flex h-full items-center justify-center">
-                                        <Package
-                                          size={18}
-                                          className="text-text opacity-25"
-                                        />
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="flex flex-col gap-0.5">
-                                    <span className="text-heading text-sm font-semibold">
-                                      {product.name}
-                                    </span>
-                                    <span className="text-text text-xs">
-                                      {product.unit} · {fmt(product.price_kobo)}{" "}
-                                      to remit
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  {added && (
-                                    <span className="text-primary text-xs font-semibold">
-                                      ✓ Added
-                                    </span>
-                                  )}
-                                  <ChevronDown
-                                    size={14}
-                                    className={`text-text transition-transform ${isActive ? "rotate-180" : ""}`}
-                                  />
-                                </div>
-                              </button>
-
-                              {/* Step 3 — Inline quantity input */}
-                              <AnimatePresence>
-                                {isActive && (
-                                  <motion.div
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: "auto" }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    className="overflow-hidden"
-                                  >
-                                    <div className="border-gray-border bg-bg-light flex items-center gap-3 rounded-b-xl border border-t-0 px-4 py-3">
-                                      <span className="text-text text-xs">
-                                        Qty ({product.unit}):
-                                      </span>
-                                      <div className="flex items-center gap-2">
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            setInlineQty((q) =>
-                                              Math.max(1, q - 1),
-                                            )
-                                          }
-                                          className="border-gray-border flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border bg-white"
-                                        >
-                                          <Minus size={12} />
-                                        </button>
-                                        <span className="font-syne text-heading w-6 text-center font-bold">
-                                          {inlineQty}
-                                        </span>
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            setInlineQty((q) => q + 1)
-                                          }
-                                          className="border-gray-border flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border bg-white"
-                                        >
-                                          <Plus size={12} />
-                                        </button>
-                                      </div>
-                                      <span className="text-text text-xs">
-                                        = {fmt(product.price_kobo * inlineQty)}
-                                      </span>
-                                      <button
-                                        type="button"
-                                        onClick={addToRequest}
-                                        className="bg-primary ml-auto cursor-pointer rounded-full px-4 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
-                                      >
-                                        Add to Request
-                                      </button>
-                                    </div>
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            <StockTaxonomyPicker
+              tree={tree}
+              products={products}
+              addedProductIds={requestItems.map((i) => i.product.id)}
+              onAdd={addToRequest}
+            />
           )}
         </div>
 

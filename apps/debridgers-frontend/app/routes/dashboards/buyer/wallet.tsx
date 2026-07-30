@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, ArrowDownLeft, Plus } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
-import { formatCurrency } from "@debridgers/ui-web";
+import { formatCurrency, DashNumberInput } from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -250,20 +250,14 @@ export default function BuyerWallet() {
                 </p>
               ) : (
                 <form onSubmit={handleFund} className="flex flex-col gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-heading text-sm font-medium">
-                      Amount
-                    </label>
-                    <input
-                      type="number"
-                      min="100"
-                      value={fundAmount}
-                      onChange={(e) => setFundAmount(e.target.value)}
-                      placeholder="e.g. 5000"
-                      required
-                      className="border-gray-border focus:border-primary text-heading bg-bg-light w-full rounded-xl border px-4 py-3 text-sm transition-all outline-none"
-                    />
-                  </div>
+                  <DashNumberInput
+                    label="Amount"
+                    min={100}
+                    value={fundAmount}
+                    onChange={(e) => setFundAmount(e.target.value)}
+                    placeholder="e.g. 5000"
+                    required
+                  />
                   <div className="flex gap-3">
                     <button
                       type="button"

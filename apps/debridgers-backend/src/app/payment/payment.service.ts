@@ -8,18 +8,18 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import * as schema from "../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../infrastructure/database/database.provider";
 import { InitializePaymentDto } from "./dto/initialize-payment.dto";
 import { CreateVirtualAccountDto } from "./dto/create-virtual-account.dto";
 import { SafeHavenService } from "./safehaven.service";
+import { SystemSettingsService } from "../settings/system-settings.service";
 
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
   private readonly secretKey: string;
-  private readonly commissionRate: number;
   private readonly baseUrl = "https://api.paystack.co";
 
   constructor(
@@ -27,10 +27,9 @@ export class PaymentService {
     private readonly db: NodePgDatabase<typeof schema>,
     private readonly config: ConfigService,
     private readonly safehaven: SafeHavenService,
+    private readonly settings: SystemSettingsService,
   ) {
     this.secretKey = this.config.get<string>("PaystackConfig.secretKey") ?? "";
-    this.commissionRate =
-      this.config.get<number>("PaystackConfig.commissionRate") ?? 0.3;
   }
 
   async initialize(dto: InitializePaymentDto) {
@@ -46,6 +45,7 @@ export class PaymentService {
     }
 
     const amountKobo = Math.round(dto.amount * 100);
+    const commissionPercent = await this.settings.getAgentCommissionPercent();
     const split = agentProfile.paystack_subaccount_code
       ? {
           split: {
@@ -54,7 +54,7 @@ export class PaymentService {
             subaccounts: [
               {
                 subaccount: agentProfile.paystack_subaccount_code,
-                share: Math.round(this.commissionRate * 100),
+                share: Math.round(commissionPercent),
               },
             ],
           },
@@ -183,7 +183,8 @@ export class PaymentService {
       }
 
       if (agentId) {
-        const commissionAmount = amount * this.commissionRate;
+        const commissionRate = await this.settings.getAgentCommissionRate();
+        const commissionAmount = amount * commissionRate;
 
         await this.db.insert(schema.commissions).values({
           agent_id: agentId,
@@ -300,7 +301,12 @@ export class PaymentService {
 
   // ─── SafeHaven: process agent withdrawal payout ────────────────────────────
 
-  async processWithdrawal(withdrawalId: number, adminId: number) {
+  /*
+   * `adminId` is null when the weekly cron is the caller rather than a person.
+   * `processed_by` is nullable precisely so an automated payout can be recorded
+   * without inventing a fake admin.
+   */
+  async processWithdrawal(withdrawalId: number, adminId: number | null) {
     const [withdrawal] = await this.db
       .select()
       .from(schema.withdrawals)
@@ -314,42 +320,85 @@ export class PaymentService {
       );
     }
 
-    // Verify the bank account before transferring
-    const enquiry = await this.safehaven.nameEnquiry(
-      withdrawal.bank_code,
-      withdrawal.bank_account_number,
-    );
+    /*
+     * Claim the row before touching SafeHaven.
+     *
+     * The check above is not enough on its own: an admin clicking payout while
+     * the Friday cron is mid-sweep would have both callers read "approved" and
+     * both send a transfer. Stamping `processed_at` under a WHERE that still
+     * requires it to be null means exactly one caller can win, and the loser
+     * gets zero updated rows.
+     */
+    const claimed = await this.db
+      .update(schema.withdrawals)
+      .set({ processed_at: new Date(), processed_by: adminId })
+      .where(
+        and(
+          eq(schema.withdrawals.id, withdrawalId),
+          eq(schema.withdrawals.status, "approved"),
+          isNull(schema.withdrawals.processed_at),
+        ),
+      )
+      .returning({ id: schema.withdrawals.id });
 
-    const reference = `PAYOUT-${withdrawalId}-${Date.now()}`;
+    if (claimed.length === 0) {
+      throw new BadRequestException(
+        "This payout is already being processed or has been paid.",
+      );
+    }
+
     const amountNaira = withdrawal.amount / 100;
 
-    const result = await this.safehaven.transfer({
-      nameEnquirySessionId: enquiry.sessionId,
-      beneficiaryBankCode: withdrawal.bank_code,
-      beneficiaryAccountNumber: withdrawal.bank_account_number,
-      amount: amountNaira,
-      narration: `Debridgers commission payout for agent #${withdrawal.agent_id}`,
-      paymentReference: reference,
-    });
+    try {
+      // Verify the bank account before transferring
+      const enquiry = await this.safehaven.nameEnquiry(
+        withdrawal.bank_code,
+        withdrawal.bank_account_number,
+      );
 
-    await this.db
-      .update(schema.withdrawals)
-      .set({
-        status: "paid",
-        processed_at: new Date(),
-        processed_by: adminId,
-        payout_reference: result.reference,
-      })
-      .where(eq(schema.withdrawals.id, withdrawalId));
+      /*
+       * Deterministic reference: a retry of the same withdrawal reuses it, so
+       * SafeHaven can reject the duplicate instead of paying twice.
+       */
+      const reference = `PAYOUT-${withdrawalId}`;
 
-    this.logger.log(
-      `Payout ₦${amountNaira} to agent #${withdrawal.agent_id} — ref ${result.reference}`,
-    );
+      const result = await this.safehaven.transfer({
+        nameEnquirySessionId: enquiry.sessionId,
+        beneficiaryBankCode: withdrawal.bank_code,
+        beneficiaryAccountNumber: withdrawal.bank_account_number,
+        amount: amountNaira,
+        narration: `Debridgers commission payout for agent #${withdrawal.agent_id}`,
+        paymentReference: reference,
+      });
 
-    return {
-      message: "Payout processed",
-      data: { reference: result.reference, status: result.status },
-    };
+      await this.db
+        .update(schema.withdrawals)
+        .set({ status: "paid", payout_reference: result.reference })
+        .where(eq(schema.withdrawals.id, withdrawalId));
+
+      this.logger.log(
+        `Payout ₦${amountNaira} to agent #${withdrawal.agent_id} — ref ${result.reference}`,
+      );
+
+      return {
+        message: "Payout processed",
+        data: { reference: result.reference, status: result.status },
+      };
+    } catch (error) {
+      /*
+       * Release the claim so a later run can retry. The status was never moved
+       * off "approved", so this returns the row to exactly its prior state.
+       */
+      await this.db
+        .update(schema.withdrawals)
+        .set({ processed_at: null, processed_by: null })
+        .where(eq(schema.withdrawals.id, withdrawalId));
+
+      this.logger.error(
+        `Payout failed for withdrawal #${withdrawalId}; claim released for retry`,
+      );
+      throw error;
+    }
   }
 
   async createSubaccount(agentId: number) {
@@ -361,6 +410,26 @@ export class PaymentService {
 
     if (!user) throw new NotFoundException("Agent not found");
 
+    const [profile] = await this.db
+      .select({
+        bank_code: schema.agent_profiles.bank_code,
+        bank_account_number: schema.agent_profiles.bank_account_number,
+      })
+      .from(schema.agent_profiles)
+      .where(eq(schema.agent_profiles.user_id, agentId))
+      .limit(1);
+
+    /*
+     * Previously hardcoded to bank 058 / account 0000000000, which created
+     * subaccounts that could never settle. The agent must supply real details
+     * through the bank-details endpoint first.
+     */
+    if (!profile?.bank_code || !profile.bank_account_number) {
+      throw new BadRequestException(
+        "This agent has no bank details on file. They must add them before a subaccount can be created.",
+      );
+    }
+
     const response = await fetch(`${this.baseUrl}/subaccount`, {
       method: "POST",
       headers: {
@@ -369,9 +438,9 @@ export class PaymentService {
       },
       body: JSON.stringify({
         business_name: `${user.first_name} ${user.last_name}`,
-        settlement_bank: "058",
-        account_number: "0000000000",
-        percentage_charge: this.commissionRate * 100,
+        settlement_bank: profile.bank_code,
+        account_number: profile.bank_account_number,
+        percentage_charge: await this.settings.getAgentCommissionPercent(),
         description: `Debridgers agent - ${user.email}`,
       }),
     });

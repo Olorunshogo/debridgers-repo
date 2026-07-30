@@ -8,7 +8,6 @@ import {
   Plus,
   Trash2,
   Package,
-  Search,
   CheckCircle2,
   ArrowLeft,
 } from "lucide-react";
@@ -23,6 +22,8 @@ import {
   categoryFilterChips,
   ALL_CATEGORIES,
   useDialog,
+  DashTextareaInput,
+  DashSearchInput,
 } from "@debridgers/ui-web";
 
 export function meta() {
@@ -203,20 +204,14 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
               <h3 className="font-syne text-heading font-semibold">
                 Delivery Address
               </h3>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-heading text-sm font-medium">
-                  Full delivery address{" "}
-                  <span className="text-error-red">*</span>
-                </label>
-                <textarea
-                  value={deliveryAddress}
-                  onChange={(e) => setDeliveryAddress(e.target.value)}
-                  placeholder="Enter your full delivery address..."
-                  rows={3}
-                  required
-                  className="border-gray-border focus:border-primary text-heading w-full resize-none rounded-xl border bg-white px-4 py-3 text-sm transition-all duration-200 outline-none"
-                />
-              </div>
+              <DashTextareaInput
+                label="Full delivery address"
+                required
+                value={deliveryAddress}
+                onChange={(e) => setDeliveryAddress(e.target.value)}
+                placeholder="Enter your full delivery address..."
+                rows={3}
+              />
             </div>
 
             <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
@@ -262,18 +257,13 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
                 ))}
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-heading text-sm font-medium">
-                  Delivery Note
-                </label>
-                <textarea
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder="E.g. Call me when you arrive..."
-                  rows={2}
-                  className="border-gray-border focus:border-primary text-heading w-full resize-none rounded-xl border bg-white px-4 py-3 text-sm transition-all duration-200 outline-none"
-                />
-              </div>
+              <DashTextareaInput
+                label="Delivery Note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="E.g. Call me when you arrive..."
+                rows={2}
+              />
             </div>
           </div>
 
@@ -501,22 +491,15 @@ export default function PublicShop() {
               </div>
 
               {/* Search */}
-              <div className="relative mb-4 w-full">
-                <Search
-                  size={16}
-                  className="text-text absolute top-1/2 left-3.5 -translate-y-1/2 opacity-40"
-                />
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="border-gray-border text-heading w-full rounded-xl border bg-white py-2.5 pr-4 pl-10 text-sm outline-none"
-                />
-              </div>
+              <DashSearchInput
+                className="mb-4 w-full"
+                placeholder="Search products..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
 
               {/* Category pills */}
               {!loading && categories.length > 1 && (

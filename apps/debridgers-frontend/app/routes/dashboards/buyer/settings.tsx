@@ -8,9 +8,11 @@ import {
   DashSelectInput,
   DashSwitchInput,
   SubmitButton,
+  DashTextareaInput,
 } from "@debridgers/ui-web";
 import {
   apiFetch,
+  ApiError,
   getAccessToken,
   BASE_BACKEND_URL,
 } from "@debridgers/api-client";
@@ -208,8 +210,18 @@ export default function BuyerSettings() {
       setForm(loaded);
       setOriginal(loaded);
       if (profile.avatar_url) setAvatarUrl(profile.avatar_url);
-    } catch {
-      // silently fail - form stays blank
+      setApiError(null);
+    } catch (err) {
+      /*
+       * Silence here was actively unsafe: the form stays blank, `original`
+       * stays blank with it, so `isDirty` reads false and a save would submit
+       * empty values over the real profile.
+       */
+      setApiError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not load your settings. Reload the page before saving changes.",
+      );
     }
   }, []);
 
@@ -472,30 +484,19 @@ export default function BuyerSettings() {
           )}
           <div className="sm:col-span-2">
             {editing.has("deliveryAddress") ? (
-              <div className="font-syne flex flex-col gap-1.5">
-                <span className="text-heading font-syne font-medium">
-                  Delivery Address
-                </span>
-                <textarea
-                  rows={5}
-                  placeholder="Enter your full delivery address"
-                  value={form.deliveryAddress ?? ""}
-                  onChange={(e) => {
-                    setForm((p) => ({ ...p, deliveryAddress: e.target.value }));
-                    if (errors.deliveryAddress)
-                      setErrors((p) => ({
-                        ...p,
-                        deliveryAddress: undefined,
-                      }));
-                  }}
-                  className="bg-input-bg border-input-border text-heading placeholder:text-text-placeholder w-full resize-none rounded-2xl border px-4 py-3 text-sm outline-none"
-                />
-                {errors.deliveryAddress && (
-                  <span className="text-error-red text-xs">
-                    {errors.deliveryAddress}
-                  </span>
-                )}
-              </div>
+              <DashTextareaInput
+                label="Delivery Address"
+                required
+                rows={5}
+                placeholder="Enter your full delivery address"
+                value={form.deliveryAddress ?? ""}
+                error={errors.deliveryAddress}
+                onChange={(e) => {
+                  setForm((p) => ({ ...p, deliveryAddress: e.target.value }));
+                  if (errors.deliveryAddress)
+                    setErrors((p) => ({ ...p, deliveryAddress: undefined }));
+                }}
+              />
             ) : (
               <FieldRow
                 label="Delivery Address"
@@ -542,7 +543,7 @@ export default function BuyerSettings() {
         <div className="flex flex-col gap-5">
           <DashSwitchInput
             label="Email Notification"
-            description="Receive update via email"
+            description="Receive sign-in alerts and message confirmations. Account and security emails are always sent."
             checked={form.emailNotification}
             onCheckedChange={handleSwitch("emailNotification")}
           />

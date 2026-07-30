@@ -59,6 +59,8 @@ export class KycService {
         id_front_url: files.id_front,
         id_selfie_url: files.id_selfie,
         bank_name: dto.bank_name,
+        /* Leave an existing code alone when this submission omits one. */
+        ...(dto.bank_code ? { bank_code: dto.bank_code } : {}),
         bank_account_number: dto.bank_account_number,
         bank_account_name: dto.bank_account_name,
         kyc_status: "submitted",
@@ -80,6 +82,7 @@ export class KycService {
         kyc_rejection_reason: schema.agent_profiles.kyc_rejection_reason,
         id_type: schema.agent_profiles.id_type,
         bank_name: schema.agent_profiles.bank_name,
+        bank_code: schema.agent_profiles.bank_code,
         bank_account_name: schema.agent_profiles.bank_account_name,
       })
       .from(schema.agent_profiles)

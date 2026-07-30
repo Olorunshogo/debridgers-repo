@@ -313,3 +313,19 @@ worth sequencing:
 
 Depends on: real Paystack credentials, since `PAYMENTS_SIMULATED` currently
 short-circuits the gateway.
+
+## Addendum
+
+### Accepted Payment Mthods
+
+- Paystack (debit card or bank transfer)
+- Cash on delivery (pickup orders only)
+- Bank transfer (institutional and bulk orders by prior written agreement)
+
+## Payment Timing
+
+- Online/WhatsApp Orders: Full payment via Paystack must be completed before Order processing begins
+- Pickup Orders: Full payment due upon pickup
+- Institutional/Bulk Orders: Terms to be documented in a separate written agreement
+
+## Currency: All prices are written in Nigerian Naira (NGN) unless otherwise specified

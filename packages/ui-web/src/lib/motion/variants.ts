@@ -144,6 +144,40 @@ export const stickyBarVariants: Variants = {
   exit: { y: 80, opacity: 0 },
 };
 
+// === Inline disclosure
+
+/*
+ * A panel expanding in place: an accordion row, a drill-down level appearing
+ * under the one above it. Animating `height` to "auto" is what keeps the
+ * surrounding layout honest rather than overlapping it.
+ */
+export const collapseVariants: Variants = {
+  initial: { opacity: 0, height: 0 },
+  animate: { opacity: 1, height: "auto" },
+  exit: { opacity: 0, height: 0 },
+};
+
+// === Select menus
+
+/*
+ * A select's option list opening beneath its trigger.
+ *
+ * Scales from the top edge rather than fading in place, so the menu reads as
+ * unfolding out of the trigger it belongs to. Keep the origin at the top in the
+ * component (`origin-top`) or the scale looks like it grew from the middle.
+ */
+export const selectMenuVariants: Variants = {
+  initial: { opacity: 0, scaleY: 0.92, y: -4 },
+  animate: { opacity: 1, scaleY: 1, y: 0 },
+  exit: { opacity: 0, scaleY: 0.92, y: -4 },
+};
+
+/* Fast on purpose: a menu that takes its time feels broken, not premium. */
+export const selectMenuTransition: Transition = {
+  duration: motionDuration.fast,
+  ease: motionEase,
+};
+
 // === Staggered lists
 
 export const staggerItemVariants: Variants = {

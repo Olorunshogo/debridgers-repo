@@ -23,8 +23,8 @@ Verified against the code on 2026-07-27.
   `buyer_order` webhook branch, and `FRONTEND_URL`. `PAYMENTS_SIMULATED=true`
   stands in until Paystack credentials exist.
 - **#8.4 Change password** - shipped earlier.
-- **#11.1 system_settings / admin settings** - shipped earlier, except the
-  commission-rate wiring listed as partial below.
+- **#11.1 system_settings / admin settings** - shipped earlier; the
+  commission-rate wiring was closed on 2026-07-30.
 
 Also shipped and not originally in this file: product categories, per-package
 delivery pricing with a per-zone free-delivery flag, the State to LGA to Zone
@@ -36,18 +36,105 @@ Nigerian states dataset.
 
 ## Partially done - gap named
 
-- **#5 Error handling and edge cases** - improved, not finished. Several empty
-  `catch {}` blocks remain. Fold into whichever week touches the flow.
-- **#7 Product catalog structure** - `category`, `measure_value` and
-  `measure_unit` now exist, so the two-tier model is partly real. A full
-  Category -> Variety model is still needed for a 3-level agent stock UX.
-- **#8.1 Email notification toggle** - column, DTO and profile read/update all
-  exist, but **no listener checks the flag**, so the toggle does nothing.
-- **#9.2 Agent wallet** - the payout _request_ now exists
-  (`POST /agent/withdrawals`). The bank-details form and the payout cron do not.
-- **#11.1 commission rate** - still read from the `AGENT_COMMISSION_RATE` env
-  var rather than `SystemSettingsService`, so the admin settings UI does not
-  affect it.
+Nothing outstanding from the previous list. All five items below were closed on
+2026-07-30; see the Done section for what each turned out to involve.
+
+---
+
+## Closed 2026-07-30
+
+Each of these was flagged partial. Working through them surfaced four separate
+dead links where a feature existed on both sides but nothing joined them.
+
+- **#5 Error handling** - the description was stale: no truly empty `catch {}`
+  blocks remained. What did remain were five catches whose body was
+  `// silently fail` (admin products x2, admin outreach, agent settings, buyer
+  settings). All now surface a message. Two admin list loads were also swallowing
+  failures and rendering an empty table, which reads as "no records" rather than
+  "load failed". Two catches that are empty on purpose were left alone with their
+  reasons documented.
+
+- **#7 Product catalog** - replaced the flat `category` text with a
+  `product_categories` tree (migration `0015_product_taxonomy`). Self-referencing
+  rather than three fixed tables, because the catalogue is not uniformly three
+  deep: Grains reaches Grains > Rice > Ofada, Oil stops at Oil > Palm Oil. The
+  agent stock page now drills to whatever depth a branch has instead of grouping
+  products by their **description** text, which is what it was actually doing.
+  `products.category` is retained and derived from the root ancestor so the shop
+  filter keeps working.
+  - Found on the way: `createProduct` and `updateProduct` never persisted
+    `category`, `measure_value` or `measure_unit`. The DTO accepted them and the
+    form sent them; the insert dropped them. So "category exists" was only ever
+    half true.
+  - Also fixed: `updateProduct`'s `image_url` used `z.string().url()`, rejecting
+    bundled `/images/...` paths. A product with a bundled image could be created
+    but never edited. The create DTO already documented this exact fix.
+
+- **#8.1 Email notification toggle** - `UserListeners` now checks the flag before
+  optional mail. Account and security mail (welcome, verification, password
+  reset, agent application outcomes) always sends. Worth stating plainly: there
+  are still **no order or delivery emails anywhere**, so the toggle governs only
+  sign-in notices and contact confirmations. It is honest now rather than
+  decorative, but it stays thin until order-lifecycle email exists.
+
+- **#9.2 Agent wallet** - the payout request was not merely incomplete, it was
+  **impossible to use**. `agent_profiles.bank_code` had no write path anywhere in
+  the codebase, and `requestWithdrawal` requires it to be non-null, so every
+  agent got "Add your bank details in settings" against a settings page with no
+  such field. Added `GET /agent/banks`, `POST /agent/bank-details/resolve`,
+  `PATCH /agent/bank-details`, a bank picker on the wallet page, `bank_code` in
+  the KYC flow, and `POST /admin/agents/backfill-bank-codes` for existing agents.
+  Account names come from the provider's name-enquiry, never from the client.
+  - The provider is **SafeHaven, not Paystack** - this file previously said
+    Paystack. `getBanks()` and `nameEnquiry()` already existed and were unused.
+  - Second dead link: nothing could approve a withdrawal. `POST /payment/payout/:id`
+    requires status `approved`, but no endpoint moved a row off `pending`. Added
+    `GET /admin/withdrawals` and approve/reject, where reject returns the balance
+    the request had debited up front.
+
+- **#11.1 commission rate** - `SystemSettingsService` now exists (this file
+  previously referred to it as though it did; settings were actually read by
+  inline queries in four places). `PaymentService` reads the rate at call time
+  instead of caching it in its constructor.
+  - Unit mismatch worth knowing: the setting is stored as a **percentage**
+    (1-100, validated in `updateSetting`) while payment code needs a **fraction**
+    (0.30). Wiring them naively would have multiplied commission by 30. The
+    conversion lives in one place, `getAgentCommissionRate()`.
+  - `createSubaccount` was posting a hardcoded `settlement_bank: "058"` and
+    `account_number: "0000000000"`, creating subaccounts that could never settle.
+    It now uses the agent's real details and refuses if they are absent.
+
+### Also added
+
+- **Admin payouts page** (`/admin-dashboard/payouts`). The approve/reject
+  endpoints existed with no interface behind them, so the queue still had no
+  exit in practice. Lists requests by status, approves, rejects with a reason
+  (stating that the amount goes back to the agent), and can trigger the weekly
+  sweep on demand rather than waiting for Friday.
+- **`PlatformConfigContext`** - one fetch of `/config/public`, shared. It exposes
+  the commission as **both** `commissionPercent` (5, for display) and
+  `commissionRate` (0.05, for maths), because the percentage/fraction ambiguity
+  already caused one real bug server-side.
+  - `landing/agents.tsx` previously defaulted to a hardcoded `30` while its own
+    fetch was in flight, rendering an earnings table at 6x the real rate on the
+    page whose whole purpose is stating what agents earn. It now shows a skeleton
+    until the live figure arrives.
+  - That page's SEO metadata also hardcoded "Earn 30% Commission" in its title,
+    description, keywords and social cards. `meta()` is static and the rate is an
+    admin setting, so the figure was removed rather than left to go stale again.
+- **Migration `0016`** pushes products from their type node down onto their
+  variety leaf, so the grains branch actually drills three levels. `0015` could
+  only match on the old flat text and stopped at the type. Deliberately skips
+  ambiguous names: "Wake Gida (Honey Beans)" names two varieties and stays on
+  Beans rather than being guessed at. Verified idempotent.
+
+- Weekly payout cron (`PayoutService`, Friday 09:00 `Africa/Lagos`), which the
+  wallet page had always advertised but nothing performed. It pays only
+  already-approved withdrawals; approval stays human. `processWithdrawal` gained
+  an atomic claim so an admin clicking payout during the sweep cannot double-pay,
+  and the transfer reference is now deterministic so a retry cannot pay twice.
+- `DashSelectInput` rebuilt with `AnimatePresence`, keyboard navigation and an
+  `isBank` mode that adds search, for bank lists that run to hundreds of entries.
 
 ---
 

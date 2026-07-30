@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
@@ -6,21 +6,27 @@ import type { Variants } from "framer-motion";
 import { Header } from "../../components/landing/Header";
 import { HeroSection } from "../../components/landing/HeroSection";
 import { useAuth } from "../../contexts/AuthContext";
-import { BASE_BACKEND_URL } from "@debridgers/api-client";
+import { usePlatformConfig } from "../../contexts/PlatformConfigContext";
 import { formatCurrency } from "@debridgers/ui-web";
 
+/*
+ * No commission figure in the metadata. The rate is an admin setting that can
+ * change at any time, and meta() is static - it previously advertised "30%"
+ * in the page title and social cards, which became a false claim the moment
+ * the rate was set to anything else.
+ */
 export function meta() {
   return [
-    { title: "Become a Debridgers Agent | Earn 30% Commission in Kaduna" },
+    { title: "Become a Debridgers Agent | Earn Commission in Kaduna" },
     {
       name: "description",
       content:
-        "Join Debridgers as a field agent in Kaduna. Source fresh foodstuff, manage deliveries on your own schedule and earn 30% commission on every sale. Free training included.",
+        "Join Debridgers as a field agent in Kaduna. Source fresh foodstuff, manage deliveries on your own schedule and earn commission on every sale. Free training included.",
     },
     {
       name: "keywords",
       content:
-        "Debridgers agent Kaduna, earn commission food delivery Nigeria, field agent job Kaduna, flexible work Kaduna, food delivery agent Nigeria, 30% commission sales agent",
+        "Debridgers agent Kaduna, earn commission food delivery Nigeria, field agent job Kaduna, flexible work Kaduna, food delivery agent Nigeria, commission sales agent",
     },
 
     // === Open Graph
@@ -29,12 +35,12 @@ export function meta() {
     { property: "og:site_name", content: "Debridgers" },
     {
       property: "og:title",
-      content: "Become a Debridgers Agent | Earn 30% Commission in Kaduna",
+      content: "Become a Debridgers Agent | Earn Commission in Kaduna",
     },
     {
       property: "og:description",
       content:
-        "Earn 30% commission on every sale as a Debridgers field agent. Work flexibly, serve your community and get paid weekly. Apply in under 3 minutes.",
+        "Earn commission on every sale as a Debridgers field agent. Work flexibly, serve your community and get paid weekly. Apply in under 3 minutes.",
     },
     { property: "og:image", content: "https://debridgers.com/og-image.png" },
     { property: "og:image:width", content: "1200" },
@@ -52,12 +58,12 @@ export function meta() {
     { name: "twitter:url", content: "https://debridgers.com/agents" },
     {
       name: "twitter:title",
-      content: "Become a Debridgers Agent | Earn 30% Commission in Kaduna",
+      content: "Become a Debridgers Agent | Earn Commission in Kaduna",
     },
     {
       name: "twitter:description",
       content:
-        "Earn 30% commission on every sale as a Debridgers field agent. Work flexibly, serve your community and get paid weekly. Apply in under 3 minutes.",
+        "Earn commission on every sale as a Debridgers field agent. Work flexibly, serve your community and get paid weekly. Apply in under 3 minutes.",
     },
     { name: "twitter:image", content: "https://debridgers.com/og-image.png" },
     {
@@ -200,19 +206,22 @@ const fadeUp: Variants = {
 
 export default function AgentsPage() {
   const { isAuthenticated, dashboardPath } = useAuth();
-  const [activeStep, setActiveStep] = useState(0);
-  const [commissionRate, setCommissionRate] = useState(30);
+  const [activeStep, setActiveStep] = useState<number>(0);
+  /*
+   * Shared context rather than a local fetch. This page used to default to a
+   * hardcoded 30 while its own request was in flight, so every visitor briefly
+   * saw an earnings table computed at the wrong rate - on the page whose whole
+   * purpose is telling agents what they will earn.
+   */
+  const { commissionPercent: commissionRate, isLoading: configLoading } =
+    usePlatformConfig();
 
-  useEffect(() => {
-    fetch(`${BASE_BACKEND_URL}/config/public`)
-      .then((r) => r.json())
-      .then((json) => {
-        const rate = json?.data?.agent_commission_rate;
-        if (typeof rate === "number" && rate > 0) setCommissionRate(rate);
-      })
-      .catch(() => {});
-  }, []);
-
+  /*
+   * Never render a rate that is not the real one: a placeholder reads as a
+   * commitment on a recruitment page. While loading, the figure is omitted
+   * rather than guessed.
+   */
+  const rateLabel = configLoading ? "competitive" : `${commissionRate}%`;
   const earningsRows = buildEarningsRows(commissionRate);
 
   return (
@@ -248,12 +257,12 @@ export default function AgentsPage() {
                   { text: "." },
                 ],
               }}
-              subtext={`Become a Debridgers field agent. Source fresh foodstuff, manage deliveries, and earn ${commissionRate}% commission on every sale — on your own schedule.`}
+              subtext={`Become a Debridgers field agent. Source fresh foodstuff, manage deliveries, and earn ${rateLabel} commission on every sale — on your own schedule.`}
               secondaryCta={{ label: "Apply Now", href: "#apply-now" }}
               trustItems={[
                 {
                   icon: "lucide:wallet",
-                  label: `${commissionRate}% commission per sale`,
+                  label: `${rateLabel} commission per sale`,
                 },
                 { icon: "lucide:clock", label: "Flexible working hours" },
                 {
@@ -469,28 +478,43 @@ export default function AgentsPage() {
               variants={fadeUp}
               className="rounded-2xl bg-white/10 p-8 backdrop-blur-sm"
             >
+              {/*
+                Skeleton until the real rate arrives. Rendering the table at a
+                default would state a specific naira figure the agent would be
+                right to hold us to.
+              */}
               <div className="flex flex-col gap-4">
-                {earningsRows.map((row, i) => (
-                  <div
-                    key={row.label}
-                    className={`flex items-center justify-between py-3 ${
-                      i < earningsRows.length - 1
-                        ? "border-b border-white/20"
-                        : ""
-                    }`}
-                  >
-                    <span className="font-open-sans text-base text-white/70">
-                      {row.label}
-                    </span>
-                    <span
-                      className={`font-syne text-lg font-bold ${
-                        row.highlight ? "text-secondary" : "text-white"
-                      }`}
-                    >
-                      {row.value}
-                    </span>
-                  </div>
-                ))}
+                {configLoading
+                  ? [0, 1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between py-3"
+                      >
+                        <span className="h-4 w-40 animate-pulse rounded bg-white/20" />
+                        <span className="h-5 w-24 animate-pulse rounded bg-white/20" />
+                      </div>
+                    ))
+                  : earningsRows.map((row, i) => (
+                      <div
+                        key={row.label}
+                        className={`flex items-center justify-between py-3 ${
+                          i < earningsRows.length - 1
+                            ? "border-b border-white/20"
+                            : ""
+                        }`}
+                      >
+                        <span className="font-open-sans text-base text-white/70">
+                          {row.label}
+                        </span>
+                        <span
+                          className={`font-syne text-lg font-bold ${
+                            row.highlight ? "text-secondary" : "text-white"
+                          }`}
+                        >
+                          {row.value}
+                        </span>
+                      </div>
+                    ))}
               </div>
               <p className="mt-4 text-xs text-white/50">
                 * Based on ₦15,000 average order value. Actual earnings vary.

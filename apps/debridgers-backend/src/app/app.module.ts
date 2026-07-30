@@ -36,6 +36,8 @@ import { AdminModule } from "./admin/admin.module";
 import { PaymentModule } from "./payment/payment.module";
 import { CommissionModule } from "./commission/commission.module";
 import { PublicModule } from "./public/public.module";
+import { SystemSettingsModule } from "./settings/system-settings.module";
+import { CatalogModule } from "./catalog/catalog.module";
 
 @Module({
   imports: [
@@ -62,6 +64,8 @@ import { PublicModule } from "./public/public.module";
     DatabaseModule,
     RedisModule,
     LoggerModule,
+    SystemSettingsModule,
+    CatalogModule,
     EmailModule,
     AuthModule,
     ContactModule,

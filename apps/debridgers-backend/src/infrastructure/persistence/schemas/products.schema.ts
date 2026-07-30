@@ -8,6 +8,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { timestamps } from "../../helper/column.helper";
 import { createInsertSchema } from "drizzle-zod";
+import { product_categories } from "./product_categories.schema";
 
 /*
  * How a product is sold. Structured rather than free text so it can be
@@ -48,6 +49,17 @@ export const products = pgTable("products", {
    * one product.
    */
   category: text(),
+  /*
+   * Leaf of the product_categories tree this product sells as.
+   *
+   * Supersedes `category` above, which could only ever express one flat level
+   * and so could not describe "Grains > Rice > Ofada". Nullable during the
+   * transition: existing rows are backfilled by matching their `category` text,
+   * and anything unmatched simply has no taxonomy yet rather than a wrong one.
+   */
+  category_id: integer().references(() => product_categories.id, {
+    onDelete: "set null",
+  }),
   description: text(),
   image_url: text(),
   is_active: boolean().notNull().default(true),

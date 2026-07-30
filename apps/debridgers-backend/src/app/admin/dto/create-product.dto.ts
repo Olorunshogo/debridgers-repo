@@ -7,6 +7,12 @@ export const createProductSchema = z.object({
   /* One of productCategories in @debridgers/ui-web. Plain text, so adding a
      category needs no migration. */
   category: z.string().max(50).optional(),
+  /*
+   * Leaf id from the product_categories tree. Supersedes `category` above, which
+   * cannot express "Grains > Rice > Ofada". Both are accepted while the flat
+   * column is still read.
+   */
+  category_id: z.number().int().positive().nullable().optional(),
   measure_value: z.number().int().min(0).optional(),
   measure_unit: z.enum(["kg", "litre", "piece"]).optional(),
   description: z.string().max(500).optional(),

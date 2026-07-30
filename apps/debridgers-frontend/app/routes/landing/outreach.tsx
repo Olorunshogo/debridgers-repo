@@ -1,8 +1,15 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, MapPin, Phone, User, Package } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { Header } from "../../components/landing/Header";
-import { SubmitButton, WhatsAppLink } from "@debridgers/ui-web";
+import {
+  SubmitButton,
+  WhatsAppLink,
+  DashTextInput,
+  DashNumberInput,
+  DashSelectInput,
+  DashTextareaInput,
+} from "@debridgers/ui-web";
 import { useAuth } from "../../contexts/AuthContext";
 import { BASE_BACKEND_URL } from "@debridgers/api-client";
 import { kadunaLgas, kadunaAreasByLga } from "../../models/models";
@@ -238,220 +245,109 @@ export default function OutreachPage() {
 
                     {/* Row 1: Name + Phone */}
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-heading text-sm font-medium">
-                          Full Name <span className="text-red-500">*</span>
-                        </label>
-                        <div className="relative">
-                          <User
-                            size={14}
-                            className="text-text absolute top-1/2 left-3.5 -translate-y-1/2 opacity-40"
-                          />
-                          <input
-                            type="text"
-                            value={form.owner_name}
-                            onChange={(e) =>
-                              handleChange("owner_name", e.target.value)
-                            }
-                            placeholder="Amina Musa"
-                            className="border-gray-border focus:border-primary w-full rounded-xl border py-2.5 pr-4 pl-9 text-sm outline-none"
-                          />
-                        </div>
-                        {errors.owner_name && (
-                          <p className="text-xs text-red-500">
-                            {errors.owner_name}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-heading text-sm font-medium">
-                          Phone Number <span className="text-red-500">*</span>
-                        </label>
-                        <div className="relative">
-                          <Phone
-                            size={14}
-                            className="text-text absolute top-1/2 left-3.5 -translate-y-1/2 opacity-40"
-                          />
-                          <input
-                            type="tel"
-                            value={form.phone}
-                            onChange={(e) =>
-                              handleChange("phone", e.target.value)
-                            }
-                            placeholder="08012345678"
-                            className="border-gray-border focus:border-primary w-full rounded-xl border py-2.5 pr-4 pl-9 text-sm outline-none"
-                          />
-                        </div>
-                        {errors.phone && (
-                          <p className="text-xs text-red-500">{errors.phone}</p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Business / shop name */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-heading text-sm font-medium">
-                        Business / Shop Name{" "}
-                        <span className="text-text font-normal">
-                          (optional)
-                        </span>
-                      </label>
-                      <input
-                        type="text"
-                        value={form.shop_name}
+                      <DashTextInput
+                        label="Full Name"
+                        required
+                        value={form.owner_name}
+                        error={errors.owner_name}
                         onChange={(e) =>
-                          handleChange("shop_name", e.target.value)
+                          handleChange("owner_name", e.target.value)
                         }
-                        placeholder="e.g. Mama Nkechi's Store"
-                        className="border-gray-border focus:border-primary w-full rounded-xl border px-4 py-2.5 text-sm outline-none"
+                        placeholder="Amina Musa"
+                      />
+                      <DashTextInput
+                        label="Phone Number"
+                        required
+                        type="tel"
+                        inputMode="tel"
+                        value={form.phone}
+                        error={errors.phone}
+                        onChange={(e) => handleChange("phone", e.target.value)}
+                        placeholder="08012345678"
                       />
                     </div>
+
+                    <DashTextInput
+                      label="Business / Shop Name"
+                      value={form.shop_name}
+                      onChange={(e) =>
+                        handleChange("shop_name", e.target.value)
+                      }
+                      placeholder="e.g. Mama Nkechi's Store"
+                    />
 
                     {/* LGA + Area */}
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-heading text-sm font-medium">
-                          LGA{" "}
-                          <span className="text-text font-normal">
-                            (optional)
-                          </span>
-                        </label>
-                        <div className="relative">
-                          <MapPin
-                            size={14}
-                            className="text-text absolute top-1/2 left-3.5 -translate-y-1/2 opacity-40"
-                          />
-                          <select
-                            value={form.lga}
-                            onChange={(e) => {
-                              setForm((p) => ({
-                                ...p,
-                                lga: e.target.value,
-                                area: "",
-                              }));
-                            }}
-                            className="border-gray-border text-heading focus:border-primary w-full appearance-none rounded-xl border py-2.5 pr-4 pl-9 text-sm outline-none"
-                          >
-                            <option value="">Select LGA</option>
-                            {lgas.map((lga) => (
-                              <option key={lga} value={lga}>
-                                {lga}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-heading text-sm font-medium">
-                          Area{" "}
-                          <span className="text-text font-normal">
-                            (optional)
-                          </span>
-                        </label>
-                        <select
-                          value={form.area}
-                          onChange={(e) => handleChange("area", e.target.value)}
-                          disabled={!form.lga || areas.length === 0}
-                          className="border-gray-border text-heading focus:border-primary w-full rounded-xl border px-4 py-2.5 text-sm outline-none disabled:opacity-40"
-                        >
-                          <option value="">Select area</option>
-                          {areas.map((area) => (
-                            <option key={area} value={area}>
-                              {area}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      <DashSelectInput
+                        label="LGA"
+                        placeholder="Select LGA"
+                        options={lgas.map((lga) => ({
+                          value: lga,
+                          label: lga,
+                        }))}
+                        value={form.lga}
+                        onChange={(e) =>
+                          setForm((p) => ({
+                            ...p,
+                            lga: e.target.value,
+                            area: "",
+                          }))
+                        }
+                      />
+                      <DashSelectInput
+                        label="Area"
+                        placeholder="Select area"
+                        options={areas.map((area) => ({
+                          value: area,
+                          label: area,
+                        }))}
+                        value={form.area}
+                        onChange={(e) => handleChange("area", e.target.value)}
+                        disabled={!form.lga || areas.length === 0}
+                      />
                     </div>
 
-                    {/* Products interested in */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-heading text-sm font-medium">
-                        Products you&apos;re interested in{" "}
-                        <span className="text-text font-normal">
-                          (optional)
-                        </span>
-                      </label>
-                      <div className="relative">
-                        <Package
-                          size={14}
-                          className="text-text absolute top-3.5 left-3.5 opacity-40"
-                        />
-                        <input
-                          type="text"
-                          value={form.product_interest}
-                          onChange={(e) =>
-                            handleChange("product_interest", e.target.value)
-                          }
-                          placeholder="e.g. Rice, Palm Oil, Beans"
-                          className="border-gray-border focus:border-primary w-full rounded-xl border py-2.5 pr-4 pl-9 text-sm outline-none"
-                        />
-                      </div>
-                    </div>
+                    <DashTextInput
+                      label="Products you're interested in"
+                      value={form.product_interest}
+                      onChange={(e) =>
+                        handleChange("product_interest", e.target.value)
+                      }
+                      placeholder="e.g. Rice, Palm Oil, Beans"
+                    />
 
                     {/* Quantity + How heard */}
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-heading text-sm font-medium">
-                          Estimated quantity needed{" "}
-                          <span className="text-text font-normal">
-                            (optional)
-                          </span>
-                        </label>
-                        <input
-                          type="number"
-                          min={1}
-                          value={form.quantity}
-                          onChange={(e) =>
-                            handleChange("quantity", e.target.value)
-                          }
-                          placeholder="e.g. 5 bags"
-                          className="border-gray-border focus:border-primary w-full rounded-xl border px-4 py-2.5 text-sm outline-none"
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-heading text-sm font-medium">
-                          How did you hear about us?{" "}
-                          <span className="text-text font-normal">
-                            (optional)
-                          </span>
-                        </label>
-                        <select
-                          value={form.how_heard}
-                          onChange={(e) =>
-                            handleChange("how_heard", e.target.value)
-                          }
-                          className="border-gray-border text-heading focus:border-primary w-full rounded-xl border px-4 py-2.5 text-sm outline-none"
-                        >
-                          <option value="">Select one</option>
-                          {HOW_HEARD_OPTIONS.map((o) => (
-                            <option key={o} value={o}>
-                              {o}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Notes */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-heading text-sm font-medium">
-                        Notes / message{" "}
-                        <span className="text-text font-normal">
-                          (optional)
-                        </span>
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={form.notes}
-                        onChange={(e) => handleChange("notes", e.target.value)}
-                        placeholder="Anything else you'd like us to know..."
-                        className="border-gray-border focus:border-primary w-full resize-none rounded-xl border px-4 py-2.5 text-sm outline-none"
+                      <DashNumberInput
+                        label="Estimated quantity needed"
+                        min={1}
+                        value={form.quantity}
+                        onChange={(e) =>
+                          handleChange("quantity", e.target.value)
+                        }
+                        placeholder="e.g. 5 bags"
+                      />
+                      <DashSelectInput
+                        label="How did you hear about us?"
+                        placeholder="Select one"
+                        options={HOW_HEARD_OPTIONS.map((o) => ({
+                          value: o,
+                          label: o,
+                        }))}
+                        value={form.how_heard}
+                        onChange={(e) =>
+                          handleChange("how_heard", e.target.value)
+                        }
                       />
                     </div>
+
+                    <DashTextareaInput
+                      label="Notes / message"
+                      rows={3}
+                      value={form.notes}
+                      onChange={(e) => handleChange("notes", e.target.value)}
+                      placeholder="Anything else you'd like us to know..."
+                    />
 
                     <SubmitButton
                       loading={loading}

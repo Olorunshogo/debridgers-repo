@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Wallet, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
 import { formatFromKobo, useDialog } from "@debridgers/ui-web";
+import { BankDetailsCard } from "@/components/agent/BankDetailsCard";
 
 export function meta() {
   return [
@@ -92,7 +93,12 @@ const STATUS_BADGE: Record<
 export default function AgentWalletPage() {
   const [wallet, setWallet] = useState<ApiWallet | null>(null);
   const [commissions, setCommissions] = useState<CommissionRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
+  /*
+   * Payouts are rejected server-side without bank details, so the button is
+   * disabled rather than letting the agent hit a guaranteed error.
+   */
+  const [bankReady, setBankReady] = useState<boolean>(false);
   const nextPayoutDate = getNextPayoutDate();
   const { triggerDialog } = useDialog();
 
@@ -156,12 +162,23 @@ export default function AgentWalletPage() {
                   onRequested: () => void load(),
                 })
               }
-              disabled={availableBalance <= 0}
+              disabled={availableBalance <= 0 || !bankReady}
+              title={
+                bankReady
+                  ? undefined
+                  : "Add your bank details below before requesting a payout"
+              }
               className="text-primary flex cursor-pointer items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-sm font-semibold transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ArrowUpRight size={14} /> Request payout
             </button>
           </div>
+
+          {!bankReady && availableBalance > 0 && (
+            <p className="text-xs text-white/70">
+              Add your bank details below to enable payouts.
+            </p>
+          )}
         </div>
         <div className="flex flex-col gap-1 sm:items-end">
           <p className="text-xs text-white/60">Automatic payout at</p>
@@ -238,21 +255,9 @@ export default function AgentWalletPage() {
         )}
       </div>
 
-      {/* Bank details placeholder */}
-      <AnimatePresence>
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="border-gray-border flex flex-col gap-3 rounded-2xl border bg-white p-5"
-        >
-          <h3 className="font-syne text-heading font-semibold">Bank Details</h3>
-          <p className="text-text text-sm">
-            Bank account management coming soon. Contact admin to update your
-            payout details.
-          </p>
-        </motion.div>
-      </AnimatePresence>
+      <BankDetailsCard
+        onDetailsChange={(details) => setBankReady(details.is_complete)}
+      />
     </div>
   );
 }

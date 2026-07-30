@@ -19,7 +19,8 @@ import {
 import {
   formatFromKobo,
   DashSelectInput,
-  productCategoryOptions,
+  DashTextInput,
+  DashNumberInput,
   fadeDownVariants,
   staggerItemVariants,
   staggerDelay,
@@ -48,6 +49,9 @@ interface Product {
   description: string | null;
   image_url: string | null;
   category: string | null;
+  category_id: number | null;
+  /* Leaf name from the taxonomy join, for the list row. */
+  category_name: string | null;
   measure_value: number;
   measure_unit: MeasureUnit;
   is_active: boolean;
@@ -60,7 +64,8 @@ interface ProductForm {
   price: string;
   description: string;
   image_url: string;
-  category: string;
+  /* Held as a string because that is what the select yields; converted on save. */
+  category_id: string;
   measure_value: string;
   measure_unit: MeasureUnit;
 }
@@ -76,7 +81,7 @@ const emptyForm: ProductForm = {
   price: "",
   description: "",
   image_url: "",
-  category: "",
+  category_id: "",
   measure_value: "",
   measure_unit: "kg",
 };
@@ -106,14 +111,27 @@ const bundledImages: BundledImage[] = [
 
 const bundledImagePath = (file: string): string => `/images/products/${file}`;
 
+interface CategoryLeaf {
+  id: number;
+  name: string;
+  /* "Grains > Rice > Ofada". A leaf name alone is ambiguous. */
+  path: string;
+}
+
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categoryLeaves, setCategoryLeaves] = useState<CategoryLeaf[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [showForm, setShowForm] = useState<boolean>(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  /*
+   * The `error` banner above lives inside the add/edit panel, so it cannot
+   * report failures triggered from the list itself. This one sits at page level.
+   */
+  const [actionError, setActionError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [uploadingImage, setUploadingImage] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -121,10 +139,21 @@ export default function AdminProductsPage() {
   async function load() {
     setLoading(true);
     try {
-      const rows = await apiFetch<Product[]>("/admin/products");
+      const [rows, leaves] = await Promise.all([
+        apiFetch<Product[]>("/admin/products"),
+        apiFetch<CategoryLeaf[]>("/admin/categories/leaves"),
+      ]);
       setProducts(rows);
-    } catch {
+      setCategoryLeaves(leaves);
+      setActionError(null);
+    } catch (err) {
+      /* An empty list would read as "no products", which is a different story. */
       setProducts([]);
+      setActionError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not load products. Check your connection and retry.",
+      );
     } finally {
       setLoading(false);
     }
@@ -149,7 +178,7 @@ export default function AdminProductsPage() {
       price: String(p.price_kobo / 100),
       description: p.description ?? "",
       image_url: p.image_url ?? "",
-      category: p.category ?? "",
+      category_id: p.category_id ? String(p.category_id) : "",
       measure_value: p.measure_value ? String(p.measure_value) : "",
       measure_unit: p.measure_unit ?? "kg",
     });
@@ -215,7 +244,7 @@ export default function AdminProductsPage() {
             price_kobo,
             description: form.description.trim() || undefined,
             image_url: form.image_url.trim() || null,
-            category: form.category || null,
+            category_id: form.category_id ? Number(form.category_id) : null,
             measure_value,
             measure_unit: form.measure_unit,
           }),
@@ -229,7 +258,9 @@ export default function AdminProductsPage() {
             price_kobo,
             description: form.description.trim() || undefined,
             image_url: form.image_url.trim() || undefined,
-            category: form.category || undefined,
+            category_id: form.category_id
+              ? Number(form.category_id)
+              : undefined,
             measure_value,
             measure_unit: form.measure_unit,
           }),
@@ -247,6 +278,7 @@ export default function AdminProductsPage() {
   }
 
   async function handleToggleActive(p: Product) {
+    setActionError(null);
     try {
       await apiFetch(`/admin/products/${p.id}`, {
         method: "PATCH",
@@ -257,25 +289,31 @@ export default function AdminProductsPage() {
           x.id === p.id ? { ...x, is_active: !p.is_active } : x,
         ),
       );
-    } catch {
-      // silently fail
+    } catch (err) {
+      setActionError(
+        err instanceof ApiError
+          ? err.message
+          : `Could not update "${p.name}". Please try again.`,
+      );
     }
   }
 
   async function handleDelete(id: number) {
     setDeletingId(id);
+    setActionError(null);
     try {
       await apiFetch(`/admin/products/${id}`, { method: "DELETE" });
       setProducts((prev) => prev.filter((p) => p.id !== id));
-    } catch {
-      // silently fail
+    } catch (err) {
+      setActionError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not delete that product. Please try again.",
+      );
     } finally {
       setDeletingId(null);
     }
   }
-
-  const inputCls =
-    "border-gray-border bg-bg-light text-heading w-full rounded-xl border px-4 py-2.5 text-sm outline-none transition-colors";
 
   return (
     <div className="flex flex-col gap-6">
@@ -299,6 +337,30 @@ export default function AdminProductsPage() {
           <Plus size={16} /> Add Product
         </button>
       </div>
+
+      {/* Page-level failures: load, toggle, delete */}
+      <AnimatePresence>
+        {actionError && (
+          <motion.div
+            variants={fadeDownVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={transitionBase}
+            className="bg-status-cancelled-bg text-status-cancelled-text flex items-start justify-between gap-3 rounded-xl px-4 py-3 text-sm"
+          >
+            <span>{actionError}</span>
+            <button
+              type="button"
+              aria-label="Dismiss error"
+              onClick={() => setActionError(null)}
+              className="shrink-0 rounded-full p-0.5 hover:bg-black/5"
+            >
+              <X size={16} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Add / Edit form */}
       <AnimatePresence>
@@ -332,93 +394,72 @@ export default function AdminProductsPage() {
             )}
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div className="flex flex-col gap-1">
-                <label className="text-heading text-sm font-medium">
-                  Product Name *
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Rice, Palm Oil"
-                  value={form.name}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, name: e.target.value }))
-                  }
-                  className={inputCls}
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-heading text-sm font-medium">
-                  Unit / Size *
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Modu, Half Bag, Full Bag"
-                  value={form.unit}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, unit: e.target.value }))
-                  }
-                  className={inputCls}
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-heading text-sm font-medium">
-                  Price (₦) *
-                </label>
-                <input
-                  type="number"
-                  placeholder="e.g. 1300"
-                  value={form.price}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, price: e.target.value }))
-                  }
-                  className={inputCls}
-                  min="1"
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-heading text-sm font-medium">
-                  Description
-                </label>
-                <input
-                  type="text"
-                  placeholder="Optional note"
-                  value={form.description}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, description: e.target.value }))
-                  }
-                  className={inputCls}
-                />
-              </div>
+              <DashTextInput
+                label="Product Name"
+                required
+                placeholder="e.g. Rice, Palm Oil"
+                value={form.name}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, name: e.target.value }))
+                }
+              />
+              <DashTextInput
+                label="Unit / Size"
+                required
+                placeholder="e.g. Modu, Half Bag, Full Bag"
+                value={form.unit}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, unit: e.target.value }))
+                }
+              />
+              <DashNumberInput
+                label="Price (₦)"
+                required
+                min={1}
+                placeholder="e.g. 1300"
+                value={form.price}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, price: e.target.value }))
+                }
+              />
+              <DashTextInput
+                label="Description"
+                placeholder="Optional note"
+                value={form.description}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, description: e.target.value }))
+                }
+              />
+              {/*
+                Bound to a taxonomy leaf, shown with its full path so "White" is
+                distinguishable as garri or beans. Searchable because the leaf
+                list grows with every variety added.
+              */}
               <DashSelectInput
                 label="Category"
-                name="category"
+                name="category_id"
                 placeholder="Select a category"
-                options={productCategoryOptions()}
-                value={form.category}
+                searchable
+                options={categoryLeaves.map((leaf) => ({
+                  value: String(leaf.id),
+                  label: leaf.path,
+                }))}
+                value={form.category_id}
                 onChange={(e) =>
-                  setForm((p) => ({ ...p, category: e.target.value }))
+                  setForm((p) => ({ ...p, category_id: e.target.value }))
                 }
               />
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="flex flex-col gap-1">
-                  <label
-                    htmlFor="measure-value"
-                    className="text-heading text-sm font-medium"
-                  >
-                    Measure Value
-                  </label>
-                  <input
-                    id="measure-value"
-                    type="number"
-                    placeholder="e.g. 50"
-                    value={form.measure_value}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, measure_value: e.target.value }))
-                    }
-                    className={inputCls}
-                    min="0"
-                  />
-                </div>
+                <DashNumberInput
+                  label="Measure Value"
+                  id="measure-value"
+                  min={0}
+                  placeholder="e.g. 50"
+                  value={form.measure_value}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, measure_value: e.target.value }))
+                  }
+                />
                 <DashSelectInput
                   label="Measure Unit"
                   name="measure_unit"
@@ -542,24 +583,15 @@ export default function AdminProductsPage() {
               </div>
 
               {/* Manual URL fallback */}
-              <div className="flex flex-col gap-1">
-                <label
-                  htmlFor="image-url"
-                  className="text-heading text-sm font-medium"
-                >
-                  Image URL
-                </label>
-                <input
-                  id="image-url"
-                  type="text"
-                  placeholder="https://... or /images/products/rice-bowl.jpg"
-                  value={form.image_url}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, image_url: e.target.value }))
-                  }
-                  className={inputCls}
-                />
-              </div>
+              <DashTextInput
+                label="Image URL"
+                id="image-url"
+                placeholder="https://... or /images/products/rice-bowl.jpg"
+                value={form.image_url}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, image_url: e.target.value }))
+                }
+              />
             </div>
 
             <div className="flex flex-wrap gap-3">

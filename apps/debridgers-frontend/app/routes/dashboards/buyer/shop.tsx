@@ -1,15 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  X,
-  ShoppingCart,
-  Minus,
-  Plus,
-  Trash2,
-  Package,
-  Search,
-} from "lucide-react";
+import { X, ShoppingCart, Minus, Plus, Trash2, Package } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
 import { useCart } from "../../../features/cart";
 import { useFavorites, useBuyAgain } from "../../../features/favorites";
@@ -22,6 +14,7 @@ import {
   categoryFilterChips,
   ALL_CATEGORIES,
   formatFromKobo,
+  DashSearchInput,
 } from "@debridgers/ui-web";
 
 export function meta() {
@@ -170,22 +163,15 @@ export default function BuyerShop() {
         )}
 
         {/* Search bar */}
-        <div className="relative w-full">
-          <Search
-            size={16}
-            className="text-text absolute top-1/2 left-3.5 -translate-y-1/2 opacity-40"
-          />
-          <input
-            type="text"
-            placeholder="Search products..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="border-gray-border text-heading w-full rounded-xl border bg-white py-2.5 pr-4 pl-10 text-sm outline-none"
-          />
-        </div>
+        <DashSearchInput
+          className="w-full"
+          placeholder="Search products..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setCurrentPage(1);
+          }}
+        />
 
         {/* Category filter pills */}
         {!loading && categories.length > 1 && (

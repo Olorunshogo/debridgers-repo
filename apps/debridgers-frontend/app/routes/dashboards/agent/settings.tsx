@@ -16,6 +16,9 @@ import {
 } from "@debridgers/api-client";
 import {
   DashSelectInput,
+  DashTextInput,
+  DashEmailInput,
+  DashPasswordInput,
   defaultStateName,
   stateSelectOptions,
   lgaSelectOptions,
@@ -49,6 +52,7 @@ interface KycStatus {
   kyc_rejection_reason: string | null;
   id_type: string | null;
   bank_name: string | null;
+  bank_code: string | null;
   bank_account_name: string | null;
 }
 
@@ -111,9 +115,11 @@ export default function AgentSettingsPage() {
   const [kycForm, setKycForm] = useState({
     id_type: "NIN" as (typeof ID_TYPES)[number],
     bank_name: "",
+    bank_code: "",
     bank_account_number: "",
     bank_account_name: "",
   });
+  const [banks, setBanks] = useState<{ bankCode: string; name: string }[]>([]);
   const [idFront, setIdFront] = useState<File | null>(null);
   const [idSelfie, setIdSelfie] = useState<File | null>(null);
   const idFrontRef = useRef<HTMLInputElement>(null);
@@ -121,9 +127,6 @@ export default function AgentSettingsPage() {
   const [kycSaving, setKycSaving] = useState<boolean>(false);
   const [kycSaved, setKycSaved] = useState<boolean>(false);
   const [kycError, setKycError] = useState<string | null>(null);
-
-  const inputCls =
-    "border-gray-border bg-bg-light text-heading rounded-xl border px-4 py-2.5 text-sm outline-none transition-colors";
 
   const loadProfile = useCallback(async () => {
     try {
@@ -140,10 +143,34 @@ export default function AgentSettingsPage() {
         lga: p.lga ?? "",
       });
       if (p.avatar_url) setAvatarUrl(p.avatar_url);
-    } catch {
-      // silently fail
+      setProfileError(null);
+    } catch (err) {
+      /* Without this the form renders blank and a save would wipe the profile. */
+      setProfileError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not load your profile. Reload the page before editing.",
+      );
     } finally {
       setLoadingProfile(false);
+    }
+  }, []);
+
+  /*
+   * Bank list for the picker. Failing to load leaves the select empty rather
+   * than blocking the rest of the KYC form, which does not depend on it.
+   */
+  const loadBanks = useCallback(async () => {
+    try {
+      const rows =
+        await apiFetch<{ bankCode: string; name: string }[]>("/agent/banks");
+      setBanks(rows);
+    } catch (err) {
+      setKycError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not load the bank list. Reload the page to pick your bank.",
+      );
     }
   }, []);
 
@@ -156,6 +183,7 @@ export default function AgentSettingsPage() {
           ...p,
           id_type: data.id_type as (typeof ID_TYPES)[number],
           bank_name: data.bank_name ?? "",
+          bank_code: data.bank_code ?? "",
           bank_account_name: data.bank_account_name ?? "",
         }));
       }
@@ -165,6 +193,7 @@ export default function AgentSettingsPage() {
         kyc_rejection_reason: null,
         id_type: null,
         bank_name: null,
+        bank_code: null,
         bank_account_name: null,
       });
     } finally {
@@ -175,7 +204,8 @@ export default function AgentSettingsPage() {
   useEffect(() => {
     void loadProfile();
     void loadKyc();
-  }, [loadProfile, loadKyc]);
+    void loadBanks();
+  }, [loadProfile, loadKyc, loadBanks]);
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -248,12 +278,22 @@ export default function AgentSettingsPage() {
       setKycError("Please upload a selfie holding your ID.");
       return;
     }
+    /*
+     * Guarded here as well as server-side: without a bank code the profile saves
+     * but every later payout request is rejected, which is the failure this
+     * whole field was added to remove.
+     */
+    if (!kycForm.bank_code) {
+      setKycError("Please select your bank.");
+      return;
+    }
 
     setKycSaving(true);
     try {
       const fd = new FormData();
       fd.append("id_type", kycForm.id_type);
       fd.append("bank_name", kycForm.bank_name.trim());
+      fd.append("bank_code", kycForm.bank_code);
       fd.append("bank_account_number", kycForm.bank_account_number.trim());
       fd.append("bank_account_name", kycForm.bank_account_name.trim());
       fd.append("id_front", idFront);
@@ -399,72 +439,49 @@ export default function AgentSettingsPage() {
                 </p>
               )}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="flex flex-col gap-1">
-                  <label className="text-heading text-sm font-medium">
-                    First Name
-                  </label>
-                  <input
-                    type="text"
-                    value={form.firstName}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, firstName: e.target.value }))
-                    }
-                    className={inputCls}
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-heading text-sm font-medium">
-                    Last Name
-                  </label>
-                  <input
-                    type="text"
-                    value={form.lastName}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, lastName: e.target.value }))
-                    }
-                    className={inputCls}
-                  />
-                </div>
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-heading text-sm font-medium">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={form.email}
-                  readOnly
-                  className={inputCls + " cursor-not-allowed opacity-60"}
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-heading text-sm font-medium">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  value={form.phone}
+                <DashTextInput
+                  label="First Name"
+                  value={form.firstName}
                   onChange={(e) =>
-                    setForm((p) => ({ ...p, phone: e.target.value }))
+                    setForm((p) => ({ ...p, firstName: e.target.value }))
                   }
-                  placeholder="+234 800 000 0000"
-                  className={inputCls}
+                  required
                 />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-heading text-sm font-medium">
-                  Home Address
-                </label>
-                <input
-                  type="text"
-                  value={form.address}
+                <DashTextInput
+                  label="Last Name"
+                  value={form.lastName}
                   onChange={(e) =>
-                    setForm((p) => ({ ...p, address: e.target.value }))
+                    setForm((p) => ({ ...p, lastName: e.target.value }))
                   }
-                  placeholder="Your business/delivery address"
-                  className={inputCls}
+                  required
                 />
               </div>
+              {/* Read-only: the email is the login identity and is changed via support. */}
+              <DashEmailInput
+                label="Email"
+                value={form.email}
+                readOnly
+                required
+                className="opacity-60"
+              />
+              <DashTextInput
+                label="Phone Number"
+                type="tel"
+                inputMode="tel"
+                value={form.phone}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, phone: e.target.value }))
+                }
+                placeholder="+234 800 000 0000"
+              />
+              <DashTextInput
+                label="Home Address"
+                value={form.address}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, address: e.target.value }))
+                }
+                placeholder="Your business/delivery address"
+              />
               <DashSelectInput
                 label="State"
                 value={form.state}
@@ -593,64 +610,59 @@ export default function AgentSettingsPage() {
                   }
                 />
 
-                {/* Bank details */}
+                {/*
+                  Bank is picked from the payable-banks list rather than typed:
+                  a payout transfer needs the numeric bank code, and free text
+                  only ever produced a name, which left agents unpayable.
+                */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-heading text-sm font-medium">
-                      Bank Name
-                    </label>
-                    <input
-                      type="text"
-                      value={kycForm.bank_name}
-                      onChange={(e) =>
-                        setKycForm((p) => ({
-                          ...p,
-                          bank_name: e.target.value,
-                        }))
-                      }
-                      placeholder="e.g. GTBank"
-                      className={inputCls}
-                      required
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-heading text-sm font-medium">
-                      Account Number
-                    </label>
-                    <input
-                      type="text"
-                      value={kycForm.bank_account_number}
-                      onChange={(e) =>
-                        setKycForm((p) => ({
-                          ...p,
-                          bank_account_number: e.target.value,
-                        }))
-                      }
-                      placeholder="10-digit account number"
-                      maxLength={10}
-                      className={inputCls}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-heading text-sm font-medium">
-                    Account Name
-                  </label>
-                  <input
-                    type="text"
-                    value={kycForm.bank_account_name}
+                  <DashSelectInput
+                    label="Bank"
+                    isBank
+                    placeholder="Select your bank"
+                    options={banks.map((b) => ({
+                      value: b.bankCode,
+                      label: b.name,
+                    }))}
+                    value={kycForm.bank_code}
+                    onSelectOption={(option) =>
+                      setKycForm((p) => ({
+                        ...p,
+                        bank_code: option.value,
+                        bank_name: option.label,
+                      }))
+                    }
+                    required
+                  />
+                  <DashTextInput
+                    label="Account Number"
+                    placeholder="10-digit account number"
+                    inputMode="numeric"
+                    maxLength={10}
+                    value={kycForm.bank_account_number}
                     onChange={(e) =>
                       setKycForm((p) => ({
                         ...p,
-                        bank_account_name: e.target.value,
+                        bank_account_number: e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 10),
                       }))
                     }
-                    placeholder="Name on your bank account"
-                    className={inputCls}
                     required
                   />
                 </div>
+                <DashTextInput
+                  label="Account Name"
+                  placeholder="Name on your bank account"
+                  value={kycForm.bank_account_name}
+                  onChange={(e) =>
+                    setKycForm((p) => ({
+                      ...p,
+                      bank_account_name: e.target.value,
+                    }))
+                  }
+                  required
+                />
 
                 {/* File uploads */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -725,17 +737,14 @@ export default function AgentSettingsPage() {
         <div className="flex flex-col gap-4">
           {["Current Password", "New Password", "Confirm New Password"].map(
             (label) => (
-              <div key={label} className="flex flex-col gap-1">
-                <label className="text-heading text-sm font-medium">
-                  {label}
-                </label>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  disabled
-                  className={inputCls + " cursor-not-allowed opacity-50"}
-                />
-              </div>
+              <DashPasswordInput
+                key={label}
+                label={label}
+                placeholder="••••••••"
+                disabled
+                required
+                className="opacity-50"
+              />
             ),
           )}
           <button
