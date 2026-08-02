@@ -1,7 +1,7 @@
 import "reflect-metadata";
 // Must be set before libuv initialises — expand thread pool for bcrypt burst.
 process.env.UV_THREADPOOL_SIZE = process.env.UV_THREADPOOL_SIZE ?? "16";
-import { Logger, VersioningType } from "@nestjs/common";
+import { Logger, VersioningType, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import helmet from "helmet";
@@ -68,6 +68,21 @@ async function bootstrap() {
     type: VersioningType.URI,
     defaultVersion: "1",
   });
+
+  // SECURITY FIX: Global validation pipe with strict whitelisting
+  // Prevents mass assignment attacks by rejecting unknown properties
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // Remove unknown properties
+      forbidNonWhitelisted: true, // Throw error if unknown properties sent
+      transform: true, // Auto-transform to DTO class
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+      stopAtFirstError: false, // Report all validation errors at once
+      skipMissingProperties: false, // Require all properties per DTO
+    }),
+  );
 
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalInterceptors(new ApiResponseInterceptor());

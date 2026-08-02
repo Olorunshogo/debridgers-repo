@@ -1,4 +1,5 @@
 export * from "./schemas/users.schema";
+export * from "./schemas/admin_api_keys.schema";
 export * from "./schemas/products.schema";
 export * from "./schemas/product_categories.schema";
 export * from "./schemas/agent_profiles.schema";

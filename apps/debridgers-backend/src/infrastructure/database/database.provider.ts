@@ -15,12 +15,20 @@ const connectionProvider = {
     const logger = new Logger("DatabaseModule");
     const url = configService.get<string>("DBConfig.url");
 
-    // SSL is required for hosted providers (Neon, Supabase, etc.) but not for local Docker
+    // SECURITY FIX: Always verify SSL certificates in production
+    // Only disable SSL for localhost development
     const isLocal = url?.includes("localhost") || url?.includes("127.0.0.1");
 
     const pool = new Pool({
       connectionString: url,
-      ssl: isLocal ? false : { rejectUnauthorized: false },
+      ssl: isLocal
+        ? false // Local development: no SSL required
+        : {
+            rejectUnauthorized: true, // CRITICAL: Always true (was false - VULNERABLE!)
+            ca: configService.get<string>("DB_SSL_CA"),
+            cert: configService.get<string>("DB_SSL_CERT"),
+            key: configService.get<string>("DB_SSL_KEY"),
+          },
       allowExitOnIdle: true,
       connectionTimeoutMillis: 72000,
     });

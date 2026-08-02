@@ -25,19 +25,13 @@ import { EmailModule } from "../notification/features/email/email.module";
 // Events
 import { UserListeners } from "../events/listeners/user-listeners";
 
-// Features
-import { AuthModule } from "./auth/auth.module";
-import { accessJwtConfig } from "./auth/config/access-jwt";
-import { refreshJwtConfig } from "./auth/config/refresh-jwt";
-import { ContactModule } from "./contact/contact.module";
-import { AgentModule } from "./agent/agent.module";
-import { BuyerModule } from "./buyer/buyer.module";
-import { AdminModule } from "./admin/admin.module";
-import { PaymentModule } from "./payment/payment.module";
-import { CommissionModule } from "./commission/commission.module";
-import { PublicModule } from "./public/public.module";
-import { SystemSettingsModule } from "./settings/system-settings.module";
-import { CatalogModule } from "./catalog/catalog.module";
+// API Versions
+import { V1AppModule } from "../api/v1/v1.app.module";
+import { V2AppModule } from "../api/v2/v2.app.module";
+
+// JWT Config (shared across versions)
+import { accessJwtConfig } from "../api/v1/auth/config/access-jwt";
+import { refreshJwtConfig } from "../api/v1/auth/config/refresh-jwt";
 
 @Module({
   imports: [
@@ -64,17 +58,9 @@ import { CatalogModule } from "./catalog/catalog.module";
     DatabaseModule,
     RedisModule,
     LoggerModule,
-    SystemSettingsModule,
-    CatalogModule,
     EmailModule,
-    AuthModule,
-    ContactModule,
-    AgentModule,
-    BuyerModule,
-    AdminModule,
-    PaymentModule,
-    CommissionModule,
-    PublicModule,
+    V1AppModule,
+    V2AppModule,
   ],
   controllers: [AppController],
   providers: [
