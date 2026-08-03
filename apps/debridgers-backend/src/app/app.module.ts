@@ -14,7 +14,6 @@ import { jwtConfig } from "../infrastructure/config/jwt.config";
 import { cloudinaryConfig } from "../infrastructure/config/cloudinary.config";
 import { paystackConfig } from "../infrastructure/config/paystack.config";
 import { mailtrapConfig } from "../infrastructure/config/mailtrap.config";
-import { safehavenConfig } from "../infrastructure/config/safehaven.config";
 import { DatabaseModule } from "../infrastructure/database/database.module";
 import { RedisModule } from "../infrastructure/redis/core/redis.module";
 import { LoggerModule } from "../infrastructure/logger/logger.module";
@@ -42,7 +41,6 @@ import { refreshJwtConfig } from "../api/v1/auth/config/refresh-jwt";
         jwtConfig,
         cloudinaryConfig,
         paystackConfig,
-        safehavenConfig,
         mailtrapConfig,
         accessJwtConfig,
         refreshJwtConfig,

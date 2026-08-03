@@ -11,7 +11,6 @@ import { eq } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";
-import { SafeHavenService } from "../payment/safehaven.service";
 import {
   ResolveBankAccountDto,
   UpdateBankDetailsDto,
@@ -52,7 +51,6 @@ export class BankDetailsService {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
-    private readonly safehaven: SafeHavenService,
     private readonly config: ConfigService,
   ) {}
 
@@ -82,9 +80,10 @@ export class BankDetailsService {
       return banks;
     }
 
-    const banks = await this.safehaven.getBanks();
-    this.bankCache = { banks, expiresAt: Date.now() + BANK_LIST_TTL_MS };
-    return banks;
+    // TODO: Phase 3 - Implement bank lookup with Paystack API
+    throw new Error(
+      "Bank lookup not yet implemented. Enable PAYMENTS_SIMULATED for development.",
+    );
   }
 
   private async requireBankName(bankCode: string): Promise<string> {
@@ -121,21 +120,10 @@ export class BankDetailsService {
       };
     }
 
-    const enquiry = await this.safehaven.nameEnquiry(
-      dto.bank_code,
-      dto.account_number,
+    // TODO: Phase 3 - Implement account verification with Paystack API
+    throw new Error(
+      "Account verification not yet implemented. Enable PAYMENTS_SIMULATED for development.",
     );
-
-    if (!enquiry?.accountName) {
-      throw new BadRequestException(
-        "We could not verify that account. Check the number and try again.",
-      );
-    }
-
-    return {
-      message: "Account resolved",
-      data: { account_name: enquiry.accountName, bank_name: bankName },
-    };
   }
 
   // === Read

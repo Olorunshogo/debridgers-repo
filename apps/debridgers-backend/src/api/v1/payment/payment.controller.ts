@@ -1,33 +1,23 @@
 import {
   Body,
   Controller,
-  Get,
   Headers,
   HttpCode,
   HttpStatus,
   Param,
   ParseIntPipe,
   Post,
-  RawBodyRequest,
-  Req,
   UseGuards,
   UsePipes,
 } from "@nestjs/common";
-import { Request } from "express";
-import { SkipThrottle, Throttle } from "@nestjs/throttler";
+import { SkipThrottle } from "@nestjs/throttler";
 import { PaymentService } from "./payment.service";
-import { SafeHavenService } from "./safehaven.service";
 import { PayoutService } from "./payout.service";
 import { ZodValidationPipe } from "../../../infrastructure/pipeline/validation.pipeline";
 import {
   initializePaymentSchema,
   InitializePaymentDto,
 } from "./dto/initialize-payment.dto";
-import { nameEnquirySchema, NameEnquiryDto } from "./dto/name-enquiry.dto";
-import {
-  createVirtualAccountSchema,
-  CreateVirtualAccountDto,
-} from "./dto/create-virtual-account.dto";
 import { AuthGuard } from "../../shared/guards/auth.guard";
 import { RolesGuard } from "../../shared/guards/roles.guard";
 import { Roles } from "../../shared/decorators/roles.decorator";
@@ -38,7 +28,6 @@ import { JwtPayload } from "../../../interfaces/users/jwt.type";
 export class PaymentController {
   constructor(
     private readonly paymentService: PaymentService,
-    private readonly safehavenService: SafeHavenService,
     private readonly payoutService: PayoutService,
   ) {}
 
@@ -65,56 +54,6 @@ export class PaymentController {
   @Roles("admin")
   createSubaccount(@Param("agentId", ParseIntPipe) agentId: number) {
     return this.paymentService.createSubaccount(agentId);
-  }
-
-  // ─── SafeHaven endpoints ────────────────────────────────────────────────────
-
-  @Get("banks")
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard)
-  getBanks() {
-    return this.safehavenService
-      .getBanks()
-      .then((banks) => ({ message: "Banks retrieved", data: banks }));
-  }
-
-  @Post("name-enquiry")
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard)
-  @Throttle({ short: { ttl: 60000, limit: 10 } })
-  @UsePipes(new ZodValidationPipe(nameEnquirySchema))
-  nameEnquiry(@Body() dto: NameEnquiryDto) {
-    return this.safehavenService
-      .nameEnquiry(dto.bankCode, dto.accountNumber)
-      .then((result) => ({ message: "Account verified", data: result }));
-  }
-
-  @Post("virtual-account")
-  @HttpCode(HttpStatus.CREATED)
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles("buyer")
-  @UsePipes(new ZodValidationPipe(createVirtualAccountSchema))
-  createVirtualAccount(
-    @Body() dto: CreateVirtualAccountDto,
-    @CurrentUser() user: JwtPayload,
-  ) {
-    return this.paymentService.createVirtualAccountForOrder(dto, user.sub);
-  }
-
-  @Post("safehaven/webhook")
-  @HttpCode(HttpStatus.OK)
-  @SkipThrottle()
-  safehavenWebhook(
-    @Req() req: RawBodyRequest<Request>,
-    @Body() payload: Record<string, unknown>,
-    @Headers("x-safehaven-signature") signature: string,
-  ) {
-    const rawBody = req.rawBody?.toString() ?? JSON.stringify(payload);
-    return this.paymentService.handleSafehavenWebhook(
-      payload,
-      rawBody,
-      signature,
-    );
   }
 
   /*
