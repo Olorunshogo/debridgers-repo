@@ -35,6 +35,8 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
+    console.log("🔵 [REGISTER] 1. Starting register for:", dto.email);
+
     // Run email check, referrer lookup, and password hash concurrently
     const [existing, referredByAgentId, hashed] = await Promise.all([
       this.db
@@ -45,6 +47,12 @@ export class AuthService {
       this.resolveBuyerReferrerId(dto.referred_by_agent_code),
       bcrypt.hash(dto.password, 12),
     ]);
+    console.log(
+      "🔵 [REGISTER] 2. Promise.all complete. Email exists:",
+      existing.length > 0,
+      "Referrer:",
+      referredByAgentId,
+    );
 
     if (existing.length > 0) {
       const user = existing[0];
@@ -72,6 +80,7 @@ export class AuthService {
 
     const role = dto.role as SelfRegisterableRole;
 
+    console.log("🔵 [REGISTER] 3. About to start transaction...");
     const [user] = await this.db.transaction(async (tx) => {
       const [createdUser] = await tx
         .insert(schema.users)
@@ -97,6 +106,8 @@ export class AuthService {
           is_email_verified: isTestMode,
         })
         .returning();
+
+      console.log("🔵 [REGISTER] 4. User inserted, ID:", createdUser.id);
 
       /*
        * Per-role setup. Kept as an explicit switch on a narrow union rather than
@@ -133,9 +144,11 @@ export class AuthService {
         });
       }
 
+      console.log("🔵 [REGISTER] 5. Transaction complete, returning user");
       return [createdUser];
     });
 
+    console.log("🔵 [REGISTER] 6. Register finished, returning response");
     return {
       message: isTestMode
         ? "Registration successful."

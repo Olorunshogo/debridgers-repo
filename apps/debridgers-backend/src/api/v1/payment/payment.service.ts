@@ -14,6 +14,7 @@ import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.p
 import { WebhookDeduplicationService } from "../../../infrastructure/webhook/webhook-deduplication.service";
 import { InitializePaymentDto } from "./dto/initialize-payment.dto";
 import { SystemSettingsService } from "../settings/system-settings.service";
+import { RefundService } from "./refund.service";
 
 @Injectable()
 export class PaymentService {
@@ -27,6 +28,7 @@ export class PaymentService {
     private readonly config: ConfigService,
     private readonly settings: SystemSettingsService,
     private readonly webhookDedup: WebhookDeduplicationService,
+    private readonly refundService: RefundService,
   ) {
     this.secretKey = this.config.get<string>("PaystackConfig.secretKey") ?? "";
   }
@@ -207,19 +209,107 @@ export class PaymentService {
           `Commission ₦${commissionAmount} recorded for agent ${agentId}`,
         );
       }
+    } else if (
+      payload.event === "refund.processed" ||
+      payload.event === "refund.failed"
+    ) {
+      await this.refundService.handleRefundWebhook(
+        payload.data as Record<string, unknown>,
+      );
     }
 
     return { message: "Webhook processed", data: null };
   }
 
-  // ─── Agent withdrawal payout (TODO: Implement with Paystack Transfer API in Phase 3)
-  // This method will be rewritten to use Paystack Transfer API instead of SafeHaven
-  // For now, placeholder to prevent compilation errors
-
   async processWithdrawal(withdrawalId: number, adminId: number | null) {
-    throw new Error(
-      "Agent payouts will be implemented in Phase 3 using Paystack Transfer API",
+    const [withdrawal] = await this.db
+      .select()
+      .from(schema.withdrawals)
+      .where(eq(schema.withdrawals.id, withdrawalId))
+      .limit(1);
+
+    if (!withdrawal) throw new NotFoundException("Withdrawal not found");
+
+    const [agent] = await this.db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.id, withdrawal.agent_id))
+      .limit(1);
+
+    if (!agent) throw new NotFoundException("Agent not found");
+
+    const [profile] = await this.db
+      .select()
+      .from(schema.agent_profiles)
+      .where(eq(schema.agent_profiles.user_id, withdrawal.agent_id))
+      .limit(1);
+
+    if (!profile?.bank_account_number || !profile?.bank_code) {
+      throw new BadRequestException(
+        "Agent has incomplete bank details on file",
+      );
+    }
+
+    if (!profile.paystack_subaccount_code) {
+      throw new BadRequestException("Agent has no Paystack subaccount");
+    }
+
+    const amountNaira = Math.round(
+      parseFloat(withdrawal.amount as unknown as string),
     );
+    const reference = `WITHDRAWAL_${withdrawalId}_${Date.now()}`;
+
+    const transferResponse = await fetch(`${this.baseUrl}/transfer`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.secretKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        source: "balance",
+        amount: amountNaira,
+        recipient: profile.paystack_subaccount_code,
+        reference,
+        reason: `On-demand withdrawal - ${agent.email}`,
+      }),
+    });
+
+    const data = (await transferResponse.json()) as {
+      status: boolean;
+      message?: string;
+    };
+
+    if (!data.status) {
+      await this.db
+        .update(schema.withdrawals)
+        .set({
+          status: "rejected",
+          rejection_reason: data.message ?? "Transfer API error",
+          processed_at: new Date(),
+          processed_by: adminId,
+        })
+        .where(eq(schema.withdrawals.id, withdrawalId));
+
+      throw new BadRequestException(
+        `Transfer failed: ${data.message ?? "Unknown error"}`,
+      );
+    }
+
+    await this.db
+      .update(schema.withdrawals)
+      .set({
+        status: "paid",
+        payout_reference: reference,
+        processed_at: new Date(),
+        processed_by: adminId,
+      })
+      .where(eq(schema.withdrawals.id, withdrawalId));
+
+    this.logger.log(
+      `Withdrawal ${withdrawalId} processed for agent ${withdrawal.agent_id}: ₦${amountNaira}`,
+    );
+
+    return { message: "Withdrawal processing", data: { reference } };
   }
 
   async createSubaccount(agentId: number) {

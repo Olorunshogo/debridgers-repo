@@ -13,11 +13,14 @@ import {
 import { SkipThrottle } from "@nestjs/throttler";
 import { PaymentService } from "./payment.service";
 import { PayoutService } from "./payout.service";
+import { PayoutSchedulerService } from "./payout-scheduler.service";
+import { RefundService } from "./refund.service";
 import { ZodValidationPipe } from "../../../infrastructure/pipeline/validation.pipeline";
 import {
   initializePaymentSchema,
   InitializePaymentDto,
 } from "./dto/initialize-payment.dto";
+import { initiateRefundSchema, InitiateRefundDto } from "./dto/refund.dto";
 import { AuthGuard } from "../../shared/guards/auth.guard";
 import { RolesGuard } from "../../shared/guards/roles.guard";
 import { Roles } from "../../shared/decorators/roles.decorator";
@@ -29,6 +32,7 @@ export class PaymentController {
   constructor(
     private readonly paymentService: PaymentService,
     private readonly payoutService: PayoutService,
+    private readonly refundService: RefundService,
   ) {}
 
   @Post("initialize")
@@ -82,5 +86,17 @@ export class PaymentController {
     @CurrentUser() admin: JwtPayload,
   ) {
     return this.paymentService.processWithdrawal(withdrawalId, admin.sub);
+  }
+
+  @Post("refund")
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("admin")
+  @UsePipes(new ZodValidationPipe(initiateRefundSchema))
+  initiateRefund(
+    @Body() dto: InitiateRefundDto,
+    @CurrentUser() admin: JwtPayload,
+  ) {
+    return this.refundService.initiateRefund(dto, admin.sub);
   }
 }

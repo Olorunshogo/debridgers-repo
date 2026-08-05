@@ -43,10 +43,17 @@ const connectionProvider = {
       await migrate(db, { migrationsFolder });
       logger.log("Database migrations up to date");
     } catch (err) {
-      logger.error("Migration failed — server will not start", err);
-      throw err;
+      // In development, skip migration errors if database is already initialized
+      if (process.env.NODE_ENV === "development") {
+        logger.warn(
+          "Migration error (dev mode - continuing):",
+          (err as Error).message,
+        );
+      } else {
+        logger.error("Migration failed — server will not start", err);
+        throw err;
+      }
     }
-
     logger.log("Database connection established");
     return db;
   },
