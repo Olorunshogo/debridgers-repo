@@ -11,6 +11,7 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import { JwtService } from "@nestjs/jwt";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq, sql } from "drizzle-orm";
+import { Request } from "express";
 import * as bcrypt from "bcryptjs";
 import * as crypto from "crypto";
 import * as schema from "../../../infrastructure/persistence/index";
@@ -20,6 +21,8 @@ import { USER_EVENTS } from "../../../events/event-types/user.event.types";
 import { RegisterDto, type SelfRegisterableRole } from "./dto/register.dto";
 import { USER_ROLES } from "../../../interfaces/users/roles.type";
 import { LoginDto } from "./dto/login.dto";
+import { AuthAttemptService } from "./auth-attempt.service";
+import { PostHogService } from "../../../infrastructure/analytics/posthog.service";
 
 @Injectable()
 export class AuthService {
@@ -32,10 +35,12 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly authAttempt: AuthAttemptService,
+    private readonly posthog: PostHogService,
   ) {}
 
   async register(dto: RegisterDto) {
-    console.log("🔵 [REGISTER] 1. Starting register for:", dto.email);
+    console.warn("🔵 [REGISTER] 1. Starting register for:", dto.email);
 
     // Run email check, referrer lookup, and password hash concurrently
     const [existing, referredByAgentId, hashed] = await Promise.all([
@@ -47,7 +52,7 @@ export class AuthService {
       this.resolveBuyerReferrerId(dto.referred_by_agent_code),
       bcrypt.hash(dto.password, 12),
     ]);
-    console.log(
+    console.warn(
       "🔵 [REGISTER] 2. Promise.all complete. Email exists:",
       existing.length > 0,
       "Referrer:",
@@ -80,7 +85,7 @@ export class AuthService {
 
     const role = dto.role as SelfRegisterableRole;
 
-    console.log("🔵 [REGISTER] 3. About to start transaction...");
+    console.warn("🔵 [REGISTER] 3. About to start transaction...");
     const [user] = await this.db.transaction(async (tx) => {
       const [createdUser] = await tx
         .insert(schema.users)
@@ -107,7 +112,7 @@ export class AuthService {
         })
         .returning();
 
-      console.log("🔵 [REGISTER] 4. User inserted, ID:", createdUser.id);
+      console.warn("🔵 [REGISTER] 4. User inserted, ID:", createdUser.id);
 
       /*
        * Per-role setup. Kept as an explicit switch on a narrow union rather than
@@ -144,11 +149,11 @@ export class AuthService {
         });
       }
 
-      console.log("🔵 [REGISTER] 5. Transaction complete, returning user");
+      console.warn("🔵 [REGISTER] 5. Transaction complete, returning user");
       return [createdUser];
     });
 
-    console.log("🔵 [REGISTER] 6. Register finished, returning response");
+    console.warn("🔵 [REGISTER] 6. Register finished, returning response");
     return {
       message: isTestMode
         ? "Registration successful."
@@ -157,20 +162,35 @@ export class AuthService {
     };
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto, req: Request) {
+    const ip = this.extractIp(req);
+    const email = dto.email.toLowerCase();
+
+    // Check if login attempts are blocked
+    const attempt = await this.authAttempt.checkAttemptAllowed(email, ip);
+    if (!attempt.allowed) {
+      throw new UnauthorizedException(
+        `Too many failed attempts. Please try again in ${Math.ceil((attempt.remainingTime || 0) / 60)} minutes.`,
+      );
+    }
+
     const [user] = await this.db
       .select()
       .from(schema.users)
-      .where(eq(sql`lower(${schema.users.email})`, dto.email.toLowerCase()))
+      .where(eq(sql`lower(${schema.users.email})`, email))
       .limit(1);
 
     if (!user || !user.password) {
+      await this.authAttempt.recordFailedAttempt(email, ip);
       throw new UnauthorizedException("Invalid credentials");
     }
 
     const passwordHash = user.password;
     const valid = await bcrypt.compare(dto.password, passwordHash);
-    if (!valid) throw new UnauthorizedException("Invalid credentials");
+    if (!valid) {
+      await this.authAttempt.recordFailedAttempt(email, ip);
+      throw new UnauthorizedException("Invalid credentials");
+    }
 
     // For agents: check approval status first (before email verification)
     if (user.role === "agent") {
@@ -199,8 +219,12 @@ export class AuthService {
       );
     }
 
-    const tokens = await this.generateTokens(user);
+    const context = this.extractRequestContext(req);
+    const tokens = await this.generateTokens(user, context);
     await this.saveRefreshToken(user.id, tokens.refreshToken);
+
+    // Reset failed attempts on successful login
+    await this.authAttempt.resetAttempts(email, ip);
 
     this.eventEmitter.emit(USER_EVENTS.USER_LOGGED_IN, {
       name: `${user.first_name} ${user.last_name}`,
@@ -208,33 +232,59 @@ export class AuthService {
       role: user.role,
     });
 
+    // Track login in PostHog
+    this.posthog.trackLogin(user.id, user.email, user.role, ip);
+
     return {
       message: "Login successful",
       data: { user: this.sanitize(user), ...tokens },
     };
   }
 
-  async loginAdmin(dto: LoginDto) {
+  async loginAdmin(dto: LoginDto, req: Request) {
+    const ip = this.extractIp(req);
+    const email = dto.email.toLowerCase();
+
+    // Check if login attempts are blocked (stricter for admin)
+    const attempt = await this.authAttempt.checkAttemptAllowed(email, ip);
+    if (!attempt.allowed) {
+      throw new UnauthorizedException(
+        `Too many failed attempts. Please try again in ${Math.ceil((attempt.remainingTime || 0) / 60)} minutes.`,
+      );
+    }
+
     const [user] = await this.db
       .select()
       .from(schema.users)
-      .where(eq(sql`lower(${schema.users.email})`, dto.email.toLowerCase()))
+      .where(eq(sql`lower(${schema.users.email})`, email))
       .limit(1);
 
     if (!user || !user.password) {
+      await this.authAttempt.recordFailedAttempt(email, ip);
       throw new UnauthorizedException("Invalid admin credentials");
     }
 
     const passwordHash = user.password;
     const valid = await bcrypt.compare(dto.password, passwordHash);
-    if (!valid) throw new UnauthorizedException("Invalid admin credentials");
+    if (!valid) {
+      await this.authAttempt.recordFailedAttempt(email, ip);
+      throw new UnauthorizedException("Invalid admin credentials");
+    }
 
     if (user.role !== "admin") {
+      await this.authAttempt.recordFailedAttempt(email, ip);
       throw new UnauthorizedException("Admin access only");
     }
 
-    const tokens = await this.generateTokens(user);
+    const context = this.extractRequestContext(req);
+    const tokens = await this.generateTokens(user, context);
     await this.saveRefreshToken(user.id, tokens.refreshToken);
+
+    // Reset failed attempts on successful login
+    await this.authAttempt.resetAttempts(email, ip);
+
+    // Track admin login in PostHog
+    this.posthog.trackLogin(user.id, user.email, user.role, ip);
 
     return {
       message: "Admin login successful",
@@ -430,15 +480,30 @@ export class AuthService {
     return { message: "Password reset successful", data: null };
   }
 
-  private async generateTokens(user: {
-    id: number;
-    email: string;
-    role: string;
-  }) {
+  private async generateTokens(
+    user: {
+      id: number;
+      email: string;
+      first_name: string;
+      last_name: string;
+      role: string;
+    },
+    context?: {
+      api_version: string;
+      device: string;
+      ip_address: string;
+    },
+  ) {
     const payload: JwtPayload = {
       sub: user.id,
+      id: user.id,
       email: user.email,
+      first_name: user.first_name,
+      last_name: user.last_name,
       role: user.role as JwtPayload["role"],
+      api_version: context?.api_version || "v1",
+      device: context?.device || "unknown",
+      ip_address: context?.ip_address || "unknown",
     };
 
     const accessSecret = this.config.get<string>("AccessJwt.secret");
@@ -543,5 +608,26 @@ export class AuthService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, refresh_token, ...safe } = user;
     return safe;
+  }
+
+  private extractIp(req: Request): string {
+    return (
+      (req.headers["x-forwarded-for"] as string)?.split(",")[0].trim() ||
+      req.socket.remoteAddress ||
+      "unknown"
+    );
+  }
+
+  private extractRequestContext(req: Request) {
+    const userAgent = req.headers["user-agent"] || "unknown";
+    const ip = this.extractIp(req);
+    const path = req.path || "";
+    const apiVersion = path.startsWith("/api/v2") ? "v2" : "v1";
+
+    return {
+      api_version: apiVersion,
+      device: userAgent,
+      ip_address: ip,
+    };
   }
 }

@@ -13,36 +13,42 @@ echo -e "${BLUE}=== COMMISSION ENDPOINTS ===${NC}\n"
 echo -e "${GREEN}1. GET MY COMMISSION HISTORY${NC}"
 echo "Agent views their earned commissions"
 curl -s -X GET http://localhost:4001/api/v1/commission/my-commissions \
-  -H "Authorization: Bearer agent_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" \
   -H "Content-Type: application/json" | jq .
 
 echo -e "\n${GREEN}2. GET COMMISSION SUMMARY${NC}"
 echo "Total earnings, pending, paid breakdown"
 curl -s -X GET http://localhost:4001/api/v1/commission/summary \
-  -H "Authorization: Bearer agent_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" \
   -H "Content-Type: application/json" | jq .
 
 echo -e "\n${GREEN}3. GET COMMISSION BY DATE RANGE${NC}"
 curl -s -X GET "http://localhost:4001/api/v1/commission?from=2026-08-01&to=2026-08-31" \
-  -H "Authorization: Bearer agent_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" \
   -H "Content-Type: application/json" | jq .
 
 echo -e "\n${GREEN}4. ADMIN - VIEW ALL COMMISSIONS${NC}"
 echo "Admin views commissions across all agents"
 curl -s -X GET "http://localhost:4001/api/v1/commission/admin?agent_id=5&status=paid" \
-  -H "Authorization: Bearer admin_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" \
   -H "Content-Type: application/json" | jq .
 
 echo -e "\n${GREEN}5. ADMIN - LIST PENDING COMMISSIONS${NC}"
 echo "Commissions earned but not yet marked as paid"
 curl -s -X GET "http://localhost:4001/api/v1/commission/admin/pending" \
-  -H "Authorization: Bearer admin_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" \
   -H "Content-Type: application/json" | jq .
 
 echo -e "\n${GREEN}6. ADMIN - MARK COMMISSIONS AS PAID${NC}"
 echo "Manually mark commissions as paid (usually automatic)"
 curl -s -X PATCH http://localhost:4001/api/v1/commission/mark-paid \
-  -H "Authorization: Bearer admin_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" \
   -H "Content-Type: application/json" \
   -d '{
     "commission_ids": [1, 2, 3]

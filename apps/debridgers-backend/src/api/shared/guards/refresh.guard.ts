@@ -45,9 +45,14 @@ export class RefreshGuard implements CanActivate {
 
       req.user = {
         sub: payload.sub,
-        id: payload.sub,
+        id: payload.id,
         email: payload.email,
+        first_name: payload.first_name,
+        last_name: payload.last_name,
         role: payload.role,
+        api_version: payload.api_version,
+        device: payload.device,
+        ip_address: payload.ip_address,
         iat: payload.iat,
         exp: payload.exp,
         refreshToken: token,

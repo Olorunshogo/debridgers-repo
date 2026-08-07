@@ -38,6 +38,7 @@ export const users = pgTable(
     is_email_verified: boolean().notNull().default(false),
     is_phone_verified: boolean().notNull().default(false),
     is_blocked: boolean().notNull().default(false),
+    is_suspended: boolean().notNull().default(false),
     // zone assigned from delivery address (buyers) or LGA (agents)
     zone_id: integer(),
     delivery_address: text(),

@@ -28,7 +28,8 @@ import {
 import { AdminService } from "./admin.service";
 import { BankDetailsService } from "../agent/bank-details.service";
 import { TaxonomyService } from "../catalog/taxonomy.service";
-import { ApiKeyGuard } from "../../shared/guards/api-key.guard";
+import { AdminKeysGuard } from "../../shared/guards/keys.guard";
+import { AuthGuard } from "../../shared/guards/auth.guard";
 import { AdminId } from "../../shared/decorators/admin-id.decorator";
 import { CurrentUser } from "../../shared/decorators/current-user.decorator";
 import { Roles } from "../../shared/decorators/roles.decorator";
@@ -77,7 +78,7 @@ type CreateOutreachDto = z.infer<typeof createOutreachSchema>;
 @ApiTags("Admin")
 @ApiBearerAuth("api-key")
 @Controller("admin")
-@UseGuards(ApiKeyGuard)
+@UseGuards(AdminKeysGuard)
 export class AdminController {
   constructor(
     private readonly adminService: AdminService,
@@ -88,6 +89,7 @@ export class AdminController {
   ) {}
 
   @Get("me")
+  @UseGuards(AuthGuard, AdminKeysGuard)
   @ApiOperation({ summary: "Get the current admin's profile" })
   getMe(@CurrentUser() user: JwtPayload) {
     return this.adminService.getAdminMe(user.sub);
@@ -373,7 +375,12 @@ export class AdminController {
   // ─── Buyers ─────────────────────────────────────────────────────────────────
 
   @Get("buyers")
-  @ApiOperation({ summary: "List all registered buyers" })
+  @ApiOperation({
+    summary:
+      "List all registered buyers - optionally filter by zone or suspended status",
+  })
+  @ApiQuery({ name: "zone_id", required: false, type: "integer", example: 1 })
+  @ApiQuery({ name: "is_suspended", required: false, enum: ["true", "false"] })
   @ApiResponse({
     status: 200,
     description: "Buyers retrieved",
@@ -390,6 +397,9 @@ export class AdminController {
             phone: "08055556666",
             is_email_verified: true,
             is_blocked: false,
+            is_suspended: false,
+            zone_id: 1,
+            zone_name: "Ikoyi",
             referred_by_agent_id: 5,
             joined_at: "2026-04-01T08:00:00.000Z",
           },
@@ -397,8 +407,14 @@ export class AdminController {
       },
     },
   })
-  getBuyers() {
-    return this.adminService.getBuyers();
+  getBuyers(
+    @Query("zone_id") zoneId?: string,
+    @Query("is_suspended") isSuspended?: string,
+  ) {
+    return this.adminService.getBuyers(
+      zoneId ? parseInt(zoneId, 10) : undefined,
+      isSuspended === "true",
+    );
   }
 
   @Get("buyers/:id")
@@ -452,6 +468,84 @@ export class AdminController {
   })
   unblockBuyer(@Param("id", ParseIntPipe) id: number) {
     return this.adminService.toggleBlockBuyer(id, false);
+  }
+
+  @Patch("buyers/:id/suspend")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Suspend a buyer from placing orders" })
+  @ApiParam({ name: "id", type: "integer", example: 12 })
+  @ApiResponse({
+    status: 200,
+    schema: {
+      example: { statusCode: 200, message: "Buyer suspended", data: null },
+    },
+  })
+  suspendBuyer(@Param("id", ParseIntPipe) id: number) {
+    return this.adminService.suspendBuyer(id);
+  }
+
+  @Patch("buyers/:id/unsuspend")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Unsuspend a buyer" })
+  @ApiParam({ name: "id", type: "integer", example: 12 })
+  @ApiResponse({
+    status: 200,
+    schema: {
+      example: { statusCode: 200, message: "Buyer unsuspended", data: null },
+    },
+  })
+  unsuspendBuyer(@Param("id", ParseIntPipe) id: number) {
+    return this.adminService.unsuspendBuyer(id);
+  }
+
+  @Get("buyers/:id/wallet/transactions")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "View any buyer's wallet transaction history" })
+  @ApiParam({ name: "id", type: "integer", example: 12 })
+  @ApiQuery({ name: "page", required: false, example: 1 })
+  @ApiQuery({ name: "limit", required: false, example: 10 })
+  @ApiResponse({
+    status: 200,
+    description: "Wallet transactions retrieved",
+    schema: {
+      example: {
+        statusCode: 200,
+        message: "Wallet transactions retrieved",
+        data: {
+          wallet: {
+            id: 5,
+            available_balance: 500000,
+            pending_balance: 50000,
+            total_deposited: 1000000,
+          },
+          transactions: [
+            {
+              id: 1,
+              wallet_id: 5,
+              type: "deposit",
+              amount: 100000,
+              status: "completed",
+              reference: "paystack_order_123_1691234567",
+              description: "Deposit via Paystack",
+              created_at: "2026-08-07T10:30:00.000Z",
+            },
+          ],
+          pagination: { page: 1, limit: 10, total: 5 },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: "Buyer not found" })
+  getBuyerWalletTransactions(
+    @Param("id", ParseIntPipe) userId: number,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ) {
+    return this.adminService.getBuyerWalletTransactions(
+      userId,
+      page ? parseInt(page, 10) : 1,
+      limit ? Math.min(parseInt(limit, 10), 100) : 10,
+    );
   }
 
   // ─── Stock & Inventory ───────────────────────────────────────────────────────

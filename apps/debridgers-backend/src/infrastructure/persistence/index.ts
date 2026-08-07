@@ -26,3 +26,5 @@ export * from "./schemas/order_items.schema";
 export * from "./schemas/payouts.schema";
 export * from "./schemas/refunds.schema";
 export * from "./schemas/disputes.schema";
+export * from "./schemas/buyer_wallets.schema";
+export * from "./schemas/wallet_transactions.schema";

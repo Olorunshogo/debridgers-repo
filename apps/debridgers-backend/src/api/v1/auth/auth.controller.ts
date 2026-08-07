@@ -4,9 +4,11 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Req,
   UseGuards,
   UsePipes,
 } from "@nestjs/common";
+import { Request } from "express";
 import { Throttle } from "@nestjs/throttler";
 import {
   ApiTags,
@@ -96,7 +98,7 @@ export class AuthController {
 
   @Post("login")
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { ttl: 60000, limit: 10 } })
+  @Throttle({ short: { ttl: 60000, limit: 5 } })
   @ApiOperation({ summary: "Login with email and password" })
   @ApiBody({
     schema: {
@@ -145,13 +147,13 @@ export class AuthController {
     },
   })
   @UsePipes(new ZodValidationPipe(loginSchema))
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  login(@Body() dto: LoginDto, @Req() req: Request) {
+    return this.authService.login(dto, req);
   }
 
   @Post("admin/login")
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { ttl: 60000, limit: 5 } })
+  @Throttle({ short: { ttl: 60000, limit: 3 } })
   @ApiOperation({ summary: "Admin login with email and password" })
   @ApiBody({
     schema: {
@@ -186,8 +188,8 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: "Invalid admin credentials" })
   @UsePipes(new ZodValidationPipe(loginSchema))
-  adminLogin(@Body() dto: LoginDto) {
-    return this.authService.loginAdmin(dto);
+  adminLogin(@Body() dto: LoginDto, @Req() req: Request) {
+    return this.authService.loginAdmin(dto, req);
   }
 
   @Post("refresh")

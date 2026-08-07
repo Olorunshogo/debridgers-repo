@@ -5,8 +5,10 @@
   "main": "dist/main.js",
   "scripts": {
     "dev": "UV_THREADPOOL_SIZE=16 nest start --watch",
+    "dev:migrate": "pnpm db:generate && UV_THREADPOOL_SIZE=16 nest start --watch",
     "build": "nest build",
     "start": "UV_THREADPOOL_SIZE=16 node dist/main.js",
+    "start:migrate": "pnpm db:generate && UV_THREADPOOL_SIZE=16 node dist/main.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

@@ -17,6 +17,7 @@ import { mailtrapConfig } from "../infrastructure/config/mailtrap.config";
 import { DatabaseModule } from "../infrastructure/database/database.module";
 import { RedisModule } from "../infrastructure/redis/core/redis.module";
 import { LoggerModule } from "../infrastructure/logger/logger.module";
+import { AnalyticsModule } from "../infrastructure/analytics/analytics.module";
 
 // Notification
 import { EmailModule } from "../notification/features/email/email.module";
@@ -48,14 +49,14 @@ import { refreshJwtConfig } from "../api/v1/auth/config/refresh-jwt";
       envFilePath: [".env"],
     }),
     ThrottlerModule.forRoot([
-      { name: "short", ttl: 1000, limit: 10 }, // 10 req/s per IP
-      { name: "medium", ttl: 60000, limit: 100 }, // 100 req/min per IP
+      { name: "short", ttl: 60000, limit: 1000 }, // Disabled: using per-endpoint limiters
     ]),
     EventEmitterModule.forRoot(),
     ScheduleModule.forRoot(),
     DatabaseModule,
     RedisModule,
     LoggerModule,
+    AnalyticsModule,
     EmailModule,
     V1AppModule,
     V2AppModule,

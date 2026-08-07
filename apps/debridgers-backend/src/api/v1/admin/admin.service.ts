@@ -574,7 +574,17 @@ export class AdminService {
     return { message: "Order retrieved", data: order };
   }
 
-  async getBuyers() {
+  async getBuyers(zoneId?: number, isSuspended?: boolean) {
+    const whereConditions = [eq(schema.users.role, "buyer")];
+
+    if (zoneId !== undefined) {
+      whereConditions.push(eq(schema.users.zone_id, zoneId));
+    }
+
+    if (isSuspended !== undefined) {
+      whereConditions.push(eq(schema.users.is_suspended, isSuspended));
+    }
+
     const buyers = await this.db
       .select({
         id: schema.users.id,
@@ -585,12 +595,15 @@ export class AdminService {
         is_email_verified: schema.users.is_email_verified,
         is_phone_verified: schema.users.is_phone_verified,
         is_blocked: schema.users.is_blocked,
+        is_suspended: schema.users.is_suspended,
         zone_id: schema.users.zone_id,
+        zone_name: schema.zones.name,
         referred_by_agent_id: schema.users.referred_by_agent_id,
         joined_at: schema.users.created_at,
       })
       .from(schema.users)
-      .where(eq(schema.users.role, "buyer"))
+      .leftJoin(schema.zones, eq(schema.users.zone_id, schema.zones.id))
+      .where(and(...whereConditions))
       .orderBy(desc(schema.users.created_at));
 
     return { message: "Buyers retrieved", data: buyers };
@@ -643,6 +656,110 @@ export class AdminService {
     return {
       message: block ? "Buyer blocked" : "Buyer unblocked",
       data: null,
+    };
+  }
+
+  async suspendBuyer(buyerId: number) {
+    const [buyer] = await this.db
+      .select()
+      .from(schema.users)
+      .where(and(eq(schema.users.id, buyerId), eq(schema.users.role, "buyer")))
+      .limit(1);
+
+    if (!buyer) throw new NotFoundException("Buyer not found");
+
+    await this.db
+      .update(schema.users)
+      .set({ is_suspended: true })
+      .where(eq(schema.users.id, buyerId));
+
+    return {
+      message: "Buyer suspended",
+      data: null,
+    };
+  }
+
+  async unsuspendBuyer(buyerId: number) {
+    const [buyer] = await this.db
+      .select()
+      .from(schema.users)
+      .where(and(eq(schema.users.id, buyerId), eq(schema.users.role, "buyer")))
+      .limit(1);
+
+    if (!buyer) throw new NotFoundException("Buyer not found");
+
+    await this.db
+      .update(schema.users)
+      .set({ is_suspended: false })
+      .where(eq(schema.users.id, buyerId));
+
+    return {
+      message: "Buyer unsuspended",
+      data: null,
+    };
+  }
+
+  async getBuyerWalletTransactions(
+    userId: number,
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    // Verify buyer exists
+    const [buyer] = await this.db
+      .select()
+      .from(schema.users)
+      .where(and(eq(schema.users.id, userId), eq(schema.users.role, "buyer")))
+      .limit(1);
+
+    if (!buyer) throw new NotFoundException("Buyer not found");
+
+    // Get or create wallet
+    let [wallet] = await this.db
+      .select()
+      .from(schema.buyerWallets)
+      .where(eq(schema.buyerWallets.user_id, userId))
+      .limit(1);
+
+    if (!wallet) {
+      const [newWallet] = await this.db
+        .insert(schema.buyerWallets)
+        .values({ user_id: userId })
+        .returning();
+      wallet = newWallet;
+    }
+
+    const offset = (page - 1) * limit;
+
+    const [transactions, [{ total }]] = await Promise.all([
+      this.db
+        .select()
+        .from(schema.walletTransactions)
+        .where(eq(schema.walletTransactions.wallet_id, wallet.id))
+        .orderBy(desc(schema.walletTransactions.created_at))
+        .limit(limit)
+        .offset(offset),
+      this.db
+        .select({ total: count() })
+        .from(schema.walletTransactions)
+        .where(eq(schema.walletTransactions.wallet_id, wallet.id)),
+    ]);
+
+    return {
+      message: "Wallet transactions retrieved",
+      data: {
+        wallet: {
+          id: wallet.id,
+          available_balance: wallet.available_balance,
+          pending_balance: wallet.pending_balance,
+          total_deposited: wallet.total_deposited,
+        },
+        transactions,
+        pagination: {
+          page,
+          limit,
+          total: Number(total),
+        },
+      },
     };
   }
 

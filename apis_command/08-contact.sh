@@ -12,7 +12,8 @@ echo -e "${BLUE}=== CONTACT/SUPPORT ENDPOINTS ===${NC}\n"
 # 1. SUBMIT SUPPORT TICKET
 echo -e "${GREEN}1. CREATE SUPPORT TICKET${NC}"
 curl -s -X POST http://localhost:4001/api/v1/contact/tickets \
-  -H "Authorization: Bearer user_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" \
   -H "Content-Type: application/json" \
   -d '{
     "subject": "Order #42 not delivered yet",
@@ -23,15 +24,18 @@ curl -s -X POST http://localhost:4001/api/v1/contact/tickets \
 
 echo -e "\n${GREEN}2. GET MY TICKETS${NC}"
 curl -s -X GET "http://localhost:4001/api/v1/contact/tickets?status=open" \
-  -H "Authorization: Bearer user_access_token_here" | jq .
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" | jq .
 
 echo -e "\n${GREEN}3. GET TICKET DETAILS${NC}"
 curl -s -X GET http://localhost:4001/api/v1/contact/tickets/1 \
-  -H "Authorization: Bearer user_access_token_here" | jq .
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" | jq .
 
 echo -e "\n${GREEN}4. REPLY TO TICKET${NC}"
 curl -s -X POST http://localhost:4001/api/v1/contact/tickets/1/replies \
-  -H "Authorization: Bearer user_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" \
   -H "Content-Type: application/json" \
   -d '{
     "message": "Thanks for looking into this"
@@ -39,7 +43,8 @@ curl -s -X POST http://localhost:4001/api/v1/contact/tickets/1/replies \
 
 echo -e "\n${GREEN}5. CLOSE TICKET${NC}"
 curl -s -X PATCH http://localhost:4001/api/v1/contact/tickets/1 \
-  -H "Authorization: Bearer user_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" \
   -H "Content-Type: application/json" \
   -d '{
     "status": "closed"
@@ -47,11 +52,13 @@ curl -s -X PATCH http://localhost:4001/api/v1/contact/tickets/1 \
 
 echo -e "\n${GREEN}6. ADMIN - LIST ALL TICKETS${NC}"
 curl -s -X GET "http://localhost:4001/api/v1/contact/admin/tickets?status=open&limit=20" \
-  -H "Authorization: Bearer admin_access_token_here" | jq .
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" | jq .
 
 echo -e "\n${GREEN}7. ADMIN - ASSIGN TO SUPPORT STAFF${NC}"
 curl -s -X PATCH http://localhost:4001/api/v1/contact/admin/tickets/1/assign \
-  -H "Authorization: Bearer admin_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" \
   -H "Content-Type: application/json" \
   -d '{
     "assigned_to": 12
@@ -59,7 +66,8 @@ curl -s -X PATCH http://localhost:4001/api/v1/contact/admin/tickets/1/assign \
 
 echo -e "\n${GREEN}8. ADMIN - REPLY TO TICKET${NC}"
 curl -s -X POST http://localhost:4001/api/v1/contact/admin/tickets/1/replies \
-  -H "Authorization: Bearer admin_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" \
   -H "Content-Type: application/json" \
   -d '{
     "message": "We have escalated this to our delivery team. You will receive an update within 2 hours."

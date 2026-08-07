@@ -1,9 +1,11 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Headers,
   HttpCode,
   HttpStatus,
+  Ip,
   Param,
   ParseIntPipe,
   Post,
@@ -13,7 +15,6 @@ import {
 import { SkipThrottle } from "@nestjs/throttler";
 import { PaymentService } from "./payment.service";
 import { PayoutService } from "./payout.service";
-import { PayoutSchedulerService } from "./payout-scheduler.service";
 import { RefundService } from "./refund.service";
 import { ZodValidationPipe } from "../../../infrastructure/pipeline/validation.pipeline";
 import {
@@ -21,9 +22,7 @@ import {
   InitializePaymentDto,
 } from "./dto/initialize-payment.dto";
 import { initiateRefundSchema, InitiateRefundDto } from "./dto/refund.dto";
-import { AuthGuard } from "../../shared/guards/auth.guard";
-import { RolesGuard } from "../../shared/guards/roles.guard";
-import { Roles } from "../../shared/decorators/roles.decorator";
+import { PaymentKeysGuard } from "../../shared/guards/keys.guard";
 import { CurrentUser } from "../../shared/decorators/current-user.decorator";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";
 
@@ -48,14 +47,25 @@ export class PaymentController {
   webhook(
     @Body() payload: Record<string, unknown>,
     @Headers("x-paystack-signature") signature: string,
+    @Ip() ipAddress: string,
   ) {
+    // Verify IP is from Paystack whitelist
+    const PAYSTACK_IPS = ["52.31.139.75", "52.49.173.169", "52.214.14.220"];
+    if (!PAYSTACK_IPS.includes(ipAddress)) {
+      throw new BadRequestException("Invalid IP address");
+    }
+
+    // Verify signature
+    if (!this.paymentService.verifyWebhookSignature(payload, signature)) {
+      throw new BadRequestException("Invalid signature");
+    }
+
     return this.paymentService.handleWebhook(payload, signature);
   }
 
   @Post("subaccount/:agentId")
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles("admin")
+  @UseGuards(PaymentKeysGuard)
   createSubaccount(@Param("agentId", ParseIntPipe) agentId: number) {
     return this.paymentService.createSubaccount(agentId);
   }
@@ -71,16 +81,14 @@ export class PaymentController {
    */
   @Post("payout/run-weekly")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles("admin")
+  @UseGuards(PaymentKeysGuard)
   runWeeklyPayouts() {
     return this.payoutService.runWeeklyPayouts();
   }
 
   @Post("payout/:withdrawalId")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles("admin")
+  @UseGuards(PaymentKeysGuard)
   processWithdrawal(
     @Param("withdrawalId", ParseIntPipe) withdrawalId: number,
     @CurrentUser() admin: JwtPayload,
@@ -90,8 +98,7 @@ export class PaymentController {
 
   @Post("refund")
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles("admin")
+  @UseGuards(PaymentKeysGuard)
   @UsePipes(new ZodValidationPipe(initiateRefundSchema))
   initiateRefund(
     @Body() dto: InitiateRefundDto,

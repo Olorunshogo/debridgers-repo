@@ -33,11 +33,13 @@ curl -s -X GET http://localhost:4001/api/v1/agent/leaderboard \
 echo -e "\n${GREEN}3. GET MY PROFILE (Authenticated)${NC}"
 echo "Agent views their own profile"
 curl -s -X GET http://localhost:4001/api/v1/agent/profile \
-  -H "Authorization: Bearer agent_access_token_here" | jq .
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" | jq .
 
 echo -e "\n${GREEN}4. UPDATE PROFILE${NC}"
 curl -s -X PATCH http://localhost:4001/api/v1/agent/profile \
-  -H "Authorization: Bearer agent_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" \
   -H "Content-Type: application/json" \
   -d '{
     "phone": "08012345678",
@@ -46,11 +48,13 @@ curl -s -X PATCH http://localhost:4001/api/v1/agent/profile \
 
 echo -e "\n${GREEN}5. GET WALLET (Earnings)${NC}"
 curl -s -X GET http://localhost:4001/api/v1/agent/wallet \
-  -H "Authorization: Bearer agent_access_token_here" | jq .
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" | jq .
 
 echo -e "\n${GREEN}6. REQUEST WITHDRAWAL${NC}"
 curl -s -X POST http://localhost:4001/api/v1/agent/withdrawals/request \
-  -H "Authorization: Bearer agent_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" \
   -H "Content-Type: application/json" \
   -d '{
     "amount": 50000,
@@ -61,12 +65,14 @@ curl -s -X POST http://localhost:4001/api/v1/agent/withdrawals/request \
 
 echo -e "\n${GREEN}7. GET BANK LIST${NC}"
 curl -s -X GET http://localhost:4001/api/v1/agent/banks \
-  -H "Authorization: Bearer agent_access_token_here" | jq .
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" | jq .
 
 echo -e "\n${GREEN}8. RESOLVE BANK ACCOUNT${NC}"
 echo "Verify account name before saving"
 curl -s -X POST http://localhost:4001/api/v1/agent/bank/resolve \
-  -H "Authorization: Bearer agent_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" \
   -H "Content-Type: application/json" \
   -d '{
     "bank_code": "058",
@@ -75,7 +81,8 @@ curl -s -X POST http://localhost:4001/api/v1/agent/bank/resolve \
 
 echo -e "\n${GREEN}9. UPDATE BANK DETAILS${NC}"
 curl -s -X PATCH http://localhost:4001/api/v1/agent/bank-details \
-  -H "Authorization: Bearer agent_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" \
   -H "Content-Type: application/json" \
   -d '{
     "bank_code": "058",
@@ -84,12 +91,14 @@ curl -s -X PATCH http://localhost:4001/api/v1/agent/bank-details \
 
 echo -e "\n${GREEN}10. GET BANK DETAILS${NC}"
 curl -s -X GET http://localhost:4001/api/v1/agent/bank-details \
-  -H "Authorization: Bearer agent_access_token_here" | jq .
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" | jq .
 
 echo -e "\n${GREEN}11. SUBMIT KYC${NC}"
 echo "Submit Know Your Customer verification"
 curl -s -X POST http://localhost:4001/api/v1/agent/kyc/submit \
-  -H "Authorization: Bearer agent_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" \
   -H "Content-Type: application/json" \
   -d '{
     "id_type": "nin",
@@ -102,7 +111,8 @@ curl -s -X POST http://localhost:4001/api/v1/agent/kyc/submit \
 echo -e "\n${GREEN}12. REQUEST STOCK${NC}"
 echo "Agent requests stock from warehouse"
 curl -s -X POST http://localhost:4001/api/v1/agent/stock/request \
-  -H "Authorization: Bearer agent_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" \
   -H "Content-Type: application/json" \
   -d '{
     "product_id": 1,
@@ -113,7 +123,8 @@ curl -s -X POST http://localhost:4001/api/v1/agent/stock/request \
 echo -e "\n${GREEN}13. REMIT STOCK (Return unsold)${NC}"
 echo "Agent returns unsold stock"
 curl -s -X POST http://localhost:4001/api/v1/agent/stock/remit \
-  -H "Authorization: Bearer agent_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" \
   -H "Content-Type: application/json" \
   -d '{
     "product_id": 1,
@@ -123,11 +134,13 @@ curl -s -X POST http://localhost:4001/api/v1/agent/stock/remit \
 
 echo -e "\n${GREEN}14. GET STOCK HISTORY${NC}"
 curl -s -X GET http://localhost:4001/api/v1/agent/stock/history \
-  -H "Authorization: Bearer agent_access_token_here" | jq .
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" | jq .
 
 echo -e "\n${GREEN}15. SUBMIT PERFORMANCE REPORT${NC}"
 curl -s -X POST http://localhost:4001/api/v1/agent/report \
-  -H "Authorization: Bearer agent_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Request-Key: request_key_change_in_production" \
   -H "Content-Type: application/json" \
   -d '{
     "period": "2026-08",

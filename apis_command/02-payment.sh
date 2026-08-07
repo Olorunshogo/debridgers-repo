@@ -47,25 +47,33 @@ curl -s -X POST http://localhost:4001/api/v1/payment/webhook \
 
 echo -e "\n${GREEN}3. CREATE SUBACCOUNT (Admin - for agent commission routing)${NC}"
 curl -s -X POST http://localhost:4001/api/v1/payment/subaccount/5 \
-  -H "Authorization: Bearer admin_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Payment-Key: payment_key_1_change_in_production" \
+  -H "X-Payment-Key_2: payment_key_2_change_in_production" \
   -H "Content-Type: application/json" | jq .
 
 echo -e "\n${GREEN}4. RUN WEEKLY PAYOUTS (Manual trigger)${NC}"
 echo "Processes all approved withdrawals waiting for payout"
 curl -s -X POST http://localhost:4001/api/v1/payment/payout/run-weekly \
-  -H "Authorization: Bearer admin_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Payment-Key: payment_key_1_change_in_production" \
+  -H "X-Payment-Key_2: payment_key_2_change_in_production" \
   -H "Content-Type: application/json" | jq .
 
 echo -e "\n${GREEN}5. PROCESS SINGLE WITHDRAWAL${NC}"
 echo "Admin manually processes an approved withdrawal"
 curl -s -X POST http://localhost:4001/api/v1/payment/payout/3 \
-  -H "Authorization: Bearer admin_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Payment-Key: payment_key_1_change_in_production" \
+  -H "X-Payment-Key_2: payment_key_2_change_in_production" \
   -H "Content-Type: application/json" | jq .
 
 echo -e "\n${GREEN}6. INITIATE REFUND (Admin)${NC}"
 echo "Admin initiates refund for a paid order"
 curl -s -X POST http://localhost:4001/api/v1/payment/refund \
-  -H "Authorization: Bearer admin_access_token_here" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "X-Payment-Key: payment_key_1_change_in_production" \
+  -H "X-Payment-Key_2: payment_key_2_change_in_production" \
   -H "Content-Type: application/json" \
   -d '{
     "order_id": 42,

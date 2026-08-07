@@ -165,8 +165,9 @@ async function seed() {
     .where(eq(sql`lower(${schema.users.email})`, adminEmail.toLowerCase()))
     .limit(1);
 
+  const hashed = await bcrypt.hash(adminPassword, 12);
+
   if (existing.length === 0) {
-    const hashed = await bcrypt.hash(adminPassword, 12);
     await db.insert(schema.users).values({
       first_name: "Debridgers",
       last_name: "Admin",
@@ -175,9 +176,14 @@ async function seed() {
       role: "admin",
       is_email_verified: true,
     });
-    console.log(`✓ Admin seeded: ${adminEmail}`);
+    console.warn(`✓ Admin created: ${adminEmail}`);
   } else {
-    console.log(`- Admin already exists: ${adminEmail}`);
+    // Update existing admin password
+    await db
+      .update(schema.users)
+      .set({ password: hashed })
+      .where(eq(schema.users.id, existing[0].id));
+    console.warn(`✓ Admin password updated: ${adminEmail}`);
   }
 
   // === Zones
@@ -187,9 +193,9 @@ async function seed() {
 
   if (Number(zoneCount) === 0) {
     await db.insert(schema.zones).values(ZONES);
-    console.log(`✓ Zones seeded: ${ZONES.length} zones`);
+    console.warn(`✓ Zones seeded: ${ZONES.length} zones`);
   } else {
-    console.log(`- Zones already exist (${zoneCount}) — skipping`);
+    console.warn(`- Zones already exist (${zoneCount}) — skipping`);
   }
 
   // === Products
@@ -199,9 +205,9 @@ async function seed() {
 
   if (Number(productCount) === 0) {
     await db.insert(schema.products).values(PRODUCTS);
-    console.log(`✓ Products seeded: ${PRODUCTS.length} products`);
+    console.warn(`✓ Products seeded: ${PRODUCTS.length} products`);
   } else {
-    console.log(`- Products already exist (${productCount}) — skipping`);
+    console.warn(`- Products already exist (${productCount}) — skipping`);
   }
 
   await pool.end();

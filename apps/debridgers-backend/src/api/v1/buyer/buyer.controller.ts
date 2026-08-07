@@ -34,15 +34,16 @@ import { syncCartSchema } from "./dto/sync-cart.dto";
 import { initializeOrderPaymentSchema } from "./dto/initialize-order-payment.dto";
 import { quoteCartSchema } from "./dto/quote-cart.dto";
 import { AuthGuard } from "../../shared/guards/auth.guard";
-import { RolesGuard } from "../../shared/guards/roles.guard";
-import { Roles } from "../../shared/decorators/roles.decorator";
+import {
+  RequestKeyGuard,
+  BuyerPaymentKeysGuard,
+} from "../../shared/guards/keys.guard";
 import { CurrentUser } from "../../shared/decorators/current-user.decorator";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";
 
 @ApiTags("Buyer")
 @Controller("buyer")
-@UseGuards(AuthGuard, RolesGuard)
-@Roles("buyer")
+@UseGuards(AuthGuard, RequestKeyGuard)
 @ApiBearerAuth("access-token")
 export class BuyerController {
   constructor(
@@ -245,6 +246,7 @@ export class BuyerController {
   // === Checkout
 
   @Post("orders/initialize-payment")
+  @UseGuards(AuthGuard, BuyerPaymentKeysGuard)
   @ApiOperation({
     summary: "Create a pending order and start Paystack checkout",
     description:

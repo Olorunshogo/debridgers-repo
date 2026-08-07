@@ -4,11 +4,10 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  UnauthorizedException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { and, eq, isNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
 import { WebhookDeduplicationService } from "../../../infrastructure/webhook/webhook-deduplication.service";
@@ -132,14 +131,25 @@ export class PaymentService {
     return data.data;
   }
 
-  async handleWebhook(payload: Record<string, unknown>, signature: string) {
-    const crypto = await import("crypto");
+  /**
+   * Verify Paystack webhook signature
+   */
+  verifyWebhookSignature(
+    payload: Record<string, unknown>,
+    signature: string,
+  ): boolean {
+    const crypto = require("crypto");
     const hash = crypto
       .createHmac("sha512", this.secretKey)
       .update(JSON.stringify(payload))
       .digest("hex");
 
-    if (hash !== signature) {
+    return hash === signature;
+  }
+
+  async handleWebhook(payload: Record<string, unknown>, signature: string) {
+    // Signature is already verified in controller, but verify again for safety
+    if (!this.verifyWebhookSignature(payload, signature)) {
       throw new BadRequestException("Invalid webhook signature");
     }
 
