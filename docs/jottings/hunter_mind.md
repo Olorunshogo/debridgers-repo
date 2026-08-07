@@ -16,5 +16,8 @@ Apple and google pay for payment
 charge.dispute.create/resolve (handle chargebacks)
 ❌ refund.\* events (process refunds)
 ❌ Mobile Money/USSD payments (Charge API)
+
+Did you include agent leaderboard in agent md,
+and buyer leaderboard, where we know our best customer, recognises then, send all our buyers birthday wishes
 ❌ OTP/Birthday verification flows
 ❌ Apple Pay / Google Pay

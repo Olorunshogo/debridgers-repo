@@ -22,11 +22,13 @@ export async function apiFetch<T = unknown>(
   options: RequestInit = {},
 ): Promise<T> {
   const token = getAccessToken();
+  const requestKey = import.meta.env.VITE_REQUEST_KEY;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (requestKey) headers["X-Request-Key"] = requestKey;
 
   const url = `${BASE_BACKEND_URL}${path}`;
   let res = await fetch(url, { ...options, headers, credentials: "include" });

@@ -670,6 +670,208 @@ The analytics dashboard shows:
 
 - Phone numbers encrypted in database
 - Reminders use secure SMS gateway
+
+## Buyer Leaderboard & Customer Recognition
+
+### Top Buyers Leaderboard
+
+**Endpoint:**
+
+```
+GET /api/v1/public/buyers/leaderboard
+```
+
+**Returns Top Buyers by Spending:**
+
+```json
+{
+  "data": [
+    {
+      "rank": 1,
+      "buyer_id": 123,
+      "name": "Fatima Bello",
+      "location": "Kaduna North",
+      "total_spent": "₦450,500",
+      "orders": 24,
+      "avg_order": "₦18,771",
+      "since": "2025-06-10",
+      "status": "verified",
+      "badge": "💎 VIP Customer",
+      "loyalty": "12 months active"
+    },
+    {
+      "rank": 2,
+      "buyer_id": 124,
+      "name": "Chioma Okonkwo",
+      "location": "Kaduna South",
+      "total_spent": "₦380,200",
+      "orders": 18,
+      "avg_order": "₦21,122",
+      "since": "2025-07-15",
+      "status": "verified",
+      "badge": "⭐ Valued Customer",
+      "loyalty": "11 months active"
+    }
+  ]
+}
+```
+
+### Buyer Recognition Badges
+
+- **💎 VIP Customer**: Top 5 spenders, 12+ months active
+- **⭐ Valued Customer**: Top 20 spenders, 6+ months active
+- **🎁 Loyal Buyer**: 10+ orders completed
+- **🔥 Frequent Buyer**: 3+ orders this month
+
+### Admin: Buyer Analytics
+
+**Buyer Admin can view buyer metrics:**
+
+```
+GET /api/v1/admin/buyers/leaderboard?period=monthly&zone=Kaduna
+```
+
+Returns:
+
+- Top buyers by spending
+- Customer lifetime value (LTV)
+- Order frequency trends
+- Churn risk indicators
+- Re-engagement opportunities
+
+---
+
+## Birthday Wishes Campaign
+
+### Automated Birthday Recognition
+
+**System automatically sends birthday wishes to buyers on their birthday:**
+
+**Flow:**
+
+1. **Check Birthdays** - Cron job runs daily at 6 AM
+2. **Fetch Buyers** - Get list of buyers with birthday today
+3. **Send SMS/Email** - Personalized birthday message
+4. **Send Promo** - Birthday discount code (optional)
+5. **Track** - Log campaign interaction
+
+**Birthday Message Template:**
+
+```
+"🎂 Happy Birthday, Fatima! 🎉
+
+We're celebrating YOU today with a special gift:
+✨ BIRTHDAY20 - 20% off your next order
+
+Use code at checkout. Valid for 7 days.
+
+Thank you for being part of our community!
+- Debridgers Team"
+```
+
+**Birthday Discount Features:**
+
+- Automatic 15-20% discount code generation
+- Valid for 7 days from birthday
+- Can be combined with other promos (admin configurable)
+- Tracked for redemption analytics
+
+### Birthday Campaign Endpoints
+
+**Get upcoming birthdays (Admin view):**
+
+```
+GET /api/v1/admin/buyers/birthdays?month=June&limit=50
+```
+
+Returns:
+
+```json
+{
+  "data": [
+    {
+      "buyer_id": 123,
+      "name": "Fatima Bello",
+      "email": "fatima@example.com",
+      "phone": "08098765432",
+      "birthday": "1990-06-10",
+      "age": 36,
+      "total_spent": "₦450,500",
+      "status": "active",
+      "message_sent": true,
+      "sent_at": "2026-06-10T06:00:00Z"
+    }
+  ],
+  "total_birthdays_today": 5
+}
+```
+
+**Send manual birthday message:**
+
+```
+POST /api/v1/admin/buyers/:id/birthday-message
+Headers: X-Buyer-Admin-Key
+Body:
+{
+  "discount_code": "BIRTHDAY20",
+  "discount_percent": 20,
+  "message_override": "Optional custom message"
+}
+```
+
+### Birthday Campaign Analytics
+
+**Track birthday campaign performance:**
+
+```
+GET /api/v1/admin/reports/birthday-campaigns?period=monthly
+```
+
+Returns:
+
+- Total birthdays processed
+- Message delivery rate
+- Discount code redemption rate
+- Revenue generated from birthday offers
+- Email vs SMS preference
+
+**Example Report:**
+
+```json
+{
+  "total_buyers_with_birthdays": 342,
+  "messages_sent": 342,
+  "delivery_rate": "98.5%",
+  "discount_codes_generated": 342,
+  "redemptions": 187,
+  "redemption_rate": "54.7%",
+  "revenue_generated": "₦2,847,500",
+  "avg_order_value_with_discount": "₦15,224"
+}
+```
+
+### Birthday Preferences
+
+**Buyers can opt in/out of birthday campaigns:**
+
+```
+GET /api/v1/buyer/preferences
+Returns: {
+  "receive_birthday_wishes": true,
+  "birthday_date": "1990-06-10",
+  "preferred_channel": "sms" // sms, email, both
+}
+```
+
+```
+PATCH /api/v1/buyer/preferences
+Body: {
+  "receive_birthday_wishes": false
+}
+```
+
+---
+
 - Email delivery through verified provider
 - Audit log all outreach activities
 

@@ -862,6 +862,78 @@ Week 5            Week 5-6           Week 6-7       Week 7
 
 ✅ **Transparent Earnings**
 
+## Agent Leaderboard & Recognition
+
+### Public Leaderboard
+
+**Endpoint:**
+
+```
+GET /api/v1/agent/leaderboard
+```
+
+**Returns Top 20 Agents Ranked By Bags Sold:**
+
+```json
+{
+  "data": [
+    {
+      "rank": 1,
+      "agent_id": 5,
+      "name": "Amina Yusuf",
+      "location": "Kaduna North",
+      "bags_sold": 342,
+      "total_earnings": "₦102,600",
+      "commission_pending": "₦12,000",
+      "status": "approved",
+      "badge": "🏆 Top Agent",
+      "streak": "12 weeks consistent"
+    },
+    {
+      "rank": 2,
+      "agent_id": 8,
+      "name": "Ibrahim Hassan",
+      "location": "Kaduna South",
+      "bags_sold": 289,
+      "total_earnings": "₦86,700",
+      "commission_pending": "₦8,500",
+      "status": "approved",
+      "badge": "⭐ Rising Star",
+      "streak": "8 weeks trending up"
+    }
+  ],
+  "your_rank": {
+    "rank": 47,
+    "bags_sold": 89,
+    "percentile": "Top 32%"
+  }
+}
+```
+
+### Leaderboard Badges & Recognition
+
+- **🏆 Top Agent**: Rank #1-3 for 2+ consecutive months
+- **⭐ Rising Star**: 50%+ sales increase over last month
+- **💎 Consistent**: Maintained top 10 for 3+ months
+- **🔥 Hot Streak**: #1 performer this week
+
+### Admin: Agent Performance Leaderboard
+
+**Agent Admin can view detailed rankings:**
+
+```
+GET /api/v1/admin/agents/leaderboard?period=monthly&zone=Kaduna&limit=50
+```
+
+Returns:
+
+- All agents with rankings by zone
+- Performance trends & historical data
+- Commission breakdown by agent
+- Suspension/approval status
+
+---
+
 - Automatic 30% commission on all sales
 - Real-time earning tracking
 - Commission status visibility (pending/paid)
