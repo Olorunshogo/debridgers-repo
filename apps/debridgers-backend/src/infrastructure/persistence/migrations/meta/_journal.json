@@ -19,8 +19,15 @@
     {
       "idx": 2,
       "version": "7",
+      "when": 1786212321006,
+      "tag": "0002_magical_randall_flagg",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
       "when": 1786212528031,
-      "tag": "0002_famous_scalphunter",
+      "tag": "0003_famous_scalphunter",
       "breakpoints": true
     }
   ]

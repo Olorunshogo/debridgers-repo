@@ -133,33 +133,35 @@ export class PaymentService {
       throw new BadRequestException("Buyer email not found");
     }
 
-    // Create pending transaction in wallet
-    const reference = `paystack_order_${orderId}_${Date.now()}`;
-    await this.walletService.createPendingTransaction(
-      userId,
-      amount,
-      reference,
-    );
-
-    // Store payment reference in order
-    await this.db
-      .update(schema.orders)
-      .set({ payment_reference: reference })
-      .where(eq(schema.orders.id, orderId));
-
     // Call Paystack API to initialize transaction
+    // Note: Pass orderId in metadata so webhook knows this is an order payment
     const initiateResponse = await this.initializePaystackTransaction(
       buyer.email,
       amount,
-      reference,
+      undefined, // Let Paystack generate reference (we'll store what it returns)
       orderId,
+    );
+
+    const paystackReference = initiateResponse.data.reference;
+    console.error(
+      `💾 PAYSTACK INITIALIZED: order_id=${orderId}, paystack_ref=${paystackReference}, amount=${amount}`,
+    );
+
+    // Store Paystack reference on order so webhook can find it later
+    await this.db
+      .update(schema.orders)
+      .set({ payment_reference: paystackReference })
+      .where(eq(schema.orders.id, orderId));
+
+    console.error(
+      `✅ PAYMENT REFERENCE STORED ON ORDER: order_id=${orderId}, ref=${paystackReference}`,
     );
 
     return {
       order_id: orderId,
       payment_method: "paystack",
       authorization_url: initiateResponse.data.authorization_url,
-      reference: reference,
+      reference: paystackReference,
       amount_kobo: amount,
     };
   }
@@ -170,7 +172,7 @@ export class PaymentService {
   private async initializePaystackTransaction(
     email: string,
     amountKobo: number,
-    reference: string,
+    reference: string | undefined,
     orderId: number,
   ): Promise<{
     status: boolean;
@@ -186,21 +188,27 @@ export class PaymentService {
     }
 
     try {
+      const body: Record<string, unknown> = {
+        email,
+        amount: amountKobo,
+        metadata: {
+          order_id: orderId,
+          type: "order_payment",
+        },
+      };
+
+      // Only include reference if provided
+      if (reference) {
+        body.reference = reference;
+      }
+
       const response = await fetch(`${this.baseUrl}/transaction/initialize`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${this.secretKey}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          email,
-          amount: amountKobo,
-          reference,
-          metadata: {
-            order_id: orderId,
-            type: "order_payment",
-          },
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {

@@ -7,20 +7,25 @@ import {
   HttpException,
   BadRequestException,
   Headers,
+  Inject,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as crypto from "crypto";
+import { eq } from "drizzle-orm";
+import { NodePgDatabase } from "drizzle-orm/node-postgres";
+import * as schema from "../../../infrastructure/persistence/index";
+import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
 import { WalletService } from "./wallet.service";
 import { EmailService } from "../../../notification/features/email/email.service";
-import { PaymentService } from "./payment.service";
 import { OrderService } from "./order.service";
 
 @Controller("webhook")
 export class PaystackWebhookController {
   constructor(
+    @Inject(DATABASE_CONNECTION)
+    private readonly db: NodePgDatabase<typeof schema>,
     private readonly walletService: WalletService,
     private readonly emailService: EmailService,
-    private readonly paymentService: PaymentService,
     private readonly orderService: OrderService,
     private readonly config: ConfigService,
   ) {}
@@ -74,24 +79,46 @@ export class PaystackWebhookController {
       }
 
       try {
-        const isOrder = data.reference.startsWith("paystack_order_");
+        console.error(`📍 WEBHOOK PAYSTACK_REFERENCE: ${data.reference}`);
 
-        if (isOrder) {
-          // Extract order ID from reference: paystack_order_${orderId}_${timestamp}
-          const orderIdMatch = data.reference.match(/paystack_order_(\d+)_/);
-          if (orderIdMatch) {
-            const orderId = parseInt(orderIdMatch[1], 10);
+        // Look for order with matching payment_reference
+        const [order] = await this.db
+          .select()
+          .from(schema.orders)
+          .where(eq(schema.orders.payment_reference, data.reference))
+          .limit(1);
 
-            // Update order status directly
-            await this.orderService.updatePaymentStatus(orderId, "paid");
-            await this.orderService.updateOrderStatus(orderId, "confirmed");
+        if (order) {
+          console.error(
+            `✅ ORDER FOUND: id=${order.id}, payment_ref=${order.payment_reference}, status=${order.payment_status}`,
+          );
+
+          // Only update if order is still unpaid
+          if (order.payment_status !== "paid") {
+            // Update order payment and status
+            await this.orderService.updatePaymentStatus(order.id, "paid");
+            await this.orderService.updateOrderStatus(order.id, "confirmed");
 
             console.error(
-              `✓ Order #${orderId} payment confirmed via Paystack webhook`,
+              `✅ Order #${order.id} CONFIRMED: payment_status=paid, status=confirmed`,
+            );
+          } else {
+            console.error(
+              `ℹ️ Order #${order.id} already confirmed (idempotent)`,
             );
           }
+
           return { statusCode: 200, message: "Order payment confirmed" };
-        } else {
+        }
+
+        // No order found with this reference - check if it's a wallet deposit
+        console.error(
+          `⚠ No order found for reference: ${data.reference} - checking if wallet deposit...`,
+        );
+
+        // Wallet deposits don't have corresponding order records
+        // Try to confirm as wallet transaction
+        try {
           await this.walletService.confirmTransaction(data.reference);
 
           const email = data.customer?.email || "buyer@example.com";
@@ -106,11 +133,17 @@ export class PaystackWebhookController {
               console.error("Failed to send deposit confirmation email:", err);
             });
 
+          console.error(`✓ Wallet deposit confirmed for ${data.reference}`);
           return { statusCode: 200, message: "Deposit confirmed" };
+        } catch (depositErr) {
+          console.error(
+            `⚠ Not a valid order payment or wallet deposit: ${data.reference}`,
+          );
+          return { statusCode: 200, message: "Webhook processed" };
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.error(`Webhook error for reference ${data.reference}: ${msg}`);
+        console.error(`Webhook processing error for ${data.reference}: ${msg}`);
         return { statusCode: 200, message: "Webhook processed" };
       }
     }
