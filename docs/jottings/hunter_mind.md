@@ -21,3 +21,5 @@ Did you include agent leaderboard in agent md,
 and buyer leaderboard, where we know our best customer, recognises then, send all our buyers birthday wishes
 ❌ OTP/Birthday verification flows
 ❌ Apple Pay / Google Pay
+
+add sprint to /Users/iamtechhunter/Documents/workspace/Debridgers/debridgers_features_docs and timeline

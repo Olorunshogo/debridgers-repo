@@ -225,18 +225,27 @@ export class PaymentService {
         );
       } else if (eventType === "charge.dispute.create") {
         // Handle dispute/chargeback
-        const { reference, customer } = data;
+        const { reference, customer } = data as {
+          reference: string;
+          customer: unknown;
+        };
         await this.handleDispute(reference, customer);
       } else if (
         eventType === "refund.processed" ||
         eventType === "refund.succeeded"
       ) {
         // Handle refund - auto-refund wallet
-        const { transaction_id, amount } = data;
+        const { transaction_id, amount } = data as {
+          transaction_id: string;
+          amount: number;
+        };
         await this.handleRefund(transaction_id, amount);
       } else if (eventType === "charge.dispute.resolve") {
         // Dispute resolved
-        const { reference, resolution } = data;
+        const { reference, resolution } = data as {
+          reference: string;
+          resolution: string;
+        };
         await this.resolveDispute(reference, resolution);
       }
     } catch (error) {

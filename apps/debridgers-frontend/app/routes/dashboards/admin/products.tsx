@@ -97,6 +97,22 @@ const measureUnitOptions: { value: MeasureUnit; label: string }[] = [
  * list rather than read at runtime because the folder is a build asset, and the
  * alt text has to be written by a human anyway.
  */
+
+// Helper to add admin keys to API requests
+function adminApiFetch<T = unknown>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const adminKey1 = import.meta.env.VITE_ADMIN_KEY_1;
+  const adminKey2 = import.meta.env.VITE_ADMIN_KEY_2;
+  const headers = {
+    ...(options.headers as Record<string, string>),
+    "X-Admin-Key-1": adminKey1 || "",
+    "X-Admin-Key-2": adminKey2 || "",
+  };
+  return apiFetch<T>(path, { ...options, headers });
+}
+
 const bundledImages: BundledImage[] = [
   { file: "maize-1.jpg", alt: "Dried yellow maize grains in a heap" },
   { file: "maize-3.jpg", alt: "Fresh maize cobs with husks pulled back" },
@@ -140,8 +156,8 @@ export default function AdminProductsPage() {
     setLoading(true);
     try {
       const [rows, leaves] = await Promise.all([
-        apiFetch<Product[]>("/admin/products"),
-        apiFetch<CategoryLeaf[]>("/admin/categories/leaves"),
+        adminApiFetch<Product[]>("/admin/products"),
+        adminApiFetch<CategoryLeaf[]>("/admin/categories/leaves"),
       ]);
       setProducts(rows);
       setCategoryLeaves(leaves);
@@ -236,7 +252,7 @@ export default function AdminProductsPage() {
     setError(null);
     try {
       if (editingId !== null) {
-        await apiFetch(`/admin/products/${editingId}`, {
+        await adminApiFetch(`/admin/products/${editingId}`, {
           method: "PATCH",
           body: JSON.stringify({
             name: form.name.trim(),
@@ -250,7 +266,7 @@ export default function AdminProductsPage() {
           }),
         });
       } else {
-        await apiFetch("/admin/products", {
+        await adminApiFetch("/admin/products", {
           method: "POST",
           body: JSON.stringify({
             name: form.name.trim(),
@@ -280,7 +296,7 @@ export default function AdminProductsPage() {
   async function handleToggleActive(p: Product) {
     setActionError(null);
     try {
-      await apiFetch(`/admin/products/${p.id}`, {
+      await adminApiFetch(`/admin/products/${p.id}`, {
         method: "PATCH",
         body: JSON.stringify({ is_active: !p.is_active }),
       });
@@ -302,7 +318,7 @@ export default function AdminProductsPage() {
     setDeletingId(id);
     setActionError(null);
     try {
-      await apiFetch(`/admin/products/${id}`, { method: "DELETE" });
+      await adminApiFetch(`/admin/products/${id}`, { method: "DELETE" });
       setProducts((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
       setActionError(

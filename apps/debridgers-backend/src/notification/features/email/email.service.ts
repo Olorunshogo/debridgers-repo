@@ -618,4 +618,111 @@ export class EmailService {
       html,
     });
   }
+
+  async sendDepositConfirmation(
+    to: string,
+    name: string,
+    amount: string,
+    reference: string,
+  ): Promise<void> {
+    const html = layout({
+      headerBg: BRAND_GREEN,
+      outerBg: "#f6f9f7",
+      title: "Deposit Confirmed - Debridgers",
+      preheader: `Your wallet deposit of ${amount} has been confirmed.`,
+      body: `
+        <tr>
+          <td style="padding:32px 32px 8px 32px;">
+            <h2 style="margin:0 0 12px 0;font-size:22px;font-weight:700;color:#111827;">Deposit confirmed! 🎉</h2>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              Hi ${name}, your wallet deposit has been successfully processed.
+            </p>
+          </td>
+        </tr>
+        ${infoBox(
+          `<strong>Amount:</strong> ${amount}<br/><strong>Reference:</strong> ${reference}<br/><strong>Status:</strong> Completed`,
+          BRAND_GREEN,
+          "#ecfdf5",
+          "#065f46",
+        )}
+        <tr>
+          <td style="padding:24px 32px 8px 32px;">
+            <p style="margin:0 0 12px 0;font-size:15px;line-height:1.7;color:#374151;">
+              Your funds are now available in your wallet. You can use them to place orders or continue shopping.
+            </p>
+            ${button("Go to wallet", `${process.env.APP_URL}/buyer-dashboard/wallet`, BRAND_GREEN)}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 32px 28px 32px;">
+            <p style="margin:0;font-size:14px;line-height:1.7;color:#6b7280;">
+              Thank you for shopping with us,<br/>
+              <strong>The Debridgers Team</strong>
+            </p>
+          </td>
+        </tr>
+      `,
+    });
+
+    await this.core.send({
+      to,
+      toName: name,
+      subject: `Deposit Confirmed - ${amount} added to your wallet`,
+      html,
+    });
+  }
+
+  async sendOrderConfirmation(
+    to: string,
+    name: string,
+    orderId: string,
+    amount: string,
+    itemCount: number,
+  ): Promise<void> {
+    const html = layout({
+      headerBg: BRAND_GREEN,
+      outerBg: "#f6f9f7",
+      title: "Order Confirmed - Debridgers",
+      preheader: `Your order #${orderId} has been confirmed.`,
+      body: `
+        <tr>
+          <td style="padding:32px 32px 8px 32px;">
+            <h2 style="margin:0 0 12px 0;font-size:22px;font-weight:700;color:#111827;">Order confirmed! ✓</h2>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              Hi ${name}, your order has been successfully placed and is being processed.
+            </p>
+          </td>
+        </tr>
+        ${infoBox(
+          `<strong>Order ID:</strong> #${orderId}<br/><strong>Items:</strong> ${itemCount} pack${itemCount !== 1 ? "s" : ""}<br/><strong>Total:</strong> ${amount}`,
+          BRAND_GREEN,
+          "#ecfdf5",
+          "#065f46",
+        )}
+        <tr>
+          <td style="padding:24px 32px 8px 32px;">
+            <p style="margin:0 0 12px 0;font-size:15px;line-height:1.7;color:#374151;">
+              We're preparing your order for delivery. You'll receive an update once it's on the way. Track your order anytime from your dashboard.
+            </p>
+            ${button("Track your order", `${process.env.APP_URL}/buyer-dashboard/orders`, BRAND_GREEN)}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 32px 28px 32px;">
+            <p style="margin:0;font-size:14px;line-height:1.7;color:#6b7280;">
+              Questions? Contact us at <a href="mailto:support@debridgers.com" style="color:#1E5925;text-decoration:none;">support@debridgers.com</a><br/>
+              <strong>The Debridgers Team</strong>
+            </p>
+          </td>
+        </tr>
+      `,
+    });
+
+    await this.core.send({
+      to,
+      toName: name,
+      subject: `Order Confirmed - ${orderId} - ${amount}`,
+      html,
+    });
+  }
 }

@@ -16,7 +16,7 @@ export function meta() {
   ];
 }
 
-type TransactionType = "credit" | "debit";
+type TransactionType = "deposit" | "refund";
 
 interface Transaction {
   id: string;
@@ -27,37 +27,42 @@ interface Transaction {
 }
 
 interface WalletData {
-  balance: number;
-  totalSpent: number;
-  totalFunded: number;
+  availableBalance: number;
+  pendingBalance: number;
+  totalDeposited: number;
   transactions: Transaction[];
 }
 
-interface ApiOrder {
-  id: number;
-  status: string;
-  total_amount: number;
-  quantity: number;
-  created_at: string;
-}
-
-interface ApiDashStats {
-  stats: {
-    total_spent_kobo: number;
-    total_orders: number;
+interface ApiWalletResponse {
+  wallet: {
+    id: number;
+    available_balance: number;
+    pending_balance: number;
+    total_deposited: number;
+  };
+  transactions: Array<{
+    id: number;
+    type: string;
+    amount: number;
+    status: string;
+    reference?: string;
+    description: string;
+    created_at: string;
+  }>;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
   };
 }
 
-function buildWalletData(stats: ApiDashStats, orders: ApiOrder[]): WalletData {
-  const totalSpentKobo = stats.stats.total_spent_kobo;
-  const totalSpentNaira = Math.round(totalSpentKobo / 100);
-
-  const transactions: Transaction[] = orders.map((o) => ({
-    id: String(o.id),
-    description: `Order #DBR-${String(o.id).padStart(4, "0")}: ${o.quantity} pack${o.quantity !== 1 ? "s" : ""}`,
-    amount: Math.round(o.total_amount / 100),
-    type: "debit" as const,
-    date: new Date(o.created_at).toLocaleDateString("en-NG", {
+function buildWalletData(api: ApiWalletResponse): WalletData {
+  const transactions: Transaction[] = api.transactions.map((tx) => ({
+    id: String(tx.id),
+    description: tx.description,
+    amount: Math.round(tx.amount / 100),
+    type: (tx.type as TransactionType) || "deposit",
+    date: new Date(tx.created_at).toLocaleDateString("en-NG", {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -65,9 +70,9 @@ function buildWalletData(stats: ApiDashStats, orders: ApiOrder[]): WalletData {
   }));
 
   return {
-    balance: 0,
-    totalSpent: totalSpentNaira,
-    totalFunded: 0,
+    availableBalance: Math.round(api.wallet.available_balance / 100),
+    pendingBalance: Math.round(api.wallet.pending_balance / 100),
+    totalDeposited: Math.round(api.wallet.total_deposited / 100),
     transactions,
   };
 }
@@ -85,26 +90,44 @@ export default function BuyerWallet() {
   const [funded, setFunded] = useState<boolean>(false);
 
   useEffect(() => {
-    Promise.all([
-      apiFetch<ApiDashStats>("/buyer/dashboard"),
-      apiFetch<ApiOrder[]>("/buyer/orders"),
-    ])
-      .then(([stats, orders]) => setData(buildWalletData(stats, orders)))
+    apiFetch<ApiWalletResponse>("/buyer/wallet")
+      .then((walletData) => setData(buildWalletData(walletData)))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
-  async function handleFund(e: React.FormEvent) {
+  async function handleFund(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setFunding(true);
-    await new Promise<void>((r) => setTimeout(r, 900));
-    setFunding(false);
-    setFunded(true);
-    setFundAmount("");
-    setTimeout(() => {
-      setFunded(false);
-      setShowFundModal(false);
-    }, 2000);
+
+    try {
+      const amountNaira = parseInt(fundAmount, 10);
+      if (isNaN(amountNaira) || amountNaira < 100) {
+        alert("Minimum amount is ₦100");
+        setFunding(false);
+        return;
+      }
+
+      const amountKobo = amountNaira * 100;
+      const response = await apiFetch<{
+        authorization_url: string;
+        reference: string;
+      }>("/buyer/wallet/deposit", {
+        method: "POST",
+        body: JSON.stringify({ amount_kobo: amountKobo }),
+      });
+
+      if (response?.authorization_url) {
+        window.location.href = response.authorization_url;
+      } else {
+        alert("Failed to initiate payment. Please try again.");
+        setFunding(false);
+      }
+    } catch (err) {
+      console.error("Deposit error:", err);
+      alert("Error initiating deposit. Please try again.");
+      setFunding(false);
+    }
   }
 
   if (loading || !data) {
@@ -126,36 +149,33 @@ export default function BuyerWallet() {
       >
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-col gap-1">
-            <p className="text-sm text-white/60">
-              Total Spent (delivered orders)
-            </p>
+            <p className="text-sm text-white/60">Available Balance</p>
             <p className="font-syne text-4xl font-extrabold text-white">
-              {fmt(data.totalSpent)}
+              {fmt(data.availableBalance)}
             </p>
           </div>
           <div className="flex gap-3">
             <div className="flex min-w-32.5 flex-col gap-1 rounded-xl border border-white/20 bg-white/10 p-4">
-              <p className="text-xs text-white/60">Total Orders</p>
+              <p className="text-xs text-white/60">Pending Balance</p>
               <p className="font-syne text-lg font-bold text-white">
-                {data.transactions.length}
+                {fmt(data.pendingBalance)}
               </p>
             </div>
             <div className="flex min-w-32.5 flex-col gap-1 rounded-xl border border-white/20 bg-white/10 p-4">
-              <p className="text-xs text-white/60">Wallet Top-up</p>
-              <p className="font-syne text-base font-bold text-white/60">
-                Coming soon
+              <p className="text-xs text-white/60">Total Deposited</p>
+              <p className="font-syne text-base font-bold text-white">
+                {fmt(data.totalDeposited)}
               </p>
             </div>
           </div>
         </div>
         <div className="mt-6">
           <button
-            disabled
-            className="bg-secondary text-heading inline-flex cursor-not-allowed items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold opacity-50"
-            title="Wallet top-up coming soon"
+            onClick={() => setShowFundModal(true)}
+            className="bg-secondary text-heading inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-opacity hover:opacity-90"
           >
             <Plus size={16} />
-            Add Funds (coming soon)
+            Add Funds
           </button>
         </div>
         <div className="pointer-events-none absolute -top-12 -right-12 h-40 w-40 rounded-full border-2 border-white/10" />
@@ -183,12 +203,12 @@ export default function BuyerWallet() {
               <div className="flex items-center gap-3">
                 <span
                   className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                    tx.type === "credit"
+                    tx.type === "deposit"
                       ? "bg-status-delivered-bg"
                       : "bg-status-cancelled-bg"
                   }`}
                 >
-                  {tx.type === "credit" ? (
+                  {tx.type === "deposit" ? (
                     <ArrowDownLeft
                       size={16}
                       className="text-status-delivered-text"
@@ -209,12 +229,12 @@ export default function BuyerWallet() {
               </div>
               <p
                 className={`font-syne font-semibold ${
-                  tx.type === "credit"
+                  tx.type === "deposit"
                     ? "text-status-delivered-text"
                     : "text-status-cancelled-text"
                 }`}
               >
-                {tx.type === "credit" ? "+" : "-"}
+                {tx.type === "deposit" ? "+" : "-"}
                 {fmt(tx.amount)}
               </p>
             </motion.div>

@@ -206,6 +206,19 @@ export class WalletService {
   }
 
   /**
+   * Update transaction with Paystack reference
+   */
+  async updateTransactionReference(
+    transactionId: number,
+    paystackReference: string,
+  ) {
+    await this.db
+      .update(schema.walletTransactions)
+      .set({ reference: paystackReference })
+      .where(eq(schema.walletTransactions.id, transactionId));
+  }
+
+  /**
    * Validate amount
    */
   validateAmount(amount: number) {

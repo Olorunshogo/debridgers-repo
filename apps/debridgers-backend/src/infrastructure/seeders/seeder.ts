@@ -145,12 +145,16 @@ const PRODUCTS = [
 async function seed() {
   const url = process.env.DATABASE_URL;
 
+  if (!url) {
+    throw new Error("DATABASE_URL environment variable not set");
+  }
+
   // SSL is required for hosted providers (Neon, Supabase, etc.) but not for local Docker
-  const isLocal = url?.includes("localhost") || url?.includes("127.0.0.1");
+  const isLocal = url.includes("localhost") || url.includes("127.0.0.1");
 
   const pool = new Pool({
     connectionString: url,
-    ssl: isLocal ? false : { rejectUnauthorized: false },
+    ssl: isLocal ? false : true,
   });
 
   const db = drizzle(pool, { schema });

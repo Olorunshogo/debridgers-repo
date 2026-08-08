@@ -866,8 +866,14 @@ export class AdminController {
 
   @Get("products")
   @ApiOperation({ summary: "List all products (including inactive)" })
-  listProducts() {
-    return this.adminService.listProducts();
+  async listProducts() {
+    try {
+      return await this.adminService.listProducts();
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error("❌ ADMIN PRODUCTS ERROR:", msg);
+      throw error;
+    }
   }
 
   @Patch("products/:id")

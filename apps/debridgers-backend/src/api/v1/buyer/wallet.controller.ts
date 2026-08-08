@@ -8,39 +8,48 @@ import {
   Post,
   Query,
   UseGuards,
-  UsePipes,
 } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
+import { IsNumber, IsPositive, IsString, MinLength } from "class-validator";
 import { WalletService } from "./wallet.service";
 import { BuyerRateLimitService } from "./buyer-rate-limit.service";
+import { EmailService } from "../../../notification/features/email/email.service";
 import { AuthGuard } from "../../shared/guards/auth.guard";
 import { RequestKeyGuard } from "../../shared/guards/keys.guard";
 import { CurrentUser } from "../../shared/decorators/current-user.decorator";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";
-import { ZodValidationPipe } from "../../../infrastructure/pipeline/validation.pipeline";
-import { z } from "zod";
 
-const depositSchema = z.object({
-  amount_kobo: z.number().int().positive(),
-});
+class DepositDto {
+  @IsNumber()
+  @IsPositive()
+  amount_kobo!: number;
+}
 
-type DepositDto = z.infer<typeof depositSchema>;
-
-const confirmDepositSchema = z.object({
-  reference: z.string().min(1),
-});
-
-type ConfirmDepositDto = z.infer<typeof confirmDepositSchema>;
+class ConfirmDepositDto {
+  @IsString()
+  @MinLength(1)
+  reference!: string;
+}
 
 @ApiTags("Buyer - Wallet")
 @Controller("buyer/wallet")
 @UseGuards(AuthGuard, RequestKeyGuard)
 @ApiBearerAuth("access-token")
 export class WalletController {
+  private readonly baseUrl: string;
+  private readonly secretKey: string;
+
   constructor(
     private readonly walletService: WalletService,
     private readonly rateLimitService: BuyerRateLimitService,
-  ) {}
+    private readonly config: ConfigService,
+    private readonly emailService: EmailService,
+  ) {
+    this.baseUrl =
+      this.config.get<string>("PAYSTACK_URL") ?? "https://api.paystack.co";
+    this.secretKey = this.config.get<string>("PAYSTACK_SECRET_KEY") ?? "";
+  }
 
   @Get()
   @HttpCode(HttpStatus.OK)
@@ -68,7 +77,6 @@ export class WalletController {
 
   @Post("deposit")
   @HttpCode(HttpStatus.CREATED)
-  @UsePipes(new ZodValidationPipe(depositSchema))
   @ApiOperation({ summary: "Initiate Paystack deposit to wallet" })
   async initiateDeposit(
     @CurrentUser() user: JwtPayload,
@@ -92,6 +100,14 @@ export class WalletController {
     // Validate amount
     this.walletService.validateAmount(dto.amount_kobo);
 
+    // Get buyer email from JWT
+    if (!user.email) {
+      throw new HttpException(
+        { statusCode: 400, message: "User email not found in token" },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     // Create pending transaction
     const transaction = await this.walletService.createPendingTransaction(
       user.sub,
@@ -99,9 +115,48 @@ export class WalletController {
       `deposit_${user.sub}_${Date.now()}`,
     );
 
-    // TODO: Call Paystack API to generate checkout URL
-    // For now, return mock response
-    const payStackUrl = `https://checkout.paystack.com/...`;
+    // Call Paystack API to generate checkout URL
+    const paystackResponse = await fetch(
+      `${this.baseUrl}/transaction/initialize`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.secretKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: user.email,
+          amount: dto.amount_kobo,
+          metadata: {
+            type: "wallet_deposit",
+            user_id: user.sub,
+            transaction_id: transaction.id,
+          },
+        }),
+      },
+    );
+
+    const paystackData = (await paystackResponse.json()) as {
+      status: boolean;
+      data?: { authorization_url: string; reference: string };
+      message?: string;
+    };
+
+    if (!paystackData.status || !paystackData.data) {
+      throw new HttpException(
+        {
+          statusCode: 400,
+          message: `Paystack error: ${paystackData.message || "Failed to initialize payment"}`,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Update transaction with Paystack reference
+    await this.walletService.updateTransactionReference(
+      transaction.id,
+      paystackData.data.reference,
+    );
 
     return {
       statusCode: 201,
@@ -109,8 +164,8 @@ export class WalletController {
       data: {
         transaction_id: transaction.id,
         amount_kobo: dto.amount_kobo,
-        authorization_url: payStackUrl,
-        reference: transaction.reference,
+        authorization_url: paystackData.data.authorization_url,
+        reference: paystackData.data.reference,
       },
       rateLimit: {
         remaining: depositRateLimit.remaining,
@@ -122,7 +177,6 @@ export class WalletController {
 
   @Post("deposit/confirm")
   @HttpCode(HttpStatus.OK)
-  @UsePipes(new ZodValidationPipe(confirmDepositSchema))
   @ApiOperation({ summary: "Confirm Paystack deposit via webhook" })
   async confirmDeposit(@Body() dto: ConfirmDepositDto) {
     // TODO: Verify Paystack signature
@@ -132,7 +186,28 @@ export class WalletController {
       dto.reference,
     );
 
+    // Get wallet by transaction's wallet_id
     const wallet = await this.walletService.getOrCreateWallet(1); // TODO: Get from transaction
+
+    // Send deposit confirmation email (fire-and-forget)
+    try {
+      // In a real scenario, we'd get user info from the transaction metadata
+      // For now, we'd need to query the database to get user name/email
+      // This is a limitation that should be addressed in the full implementation
+      this.emailService
+        .sendDepositConfirmation(
+          "buyer@example.com", // TODO: Get from transaction user
+          "Buyer",
+          `₦${Math.round(transaction.amount / 100)}`,
+          dto.reference,
+        )
+        .catch((err) => {
+          console.error("Failed to send deposit confirmation email:", err);
+          // Don't fail the API if email fails
+        });
+    } catch (err) {
+      console.error("Error sending deposit email:", err);
+    }
 
     return {
       statusCode: 200,

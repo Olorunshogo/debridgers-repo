@@ -16,6 +16,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { OrderService, CreateOrderDto } from "./order.service";
 import { PaymentService } from "./payment.service";
 import { BuyerRateLimitService } from "./buyer-rate-limit.service";
+import { EmailService } from "../../../notification/features/email/email.service";
 import { AuthGuard } from "../../shared/guards/auth.guard";
 import {
   RequestKeyGuard,
@@ -69,6 +70,7 @@ export class OrderController {
     private readonly orderService: OrderService,
     private readonly paymentService: PaymentService,
     private readonly rateLimitService: BuyerRateLimitService,
+    private readonly emailService: EmailService,
   ) {}
 
   @Post()
@@ -95,6 +97,26 @@ export class OrderController {
     }
 
     const order = await this.orderService.createOrder(user.sub, dto);
+
+    // Send order confirmation email (fire-and-forget)
+    try {
+      // TODO: Get user name and email from JWT or database
+      const amount = `₦${Math.round(order.order.total_kobo / 100)}`;
+      this.emailService
+        .sendOrderConfirmation(
+          user.email || "buyer@example.com",
+          user.first_name || "Buyer",
+          `#DBR-${String(order.order.id).padStart(4, "0")}`,
+          amount,
+          order.order.items.length,
+        )
+        .catch((err) => {
+          console.error("Failed to send order confirmation email:", err);
+          // Don't fail the API if email fails
+        });
+    } catch (err) {
+      console.error("Error sending order email:", err);
+    }
 
     return {
       statusCode: 201,

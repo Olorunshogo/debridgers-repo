@@ -912,35 +912,7 @@ export class AdminService {
   }
 
   async listProducts() {
-    /*
-     * Joins the taxonomy so the admin list can show the full path
-     * ("Grains > Rice > Ofada") rather than just the leaf name, which is
-     * ambiguous on its own: "White" is both a garri and a bean.
-     */
-    const rows = await this.db
-      .select({
-        id: schema.products.id,
-        name: schema.products.name,
-        unit: schema.products.unit,
-        price_kobo: schema.products.price_kobo,
-        category: schema.products.category,
-        category_id: schema.products.category_id,
-        category_name: schema.product_categories.name,
-        measure_value: schema.products.measure_value,
-        measure_unit: schema.products.measure_unit,
-        description: schema.products.description,
-        image_url: schema.products.image_url,
-        is_active: schema.products.is_active,
-        sort_order: schema.products.sort_order,
-        created_at: schema.products.created_at,
-      })
-      .from(schema.products)
-      .leftJoin(
-        schema.product_categories,
-        eq(schema.product_categories.id, schema.products.category_id),
-      )
-      .orderBy(schema.products.sort_order, schema.products.name);
-
+    const rows = await this.db.select().from(schema.products);
     return { message: "Products retrieved", data: rows };
   }
 
