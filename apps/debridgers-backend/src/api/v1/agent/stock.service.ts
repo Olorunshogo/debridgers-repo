@@ -26,26 +26,26 @@ export class StockService {
   async getProducts() {
     const rows = await this.db
       .select({
-        id: schema.products.id,
-        name: schema.products.name,
-        unit: schema.products.unit,
-        price_kobo: schema.products.price_kobo,
-        category: schema.products.category,
-        category_id: schema.products.category_id,
+        id: schema.productsTable.id,
+        name: schema.productsTable.name,
+        unit: schema.productsTable.unit,
+        price_kobo: schema.productsTable.price_kobo,
+        category: schema.productsTable.category,
+        category_id: schema.productsTable.category_id,
         category_name: schema.product_categories.name,
-        measure_value: schema.products.measure_value,
-        measure_unit: schema.products.measure_unit,
-        description: schema.products.description,
-        image_url: schema.products.image_url,
-        sort_order: schema.products.sort_order,
+        measure_value: schema.productsTable.measure_value,
+        measure_unit: schema.productsTable.measure_unit,
+        description: schema.productsTable.description,
+        image_url: schema.productsTable.image_url,
+        sort_order: schema.productsTable.sort_order,
       })
-      .from(schema.products)
+      .from(schema.productsTable)
       .leftJoin(
         schema.product_categories,
-        eq(schema.product_categories.id, schema.products.category_id),
+        eq(schema.product_categories.id, schema.productsTable.category_id),
       )
-      .where(eq(schema.products.is_active, true))
-      .orderBy(schema.products.sort_order, schema.products.name);
+      .where(eq(schema.productsTable.is_active, true))
+      .orderBy(schema.productsTable.sort_order, schema.productsTable.name);
 
     return { message: "Products retrieved", data: rows };
   }
@@ -73,11 +73,11 @@ export class StockService {
 
     const [product] = await this.db
       .select()
-      .from(schema.products)
+      .from(schema.productsTable)
       .where(
         and(
-          eq(schema.products.id, dto.product_id),
-          eq(schema.products.is_active, true),
+          eq(schema.productsTable.id, dto.product_id),
+          eq(schema.productsTable.is_active, true),
         ),
       )
       .limit(1);

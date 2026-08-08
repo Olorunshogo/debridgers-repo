@@ -388,7 +388,7 @@ export default function PublicShop() {
 
   // Load products from public endpoint (no auth required)
   useEffect(() => {
-    fetch(`${BASE_BACKEND_URL}/products`)
+    fetch(`${BASE_BACKEND_URL}/api/v1/products`)
       .then((r) => r.json())
       .then((json) => {
         const rows: ApiProduct[] = (json.data ?? json) as ApiProduct[];

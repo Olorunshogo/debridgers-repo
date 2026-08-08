@@ -1,21 +1,30 @@
-const { Pool } = require("pg");
-const { drizzle } = require("drizzle-orm/node-postgres");
+const { Client } = require("pg");
 require("dotenv").config();
 
-async function test() {
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: true,
-  });
-  try {
-    // Test basic connection
-    const result = await pool.query("SELECT COUNT(*) as count FROM products");
-    console.log("Direct query success:", result.rows[0]);
-  } catch (err) {
-    console.error("Direct query failed:", err.message);
-  }
+const client = new Client({
+  connectionString: process.env.DATABASE_URL,
+});
 
-  await pool.end();
+async function test() {
+  try {
+    console.log("Connecting to database...");
+    await client.connect();
+    console.log("✓ Connected successfully");
+
+    const result = await client.query(`
+      SELECT table_name FROM information_schema.tables 
+      WHERE table_schema = 'public'
+    `);
+    console.log(
+      "Tables in database:",
+      result.rows.map((r) => r.table_name),
+    );
+
+    await client.end();
+  } catch (err) {
+    console.error("✗ Error:", err.message);
+    process.exit(1);
+  }
 }
 
 test();

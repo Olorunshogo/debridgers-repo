@@ -297,4 +297,68 @@ export class OrderController {
       data: result,
     };
   }
+
+  @Post("initialize-payment")
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(AuthGuard, BuyerPaymentKeysGuard)
+  @UsePipes(new ZodValidationPipe(createOrderSchema))
+  @ApiOperation({ summary: "Create order and initialize Paystack payment" })
+  async initializePayment(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: CreateOrderDto,
+  ) {
+    // Check rate limit
+    const rateLimitCheck = await this.rateLimitService.checkOrderLimit(
+      user.sub,
+    );
+    if (!rateLimitCheck.allowed) {
+      throw new HttpException(
+        {
+          statusCode: 429,
+          message: `Too many orders. Try again in ${rateLimitCheck.resetIn} seconds`,
+          data: { remaining: 0, resetIn: rateLimitCheck.resetIn },
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    // Create order
+    const order = await this.orderService.createOrder(user.sub, dto);
+
+    // Initialize Paystack payment
+    const payment = await this.paymentService.initiatePaystackPayment(
+      user.sub,
+      order.order.id,
+      order.order.total_kobo,
+    );
+
+    // Send order confirmation email
+    try {
+      const amount = `₦${Math.round(order.order.total_kobo / 100)}`;
+      this.emailService
+        .sendOrderConfirmation(
+          user.email || "buyer@example.com",
+          user.first_name || "Buyer",
+          `#DBR-${String(order.order.id).padStart(4, "0")}`,
+          amount,
+          order.order.items.length,
+        )
+        .catch((err) => {
+          console.error("Failed to send order confirmation email:", err);
+        });
+    } catch (err) {
+      console.error("Error sending order email:", err);
+    }
+
+    return {
+      statusCode: 201,
+      message: "Order created and payment initialized",
+      data: {
+        order_id: order.order.id,
+        authorization_url: payment.authorization_url,
+        reference: payment.reference,
+        amount_kobo: order.order.total_kobo,
+      },
+    };
+  }
 }

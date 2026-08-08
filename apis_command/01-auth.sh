@@ -9,7 +9,6 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}=== AUTH ENDPOINTS ===${NC}\n"
 
-# Done
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. REGISTER (Buyer)
 echo -e "${GREEN}1. REGISTER BUYER${NC}"
@@ -18,18 +17,17 @@ curl -k -X POST http://localhost:4001/api/v1/auth/register \
   -d '{
     "first_name": "Fatima",
     "last_name": "Bello",
-    "email": "nebos12349@netiren.com",
+    "email": "fatima@example.com",
     "phone": "08098765432",
     "password": "SecurePass@123",
     "role": "buyer"
   }' | jq .
 
-# Done
 echo -e "\n${GREEN}2. LOGIN (Buyer)${NC}"
 curl -s -X POST http://localhost:4001/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-     "email": "nebos12349@netiren.com",
+    "email": "fatima@example.com",
     "password": "SecurePass@123"
   }' | jq .
 
@@ -41,29 +39,27 @@ curl -s -X POST http://localhost:4001/api/v1/auth/admin/login \
     "password": "Admin@2026!"
   }' | jq .
 
-# Done
 echo -e "\n${GREEN}4. VERIFY EMAIL (using OTP)${NC}"
 curl -s -X POST http://localhost:4001/api/v1/auth/verify-email \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "nebos12349@netiren.com",
-    "otp": "486554"
+    "email": "fatima@example.com",
+    "otp": "240378"
   }' | jq .
 
 echo -e "\n${GREEN}5. RESEND OTP${NC}"
 curl -s -X POST http://localhost:4001/api/v1/auth/resend-otp \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "nebos12349@netiren.com",
+    "email": "fatima@example.com"
   }' | jq .
 
 echo -e "\n${GREEN}6. FORGOT PASSWORD${NC}"
 curl -s -X POST http://localhost:4001/api/v1/auth/forgot-password \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "nebos12349@netiren.com",
+    "email": "fatima@example.com"
   }' | jq .
-
 
 echo -e "\n${GREEN}7. RESET PASSWORD (using token from email)${NC}"
 curl -s -X POST http://localhost:4001/api/v1/auth/reset-password \

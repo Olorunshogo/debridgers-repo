@@ -1,7 +1,7 @@
 import { pgTable, serial, integer, index } from "drizzle-orm/pg-core";
 import { timestamps } from "../../helper/column.helper";
 import { orders } from "./orders.schema";
-import { products } from "./products.schema";
+import { productsTable } from "./product.schema";
 import { createInsertSchema } from "drizzle-zod";
 
 /*
@@ -28,7 +28,7 @@ export const order_items = pgTable(
      */
     product_id: integer()
       .notNull()
-      .references(() => products.id, { onDelete: "restrict" }),
+      .references(() => productsTable.id, { onDelete: "restrict" }),
     quantity: integer().notNull(),
     unit_price_kobo: integer().notNull(),
     ...timestamps,

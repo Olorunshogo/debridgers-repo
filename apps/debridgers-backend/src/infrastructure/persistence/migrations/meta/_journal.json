@@ -1,145 +1,26 @@
 {
-  "version": "7",
+  "version": "5",
   "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
       "version": "7",
-      "when": 1775125328857,
-      "tag": "0000_outgoing_morlocks",
+      "when": 1786202813826,
+      "tag": "0000_eager_morlocks",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1775483850569,
-      "tag": "0001_same_kree",
+      "when": 1786203819741,
+      "tag": "0001_clear_silvermane",
       "breakpoints": true
     },
     {
       "idx": 2,
       "version": "7",
-      "when": 1775551528588,
-      "tag": "0002_simple_elektra",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1780567878531,
-      "tag": "0003_lonely_penance",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1780569239529,
-      "tag": "0004_lame_johnny_blaze",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1780575379931,
-      "tag": "0005_wonderful_the_hood",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1781095930023,
-      "tag": "0006_curious_triathlon",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1781200000000,
-      "tag": "0007_email_notifications",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1785003666446,
-      "tag": "0008_fair_eternity",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1785023659387,
-      "tag": "0009_melodic_ironclad",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1785024161111,
-      "tag": "0010_daily_namorita",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1785024632904,
-      "tag": "0011_light_corsair",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "7",
-      "when": 1785025196444,
-      "tag": "0012_mixed_whiplash",
-      "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "7",
-      "when": 1785138804458,
-      "tag": "0013_broken_quicksilver",
-      "breakpoints": true
-    },
-    {
-      "idx": 14,
-      "version": "7",
-      "when": 1785141100501,
-      "tag": "0014_flat_payback",
-      "breakpoints": true
-    },
-    {
-      "idx": 15,
-      "version": "7",
-      "when": 1785141160501,
-      "tag": "0015_product_taxonomy",
-      "breakpoints": true
-    },
-    {
-      "idx": 16,
-      "version": "7",
-      "when": 1785141220501,
-      "tag": "0016_product_variety_backfill",
-      "breakpoints": true
-    },
-    {
-      "idx": 17,
-      "version": "7",
-      "when": 1785915700194,
-      "tag": "0018_boring_azazel",
-      "breakpoints": true
-    },
-    {
-      "idx": 18,
-      "version": "7",
-      "when": 1786123683568,
-      "tag": "0019_famous_star_brand",
-      "breakpoints": true
-    },
-    {
-      "idx": 19,
-      "version": "7",
-      "when": 1786208292866,
-      "tag": "0019_workable_gravity",
+      "when": 1786212528031,
+      "tag": "0002_famous_scalphunter",
       "breakpoints": true
     }
   ]
