@@ -136,8 +136,8 @@ export class PaymentService {
     // Create our reference
     const ourReference = `paystack_order_${orderId}_${Date.now()}`;
 
-    // Create pending transaction in wallet
-    await this.walletService.createPendingTransaction(
+    // Create pending transaction in wallet and capture transaction ID
+    const walletTransaction = await this.walletService.createPendingTransaction(
       userId,
       amount,
       ourReference,
@@ -152,6 +152,18 @@ export class PaymentService {
     );
 
     const paystackReference = initiateResponse.data.reference;
+
+    // Update wallet transaction with Paystack reference if different from ourReference
+    // This ensures webhook can confirm transaction using the Paystack reference
+    if (paystackReference !== ourReference && walletTransaction?.id) {
+      console.error(
+        `🔄 UPDATING WALLET TX: ${ourReference} → ${paystackReference}`,
+      );
+      await this.walletService.updateTransactionReference(
+        walletTransaction.id,
+        paystackReference,
+      );
+    }
 
     // Create payment record to bridge our_reference and paystack_reference
     try {
