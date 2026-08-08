@@ -28,8 +28,8 @@ import {
 import { AdminService } from "./admin.service";
 import { BankDetailsService } from "../agent/bank-details.service";
 import { TaxonomyService } from "../catalog/taxonomy.service";
-import { AdminKeysGuard } from "../../shared/guards/keys.guard";
 import { AuthGuard } from "../../shared/guards/auth.guard";
+import { RolesGuard } from "../../shared/guards/roles.guard";
 import { AdminId } from "../../shared/decorators/admin-id.decorator";
 import { CurrentUser } from "../../shared/decorators/current-user.decorator";
 import { Roles } from "../../shared/decorators/roles.decorator";
@@ -75,10 +75,20 @@ const createOutreachSchema = z.object({
 });
 type CreateOutreachDto = z.infer<typeof createOutreachSchema>;
 
+/*
+ * Admin routes authenticate with the admin's own JWT, not a shared secret.
+ *
+ * These previously sat behind AdminKeysGuard, which checks two static headers
+ * and no identity at all - so every admin action was unattributable, and the
+ * keys had to reach whoever called them, including the browser. The @Roles
+ * comment on the outreach handler below still refers to a class-level
+ * @Roles("admin") that had been dropped, which is the shape restored here.
+ */
 @ApiTags("Admin")
-@ApiBearerAuth("api-key")
+@ApiBearerAuth("access-token")
 @Controller("admin")
-@UseGuards(AdminKeysGuard)
+@UseGuards(AuthGuard, RolesGuard)
+@Roles("admin")
 export class AdminController {
   constructor(
     private readonly adminService: AdminService,
@@ -89,7 +99,6 @@ export class AdminController {
   ) {}
 
   @Get("me")
-  @UseGuards(AuthGuard, AdminKeysGuard)
   @ApiOperation({ summary: "Get the current admin's profile" })
   getMe(@CurrentUser() user: JwtPayload) {
     return this.adminService.getAdminMe(user.sub);

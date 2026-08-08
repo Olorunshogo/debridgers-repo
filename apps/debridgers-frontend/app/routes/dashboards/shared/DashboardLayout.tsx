@@ -10,6 +10,7 @@ import {
   apiFetch,
   decodeJwtPayload,
 } from "@debridgers/api-client";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const titleMaps: Record<string, Record<string, string>> = {
   "/agent-dashboard": {
@@ -56,6 +57,12 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const { groups, isActive, basePath, isAgent, isBuyer, isAdmin } =
     useDashboardNav();
+  /*
+   * The flags above come from useDashboardNav, which reads them off the URL -
+   * they say which dashboard is being viewed, not who is viewing it. The real
+   * role lives here.
+   */
+  const { user, isLoading, dashboardPath } = useAuth();
   const [mobileOpen, setMobileOpen] = useState<boolean>(false);
   const [search, setSearch] = useState("");
   const [hasUnread, setHasUnread] = useState<boolean>(false);
@@ -64,6 +71,28 @@ export default function DashboardLayout() {
     sub: string;
     avatar_url?: string | null;
   } | null>(null);
+
+  /*
+   * Route guard. Without it any signed-in user could open /admin-dashboard and
+   * get the admin shell rendered around them - the API calls behind it fail, so
+   * no records leak, but the nav and page structure were still on display.
+   *
+   * Waits for isLoading because the session is read from a token on mount, and
+   * acting on the intermediate null would bounce every legitimate user to
+   * /login on a hard refresh.
+   */
+  useEffect(() => {
+    if (isLoading) return;
+
+    if (!user) {
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    if (dashboardPath !== basePath) {
+      navigate(dashboardPath, { replace: true });
+    }
+  }, [isLoading, user, dashboardPath, basePath, navigate]);
 
   useEffect(() => {
     if (isAdmin) {
