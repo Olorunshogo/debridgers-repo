@@ -133,33 +133,57 @@ export class PaymentService {
       throw new BadRequestException("Buyer email not found");
     }
 
+    // Create our reference
+    const ourReference = `paystack_order_${orderId}_${Date.now()}`;
+
     // Create pending transaction in wallet
-    const reference = `paystack_order_${orderId}_${Date.now()}`;
     await this.walletService.createPendingTransaction(
       userId,
       amount,
-      reference,
+      ourReference,
     );
-
-    // Store payment reference in order
-    await this.db
-      .update(schema.orders)
-      .set({ payment_reference: reference })
-      .where(eq(schema.orders.id, orderId));
 
     // Call Paystack API to initialize transaction
     const initiateResponse = await this.initializePaystackTransaction(
       buyer.email,
       amount,
-      reference,
+      ourReference,
       orderId,
     );
+
+    const paystackReference = initiateResponse.data.reference;
+
+    // Create payment record to bridge our_reference and paystack_reference
+    try {
+      console.error(
+        `💾 INSERTING PAYMENT: order_id=${orderId}, our_ref=${ourReference}, paystack_ref=${paystackReference}, amount=${amount}`,
+      );
+      const [paymentRecord] = await this.db
+        .insert(schema.payments)
+        .values({
+          order_id: orderId,
+          our_reference: ourReference,
+          paystack_reference: paystackReference,
+          amount_kobo: amount,
+          status: "pending",
+          payment_method: "paystack",
+        })
+        .returning();
+      console.error(
+        `✅ PAYMENT INSERTED: id=${paymentRecord?.id}, ref=${paymentRecord?.paystack_reference}`,
+      );
+    } catch (err) {
+      console.error(
+        `❌ PAYMENT INSERT FAILED: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      throw err;
+    }
 
     return {
       order_id: orderId,
       payment_method: "paystack",
       authorization_url: initiateResponse.data.authorization_url,
-      reference: reference,
+      reference: paystackReference,
       amount_kobo: amount,
     };
   }
