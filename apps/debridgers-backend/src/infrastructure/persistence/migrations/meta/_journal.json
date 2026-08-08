@@ -15,6 +15,13 @@
       "when": 1786203819741,
       "tag": "0001_clear_silvermane",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786212321006,
+      "tag": "0002_magical_randall_flagg",
+      "breakpoints": true
     }
   ]
 }

@@ -81,7 +81,7 @@ export class PaystackWebhookController {
       try {
         console.error(`📍 WEBHOOK PAYSTACK_REFERENCE: ${data.reference}`);
 
-        // Find payment record by paystack_reference
+        // Try to find payment record (for order payments)
         const [payment] = await this.db
           .select()
           .from(schema.payments)
@@ -90,10 +90,10 @@ export class PaystackWebhookController {
 
         if (payment) {
           console.error(
-            `📍 FOUND PAYMENT_ID: ${payment.id}, ORDER_ID: ${payment.order_id}`,
+            `✅ PAYMENT FOUND: id=${payment.id}, order_id=${payment.order_id}`,
           );
 
-          // Update order status using order_id from payment record
+          // Update order status
           await this.orderService.updatePaymentStatus(payment.order_id, "paid");
           await this.orderService.updateOrderStatus(
             payment.order_id,
@@ -106,61 +106,27 @@ export class PaystackWebhookController {
             .set({ status: "completed", paid_at: new Date() })
             .where(eq(schema.payments.id, payment.id));
 
+          // Store Paystack reference on order for audit trail
+          await this.db
+            .update(schema.orders)
+            .set({ payment_reference: data.reference })
+            .where(eq(schema.orders.id, payment.order_id));
+
           console.error(
-            `✓ Order #${payment.order_id} payment confirmed via payment_id #${payment.id}`,
+            `✓ Order #${payment.order_id} payment confirmed and marked "confirmed"`,
           );
 
           return { statusCode: 200, message: "Order payment confirmed" };
         }
 
-        // Fallback: if payment record not found but it's an order payment,
-        // extract orderId from reference and update order
-        // This handles race conditions where webhook arrives before payment record is inserted
-        const isOrder = data.reference.startsWith("paystack_order_");
-        if (isOrder) {
-          console.error(
-            `⚠ Payment record not found for reference: ${data.reference}, attempting fallback via reference parsing`,
-          );
+        // No payment record found - check if this is a wallet deposit (non-order)
+        console.error(
+          `⚠ No payment record for reference: ${data.reference} - checking if wallet deposit...`,
+        );
 
-          // Extract order ID from reference: paystack_order_${orderId}_${timestamp}
-          const orderIdMatch = data.reference.match(/paystack_order_(\d+)_/);
-          if (orderIdMatch) {
-            const orderId = parseInt(orderIdMatch[1], 10);
-
-            // Verify order exists and hasn't been updated yet
-            const [order] = await this.db
-              .select()
-              .from(schema.orders)
-              .where(eq(schema.orders.id, orderId))
-              .limit(1);
-
-            if (order && order.payment_status !== "paid") {
-              // Update order status via fallback
-              await this.orderService.updatePaymentStatus(orderId, "paid");
-              await this.orderService.updateOrderStatus(orderId, "confirmed");
-
-              // Update order's payment reference
-              await this.db
-                .update(schema.orders)
-                .set({ payment_reference: data.reference })
-                .where(eq(schema.orders.id, orderId));
-
-              console.error(
-                `✓ Order #${orderId} payment confirmed via fallback (payment record not yet available)`,
-              );
-
-              return { statusCode: 200, message: "Order payment confirmed" };
-            }
-          }
-
-          console.error(
-            `✗ Could not process order payment for reference: ${data.reference}`,
-          );
-          return { statusCode: 200, message: "Webhook processed" };
-        }
-
-        // Handle wallet deposits (non-order payments)
-        if (!isOrder) {
+        // Wallet deposits don't have corresponding payment records
+        // Try to confirm as wallet transaction
+        try {
           await this.walletService.confirmTransaction(data.reference);
 
           const email = data.customer?.email || "buyer@example.com";
@@ -175,11 +141,17 @@ export class PaystackWebhookController {
               console.error("Failed to send deposit confirmation email:", err);
             });
 
+          console.error(`✓ Wallet deposit confirmed for ${data.reference}`);
           return { statusCode: 200, message: "Deposit confirmed" };
+        } catch (depositErr) {
+          console.error(
+            `⚠ Not a valid order payment or wallet deposit: ${data.reference}`,
+          );
+          return { statusCode: 200, message: "Webhook processed" };
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.error(`Webhook error for reference ${data.reference}: ${msg}`);
+        console.error(`Webhook processing error for ${data.reference}: ${msg}`);
         return { statusCode: 200, message: "Webhook processed" };
       }
     }

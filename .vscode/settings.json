@@ -156,5 +156,6 @@
     "tailwind.config.*": "postcss.config.*",
     "eslint.config.*": ".prettierrc, .prettierignore, .editorconfig, .lintstagedrc*"
   },
-  "cSpell.words": ["debridgers", "nx", "pnpm"]
+  "cSpell.words": ["debridgers", "nx", "pnpm"],
+  "compile-hero.disable-compile-files-on-did-save-code": false
 }

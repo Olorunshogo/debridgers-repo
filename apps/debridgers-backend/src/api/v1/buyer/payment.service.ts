@@ -133,48 +133,27 @@ export class PaymentService {
       throw new BadRequestException("Buyer email not found");
     }
 
-    // Create our reference
-    const ourReference = `paystack_order_${orderId}_${Date.now()}`;
-
-    // Create pending transaction in wallet and capture transaction ID
-    const walletTransaction = await this.walletService.createPendingTransaction(
-      userId,
-      amount,
-      ourReference,
-    );
-
     // Call Paystack API to initialize transaction
+    // Note: Pass orderId in metadata so webhook knows this is an order payment
     const initiateResponse = await this.initializePaystackTransaction(
       buyer.email,
       amount,
-      ourReference,
+      undefined, // Let Paystack generate reference (we'll store what it returns)
       orderId,
     );
 
     const paystackReference = initiateResponse.data.reference;
+    console.error(
+      `💾 PAYSTACK INITIALIZED: order_id=${orderId}, paystack_ref=${paystackReference}, amount=${amount}`,
+    );
 
-    // Update wallet transaction with Paystack reference if different from ourReference
-    // This ensures webhook can confirm transaction using the Paystack reference
-    if (paystackReference !== ourReference && walletTransaction?.id) {
-      console.error(
-        `🔄 UPDATING WALLET TX: ${ourReference} → ${paystackReference}`,
-      );
-      await this.walletService.updateTransactionReference(
-        walletTransaction.id,
-        paystackReference,
-      );
-    }
-
-    // Create payment record to bridge our_reference and paystack_reference
+    // Create payment record to link order with Paystack reference
+    // Wallet transactions are NOT used for Paystack payments - only for wallet deposits
     try {
-      console.error(
-        `💾 INSERTING PAYMENT: order_id=${orderId}, our_ref=${ourReference}, paystack_ref=${paystackReference}, amount=${amount}`,
-      );
       const [paymentRecord] = await this.db
         .insert(schema.payments)
         .values({
           order_id: orderId,
-          our_reference: ourReference,
           paystack_reference: paystackReference,
           amount_kobo: amount,
           status: "pending",
@@ -182,11 +161,11 @@ export class PaymentService {
         })
         .returning();
       console.error(
-        `✅ PAYMENT INSERTED: id=${paymentRecord?.id}, ref=${paymentRecord?.paystack_reference}`,
+        `✅ PAYMENT RECORD CREATED: id=${paymentRecord?.id}, order_id=${orderId}, ref=${paystackReference}`,
       );
     } catch (err) {
       console.error(
-        `❌ PAYMENT INSERT FAILED: ${err instanceof Error ? err.message : String(err)}`,
+        `❌ PAYMENT RECORD INSERT FAILED: ${err instanceof Error ? err.message : String(err)}`,
       );
       throw err;
     }
@@ -206,7 +185,7 @@ export class PaymentService {
   private async initializePaystackTransaction(
     email: string,
     amountKobo: number,
-    reference: string,
+    reference: string | undefined,
     orderId: number,
   ): Promise<{
     status: boolean;
@@ -222,21 +201,27 @@ export class PaymentService {
     }
 
     try {
+      const body: Record<string, unknown> = {
+        email,
+        amount: amountKobo,
+        metadata: {
+          order_id: orderId,
+          type: "order_payment",
+        },
+      };
+
+      // Only include reference if provided
+      if (reference) {
+        body.reference = reference;
+      }
+
       const response = await fetch(`${this.baseUrl}/transaction/initialize`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${this.secretKey}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          email,
-          amount: amountKobo,
-          reference,
-          metadata: {
-            order_id: orderId,
-            type: "order_payment",
-          },
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
