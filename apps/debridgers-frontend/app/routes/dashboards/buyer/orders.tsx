@@ -16,7 +16,12 @@ export function meta() {
   ];
 }
 
-type OrderStatus = "active" | "pending" | "cancelled" | "delivered";
+type OrderStatus =
+  | "active"
+  | "pending"
+  | "confirmed"
+  | "cancelled"
+  | "delivered";
 type Tab = "all" | OrderStatus;
 
 interface Order {
@@ -31,6 +36,7 @@ interface Order {
 interface ApiOrder {
   id: number;
   status: string;
+  payment_status: string;
   total_amount: number;
   quantity: number;
   delivery_address: string;
@@ -38,11 +44,20 @@ interface ApiOrder {
 }
 
 function mapApiOrder(o: ApiOrder): Order {
-  const dbToUi = (s: string): OrderStatus => {
-    if (s === "confirmed" || s === "out_for_delivery") return "active";
-    if (s === "pending") return "pending";
-    if (s === "delivered") return "delivered";
-    return "cancelled";
+  const dbToUi = (orderStatus: string, paymentStatus: string): OrderStatus => {
+    // If payment not made yet, show as pending
+    if (paymentStatus === "unpaid") return "pending";
+
+    // If paid but not yet in transit
+    if (paymentStatus === "paid" && orderStatus === "confirmed")
+      return "confirmed";
+
+    // If out for delivery or delivered
+    if (orderStatus === "out_for_delivery") return "active";
+    if (orderStatus === "delivered") return "delivered";
+    if (orderStatus === "cancelled") return "cancelled";
+
+    return "pending";
   };
   return {
     id: String(o.id),
@@ -54,7 +69,7 @@ function mapApiOrder(o: ApiOrder): Order {
       year: "numeric",
     }),
     amount: formatFromKobo(o.total_amount),
-    status: dbToUi(o.status),
+    status: dbToUi(o.status, o.payment_status),
   };
 }
 
@@ -62,6 +77,7 @@ const tabs: { key: Tab; label: string }[] = [
   { key: "all", label: "All" },
   { key: "active", label: "Active" },
   { key: "pending", label: "Pending" },
+  { key: "confirmed", label: "Confirmed" },
   { key: "cancelled", label: "Cancelled" },
 ];
 
@@ -78,6 +94,11 @@ const statusStyles: Record<
     bgClass: "bg-status-pending-bg",
     textClass: "text-status-pending-text",
     label: "Pending",
+  },
+  confirmed: {
+    bgClass: "bg-green-100",
+    textClass: "text-green-700",
+    label: "✓ Confirmed & Paid",
   },
   delivered: {
     bgClass: "bg-status-delivered-bg",
