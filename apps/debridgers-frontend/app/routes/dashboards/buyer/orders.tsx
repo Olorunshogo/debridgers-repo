@@ -98,7 +98,7 @@ const statusStyles: Record<
   confirmed: {
     bgClass: "bg-green-100",
     textClass: "text-green-700",
-    label: "✓ Confirmed & Paid",
+    label: "Paid",
   },
   delivered: {
     bgClass: "bg-status-delivered-bg",
