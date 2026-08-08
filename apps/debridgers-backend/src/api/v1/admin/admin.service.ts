@@ -878,46 +878,25 @@ export class AdminService {
   // ─── Products ────────────────────────────────────────────────────────────────
 
   async createProduct(dto: CreateProductDto) {
-    /*
-     * `category`, `measure_value` and `measure_unit` were accepted by the DTO and
-     * sent by the admin form but never included here, so every new product was
-     * silently created uncategorised and with a zero measure.
-     */
-    /* Keeps the flat column the shop filters on in step with the taxonomy. */
-    const derivedCategory = dto.category_id
-      ? await this.taxonomy.rootCategoryName(dto.category_id)
-      : null;
+    const result = await this.db.execute(
+      sql`INSERT INTO product (name, unit, price_kobo, description, image_url, sort_order, is_active)
+          VALUES (${dto.name}, ${dto.unit}, ${dto.price_kobo}, ${dto.description || null}, ${dto.image_url || null}, ${dto.sort_order || 0}, true)
+          RETURNING *`,
+    );
 
-    const [product] = await this.db
-      .insert(schema.products)
-      .values({
-        name: dto.name,
-        unit: dto.unit,
-        price_kobo: dto.price_kobo,
-        category: dto.category ?? derivedCategory,
-        category_id: dto.category_id ?? null,
-        ...(dto.measure_value !== undefined
-          ? { measure_value: dto.measure_value }
-          : {}),
-        ...(dto.measure_unit !== undefined
-          ? { measure_unit: dto.measure_unit }
-          : {}),
-        description: dto.description ?? null,
-        image_url: dto.image_url ?? null,
-        sort_order: dto.sort_order ?? 0,
-      })
-      .returning();
-
+    const product = result.rows?.[0] || null;
     return { message: "Product created", data: product };
   }
 
   async listProducts() {
-    const rows = await this.db.select().from(schema.products);
-    return { message: "Products retrieved", data: rows };
+    const rows = await this.db.execute(
+      sql`SELECT * FROM product WHERE is_active = true ORDER BY sort_order, name`,
+    );
+    return { message: "Products retrieved", data: rows.rows || [] };
   }
 
   async updateProduct(id: number, dto: UpdateProductDto) {
-    const updates: Partial<typeof schema.products.$inferInsert> = {};
+    const updates: Partial<typeof schema.productsTable.$inferInsert> = {};
     if (dto.name !== undefined) updates.name = dto.name;
     if (dto.unit !== undefined) updates.unit = dto.unit;
     if (dto.price_kobo !== undefined) updates.price_kobo = dto.price_kobo;
@@ -927,13 +906,14 @@ export class AdminService {
       updates.category_id = dto.category_id;
       /* Re-derive the flat column unless this request set it explicitly. */
       if (dto.category === undefined) {
-        updates.category = dto.category_id
+        const catName = dto.category_id
           ? await this.taxonomy.rootCategoryName(dto.category_id)
-          : null;
+          : undefined;
+        updates.category = catName ?? undefined;
       }
     }
     if (dto.measure_value !== undefined)
-      updates.measure_value = dto.measure_value;
+      updates.measure_value = String(dto.measure_value);
     if (dto.measure_unit !== undefined) updates.measure_unit = dto.measure_unit;
     if (dto.description !== undefined) updates.description = dto.description;
     if (dto.image_url !== undefined) updates.image_url = dto.image_url;
@@ -945,9 +925,9 @@ export class AdminService {
     }
 
     const [updated] = await this.db
-      .update(schema.products)
+      .update(schema.productsTable)
       .set(updates)
-      .where(eq(schema.products.id, id))
+      .where(eq(schema.productsTable.id, id))
       .returning();
 
     if (!updated) throw new NotFoundException("Product not found");
@@ -957,8 +937,8 @@ export class AdminService {
 
   async deleteProduct(id: number) {
     const [deleted] = await this.db
-      .delete(schema.products)
-      .where(eq(schema.products.id, id))
+      .delete(schema.productsTable)
+      .where(eq(schema.productsTable.id, id))
       .returning();
 
     if (!deleted) throw new NotFoundException("Product not found");
@@ -969,9 +949,9 @@ export class AdminService {
   async listActiveProducts() {
     const rows = await this.db
       .select()
-      .from(schema.products)
-      .where(eq(schema.products.is_active, true))
-      .orderBy(schema.products.sort_order, schema.products.name);
+      .from(schema.productsTable)
+      .where(eq(schema.productsTable.is_active, true))
+      .orderBy(schema.productsTable.sort_order, schema.productsTable.name);
 
     return { message: "Products retrieved", data: rows };
   }

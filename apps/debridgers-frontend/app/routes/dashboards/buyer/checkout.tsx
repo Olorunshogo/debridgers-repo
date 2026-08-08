@@ -171,7 +171,10 @@ export default function BuyerCheckout() {
     setLoading(true);
     try {
       const res = await apiFetch<{
-        data: { authorization_url: string; reference: string };
+        authorization_url: string;
+        reference: string;
+        order_id: number;
+        amount_kobo: number;
       }>("/buyer/orders/initialize-payment", {
         method: "POST",
         body: JSON.stringify({
@@ -188,7 +191,7 @@ export default function BuyerCheckout() {
           })),
         }),
       });
-      window.location.href = res.data.authorization_url;
+      window.location.href = res.authorization_url;
     } catch {
       setError("Failed to initialize payment. Please try again.");
       setLoading(false);

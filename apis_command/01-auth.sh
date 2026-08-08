@@ -44,7 +44,7 @@ curl -s -X POST http://localhost:4001/api/v1/auth/verify-email \
   -H "Content-Type: application/json" \
   -d '{
     "email": "fatima@example.com",
-    "otp": "124176"
+    "otp": "240378"
   }' | jq .
 
 echo -e "\n${GREEN}5. RESEND OTP${NC}"

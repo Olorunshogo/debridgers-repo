@@ -35,10 +35,22 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       }
     } else if (exception instanceof Error) {
       // Log the real error server-side but never expose stack to clients
+      const err = exception as Error & {
+        code?: string;
+        detail?: string;
+        constraint?: string;
+      };
       this.logger.error(
         `Unhandled: ${exception.message}`,
         isProd ? undefined : exception.stack,
       );
+
+      // Log PostgreSQL errors with constraint details
+      if (err.code || err.detail) {
+        this.logger.error(
+          `[DB Error] Code: ${err.code}, Detail: ${err.detail}, Constraint: ${err.constraint}`,
+        );
+      }
     }
 
     const payload: Record<string, unknown> = {

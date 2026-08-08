@@ -115,54 +115,52 @@ export class BuyerService {
   }
 
   async createOrder(dto: CreateOrderDto, user: JwtPayload) {
-    const [buyer] = await this.db
-      .select({ zone_id: schema.users.zone_id })
-      .from(schema.users)
-      .where(eq(schema.users.id, user.sub))
-      .limit(1);
-
-    if (!buyer) throw new NotFoundException("Buyer not found");
-
-    let zoneId = buyer.zone_id;
-
-    if (!zoneId) {
-      // Fall back to the first active zone
-      const [defaultZone] = await this.db
-        .select({ id: schema.zones.id })
-        .from(schema.zones)
-        .where(eq(schema.zones.is_active, true))
-        .limit(1);
-
-      if (!defaultZone)
-        throw new BadRequestException("No delivery zone available");
-      zoneId = defaultZone.id;
+    if (!dto.cart || dto.cart.length === 0) {
+      throw new BadRequestException("Cart cannot be empty");
     }
 
     const [zone] = await this.db
-      .select({ delivery_fee: schema.zones.delivery_fee })
+      .select()
       .from(schema.zones)
-      .where(eq(schema.zones.id, zoneId))
+      .where(eq(schema.zones.id, dto.zone_id))
       .limit(1);
 
-    const deliveryFee = zone?.delivery_fee ?? 0;
-    const handlingFee = 10000; // ₦100 in kobo
+    if (!zone) throw new BadRequestException("Invalid zone");
+
+    let subtotal = 0;
+    const items = dto.cart.map((item) => {
+      const lineTotal = item.price_kobo * item.qty;
+      subtotal += lineTotal;
+      return { ...item, subtotal: lineTotal };
+    });
+
+    const deliveryFee = zone.delivery_fee || 0;
+    const total = subtotal + deliveryFee;
+    const quantity = dto.cart.reduce((sum, item) => sum + item.qty, 0);
 
     const [order] = await this.db
       .insert(schema.orders)
       .values({
         buyer_id: user.sub,
-        zone_id: zoneId,
-        quantity: dto.quantity,
-        unit_price: Math.round(dto.total_amount_kobo / dto.quantity),
-        handling_fee: handlingFee,
+        zone_id: dto.zone_id,
+        quantity,
+        unit_price: items[0]?.price_kobo || 0,
         delivery_fee: deliveryFee,
-        total_amount: dto.total_amount_kobo,
+        total_amount: total,
         order_mode: "referral",
         status: "pending",
         delivery_address: dto.delivery_address,
-        notes: dto.notes ?? null,
       })
       .returning();
+
+    for (const item of items) {
+      await this.db.insert(schema.order_items).values({
+        order_id: order.id,
+        product_id: item.product_id,
+        quantity: item.qty,
+        unit_price_kobo: item.price_kobo,
+      });
+    }
 
     return { message: "Order placed successfully", data: order };
   }
@@ -272,9 +270,9 @@ export class BuyerService {
   async getProducts() {
     const rows = await this.db
       .select()
-      .from(schema.products)
-      .where(eq(schema.products.is_active, true))
-      .orderBy(schema.products.sort_order, schema.products.name);
+      .from(schema.productsTable)
+      .where(eq(schema.productsTable.is_active, true))
+      .orderBy(schema.productsTable.sort_order, schema.productsTable.name);
 
     return { message: "Products retrieved", data: rows };
   }
@@ -354,20 +352,20 @@ export class BuyerService {
       .select({
         product_id: schema.cart_items.product_id,
         quantity: schema.cart_items.quantity,
-        name: schema.products.name,
-        unit: schema.products.unit,
-        price_kobo: schema.products.price_kobo,
-        image_url: schema.products.image_url,
+        name: schema.productsTable.name,
+        unit: schema.productsTable.unit,
+        price_kobo: schema.productsTable.price_kobo,
+        image_url: schema.productsTable.image_url,
       })
       .from(schema.cart_items)
       .innerJoin(
-        schema.products,
-        eq(schema.products.id, schema.cart_items.product_id),
+        schema.productsTable,
+        eq(schema.productsTable.id, schema.cart_items.product_id),
       )
       .where(
         and(
           eq(schema.cart_items.user_id, user.sub),
-          eq(schema.products.is_active, true),
+          eq(schema.productsTable.is_active, true),
         ),
       );
 
@@ -445,22 +443,22 @@ export class BuyerService {
   async getFavorites(user: JwtPayload) {
     const items = await this.db
       .select({
-        id: schema.products.id,
-        name: schema.products.name,
-        unit: schema.products.unit,
-        price_kobo: schema.products.price_kobo,
-        description: schema.products.description,
-        image_url: schema.products.image_url,
+        id: schema.productsTable.id,
+        name: schema.productsTable.name,
+        unit: schema.productsTable.unit,
+        price_kobo: schema.productsTable.price_kobo,
+        description: schema.productsTable.description,
+        image_url: schema.productsTable.image_url,
       })
       .from(schema.favorites)
       .innerJoin(
-        schema.products,
-        eq(schema.products.id, schema.favorites.product_id),
+        schema.productsTable,
+        eq(schema.productsTable.id, schema.favorites.product_id),
       )
       .where(
         and(
           eq(schema.favorites.user_id, user.sub),
-          eq(schema.products.is_active, true),
+          eq(schema.productsTable.is_active, true),
         ),
       )
       .orderBy(desc(schema.favorites.created_at));
@@ -471,9 +469,9 @@ export class BuyerService {
   /* Idempotent: favouriting twice is a no-op, not an error or a second row. */
   async addFavorite(productId: number, user: JwtPayload) {
     const [product] = await this.db
-      .select({ id: schema.products.id })
-      .from(schema.products)
-      .where(eq(schema.products.id, productId))
+      .select({ id: schema.productsTable.id })
+      .from(schema.productsTable)
+      .where(eq(schema.productsTable.id, productId))
       .limit(1);
 
     if (!product) throw new NotFoundException("Product not found");
@@ -509,12 +507,12 @@ export class BuyerService {
   async getBuyAgain(user: JwtPayload, limit = 8) {
     const rows = await this.db
       .select({
-        id: schema.products.id,
-        name: schema.products.name,
-        unit: schema.products.unit,
-        price_kobo: schema.products.price_kobo,
-        description: schema.products.description,
-        image_url: schema.products.image_url,
+        id: schema.productsTable.id,
+        name: schema.productsTable.name,
+        unit: schema.productsTable.unit,
+        price_kobo: schema.productsTable.price_kobo,
+        description: schema.productsTable.description,
+        image_url: schema.productsTable.image_url,
         times_ordered: count(schema.order_items.id),
       })
       .from(schema.order_items)
@@ -523,22 +521,22 @@ export class BuyerService {
         eq(schema.orders.id, schema.order_items.order_id),
       )
       .innerJoin(
-        schema.products,
-        eq(schema.products.id, schema.order_items.product_id),
+        schema.productsTable,
+        eq(schema.productsTable.id, schema.order_items.product_id),
       )
       .where(
         and(
           eq(schema.orders.buyer_id, user.sub),
-          eq(schema.products.is_active, true),
+          eq(schema.productsTable.is_active, true),
         ),
       )
       .groupBy(
-        schema.products.id,
-        schema.products.name,
-        schema.products.unit,
-        schema.products.price_kobo,
-        schema.products.description,
-        schema.products.image_url,
+        schema.productsTable.id,
+        schema.productsTable.name,
+        schema.productsTable.unit,
+        schema.productsTable.price_kobo,
+        schema.productsTable.description,
+        schema.productsTable.image_url,
       )
       .orderBy(
         desc(count(schema.order_items.id)),
@@ -576,14 +574,14 @@ export class BuyerService {
     const productIds = lines.map((line) => line.product_id);
     const catalogue = await this.db
       .select({
-        id: schema.products.id,
-        price_kobo: schema.products.price_kobo,
+        id: schema.productsTable.id,
+        price_kobo: schema.productsTable.price_kobo,
       })
-      .from(schema.products)
+      .from(schema.productsTable)
       .where(
         and(
-          inArray(schema.products.id, productIds),
-          eq(schema.products.is_active, true),
+          inArray(schema.productsTable.id, productIds),
+          eq(schema.productsTable.is_active, true),
         ),
       );
 

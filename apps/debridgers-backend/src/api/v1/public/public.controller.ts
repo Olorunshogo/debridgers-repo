@@ -48,27 +48,17 @@ export class PublicController {
   async getProducts() {
     const rows = await this.db
       .select({
-        id: schema.products.id,
-        name: schema.products.name,
-        unit: schema.products.unit,
-        price_kobo: schema.products.price_kobo,
-        description: schema.products.description,
-        image_url: schema.products.image_url,
-        category: schema.products.category,
-        measure_value: schema.products.measure_value,
-        measure_unit: schema.products.measure_unit,
-        /* Lets the shop and the agent stock flow group by the real taxonomy
-           instead of the flat text label. */
-        category_id: schema.products.category_id,
-        category_name: schema.product_categories.name,
+        id: schema.productsTable.id,
+        name: schema.productsTable.name,
+        unit: schema.productsTable.unit,
+        price_kobo: schema.productsTable.price_kobo,
+        description: schema.productsTable.description,
+        image_url: schema.productsTable.image_url,
+        category: schema.productsTable.category,
       })
-      .from(schema.products)
-      .leftJoin(
-        schema.product_categories,
-        eq(schema.product_categories.id, schema.products.category_id),
-      )
-      .where(eq(schema.products.is_active, true))
-      .orderBy(schema.products.sort_order);
+      .from(schema.productsTable)
+      .where(eq(schema.productsTable.is_active, true))
+      .orderBy(schema.productsTable.sort_order);
 
     return { message: "Products retrieved", data: rows };
   }

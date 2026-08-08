@@ -7,7 +7,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { timestamps } from "../../helper/column.helper";
 import { users } from "./users.schema";
-import { products } from "./products.schema";
+import { productsTable } from "./product.schema";
 import { createInsertSchema } from "drizzle-zod";
 
 export const stockRequestStatusEnum = pgEnum("stock_request_status", [
@@ -21,7 +21,7 @@ export const stock_requests = pgTable("stock_requests", {
   agent_id: integer()
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  product_id: integer().references(() => products.id, {
+  product_id: integer().references(() => productsTable.id, {
     onDelete: "set null",
   }),
   quantity: integer().notNull(),

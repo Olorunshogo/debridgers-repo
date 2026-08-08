@@ -31,6 +31,13 @@ const ZONES = [
     areas: ["Kawo", "Rigachikun", "Rigasa", "Unguwan Mu'azu"],
     is_active: true,
   },
+  {
+    name: "Chikun",
+    description: "Chikun LGA areas - Kachia, Kafanchan, Kagoro",
+    delivery_fee: naira(800),
+    areas: ["Kachia", "Kafanchan", "Kagoro", "Jema'a"],
+    is_active: true,
+  },
 ];
 
 const PRODUCTS = [
@@ -205,10 +212,10 @@ async function seed() {
   // === Products
   const [{ total: productCount }] = await db
     .select({ total: count() })
-    .from(schema.products);
+    .from(schema.productsTable);
 
   if (Number(productCount) === 0) {
-    await db.insert(schema.products).values(PRODUCTS);
+    await db.insert(schema.productsTable).values(PRODUCTS);
     console.warn(`✓ Products seeded: ${PRODUCTS.length} products`);
   } else {
     console.warn(`- Products already exist (${productCount}) — skipping`);

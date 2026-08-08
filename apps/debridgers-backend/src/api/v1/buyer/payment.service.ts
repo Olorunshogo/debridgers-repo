@@ -122,6 +122,17 @@ export class PaymentService {
       throw new BadRequestException("Amount does not match order total");
     }
 
+    // Get buyer email
+    const [buyer] = await this.db
+      .select({ email: schema.users.email })
+      .from(schema.users)
+      .where(eq(schema.users.id, userId))
+      .limit(1);
+
+    if (!buyer?.email) {
+      throw new BadRequestException("Buyer email not found");
+    }
+
     // Create pending transaction in wallet
     const reference = `paystack_order_${orderId}_${Date.now()}`;
     await this.walletService.createPendingTransaction(
@@ -130,17 +141,93 @@ export class PaymentService {
       reference,
     );
 
-    // TODO: Call Paystack API to generate checkout URL
-    // For now, return mock Paystack URL
-    const paystackUrl = `https://checkout.paystack.com/...?reference=${reference}`;
+    // Store payment reference in order
+    await this.db
+      .update(schema.orders)
+      .set({ payment_reference: reference })
+      .where(eq(schema.orders.id, orderId));
+
+    // Call Paystack API to initialize transaction
+    const initiateResponse = await this.initializePaystackTransaction(
+      buyer.email,
+      amount,
+      reference,
+      orderId,
+    );
 
     return {
       order_id: orderId,
       payment_method: "paystack",
-      authorization_url: paystackUrl,
+      authorization_url: initiateResponse.data.authorization_url,
       reference: reference,
       amount_kobo: amount,
     };
+  }
+
+  /**
+   * Call Paystack Initialize Transaction API
+   */
+  private async initializePaystackTransaction(
+    email: string,
+    amountKobo: number,
+    reference: string,
+    orderId: number,
+  ): Promise<{
+    status: boolean;
+    message: string;
+    data: {
+      authorization_url: string;
+      access_code: string;
+      reference: string;
+    };
+  }> {
+    if (!this.secretKey) {
+      throw new BadRequestException("Paystack secret key not configured");
+    }
+
+    try {
+      const response = await fetch(`${this.baseUrl}/transaction/initialize`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.secretKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          amount: amountKobo,
+          reference,
+          metadata: {
+            order_id: orderId,
+            type: "order_payment",
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const error = (await response.json()) as {
+          message?: string;
+        };
+        const msg = `Paystack API error: ${error.message || "Failed to initialize payment"}`;
+        console.error(msg);
+        throw new BadRequestException(msg);
+      }
+
+      const data = (await response.json()) as {
+        status: boolean;
+        message: string;
+        data: {
+          authorization_url: string;
+          access_code: string;
+          reference: string;
+        };
+      };
+      return data;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error("Paystack initialization error:", msg);
+      if (error instanceof BadRequestException) throw error;
+      throw new BadRequestException(`Paystack initialization failed: ${msg}`);
+    }
   }
 
   /**

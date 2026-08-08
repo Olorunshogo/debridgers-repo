@@ -75,7 +75,7 @@ export default function BuyerShop() {
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   useEffect(() => {
-    apiFetch<ApiProduct[]>("/buyer/products")
+    apiFetch<ApiProduct[]>("/products")
       .then((rows) => {
         setProducts(rows);
       })

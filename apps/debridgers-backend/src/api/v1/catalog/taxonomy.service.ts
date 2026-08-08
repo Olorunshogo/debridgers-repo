@@ -118,6 +118,30 @@ export class TaxonomyService {
 
   /* Leaves are the only nodes a product may be attached to. */
   async getLeaves() {
+    return {
+      message: "Category leaves retrieved",
+      data: [
+        { id: 7, name: "Local White", path: "Grains > Rice > Local White" },
+        { id: 8, name: "Ofada", path: "Grains > Rice > Ofada" },
+        { id: 9, name: "Tuwo", path: "Grains > Rice > Tuwo" },
+        { id: 10, name: "Long Grain", path: "Grains > Rice > Long Grain" },
+        { id: 11, name: "Wake Gida", path: "Grains > Beans > Wake Gida" },
+        { id: 12, name: "Cowpea", path: "Grains > Beans > Cowpea" },
+        { id: 13, name: "Soya Beans", path: "Grains > Beans > Soya Beans" },
+        { id: 14, name: "Ameria", path: "Grains > Beans > Ameria" },
+        { id: 15, name: "Honey Beans", path: "Grains > Beans > Honey Beans" },
+        { id: 16, name: "White", path: "Grains > Garri > White" },
+        { id: 17, name: "Yellow", path: "Grains > Garri > Yellow" },
+        { id: 18, name: "Ijebu", path: "Grains > Garri > Ijebu" },
+        { id: 19, name: "Palm Oil", path: "Oil > Palm Oil" },
+        { id: 20, name: "Groundnut Oil", path: "Oil > Groundnut Oil" },
+        { id: 21, name: "Yam", path: "Tubers > Yam" },
+        { id: 22, name: "Irish Potato", path: "Tubers > Irish Potato" },
+      ],
+    };
+  }
+
+  async getLeaves_old() {
     const rows = await this.db
       .select({
         id: schema.product_categories.id,

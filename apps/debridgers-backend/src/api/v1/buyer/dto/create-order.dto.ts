@@ -1,10 +1,18 @@
 import { z } from "zod";
 
 export const createOrderSchema = z.object({
-  quantity: z.number().int().positive(),
-  total_amount_kobo: z.number().int().positive(),
-  delivery_address: z.string().min(1).max(500),
-  notes: z.string().max(500).optional(),
+  delivery_address: z.string().min(10),
+  zone_id: z.number().int().positive(),
+  delivery_time: z.string(),
+  cart: z.array(
+    z.object({
+      product_id: z.number().int().positive(),
+      name: z.string(),
+      price_kobo: z.number().int().positive(),
+      unit: z.string(),
+      qty: z.number().int().positive(),
+    }),
+  ),
 });
 
 export type CreateOrderDto = z.infer<typeof createOrderSchema>;

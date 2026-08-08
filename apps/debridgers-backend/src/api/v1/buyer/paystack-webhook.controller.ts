@@ -12,27 +12,38 @@ import { ConfigService } from "@nestjs/config";
 import * as crypto from "crypto";
 import { WalletService } from "./wallet.service";
 import { EmailService } from "../../../notification/features/email/email.service";
+import { PaymentService } from "./payment.service";
+import { OrderService } from "./order.service";
 
-@Controller("webhook/paystack")
+@Controller("webhook")
 export class PaystackWebhookController {
   constructor(
     private readonly walletService: WalletService,
     private readonly emailService: EmailService,
+    private readonly paymentService: PaymentService,
+    private readonly orderService: OrderService,
     private readonly config: ConfigService,
   ) {}
 
-  @Post("deposit")
+  @Post()
   @HttpCode(HttpStatus.OK)
-  async handleDepositWebhook(
+  async handleWebhookPost(
     @Body() event: unknown,
     @Headers("x-paystack-signature") signature: string,
+  ) {
+    return this.handleWebhook(event, signature, "charge");
+  }
+
+  private async handleWebhook(
+    event: unknown,
+    signature: string,
+    _type: "deposit" | "charge",
   ) {
     const paystackSecret = this.config.get<string>("PAYSTACK_SECRET_KEY");
     if (!paystackSecret) {
       throw new BadRequestException("Paystack secret not configured");
     }
 
-    // Verify Paystack signature
     if (!signature) {
       throw new BadRequestException("No signature provided");
     }
@@ -49,7 +60,6 @@ export class PaystackWebhookController {
       );
     }
 
-    // Handle charge.success event
     const typedEvent = event as { event?: string; data?: unknown };
     if (typedEvent.event === "charge.success") {
       const data = typedEvent.data as {
@@ -64,24 +74,43 @@ export class PaystackWebhookController {
       }
 
       try {
-        // Confirm the transaction
-        await this.walletService.confirmTransaction(data.reference);
+        const isOrder = data.reference.startsWith("paystack_order_");
 
-        // Send deposit confirmation email (fire-and-forget)
-        const email = data.customer?.email || "buyer@example.com";
-        const name = data.customer?.first_name || "Buyer";
-        const amount = data.amount ? `₦${Math.round(data.amount / 100)}` : "₦0";
+        if (isOrder) {
+          // Extract order ID from reference: paystack_order_${orderId}_${timestamp}
+          const orderIdMatch = data.reference.match(/paystack_order_(\d+)_/);
+          if (orderIdMatch) {
+            const orderId = parseInt(orderIdMatch[1], 10);
 
-        this.emailService
-          .sendDepositConfirmation(email, name, amount, data.reference)
-          .catch((err) => {
-            console.error("Failed to send deposit confirmation email:", err);
-          });
+            // Update order status directly
+            await this.orderService.updatePaymentStatus(orderId, "paid");
+            await this.orderService.updateOrderStatus(orderId, "confirmed");
 
-        return { statusCode: 200, message: "Deposit confirmed" };
+            console.error(
+              `✓ Order #${orderId} payment confirmed via Paystack webhook`,
+            );
+          }
+          return { statusCode: 200, message: "Order payment confirmed" };
+        } else {
+          await this.walletService.confirmTransaction(data.reference);
+
+          const email = data.customer?.email || "buyer@example.com";
+          const name = data.customer?.first_name || "Buyer";
+          const amount = data.amount
+            ? `₦${Math.round(data.amount / 100)}`
+            : "₦0";
+
+          this.emailService
+            .sendDepositConfirmation(email, name, amount, data.reference)
+            .catch((err) => {
+              console.error("Failed to send deposit confirmation email:", err);
+            });
+
+          return { statusCode: 200, message: "Deposit confirmed" };
+        }
       } catch (err) {
-        console.error("Error confirming deposit:", err);
-        // Still return 200 to Paystack to prevent retries
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`Webhook error for reference ${data.reference}: ${msg}`);
         return { statusCode: 200, message: "Webhook processed" };
       }
     }
