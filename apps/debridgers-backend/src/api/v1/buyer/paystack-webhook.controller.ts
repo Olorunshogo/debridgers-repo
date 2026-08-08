@@ -81,50 +81,42 @@ export class PaystackWebhookController {
       try {
         console.error(`📍 WEBHOOK PAYSTACK_REFERENCE: ${data.reference}`);
 
-        // Try to find payment record (for order payments)
-        const [payment] = await this.db
+        // Look for order with matching payment_reference
+        const [order] = await this.db
           .select()
-          .from(schema.payments)
-          .where(eq(schema.payments.paystack_reference, data.reference))
+          .from(schema.orders)
+          .where(eq(schema.orders.payment_reference, data.reference))
           .limit(1);
 
-        if (payment) {
+        if (order) {
           console.error(
-            `✅ PAYMENT FOUND: id=${payment.id}, order_id=${payment.order_id}`,
+            `✅ ORDER FOUND: id=${order.id}, payment_ref=${order.payment_reference}, status=${order.payment_status}`,
           );
 
-          // Update order status
-          await this.orderService.updatePaymentStatus(payment.order_id, "paid");
-          await this.orderService.updateOrderStatus(
-            payment.order_id,
-            "confirmed",
-          );
+          // Only update if order is still unpaid
+          if (order.payment_status !== "paid") {
+            // Update order payment and status
+            await this.orderService.updatePaymentStatus(order.id, "paid");
+            await this.orderService.updateOrderStatus(order.id, "confirmed");
 
-          // Update payment record
-          await this.db
-            .update(schema.payments)
-            .set({ status: "completed", paid_at: new Date() })
-            .where(eq(schema.payments.id, payment.id));
-
-          // Store Paystack reference on order for audit trail
-          await this.db
-            .update(schema.orders)
-            .set({ payment_reference: data.reference })
-            .where(eq(schema.orders.id, payment.order_id));
-
-          console.error(
-            `✓ Order #${payment.order_id} payment confirmed and marked "confirmed"`,
-          );
+            console.error(
+              `✅ Order #${order.id} CONFIRMED: payment_status=paid, status=confirmed`,
+            );
+          } else {
+            console.error(
+              `ℹ️ Order #${order.id} already confirmed (idempotent)`,
+            );
+          }
 
           return { statusCode: 200, message: "Order payment confirmed" };
         }
 
-        // No payment record found - check if this is a wallet deposit (non-order)
+        // No order found with this reference - check if it's a wallet deposit
         console.error(
-          `⚠ No payment record for reference: ${data.reference} - checking if wallet deposit...`,
+          `⚠ No order found for reference: ${data.reference} - checking if wallet deposit...`,
         );
 
-        // Wallet deposits don't have corresponding payment records
+        // Wallet deposits don't have corresponding order records
         // Try to confirm as wallet transaction
         try {
           await this.walletService.confirmTransaction(data.reference);

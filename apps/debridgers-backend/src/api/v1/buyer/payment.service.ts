@@ -147,28 +147,15 @@ export class PaymentService {
       `💾 PAYSTACK INITIALIZED: order_id=${orderId}, paystack_ref=${paystackReference}, amount=${amount}`,
     );
 
-    // Create payment record to link order with Paystack reference
-    // Wallet transactions are NOT used for Paystack payments - only for wallet deposits
-    try {
-      const [paymentRecord] = await this.db
-        .insert(schema.payments)
-        .values({
-          order_id: orderId,
-          paystack_reference: paystackReference,
-          amount_kobo: amount,
-          status: "pending",
-          payment_method: "paystack",
-        })
-        .returning();
-      console.error(
-        `✅ PAYMENT RECORD CREATED: id=${paymentRecord?.id}, order_id=${orderId}, ref=${paystackReference}`,
-      );
-    } catch (err) {
-      console.error(
-        `❌ PAYMENT RECORD INSERT FAILED: ${err instanceof Error ? err.message : String(err)}`,
-      );
-      throw err;
-    }
+    // Store Paystack reference on order so webhook can find it later
+    await this.db
+      .update(schema.orders)
+      .set({ payment_reference: paystackReference })
+      .where(eq(schema.orders.id, orderId));
+
+    console.error(
+      `✅ PAYMENT REFERENCE STORED ON ORDER: order_id=${orderId}, ref=${paystackReference}`,
+    );
 
     return {
       order_id: orderId,
