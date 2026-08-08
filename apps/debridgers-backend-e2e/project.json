@@ -12,6 +12,13 @@
         "command": "pnpm run test",
         "cwd": "apps/debridgers-backend-e2e"
       }
+    },
+    "test-rate-limit": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run test:rate-limit",
+        "cwd": "apps/debridgers-backend-e2e"
+      }
     }
   }
 }

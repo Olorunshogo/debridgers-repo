@@ -22,6 +22,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = "Internal server error";
     let errors: unknown = undefined;
+    let code: string | undefined = undefined;
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -32,6 +33,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         const b = body as Record<string, unknown>;
         message = (b.message as string) ?? message;
         if (b.errors) errors = b.errors;
+        /*
+         * Forwarded explicitly rather than by spreading the body: callers branch
+         * on this (UNVERIFIED_EMAIL routes to the OTP screen), and an allow-list
+         * keeps an exception's internals from reaching the client by accident.
+         */
+        if (typeof b.code === "string") code = b.code;
       }
     } else if (exception instanceof Error) {
       // Log the real error server-side but never expose stack to clients
@@ -48,6 +55,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       path: req.url,
     };
     if (errors !== undefined) payload.errors = errors;
+    if (code !== undefined) payload.code = code;
 
     res.status(status).json(payload);
   }

@@ -1,6 +1,6 @@
 {
-  "id": "e8947b25-0322-48cf-aed0-61f11172f17a",
-  "prevId": "68e38ea0-7903-4a39-9ab9-20fed26f09a1",
+  "id": "676b00fc-43d7-4af0-b80a-ebc6f611c811",
+  "prevId": "e8947b25-0322-48cf-aed0-61f11172f17a",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -886,6 +886,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
         },
         "expires_at": {
           "name": "expires_at",

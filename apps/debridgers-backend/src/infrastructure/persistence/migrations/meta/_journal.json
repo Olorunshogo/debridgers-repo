@@ -124,22 +124,22 @@
     {
       "idx": 17,
       "version": "7",
-      "when": 1722694800000,
-      "tag": "0018_add_payment_tables",
-      "breakpoints": true
-    },
-    {
-      "idx": 18,
-      "version": "7",
       "when": 1785915700194,
       "tag": "0018_boring_azazel",
       "breakpoints": true
     },
     {
-      "idx": 19,
+      "idx": 18,
       "version": "7",
       "when": 1786123683568,
       "tag": "0019_famous_star_brand",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1786208292866,
+      "tag": "0019_workable_gravity",
       "breakpoints": true
     }
   ]

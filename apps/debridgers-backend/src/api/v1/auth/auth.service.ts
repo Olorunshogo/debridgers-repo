@@ -22,7 +22,24 @@ import { RegisterDto, type SelfRegisterableRole } from "./dto/register.dto";
 import { USER_ROLES } from "../../../interfaces/users/roles.type";
 import { LoginDto } from "./dto/login.dto";
 import { AuthAttemptService } from "./auth-attempt.service";
+import { hashRefreshToken, refreshTokenMatches } from "./token-hash";
 import { PostHogService } from "../../../infrastructure/analytics/posthog.service";
+
+/* Wrong OTP guesses allowed before the code is burned and a resend is required. */
+const MAX_OTP_ATTEMPTS = 5;
+
+/*
+ * How much of the issuing request a refresh token is pinned to.
+ *
+ *   off    - claims are informational only
+ *   device - user agent must match (the default)
+ *   strict - user agent and IP must both match
+ *
+ * IP is not part of the default deliberately. Mobile networks and CGNAT rotate
+ * addresses mid-session, so pinning to it logs real users out routinely; that
+ * belongs behind an explicit opt-in for high-assurance deployments.
+ */
+const SESSION_BINDING = process.env.SESSION_BINDING ?? "device";
 
 @Injectable()
 export class AuthService {
@@ -292,7 +309,12 @@ export class AuthService {
     };
   }
 
-  async refreshTokens(userId: number, refreshToken: string) {
+  async refreshTokens(
+    userId: number,
+    refreshToken: string,
+    claims: { device?: string; ip_address?: string },
+    req?: Request,
+  ) {
     const [user] = await this.db
       .select()
       .from(schema.users)
@@ -303,11 +325,29 @@ export class AuthService {
       throw new UnauthorizedException("Access denied");
     }
 
-    const tokenHash = user.refresh_token;
-    const match = await bcrypt.compare(refreshToken, tokenHash);
-    if (!match) throw new UnauthorizedException("Access denied");
+    if (!refreshTokenMatches(user.refresh_token, refreshToken)) {
+      throw new UnauthorizedException("Access denied");
+    }
 
-    const tokens = await this.generateTokens(user);
+    /*
+     * The token has always carried device and ip_address; nothing ever checked
+     * them, which made the binding decorative. Enforced here rather than in
+     * AuthGuard because the refresh token is the long-lived credential worth
+     * pinning - re-validating on every access-token call would cost a check per
+     * request for a credential that expires in 15 minutes anyway.
+     */
+    const context = req ? this.extractRequestContext(req) : undefined;
+
+    if (context) {
+      this.assertSessionBinding(claims, context);
+    }
+
+    /*
+     * Rotation reissues with the current request context. Previously it called
+     * generateTokens with no context at all, so every refresh downgraded device
+     * and ip_address to "unknown" and silently discarded the binding.
+     */
+    const tokens = await this.generateTokens(user, context);
     await this.saveRefreshToken(user.id, tokens.refreshToken);
 
     return { message: "Tokens refreshed", data: tokens };
@@ -385,8 +425,34 @@ export class AuthService {
       );
     }
 
+    /*
+     * A 6-digit OTP is 900k possibilities and lives for 24 hours, so without a
+     * ceiling on wrong guesses the throttler is the only thing between an
+     * attacker and a verified account - and that is per-IP, which a distributed
+     * attempt sidesteps. Burning the OTP after MAX_OTP_ATTEMPTS forces a resend,
+     * which issues a fresh code and resets the counter.
+     */
     if (record.token !== otp) {
-      throw new BadRequestException("Invalid verification OTP");
+      const attempts = record.attempts + 1;
+
+      if (attempts >= MAX_OTP_ATTEMPTS) {
+        await this.db
+          .delete(schema.email_verification)
+          .where(eq(schema.email_verification.id, record.id));
+
+        throw new BadRequestException(
+          "Too many incorrect attempts. Please request a new OTP.",
+        );
+      }
+
+      await this.db
+        .update(schema.email_verification)
+        .set({ attempts })
+        .where(eq(schema.email_verification.id, record.id));
+
+      throw new BadRequestException(
+        `Invalid verification OTP. ${MAX_OTP_ATTEMPTS - attempts} attempt(s) remaining.`,
+      );
     }
 
     await this.db
@@ -461,9 +527,15 @@ export class AuthService {
       .limit(1);
 
     const hashed = await bcrypt.hash(newPassword, 12);
+    /*
+     * refresh_token is cleared in the same update. A reset is what someone does
+     * after losing control of their account, so leaving existing sessions alive
+     * would keep the attacker signed in through the exact recovery step meant to
+     * lock them out.
+     */
     await this.db
       .update(schema.users)
-      .set({ password: hashed })
+      .set({ password: hashed, refresh_token: null })
       .where(eq(schema.users.id, reset.user_id));
 
     await this.db
@@ -597,10 +669,9 @@ export class AuthService {
   }
 
   private async saveRefreshToken(userId: number, token: string) {
-    const hashed = await bcrypt.hash(token, 10);
     await this.db
       .update(schema.users)
-      .set({ refresh_token: hashed })
+      .set({ refresh_token: hashRefreshToken(token) })
       .where(eq(schema.users.id, userId));
   }
 
@@ -616,6 +687,38 @@ export class AuthService {
       req.socket.remoteAddress ||
       "unknown"
     );
+  }
+
+  /*
+   * Rejects a refresh token presented from a different device than the one it
+   * was issued to. Tokens minted before this shipped carry "unknown" for both
+   * claims; those are let through rather than forcing a mass logout, and they
+   * age out on their own within the 7 day refresh window.
+   */
+  private assertSessionBinding(
+    claims: { device?: string; ip_address?: string },
+    context: { device: string; ip_address: string },
+  ): void {
+    if (SESSION_BINDING === "off") return;
+
+    const bound = (claim?: string): boolean =>
+      claim !== undefined && claim !== "unknown";
+
+    if (bound(claims.device) && claims.device !== context.device) {
+      throw new UnauthorizedException(
+        "Refresh token was issued to a different device. Please log in again.",
+      );
+    }
+
+    if (
+      SESSION_BINDING === "strict" &&
+      bound(claims.ip_address) &&
+      claims.ip_address !== context.ip_address
+    ) {
+      throw new UnauthorizedException(
+        "Refresh token was issued from a different network. Please log in again.",
+      );
+    }
   }
 
   private extractRequestContext(req: Request) {

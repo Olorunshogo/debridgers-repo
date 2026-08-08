@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test": "jest --config jest.config.ts --runInBand"
+    "test": "jest --config jest.config.ts --runInBand",
+    "test:rate-limit": "THROTTLE_LIMIT=10 THROTTLE_TTL_MS=1000 jest --config jest.rate-limit.config.ts --runInBand"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

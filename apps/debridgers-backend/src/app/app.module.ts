@@ -48,8 +48,22 @@ import { refreshJwtConfig } from "../api/v1/auth/config/refresh-jwt";
       ],
       envFilePath: [".env"],
     }),
+    /*
+     * Env-overridable so the e2e suites can differ. The default is deliberately
+     * loose because per-endpoint @Throttle decorators do the real work; this
+     * global limiter is a backstop.
+     *
+     * The main e2e run raises the limit out of the way: every suite hits this
+     * from one IP inside one window, so a shared budget made later suites fail
+     * with 429s they never caused. The rate-limit suite instead tightens it and
+     * runs alone, which is the only way to assert throttling deterministically.
+     */
     ThrottlerModule.forRoot([
-      { name: "short", ttl: 60000, limit: 1000 }, // Disabled: using per-endpoint limiters
+      {
+        name: "short",
+        ttl: Number(process.env.THROTTLE_TTL_MS ?? 60000),
+        limit: Number(process.env.THROTTLE_LIMIT ?? 1000),
+      },
     ]),
     EventEmitterModule.forRoot(),
     ScheduleModule.forRoot(),

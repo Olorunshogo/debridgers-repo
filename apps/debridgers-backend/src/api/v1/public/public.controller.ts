@@ -97,7 +97,7 @@ export class PublicController {
   }
 
   @Get("categories")
-  @SkipThrottle()
+  @SkipThrottle({ short: true })
   @ApiOperation({
     summary: "Product taxonomy tree — no auth required",
     description:
@@ -109,7 +109,7 @@ export class PublicController {
   }
 
   @Get("config/public")
-  @SkipThrottle()
+  @SkipThrottle({ short: true })
   @ApiOperation({ summary: "Public platform config (commission rate etc.)" })
   async getPublicConfig() {
     const commissionRate = await this.settings.getAgentCommissionPercent();
@@ -131,7 +131,7 @@ export class PublicController {
 
   @Post("outreach/submit")
   @HttpCode(200)
-  @SkipThrottle()
+  @SkipThrottle({ short: true })
   @UsePipes(new ZodValidationPipe(webLeadSchema))
   @ApiOperation({ summary: "Public web lead / interest form submission" })
   async submitWebLead(@Body() dto: WebLeadDto) {

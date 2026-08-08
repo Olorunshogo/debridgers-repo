@@ -21,6 +21,18 @@ async function getMs(url: string): Promise<{ status: number; ms: number }> {
 // ─── Rate Limiting ────────────────────────────────────────────────────────────
 
 describe("Rate Limiting (ThrottlerGuard)", () => {
+  /*
+   * Each test needs its own window. The suite runs against a deliberately tight
+   * limit (see the test:rate-limit script) and the tests finish in tens of
+   * milliseconds, so without this they all land in one window and whichever
+   * test runs last inherits a budget the earlier ones already spent. That was
+   * showing up as the exemption and 401 assertions failing for no real reason.
+   */
+  beforeEach(async () => {
+    const ttl = Number(process.env.THROTTLE_TTL_MS ?? 1000);
+    await new Promise((resolve) => setTimeout(resolve, ttl + 100));
+  });
+
   it("should allow up to 10 requests per second on public endpoint", async () => {
     const results = await Promise.all(
       Array.from({ length: 10 }, () => fetch(`${BASE}/products`)),

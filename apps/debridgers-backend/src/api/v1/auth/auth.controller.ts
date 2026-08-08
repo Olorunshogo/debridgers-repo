@@ -10,6 +10,7 @@ import {
 } from "@nestjs/common";
 import { Request } from "express";
 import { Throttle } from "@nestjs/throttler";
+import { authThrottle } from "../../shared/throttle.config";
 import {
   ApiTags,
   ApiOperation,
@@ -98,7 +99,7 @@ export class AuthController {
 
   @Post("login")
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { ttl: 60000, limit: 5 } })
+  @Throttle(authThrottle(5))
   @ApiOperation({ summary: "Login with email and password" })
   @ApiBody({
     schema: {
@@ -153,7 +154,7 @@ export class AuthController {
 
   @Post("admin/login")
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { ttl: 60000, limit: 3 } })
+  @Throttle(authThrottle(3))
   @ApiOperation({ summary: "Admin login with email and password" })
   @ApiBody({
     schema: {
@@ -216,8 +217,16 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: "Invalid or expired refresh token" })
   @UseGuards(RefreshGuard)
-  refresh(@CurrentUser() user: JwtPayload & { refreshToken: string }) {
-    return this.authService.refreshTokens(user.sub, user.refreshToken);
+  refresh(
+    @CurrentUser() user: JwtPayload & { refreshToken: string },
+    @Req() req: Request,
+  ) {
+    return this.authService.refreshTokens(
+      user.sub,
+      user.refreshToken,
+      { device: user.device, ip_address: user.ip_address },
+      req,
+    );
   }
 
   @Post("logout")
@@ -242,7 +251,7 @@ export class AuthController {
 
   @Post("forgot-password")
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { ttl: 60000, limit: 5 } })
+  @Throttle(authThrottle(5))
   @ApiOperation({
     summary: "Request a password reset email",
     description: "Always returns 200 - prevents email enumeration.",
@@ -307,7 +316,7 @@ export class AuthController {
 
   @Post("verify-email")
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { ttl: 60000, limit: 5 } })
+  @Throttle(authThrottle(5))
   @ApiOperation({ summary: "Verify account email address using OTP" })
   @ApiBody({
     schema: {

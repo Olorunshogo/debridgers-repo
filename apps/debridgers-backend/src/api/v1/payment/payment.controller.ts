@@ -43,7 +43,7 @@ export class PaymentController {
 
   @Post("webhook")
   @HttpCode(HttpStatus.OK)
-  @SkipThrottle()
+  @SkipThrottle({ short: true })
   webhook(
     @Body() payload: Record<string, unknown>,
     @Headers("x-paystack-signature") signature: string,
