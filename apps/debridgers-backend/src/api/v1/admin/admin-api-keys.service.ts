@@ -68,21 +68,20 @@ export class AdminApiKeysService {
   }
 
   /**
-   * Validate an API key and return the admin ID if valid
+   * Validate an API key and return the admin ID if valid.
+   *
+   * Joins the owning user deliberately. Checking only the key's own `is_active`
+   * meant a blocked, suspended or role-changed admin's keys kept authenticating
+   * indefinitely, so revoking a person did not revoke their access.
    *
    * @param plainKey - The plain API key to validate
-   * @returns Admin ID if valid, null if invalid or inactive
+   * @returns Admin ID if valid, null if the key or its owner is not active
    */
   async validateApiKey(plainKey: string): Promise<number | null> {
     if (!plainKey) return null;
 
     const keyHash = this.hashKey(plainKey);
 
-    /*
-     * Joins the owner. Checking only the key's own is_active meant a blocked,
-     * suspended or role-changed admin's keys kept authenticating indefinitely,
-     * so revoking a person did not revoke their access.
-     */
     const [record] = await this.db
       .select({
         admin_id: schema.admin_api_keys.admin_id,
@@ -129,9 +128,8 @@ export class AdminApiKeysService {
   }
 
   /**
-   * List all API keys for an admin (without showing the actual keys)
-   */
-  /*
+   * List an admin's API keys, never the keys themselves.
+   *
    * Revoked keys are hidden unless explicitly asked for. Listing them beside
    * live ones with only a boolean to tell them apart invited the reader to
    * treat a revoked key as usable, which is F11.
@@ -158,14 +156,15 @@ export class AdminApiKeysService {
   }
 
   /**
-   * Deactivate an API key (soft delete)
+   * Deactivate an API key (soft delete).
+   *
+   * `is_active` is part of the predicate, not just the update: without it,
+   * re-revoking an already revoked key matched a row and reported success.
    */
   async deactivateApiKey(keyId: number, adminId: number): Promise<void> {
     const updated = await this.db
       .update(schema.admin_api_keys)
       .set({ is_active: false, revoked_at: new Date() })
-      /* is_active in the predicate: without it, re-revoking an already revoked
-         key matched a row and reported success. */
       .where(
         and(
           eq(schema.admin_api_keys.id, keyId),

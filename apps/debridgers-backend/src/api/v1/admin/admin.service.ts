@@ -19,6 +19,7 @@ import { UpdateProductDto } from "./dto/update-product.dto";
 import { SystemSettingsService } from "../settings/system-settings.service";
 import { WalletService } from "../agent/wallet.service";
 import { TaxonomyService } from "../catalog/taxonomy.service";
+import { AuditLogService } from "../../../infrastructure/audit/audit-log.service";
 
 /*
  * The single source of truth for a setting's starting value. Anything listed
@@ -38,6 +39,7 @@ export class AdminService {
     private readonly settings: SystemSettingsService,
     private readonly wallet: WalletService,
     private readonly taxonomy: TaxonomyService,
+    private readonly audit: AuditLogService,
   ) {}
 
   async getAdminMe(userId: number) {
@@ -281,7 +283,7 @@ export class AdminService {
     return { message: `Agent ${dto.status} successfully`, data: null };
   }
 
-  async suspendAgent(agentId: number) {
+  async suspendAgent(agentId: number, adminId: number) {
     const [profile] = await this.db
       .select({ user_id: schema.agent_profiles.user_id })
       .from(schema.agent_profiles)
@@ -295,6 +297,13 @@ export class AdminService {
       .update(schema.agent_profiles)
       .set({ status: "suspended" })
       .where(eq(schema.agent_profiles.user_id, agentId));
+
+    await this.audit.record({
+      admin_id: adminId,
+      action: "agent.suspend",
+      resource_type: "agent",
+      resource_id: agentId,
+    });
 
     // Get agent name for the notification message
     const [agentUser] = await this.db
@@ -676,7 +685,7 @@ export class AdminService {
     return { message: "Buyer retrieved", data: { ...buyer, orders } };
   }
 
-  async toggleBlockBuyer(buyerId: number, block: boolean) {
+  async toggleBlockBuyer(buyerId: number, block: boolean, adminId: number) {
     const [buyer] = await this.db
       .select()
       .from(schema.users)
@@ -689,6 +698,13 @@ export class AdminService {
       .update(schema.users)
       .set({ is_blocked: block })
       .where(eq(schema.users.id, buyerId));
+
+    await this.audit.record({
+      admin_id: adminId,
+      action: block ? "buyer.block" : "buyer.unblock",
+      resource_type: "buyer",
+      resource_id: buyerId,
+    });
 
     return {
       message: block ? "Buyer blocked" : "Buyer unblocked",
@@ -970,7 +986,7 @@ export class AdminService {
     };
   }
 
-  async markCommissionPaid(commissionId: number) {
+  async markCommissionPaid(commissionId: number, adminId: number) {
     const [commission] = await this.db
       .select()
       .from(schema.commissions)
@@ -987,6 +1003,14 @@ export class AdminService {
       .set({ status: "paid", paid_at: new Date() })
       .where(eq(schema.commissions.id, commissionId))
       .returning();
+
+    await this.audit.record({
+      admin_id: adminId,
+      action: "commission.mark_paid",
+      resource_type: "commission",
+      resource_id: commissionId,
+      details: { amount: updated.amount, agent_id: updated.agent_id },
+    });
 
     return { message: "Commission marked as paid", data: updated };
   }
@@ -1184,7 +1208,7 @@ export class AdminService {
     };
   }
 
-  async updateSetting(key: string, value: string) {
+  async updateSetting(key: string, value: string, adminId?: number) {
     const allowed = [
       "agent_commission_rate",
       "buyer_referral_discount_kobo",
@@ -1228,6 +1252,18 @@ export class AdminService {
 
     /* Drop the cached read so the change is live immediately, not in 30s. */
     this.settings.invalidate(key);
+
+    /*
+     * adminId is optional here because getSettings materialises defaults through
+     * this same method with no acting admin. A null actor is honest; inventing
+     * one would put a person's name against a write they did not make.
+     */
+    await this.audit.record({
+      admin_id: adminId ?? null,
+      action: "setting.update",
+      resource_type: "system_setting",
+      details: { key, value },
+    });
 
     return { message: "Setting updated", data: { key, value } };
   }
@@ -1317,6 +1353,14 @@ export class AdminService {
       throw new BadRequestException("That payout was just changed elsewhere.");
     }
 
+    await this.audit.record({
+      admin_id: adminId,
+      action: "withdrawal.approve",
+      resource_type: "withdrawal",
+      resource_id: id,
+      details: { amount: updated.amount, agent_id: updated.agent_id },
+    });
+
     return { message: "Payout approved", data: updated };
   }
 
@@ -1362,6 +1406,14 @@ export class AdminService {
      * back or the agent quietly loses it.
      */
     await this.wallet.refundAvailable(withdrawal.agent_id, withdrawal.amount);
+
+    await this.audit.record({
+      admin_id: adminId,
+      action: "withdrawal.reject",
+      resource_type: "withdrawal",
+      resource_id: id,
+      details: { amount: updated.amount, agent_id: updated.agent_id, reason },
+    });
 
     return { message: "Payout rejected and balance returned", data: updated };
   }

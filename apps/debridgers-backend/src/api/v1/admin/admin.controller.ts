@@ -59,7 +59,6 @@ import {
   UpdateProductDto,
 } from "./dto/update-product.dto";
 import { createCategorySchema, updateCategorySchema } from "./dto/category.dto";
-import { UsePipes } from "@nestjs/common";
 import { z } from "zod";
 import {
   parseOptionalBoolean,
@@ -308,8 +307,11 @@ export class AdminController {
       example: { statusCode: 200, message: "Agent suspended", data: null },
     },
   })
-  suspendAgent(@Param("id", ParseIntPipe) id: number) {
-    return this.adminService.suspendAgent(id);
+  suspendAgent(
+    @Param("id", ParseIntPipe) id: number,
+    @AdminId() adminId: number,
+  ) {
+    return this.adminService.suspendAgent(id, adminId);
   }
 
   @Patch("agents/:id/unsuspend")
@@ -506,8 +508,11 @@ export class AdminController {
       example: { statusCode: 200, message: "Buyer blocked", data: null },
     },
   })
-  blockBuyer(@Param("id", ParseIntPipe) id: number) {
-    return this.adminService.toggleBlockBuyer(id, true);
+  blockBuyer(
+    @Param("id", ParseIntPipe) id: number,
+    @AdminId() adminId: number,
+  ) {
+    return this.adminService.toggleBlockBuyer(id, true, adminId);
   }
 
   @Patch("buyers/:id/unblock")
@@ -520,8 +525,11 @@ export class AdminController {
       example: { statusCode: 200, message: "Buyer unblocked", data: null },
     },
   })
-  unblockBuyer(@Param("id", ParseIntPipe) id: number) {
-    return this.adminService.toggleBlockBuyer(id, false);
+  unblockBuyer(
+    @Param("id", ParseIntPipe) id: number,
+    @AdminId() adminId: number,
+  ) {
+    return this.adminService.toggleBlockBuyer(id, false, adminId);
   }
 
   @Patch("buyers/:id/suspend")
@@ -936,8 +944,11 @@ export class AdminController {
       },
     },
   })
-  markCommissionPaid(@Param("id", ParseIntPipe) id: number) {
-    return this.adminService.markCommissionPaid(id);
+  markCommissionPaid(
+    @Param("id", ParseIntPipe) id: number,
+    @AdminId() adminId: number,
+  ) {
+    return this.adminService.markCommissionPaid(id, adminId);
   }
 
   // ─── Products ────────────────────────────────────────────────────────────────
@@ -1001,8 +1012,12 @@ export class AdminController {
       },
     },
   })
-  updateSetting(@Body("key") key: string, @Body("value") value: string) {
-    return this.adminService.updateSetting(key, value);
+  updateSetting(
+    @Body("key") key: string,
+    @Body("value") value: string,
+    @AdminId() adminId: number,
+  ) {
+    return this.adminService.updateSetting(key, value, adminId);
   }
 
   // === Product taxonomy
