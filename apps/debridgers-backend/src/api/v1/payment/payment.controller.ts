@@ -22,7 +22,9 @@ import {
   InitializePaymentDto,
 } from "./dto/initialize-payment.dto";
 import { initiateRefundSchema, InitiateRefundDto } from "./dto/refund.dto";
-import { PaymentKeysGuard } from "../../shared/guards/keys.guard";
+import { AuthGuard } from "../../shared/guards/auth.guard";
+import { RolesGuard } from "../../shared/guards/roles.guard";
+import { Roles } from "../../shared/decorators/roles.decorator";
 import { CurrentUser } from "../../shared/decorators/current-user.decorator";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";
 
@@ -65,7 +67,8 @@ export class PaymentController {
 
   @Post("subaccount/:agentId")
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(PaymentKeysGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("admin")
   createSubaccount(@Param("agentId", ParseIntPipe) agentId: number) {
     return this.paymentService.createSubaccount(agentId);
   }
@@ -81,14 +84,16 @@ export class PaymentController {
    */
   @Post("payout/run-weekly")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(PaymentKeysGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("admin")
   runWeeklyPayouts() {
     return this.payoutService.runWeeklyPayouts();
   }
 
   @Post("payout/:withdrawalId")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(PaymentKeysGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("admin")
   processWithdrawal(
     @Param("withdrawalId", ParseIntPipe) withdrawalId: number,
     @CurrentUser() admin: JwtPayload,
@@ -98,10 +103,10 @@ export class PaymentController {
 
   @Post("refund")
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(PaymentKeysGuard)
-  @UsePipes(new ZodValidationPipe(initiateRefundSchema))
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("admin")
   initiateRefund(
-    @Body() dto: InitiateRefundDto,
+    @Body(new ZodValidationPipe(initiateRefundSchema)) dto: InitiateRefundDto,
     @CurrentUser() admin: JwtPayload,
   ) {
     return this.refundService.initiateRefund(dto, admin.sub);

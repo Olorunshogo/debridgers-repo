@@ -114,55 +114,71 @@ export class BuyerService {
     return { message: "Notification marked as read", data: null };
   }
 
+  /*
+   * Creates a pending, unpaid order and returns its total. The buyer then picks
+   * a payment method and calls POST /buyer/orders/:id/pay.
+   *
+   * Prices come from the products table, never from the request. The admin sets
+   * the price; the browser only says which product and how many. This shares
+   * priceBasket with the quote endpoint so the figure shown at checkout is the
+   * figure charged.
+   */
   async createOrder(dto: CreateOrderDto, user: JwtPayload) {
     if (!dto.cart || dto.cart.length === 0) {
       throw new BadRequestException("Cart cannot be empty");
     }
 
-    const [zone] = await this.db
-      .select()
-      .from(schema.zones)
-      .where(eq(schema.zones.id, dto.zone_id))
-      .limit(1);
+    const zoneId = await this.resolveDeliveryZone(user, dto.zone_id);
+    const { lines, totals } = await this.priceBasket(dto.cart, zoneId);
+    const totalQuantity = lines.reduce((sum, l) => sum + l.quantity, 0);
 
-    if (!zone) throw new BadRequestException("Invalid zone");
+    const order = await this.db.transaction(async (tx) => {
+      const [created] = await tx
+        .insert(schema.orders)
+        .values({
+          buyer_id: user.sub,
+          zone_id: zoneId,
+          quantity: totalQuantity,
+          /* Legacy single-product columns; order_items is the real record. */
+          unit_price: Math.round(totals.itemsTotalKobo / totalQuantity),
+          handling_fee: totals.handlingFeeKobo,
+          delivery_fee: totals.deliveryFeeKobo,
+          total_amount: totals.totalKobo,
+          order_mode: "referral",
+          status: "pending",
+          payment_status: "unpaid",
+          delivery_address: dto.delivery_address,
+          notes: dto.notes ?? null,
+        })
+        .returning();
 
-    let subtotal = 0;
-    const items = dto.cart.map((item) => {
-      const lineTotal = item.price_kobo * item.qty;
-      subtotal += lineTotal;
-      return { ...item, subtotal: lineTotal };
+      await tx.insert(schema.order_items).values(
+        lines.map((line) => ({
+          order_id: created.id,
+          product_id: line.product_id,
+          quantity: line.quantity,
+          unit_price_kobo: line.unit_price_kobo,
+        })),
+      );
+
+      return created;
     });
 
-    const deliveryFee = zone.delivery_fee || 0;
-    const total = subtotal + deliveryFee;
-    const quantity = dto.cart.reduce((sum, item) => sum + item.qty, 0);
-
-    const [order] = await this.db
-      .insert(schema.orders)
-      .values({
-        buyer_id: user.sub,
-        zone_id: dto.zone_id,
-        quantity,
-        unit_price: items[0]?.price_kobo || 0,
-        delivery_fee: deliveryFee,
-        total_amount: total,
-        order_mode: "referral",
-        status: "pending",
-        delivery_address: dto.delivery_address,
-      })
-      .returning();
-
-    for (const item of items) {
-      await this.db.insert(schema.order_items).values({
+    return {
+      message: "Order placed successfully",
+      data: {
         order_id: order.id,
-        product_id: item.product_id,
-        quantity: item.qty,
-        unit_price_kobo: item.price_kobo,
-      });
-    }
-
-    return { message: "Order placed successfully", data: order };
+        status: order.status,
+        payment_status: order.payment_status,
+        items_total_kobo: totals.itemsTotalKobo,
+        delivery_fee_kobo: totals.deliveryFeeKobo,
+        handling_fee_kobo: totals.handlingFeeKobo,
+        total_kobo: totals.totalKobo,
+        zone_id: zoneId,
+        delivery_address: order.delivery_address,
+        created_at: order.created_at,
+      },
+    };
   }
 
   async getOrders(user: JwtPayload) {

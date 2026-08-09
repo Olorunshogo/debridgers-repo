@@ -329,3 +329,108 @@ short-circuits the gateway.
 - Institutional/Bulk Orders: Terms to be documented in a separate written agreement
 
 ## Currency: All prices are written in Nigerian Naira (NGN) unless otherwise specified
+
+## Planned: Checkout payment method selection
+
+Decided 2026-08-09. The checkout button says "Pay with Paystack", which names an
+implementation instead of an intent and hardcodes one of the two methods the
+backend already supports.
+
+**Shape: a modal, not a page.** The choice is two options and no input of its
+own. A page costs a route, a back-button story, and a way to arrive at it with a
+stale order. The dialog engine already carries `AUTH_GATE` on this same screen,
+so a `PAYMENT_METHOD` dialog is the consistent move. Revisit only if a method
+arrives that needs real form fields, for example card capture on our own domain
+or a bank-transfer reference upload.
+
+**The flow has to change, not just the label.** Today the shop calls
+`POST /buyer/orders/initialize-payment`, which creates the order **and** starts
+Paystack in one request. That leaves no point at which a buyer could choose the
+wallet. Splitting it:
+
+1. `POST /buyer/orders` creates the pending order and returns `total_kobo`.
+2. The modal opens showing that total, the wallet balance, and the two methods.
+3. `POST /buyer/orders/:id/pay` with `payment_method: "wallet" | "paystack"`.
+   Wallet settles immediately; Paystack returns an `authorization_url` to
+   redirect to.
+
+All three endpoints exist. Step 3 is already built for both methods.
+
+**What the modal must show, since this is money:**
+
+- The amount, itemised: items, delivery fee, handling fee. `POST /buyer/cart/quote`
+  returns exactly this breakdown and is the same pricing path the charge uses,
+  so what is shown is what is charged.
+- Wallet balance, and whether it covers the total. If it does not, the wallet
+  option is disabled with the shortfall named rather than hidden, so the buyer
+  learns why.
+- One in-flight request at a time. Double submission on a payment screen is the
+  expensive kind of bug, and `checkPaymentAttempt` already rate limits server
+  side; the button must reflect that rather than rely on it.
+
+**Do not add a "cash on delivery" option to this modal yet.** The Addendum above
+allows it for pickup orders only, and the backend `payment_method` enum has no
+such value. It needs a backend change and a pickup flow first.
+
+- [x] `PAYMENT_METHOD` dialog in the dialog registry
+- [x] Split shop checkout into create-order then pay
+- [x] Wallet balance and sufficiency check in the modal
+- [x] Rename the button to "Pay" and move method naming inside the modal
+- [ ] Reuse the same modal on the buyer dashboard, where an unpaid order also
+      needs a pay action
+
+### Abandoned orders: what happens when someone does not pay
+
+Decided 2026-08-09. Splitting checkout into create-then-pay means an order can
+now exist that nobody paid for. That is a feature, not a leak: it is a record of
+intent we can recover, provided it is handled deliberately.
+
+**Two cases, and only one of them creates anything.**
+
+| Case                                                       | What exists afterwards                                                                                                                                                                                                                                                      |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Guest hits checkout, gets `AUTH_GATE`, logs in or signs up | Nothing orphaned. No order is created until the delivery form is submitted, and the cart lives in localStorage and merges server-side on login through `POST /buyer/cart/merge`. They land back on checkout with their cart intact. This already works and needs no change. |
+| Signed-in buyer creates the order, then closes the modal   | A real order, `status: pending`, `payment_status: unpaid`. This is the case to design for.                                                                                                                                                                                  |
+
+**Do not redirect them to payment on next login.** It is tempting and it is the
+wrong call. Someone logging in to check a delivery, or six days later for
+something unrelated, gets shoved into a checkout they already walked away from,
+with no obvious way out. Hijacking the post-login destination also breaks the
+signup path, where the intent was never payment at all. Recovery should be
+offered, not forced.
+
+**Surface it instead, in the two places they will already be looking:**
+
+- A persistent card at the top of the buyer dashboard: "You have an unpaid
+  order, ₦X, placed 2 days ago", with **Complete payment** and **Cancel order**.
+- The same action on the row in the orders list, so the list is self-explanatory
+  rather than showing a mystery pending entry.
+
+Both reopen the same `PAYMENT_METHOD` dialog. It already takes an order id and
+its totals, so nothing new is needed beyond fetching them.
+
+**Re-price at the moment of resume, and say so if it changed.** The order stores
+the total from when it was created. If an admin has since changed a price, paying
+the stale total charges the wrong amount. On resume, re-run the same
+`priceBasket` path, and if the total moved, show the old and new figures and make
+the buyer confirm. Silently charging a different number than the one shown is the
+failure mode to avoid; silently honouring a stale one is a slower version of the
+same problem.
+
+**Do not accumulate duplicates.** A buyer who abandons three times should not
+have three pending orders. On create, if an unpaid pending order already exists
+for that buyer with the same cart contents, return it rather than inserting
+another.
+
+**Expire them.** An unpaid order older than 24 hours moves to `cancelled` with a
+cancellation reason of "not paid in time". Without this the orders table fills
+with rows that are neither live nor closed, and the admin orders page becomes
+unreadable. 24 hours is long enough to cover "I will pay when I get home" and
+short enough that the list stays meaningful. This is a scheduled job in the same
+shape as `PayoutService`'s weekly `@Cron`.
+
+- [ ] Unpaid-order card on the buyer dashboard
+- [ ] Complete payment action on the orders list row
+- [ ] Re-price on resume, confirm if the total changed
+- [ ] Reuse an existing pending order instead of creating a duplicate
+- [ ] `@Cron` to expire unpaid orders after 24 hours

@@ -5,22 +5,30 @@ import {
 } from "@nestjs/common";
 import { Inject } from "@nestjs/common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, desc, and, count } from "drizzle-orm";
+import { eq, desc, and, count, inArray } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
 
+/*
+ * `name`, `price_kobo` and `unit` are accepted for backwards compatibility with
+ * clients that still send a whole cart, but they are NOT trusted. Price, name
+ * and unit are re-read from the product table on every order. Only product_id
+ * and qty carry meaning.
+ */
 export interface CartItem {
   product_id: number;
-  name: string;
-  price_kobo: number;
-  unit: string;
+  name?: string;
+  price_kobo?: number;
+  unit?: string;
   qty: number;
 }
 
 export interface CreateOrderDto {
   delivery_address: string;
-  zone_id: number;
+  /* Optional: falls back to the buyer's own zone when the client omits it. */
+  zone_id?: number;
   delivery_time: string;
+  notes?: string;
   cart: CartItem[];
 }
 
@@ -47,24 +55,84 @@ export class OrderService {
       );
     }
 
+    /* Fall back to the buyer's own zone so a client that does not collect one
+       still resolves a delivery fee rather than failing validation. */
+    let zoneId = dto.zone_id;
+    if (zoneId === undefined) {
+      const [buyer] = await this.db
+        .select({ zone_id: schema.users.zone_id })
+        .from(schema.users)
+        .where(eq(schema.users.id, userId))
+        .limit(1);
+      zoneId = buyer?.zone_id ?? undefined;
+    }
+
+    if (zoneId === undefined) {
+      throw new BadRequestException(
+        "No delivery zone supplied and none set on your profile.",
+      );
+    }
+
     // Verify zone exists
     const [zone] = await this.db
       .select()
       .from(schema.zones)
-      .where(eq(schema.zones.id, dto.zone_id))
+      .where(eq(schema.zones.id, zoneId))
       .limit(1);
 
     if (!zone) {
       throw new BadRequestException("Invalid zone");
     }
 
-    // Calculate totals
+    /*
+     * Price server-side. The cart arrives from the browser, so anything it says
+     * about price is a suggestion from the person being charged. Reading the
+     * price back from the product table is the only thing that makes the total
+     * trustworthy; before this, a crafted request could buy anything for ₦1.
+     */
+    const productIds = [...new Set(dto.cart.map((i) => i.product_id))];
+    const products = await this.db
+      .select({
+        id: schema.productsTable.id,
+        name: schema.productsTable.name,
+        unit: schema.productsTable.unit,
+        price_kobo: schema.productsTable.price_kobo,
+        is_active: schema.productsTable.is_active,
+      })
+      .from(schema.productsTable)
+      .where(inArray(schema.productsTable.id, productIds));
+
+    const priced = new Map(products.map((p) => [p.id, p]));
+
     let subtotal = 0;
     const items = dto.cart.map((item) => {
-      const lineTotal = item.price_kobo * item.qty;
+      const product = priced.get(item.product_id);
+
+      if (!product) {
+        throw new BadRequestException(
+          `Product ${item.product_id} does not exist.`,
+        );
+      }
+      if (!product.is_active) {
+        throw new BadRequestException(
+          `"${product.name}" is no longer on sale.`,
+        );
+      }
+      if (!Number.isInteger(item.qty) || item.qty < 1) {
+        throw new BadRequestException(
+          `Invalid quantity for "${product.name}".`,
+        );
+      }
+
+      const lineTotal = product.price_kobo * item.qty;
       subtotal += lineTotal;
+
       return {
-        ...item,
+        product_id: product.id,
+        name: product.name,
+        unit: product.unit,
+        price_kobo: product.price_kobo,
+        qty: item.qty,
         subtotal: lineTotal,
       };
     });
@@ -77,12 +145,13 @@ export class OrderService {
       .insert(schema.orders)
       .values({
         buyer_id: userId,
-        zone_id: dto.zone_id,
-        quantity: dto.cart.reduce((sum, item) => sum + item.qty, 0),
+        zone_id: zoneId,
+        quantity: items.reduce((sum, item) => sum + item.qty, 0),
         unit_price: items[0]?.price_kobo || 0,
         delivery_fee: deliveryFee,
         total_amount: total,
         delivery_address: dto.delivery_address,
+        notes: dto.notes,
         order_mode: "referral",
         status: "pending",
         payment_status: "unpaid",
@@ -114,7 +183,7 @@ export class OrderService {
         delivery_fee_kobo: deliveryFee,
         total_kobo: total,
         delivery_address: dto.delivery_address,
-        zone_id: dto.zone_id,
+        zone_id: zoneId,
         created_at: order.created_at,
       },
     };

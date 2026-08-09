@@ -17,13 +17,15 @@ import {
 } from "@nestjs/swagger";
 import { NotificationsService } from "./notifications.service";
 import { AuthGuard } from "../../shared/guards/auth.guard";
-import { RequestKeyGuard } from "../../shared/guards/keys.guard";
+import { RolesGuard } from "../../shared/guards/roles.guard";
+import { Roles } from "../../shared/decorators/roles.decorator";
 import { CurrentUser } from "../../shared/decorators/current-user.decorator";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";
 
 @ApiTags("Buyer - Notifications")
 @Controller("buyer/notifications")
-@UseGuards(AuthGuard, RequestKeyGuard)
+@UseGuards(AuthGuard, RolesGuard)
+@Roles("buyer")
 @ApiBearerAuth("access-token")
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}

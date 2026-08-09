@@ -22,17 +22,11 @@ export async function apiFetch<T = unknown>(
   options: RequestInit = {},
 ): Promise<T> {
   const token = getAccessToken();
-  const requestKey = import.meta.env.VITE_REQUEST_KEY;
-  const paymentKey1 = import.meta.env.VITE_PAYMENT_KEY_1;
-  const paymentKey2 = import.meta.env.VITE_PAYMENT_KEY_2;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
-  if (requestKey) headers["X-Request-Key"] = requestKey;
-  if (paymentKey1) headers["X-Payment-Key"] = paymentKey1;
-  if (paymentKey2) headers["X-Payment-Key_2"] = paymentKey2;
 
   const url = `${BASE_BACKEND_URL}${path}`;
   let res = await fetch(url, { ...options, headers, credentials: "include" });

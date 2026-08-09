@@ -16,7 +16,8 @@ import { WalletService } from "./wallet.service";
 import { BuyerRateLimitService } from "./buyer-rate-limit.service";
 import { EmailService } from "../../../notification/features/email/email.service";
 import { AuthGuard } from "../../shared/guards/auth.guard";
-import { RequestKeyGuard } from "../../shared/guards/keys.guard";
+import { RolesGuard } from "../../shared/guards/roles.guard";
+import { Roles } from "../../shared/decorators/roles.decorator";
 import { CurrentUser } from "../../shared/decorators/current-user.decorator";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";
 
@@ -34,7 +35,8 @@ class ConfirmDepositDto {
 
 @ApiTags("Buyer - Wallet")
 @Controller("buyer/wallet")
-@UseGuards(AuthGuard, RequestKeyGuard)
+@UseGuards(AuthGuard, RolesGuard)
+@Roles("buyer")
 @ApiBearerAuth("access-token")
 export class WalletController {
   private readonly baseUrl: string;

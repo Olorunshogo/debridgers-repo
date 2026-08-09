@@ -10,7 +10,6 @@ import {
   Post,
   Query,
   UseGuards,
-  UsePipes,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { OrderService, CreateOrderDto } from "./order.service";
@@ -18,28 +17,35 @@ import { PaymentService } from "./payment.service";
 import { BuyerRateLimitService } from "./buyer-rate-limit.service";
 import { EmailService } from "../../../notification/features/email/email.service";
 import { AuthGuard } from "../../shared/guards/auth.guard";
-import {
-  RequestKeyGuard,
-  BuyerPaymentKeysGuard,
-} from "../../shared/guards/keys.guard";
+import { RolesGuard } from "../../shared/guards/roles.guard";
+import { Roles } from "../../shared/decorators/roles.decorator";
 import { CurrentUser } from "../../shared/decorators/current-user.decorator";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";
 import { ZodValidationPipe } from "../../../infrastructure/pipeline/validation.pipeline";
 import { z } from "zod";
 
+/*
+ * name, price_kobo and unit are optional and ignored by the service, which
+ * re-reads all three from the product table. They stay in the schema only so
+ * existing clients that send a full cart are not rejected. Do not start
+ * trusting them again.
+ */
 const createOrderSchema = z.object({
   delivery_address: z.string().min(10),
-  zone_id: z.number().int().positive(),
+  zone_id: z.number().int().positive().optional(),
   delivery_time: z.string(),
-  cart: z.array(
-    z.object({
-      product_id: z.number().int().positive(),
-      name: z.string(),
-      price_kobo: z.number().int().positive(),
-      unit: z.string(),
-      qty: z.number().int().positive(),
-    }),
-  ),
+  notes: z.string().optional(),
+  cart: z
+    .array(
+      z.object({
+        product_id: z.number().int().positive(),
+        name: z.string().optional(),
+        price_kobo: z.number().int().positive().optional(),
+        unit: z.string().optional(),
+        qty: z.number().int().positive(),
+      }),
+    )
+    .min(1),
 });
 
 const payOrderSchema = z.object({
@@ -63,7 +69,8 @@ const mobileMoneyPaymentSchema = z.object({
 
 @ApiTags("Buyer - Orders")
 @Controller("buyer/orders")
-@UseGuards(AuthGuard, RequestKeyGuard)
+@UseGuards(AuthGuard, RolesGuard)
+@Roles("buyer")
 @ApiBearerAuth("access-token")
 export class OrderController {
   constructor(
@@ -75,11 +82,10 @@ export class OrderController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @UsePipes(new ZodValidationPipe(createOrderSchema))
   @ApiOperation({ summary: "Create order from cart" })
   async createOrder(
     @CurrentUser() user: JwtPayload,
-    @Body() dto: CreateOrderDto,
+    @Body(new ZodValidationPipe(createOrderSchema)) dto: CreateOrderDto,
   ) {
     // Check rate limit
     const rateLimitCheck = await this.rateLimitService.checkOrderLimit(
@@ -176,13 +182,12 @@ export class OrderController {
 
   @Post(":id/pay")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard, BuyerPaymentKeysGuard)
-  @UsePipes(new ZodValidationPipe(payOrderSchema))
   @ApiOperation({ summary: "Pay order with wallet or Paystack" })
   async payOrder(
     @CurrentUser() user: JwtPayload,
     @Param("id", ParseIntPipe) orderId: number,
-    @Body() dto: z.infer<typeof payOrderSchema>,
+    @Body(new ZodValidationPipe(payOrderSchema))
+    dto: z.infer<typeof payOrderSchema>,
   ) {
     // Check payment rate limit (prevent duplicate payments)
     const paymentRateLimit = await this.rateLimitService.checkPaymentAttempt(
@@ -231,12 +236,12 @@ export class OrderController {
 
   @Post(":id/cancel")
   @HttpCode(HttpStatus.OK)
-  @UsePipes(new ZodValidationPipe(cancelOrderSchema))
   @ApiOperation({ summary: "Cancel unpaid or pending order" })
   async cancelOrder(
     @CurrentUser() user: JwtPayload,
     @Param("id", ParseIntPipe) orderId: number,
-    @Body() dto: z.infer<typeof cancelOrderSchema>,
+    @Body(new ZodValidationPipe(cancelOrderSchema))
+    dto: z.infer<typeof cancelOrderSchema>,
   ) {
     const order = await this.orderService.cancelOrder(
       user.sub,
@@ -253,12 +258,12 @@ export class OrderController {
 
   @Post(":id/refund")
   @HttpCode(HttpStatus.OK)
-  @UsePipes(new ZodValidationPipe(refundRequestSchema))
   @ApiOperation({ summary: "Request refund for paid order" })
   async requestRefund(
     @CurrentUser() user: JwtPayload,
     @Param("id", ParseIntPipe) orderId: number,
-    @Body() dto: z.infer<typeof refundRequestSchema>,
+    @Body(new ZodValidationPipe(refundRequestSchema))
+    dto: z.infer<typeof refundRequestSchema>,
   ) {
     const result = await this.orderService.requestRefund(
       user.sub,
@@ -275,12 +280,11 @@ export class OrderController {
 
   @Post(":id/pay/mobile-money")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard, BuyerPaymentKeysGuard)
-  @UsePipes(new ZodValidationPipe(mobileMoneyPaymentSchema))
   @ApiOperation({ summary: "Pay order with mobile money/USSD" })
   async payWithMobileMoney(
     @CurrentUser() user: JwtPayload,
-    @Body() dto: z.infer<typeof mobileMoneyPaymentSchema>,
+    @Body(new ZodValidationPipe(mobileMoneyPaymentSchema))
+    dto: z.infer<typeof mobileMoneyPaymentSchema>,
   ) {
     const result = await this.paymentService.initiateMobileMoneyPayment({
       email: user.email,
@@ -300,12 +304,10 @@ export class OrderController {
 
   @Post("initialize-payment")
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(AuthGuard, BuyerPaymentKeysGuard)
-  @UsePipes(new ZodValidationPipe(createOrderSchema))
   @ApiOperation({ summary: "Create order and initialize Paystack payment" })
   async initializePayment(
     @CurrentUser() user: JwtPayload,
-    @Body() dto: CreateOrderDto,
+    @Body(new ZodValidationPipe(createOrderSchema)) dto: CreateOrderDto,
   ) {
     // Check rate limit
     const rateLimitCheck = await this.rateLimitService.checkOrderLimit(

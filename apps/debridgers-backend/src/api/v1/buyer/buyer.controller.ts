@@ -31,19 +31,21 @@ import {
 } from "./dto/update-profile.dto";
 import { createOrderSchema, CreateOrderDto } from "./dto/create-order.dto";
 import { syncCartSchema } from "./dto/sync-cart.dto";
-import { initializeOrderPaymentSchema } from "./dto/initialize-order-payment.dto";
+import {
+  initializeOrderPaymentSchema,
+  InitializeOrderPaymentDto,
+} from "./dto/initialize-order-payment.dto";
 import { quoteCartSchema } from "./dto/quote-cart.dto";
 import { AuthGuard } from "../../shared/guards/auth.guard";
-import {
-  RequestKeyGuard,
-  BuyerPaymentKeysGuard,
-} from "../../shared/guards/keys.guard";
+import { RolesGuard } from "../../shared/guards/roles.guard";
+import { Roles } from "../../shared/decorators/roles.decorator";
 import { CurrentUser } from "../../shared/decorators/current-user.decorator";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";
 
 @ApiTags("Buyer")
 @Controller("buyer")
-@UseGuards(AuthGuard, RequestKeyGuard)
+@UseGuards(AuthGuard, RolesGuard)
+@Roles("buyer")
 @ApiBearerAuth("access-token")
 export class BuyerController {
   constructor(
@@ -246,7 +248,6 @@ export class BuyerController {
   // === Checkout
 
   @Post("orders/initialize-payment")
-  @UseGuards(AuthGuard, BuyerPaymentKeysGuard)
   @ApiOperation({
     summary: "Create a pending order and start Paystack checkout",
     description:
@@ -254,10 +255,10 @@ export class BuyerController {
   })
   @ApiResponse({ status: 201, description: "Payment initialized" })
   initializeOrderPayment(
-    @Body() body: unknown,
+    @Body(new ZodValidationPipe(initializeOrderPaymentSchema))
+    dto: InitializeOrderPaymentDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    const dto = initializeOrderPaymentSchema.parse(body);
     return this.buyerService.initializeOrderPayment(dto, user);
   }
 

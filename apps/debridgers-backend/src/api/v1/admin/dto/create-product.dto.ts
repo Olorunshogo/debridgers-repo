@@ -15,6 +15,7 @@ export const createProductSchema = z.object({
   category_id: z.number().int().positive().nullable().optional(),
   measure_value: z.number().int().min(0).optional(),
   measure_unit: z.enum(["kg", "litre", "piece"]).optional(),
+  weight_grams: z.number().int().min(0).optional(),
   description: z.string().max(500).optional(),
   /*
    * Accepts an absolute URL (Cloudinary) or an app-relative path

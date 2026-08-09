@@ -13,6 +13,6 @@ COPY . .
 
 RUN pnpm --filter @debridgers/debridgers-backend build
 
-EXPOSE 4000
+EXPOSE 4001
 
 CMD ["node", "apps/debridgers-backend/dist/main.js"]

@@ -185,7 +185,7 @@ async function bootstrap() {
       swaggerOptions: { persistAuthorization: true },
     });
     Logger.log(
-      `Swagger UI available at: http://localhost:${process.env.PORT ?? 4000}/api/docs`,
+      `Swagger UI available at: http://localhost:${process.env.PORT ?? 4001}/api/docs`,
     );
   }
 

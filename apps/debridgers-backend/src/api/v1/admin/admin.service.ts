@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, desc, count, sum, and, isNull, sql } from "drizzle-orm";
+import { eq, desc, count, sum, and, inArray, sql } from "drizzle-orm";
 import * as crypto from "crypto";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
@@ -115,6 +115,11 @@ export class AdminService {
         admin_notes: schema.agent_profiles.admin_notes,
         referral_buyer_code: schema.agent_profiles.referral_buyer_code,
         referral_agent_code: schema.agent_profiles.referral_agent_code,
+        /* Omitting these made KYC state and the bank-code backfill invisible
+           through the API. */
+        kyc_status: schema.agent_profiles.kyc_status,
+        bank_code: schema.agent_profiles.bank_code,
+        bank_name: schema.agent_profiles.bank_name,
         applied_at: schema.users.created_at,
       })
       .from(schema.users)
@@ -391,7 +396,13 @@ export class AdminService {
     return { message: "Agent promoted to State Manager", data: null };
   }
 
-  async getPendingKyc() {
+  async getPendingKyc(
+    kycStatus:
+      | "not_submitted"
+      | "submitted"
+      | "approved"
+      | "rejected" = "submitted",
+  ) {
     const agents = await this.db
       .select({
         id: schema.users.id,
@@ -411,10 +422,10 @@ export class AdminService {
         schema.agent_profiles,
         eq(schema.agent_profiles.user_id, schema.users.id),
       )
-      .where(eq(schema.agent_profiles.kyc_status, "submitted"))
+      .where(eq(schema.agent_profiles.kyc_status, kycStatus))
       .orderBy(desc(schema.users.created_at));
 
-    return { message: "Pending KYC list retrieved", data: agents };
+    return { message: "KYC list retrieved", data: agents };
   }
 
   async reviewKyc(agentId: number, dto: ReviewKycDto) {
@@ -448,10 +459,19 @@ export class AdminService {
   }
 
   async setAgentTarget(agentId: number, target: number) {
-    await this.db
+    if (target < 0) {
+      throw new BadRequestException("Target cannot be negative.");
+    }
+
+    /* Returning rows is what distinguishes "updated" from "matched nothing";
+       without it this reported success for any id. */
+    const [updated] = await this.db
       .update(schema.agent_profiles)
       .set({ target })
-      .where(eq(schema.agent_profiles.user_id, agentId));
+      .where(eq(schema.agent_profiles.user_id, agentId))
+      .returning();
+
+    if (!updated) throw new NotFoundException("Agent not found");
 
     return { message: "Target updated", data: { agentId, target } };
   }
@@ -473,6 +493,23 @@ export class AdminService {
     const offset = (page - 1) * limit;
 
     const buyer = schema.users;
+
+    /* Shared with the count query below, which otherwise totals the whole table. */
+    const whereClause = and(
+      status
+        ? eq(schema.orders.status, status as typeof schema.orders.status._.data)
+        : undefined,
+      payment_status
+        ? eq(
+            schema.orders.payment_status,
+            payment_status as typeof schema.orders.payment_status._.data,
+          )
+        : undefined,
+      search
+        ? sql`(lower(${buyer.first_name}) || ' ' || lower(${buyer.last_name}) like ${"%" + search.toLowerCase() + "%"} or lower(${buyer.email}) like ${"%" + search.toLowerCase() + "%"})`
+        : undefined,
+    );
+
     const rows = await this.db
       .select({
         id: schema.orders.id,
@@ -499,32 +536,16 @@ export class AdminService {
       .from(schema.orders)
       .innerJoin(buyer, eq(schema.orders.buyer_id, buyer.id))
       .leftJoin(schema.zones, eq(schema.orders.zone_id, schema.zones.id))
-      .where(
-        and(
-          status
-            ? eq(
-                schema.orders.status,
-                status as typeof schema.orders.status._.data,
-              )
-            : undefined,
-          payment_status
-            ? eq(
-                schema.orders.payment_status,
-                payment_status as typeof schema.orders.payment_status._.data,
-              )
-            : undefined,
-          search
-            ? sql`(lower(${buyer.first_name}) || ' ' || lower(${buyer.last_name}) like ${"%" + search.toLowerCase() + "%"} or lower(${buyer.email}) like ${"%" + search.toLowerCase() + "%"})`
-            : undefined,
-        ),
-      )
+      .where(whereClause)
       .orderBy(desc(schema.orders.created_at))
       .limit(limit)
       .offset(offset);
 
     const [{ total }] = await this.db
       .select({ total: count() })
-      .from(schema.orders);
+      .from(schema.orders)
+      .innerJoin(buyer, eq(schema.orders.buyer_id, buyer.id))
+      .where(whereClause);
 
     return {
       message: "Orders retrieved",
@@ -574,7 +595,7 @@ export class AdminService {
     return { message: "Order retrieved", data: order };
   }
 
-  async getBuyers(zoneId?: number, isSuspended?: boolean) {
+  async getBuyers(zoneId?: number, isSuspended?: boolean, isBlocked?: boolean) {
     const whereConditions = [eq(schema.users.role, "buyer")];
 
     if (zoneId !== undefined) {
@@ -583,6 +604,10 @@ export class AdminService {
 
     if (isSuspended !== undefined) {
       whereConditions.push(eq(schema.users.is_suspended, isSuspended));
+    }
+
+    if (isBlocked !== undefined) {
+      whereConditions.push(eq(schema.users.is_blocked, isBlocked));
     }
 
     const buyers = await this.db
@@ -620,6 +645,9 @@ export class AdminService {
         is_email_verified: schema.users.is_email_verified,
         is_phone_verified: schema.users.is_phone_verified,
         is_blocked: schema.users.is_blocked,
+        /* Present so the suspend mutation is verifiable from this endpoint;
+           without it an admin cannot confirm their own action took effect. */
+        is_suspended: schema.users.is_suspended,
         zone_id: schema.users.zone_id,
         referred_by_agent_id: schema.users.referred_by_agent_id,
         joined_at: schema.users.created_at,
@@ -867,24 +895,57 @@ export class AdminService {
   // ─── Commissions ────────────────────────────────────────────────────────────
 
   async markCommissionPaid(commissionId: number) {
-    await this.db
+    const [commission] = await this.db
+      .select()
+      .from(schema.commissions)
+      .where(eq(schema.commissions.id, commissionId))
+      .limit(1);
+
+    if (!commission) throw new NotFoundException("Commission not found");
+    if (commission.status === "paid") {
+      throw new BadRequestException("That commission is already paid.");
+    }
+
+    const [updated] = await this.db
       .update(schema.commissions)
       .set({ status: "paid", paid_at: new Date() })
-      .where(eq(schema.commissions.id, commissionId));
+      .where(eq(schema.commissions.id, commissionId))
+      .returning();
 
-    return { message: "Commission marked as paid", data: null };
+    return { message: "Commission marked as paid", data: updated };
   }
 
   // ─── Products ────────────────────────────────────────────────────────────────
 
   async createProduct(dto: CreateProductDto) {
-    const result = await this.db.execute(
-      sql`INSERT INTO product (name, unit, price_kobo, description, image_url, sort_order, is_active)
-          VALUES (${dto.name}, ${dto.unit}, ${dto.price_kobo}, ${dto.description || null}, ${dto.image_url || null}, ${dto.sort_order || 0}, true)
-          RETURNING *`,
-    );
+    if (dto.category_id) await this.assertCategoryExists(dto.category_id);
 
-    const product = result.rows?.[0] || null;
+    /* Query builder rather than raw SQL: the previous INSERT named only 7
+       columns, so the rest were validated and then silently dropped. */
+    const category =
+      dto.category ??
+      (dto.category_id
+        ? ((await this.taxonomy.rootCategoryName(dto.category_id)) ?? undefined)
+        : undefined);
+
+    const [product] = await this.db
+      .insert(schema.productsTable)
+      .values({
+        name: dto.name,
+        unit: dto.unit,
+        price_kobo: dto.price_kobo,
+        category_id: dto.category_id ?? null,
+        ...(category !== undefined ? { category } : {}),
+        measure_value: dto.measure_value ?? null,
+        measure_unit: dto.measure_unit ?? null,
+        weight_grams: dto.weight_grams ?? null,
+        description: dto.description ?? null,
+        image_url: dto.image_url ?? null,
+        sort_order: dto.sort_order ?? 0,
+        is_active: true,
+      })
+      .returning();
+
     return { message: "Product created", data: product };
   }
 
@@ -895,7 +956,25 @@ export class AdminService {
     return { message: "Products retrieved", data: rows.rows || [] };
   }
 
+  /* Without this the FK violation surfaces as a 500 rather than telling the
+     caller which field was wrong. */
+  private async assertCategoryExists(categoryId: number): Promise<void> {
+    const [category] = await this.db
+      .select({ id: schema.product_categories.id })
+      .from(schema.product_categories)
+      .where(eq(schema.product_categories.id, categoryId))
+      .limit(1);
+
+    if (!category) {
+      throw new BadRequestException(
+        `category_id ${categoryId} does not exist.`,
+      );
+    }
+  }
+
   async updateProduct(id: number, dto: UpdateProductDto) {
+    if (dto.category_id) await this.assertCategoryExists(dto.category_id);
+
     const updates: Partial<typeof schema.productsTable.$inferInsert> = {};
     if (dto.name !== undefined) updates.name = dto.name;
     if (dto.unit !== undefined) updates.unit = dto.unit;
@@ -913,8 +992,9 @@ export class AdminService {
       }
     }
     if (dto.measure_value !== undefined)
-      updates.measure_value = String(dto.measure_value);
+      updates.measure_value = dto.measure_value;
     if (dto.measure_unit !== undefined) updates.measure_unit = dto.measure_unit;
+    if (dto.weight_grams !== undefined) updates.weight_grams = dto.weight_grams;
     if (dto.description !== undefined) updates.description = dto.description;
     if (dto.image_url !== undefined) updates.image_url = dto.image_url;
     if (dto.is_active !== undefined) updates.is_active = dto.is_active;
@@ -986,9 +1066,13 @@ export class AdminService {
   }
 
   async deleteOutreachRecord(id: number) {
-    await this.db
+    const [deleted] = await this.db
       .delete(schema.outreach_records)
-      .where(eq(schema.outreach_records.id, id));
+      .where(eq(schema.outreach_records.id, id))
+      .returning();
+
+    if (!deleted) throw new NotFoundException("Outreach record not found");
+
     return { message: "Record deleted", data: null };
   }
 
@@ -1069,6 +1153,9 @@ export class AdminService {
         rejection_reason: schema.withdrawals.rejection_reason,
         payout_reference: schema.withdrawals.payout_reference,
         processed_at: schema.withdrawals.processed_at,
+        /* The point of F20: stamping the actor is useless if the list that an
+           admin actually reads does not project it. */
+        processed_by: schema.withdrawals.processed_by,
         created_at: schema.withdrawals.created_at,
       })
       .from(schema.withdrawals)
@@ -1086,7 +1173,7 @@ export class AdminService {
     return { message: "Withdrawals retrieved", data: rows };
   }
 
-  async approveWithdrawal(id: number) {
+  async approveWithdrawal(id: number, adminId: number) {
     const [withdrawal] = await this.db
       .select()
       .from(schema.withdrawals)
@@ -1107,7 +1194,11 @@ export class AdminService {
      */
     const [updated] = await this.db
       .update(schema.withdrawals)
-      .set({ status: "approved" })
+      .set({
+        status: "approved",
+        processed_at: new Date(),
+        processed_by: adminId,
+      })
       .where(
         and(
           eq(schema.withdrawals.id, id),
@@ -1145,10 +1236,12 @@ export class AdminService {
         processed_at: new Date(),
         processed_by: adminId,
       })
+      /* Guards on status to match the precondition above; guarding on
+         processed_at broke approve-then-reject once approve started setting it. */
       .where(
         and(
           eq(schema.withdrawals.id, id),
-          isNull(schema.withdrawals.processed_at),
+          inArray(schema.withdrawals.status, ["pending", "approved"]),
         ),
       )
       .returning();

@@ -21,9 +21,6 @@ coverage
 
 
 # IDE
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
 .idea
 *.sublime-*
 
