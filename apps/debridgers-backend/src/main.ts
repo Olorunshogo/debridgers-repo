@@ -125,15 +125,12 @@ async function bootstrap() {
       callback(new Error(`CORS: origin ${origin} not allowed`));
     },
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-      "X-Request-Key",
-      "X-Payment-Key",
-      "X-Payment-Key_2",
-      "X-Admin-Key-1",
-      "X-Admin-Key-2",
-    ],
+    /*
+     * The five static key headers were removed with F7. Nothing reads them any
+     * more: authorisation is the JWT plus RolesGuard. Do not re-add a header
+     * secret the browser has to carry, since a browser cannot keep one.
+     */
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   });
 
@@ -185,7 +182,7 @@ async function bootstrap() {
       swaggerOptions: { persistAuthorization: true },
     });
     Logger.log(
-      `Swagger UI available at: http://localhost:${process.env.PORT ?? 4000}/api/docs`,
+      `Swagger UI available at: http://localhost:${process.env.PORT ?? 4001}/api/docs`,
     );
   }
 

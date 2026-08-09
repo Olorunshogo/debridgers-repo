@@ -78,9 +78,23 @@ export class AdminApiKeysService {
 
     const keyHash = this.hashKey(plainKey);
 
+    /*
+     * Joins the owner. Checking only the key's own is_active meant a blocked,
+     * suspended or role-changed admin's keys kept authenticating indefinitely,
+     * so revoking a person did not revoke their access.
+     */
     const [record] = await this.db
-      .select({ admin_id: schema.admin_api_keys.admin_id })
+      .select({
+        admin_id: schema.admin_api_keys.admin_id,
+        owner_role: schema.users.role,
+        owner_blocked: schema.users.is_blocked,
+        owner_suspended: schema.users.is_suspended,
+      })
       .from(schema.admin_api_keys)
+      .innerJoin(
+        schema.users,
+        eq(schema.users.id, schema.admin_api_keys.admin_id),
+      )
       .where(
         and(
           eq(schema.admin_api_keys.key_hash, keyHash),
@@ -91,6 +105,17 @@ export class AdminApiKeysService {
 
     if (!record) {
       this.logger.warn("Invalid or inactive API key attempt");
+      return null;
+    }
+
+    if (
+      record.owner_role !== "admin" ||
+      record.owner_blocked ||
+      record.owner_suspended
+    ) {
+      this.logger.warn(
+        `API key presented for a non-active admin (user ${record.admin_id})`,
+      );
       return null;
     }
 
@@ -106,7 +131,18 @@ export class AdminApiKeysService {
   /**
    * List all API keys for an admin (without showing the actual keys)
    */
-  async listApiKeys(adminId: number) {
+  /*
+   * Revoked keys are hidden unless explicitly asked for. Listing them beside
+   * live ones with only a boolean to tell them apart invited the reader to
+   * treat a revoked key as usable, which is F11.
+   */
+  async listApiKeys(adminId: number, isActive?: boolean) {
+    const conditions = [eq(schema.admin_api_keys.admin_id, adminId)];
+
+    conditions.push(
+      eq(schema.admin_api_keys.is_active, isActive === undefined || isActive),
+    );
+
     const keys = await this.db
       .select({
         id: schema.admin_api_keys.id,
@@ -116,7 +152,7 @@ export class AdminApiKeysService {
         created_at: schema.admin_api_keys.created_at,
       })
       .from(schema.admin_api_keys)
-      .where(eq(schema.admin_api_keys.admin_id, adminId));
+      .where(and(...conditions));
 
     return keys;
   }
@@ -127,17 +163,20 @@ export class AdminApiKeysService {
   async deactivateApiKey(keyId: number, adminId: number): Promise<void> {
     const updated = await this.db
       .update(schema.admin_api_keys)
-      .set({ is_active: false })
+      .set({ is_active: false, revoked_at: new Date() })
+      /* is_active in the predicate: without it, re-revoking an already revoked
+         key matched a row and reported success. */
       .where(
         and(
           eq(schema.admin_api_keys.id, keyId),
           eq(schema.admin_api_keys.admin_id, adminId),
+          eq(schema.admin_api_keys.is_active, true),
         ),
       )
       .returning({ id: schema.admin_api_keys.id });
 
     if (updated.length === 0) {
-      throw new NotFoundException("API key not found");
+      throw new NotFoundException("No active API key with that id");
     }
 
     this.logger.log(`API key ${keyId} deactivated for admin ${adminId}`);

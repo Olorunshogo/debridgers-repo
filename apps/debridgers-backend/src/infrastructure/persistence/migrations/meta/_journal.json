@@ -29,6 +29,27 @@
       "when": 1786212528031,
       "tag": "0003_famous_scalphunter",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786268010360,
+      "tag": "0004_classy_virginia_dare",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786270689394,
+      "tag": "0005_parallel_lady_mastermind",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786275080994,
+      "tag": "0006_huge_leper_queen",
+      "breakpoints": true
     }
   ]
 }

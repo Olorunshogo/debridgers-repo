@@ -25,7 +25,8 @@ import {
   CreateStockRequestDto,
 } from "./product.service";
 import { AuthGuard } from "../../shared/guards/auth.guard";
-import { AdminKeysGuard } from "../../shared/guards/admin-keys.guard";
+import { RolesGuard } from "../../shared/guards/roles.guard";
+import { Roles } from "../../shared/decorators/roles.decorator";
 import { CurrentUser } from "../../shared/decorators/current-user.decorator";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";
 
@@ -39,7 +40,8 @@ export class ProductController {
    */
   @Post("products")
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(AuthGuard, AdminKeysGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("admin")
   @ApiBearerAuth("access-token")
   @ApiOperation({ summary: "Create a new product (Admin only)" })
   async createProduct(@Body() dto: CreateProductDto) {
@@ -51,7 +53,8 @@ export class ProductController {
    */
   @Patch("products/:id")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard, AdminKeysGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("admin")
   @ApiBearerAuth("access-token")
   @ApiOperation({ summary: "Update product (Admin only)" })
   async updateProduct(
@@ -66,7 +69,8 @@ export class ProductController {
    */
   @Delete("products/:id")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard, AdminKeysGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("admin")
   @ApiBearerAuth("access-token")
   @ApiOperation({ summary: "Delete product (soft delete - Admin only)" })
   async deleteProduct(@Param("id", ParseIntPipe) productId: number) {
@@ -121,7 +125,8 @@ export class ProductController {
    */
   @Get("stock-requests")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard, AdminKeysGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles("admin")
   @ApiBearerAuth("access-token")
   @ApiOperation({ summary: "Get stock requests (Admin only)" })
   @ApiQuery({ name: "page", required: false, example: 1 })

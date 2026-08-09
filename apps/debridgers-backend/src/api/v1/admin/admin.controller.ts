@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -60,6 +61,39 @@ import {
 import { createCategorySchema, updateCategorySchema } from "./dto/category.dto";
 import { UsePipes } from "@nestjs/common";
 import { z } from "zod";
+import {
+  parseOptionalBoolean,
+  parseOptionalEnum,
+  parsePagination,
+} from "../../../infrastructure/helper/query.helper";
+
+const ORDER_STATUSES = [
+  "pending",
+  "confirmed",
+  "out_for_delivery",
+  "delivered",
+  "cancelled",
+] as const;
+const PAYMENT_STATUSES = ["unpaid", "awaiting", "paid", "failed"] as const;
+const AGENT_STATUSES = [
+  "pending",
+  "approved",
+  "rejected",
+  "suspended",
+] as const;
+const KYC_STATUSES = [
+  "not_submitted",
+  "submitted",
+  "approved",
+  "rejected",
+] as const;
+const COMMISSION_STATUSES = ["pending", "confirmed", "paid"] as const;
+const COMMISSION_TYPES = [
+  "direct",
+  "buyer_referral",
+  "agent_override",
+  "state_manager_override",
+] as const;
 
 const createOutreachSchema = z.object({
   full_name: z.string().min(2),
@@ -107,7 +141,11 @@ export class AdminController {
   @Post("upload")
   @UseInterceptors(FileInterceptor("file"))
   @ApiOperation({ summary: "Upload a product image to Cloudinary" })
-  async uploadImage(@UploadedFile() file: Express.Multer.File) {
+  async uploadImage(@UploadedFile() file?: Express.Multer.File) {
+    if (!file?.buffer) {
+      throw new BadRequestException("No file uploaded under the 'file' field.");
+    }
+
     const url = await this.cloudinaryService.uploadBuffer(
       file.buffer,
       "debridgers/products",
@@ -177,11 +215,10 @@ export class AdminController {
       },
     },
   })
-  getAgents(
-    @Query("status")
-    status?: "pending" | "approved" | "rejected" | "suspended",
-  ) {
-    return this.adminService.getAgents(status);
+  getAgents(@Query("status") status?: string) {
+    return this.adminService.getAgents(
+      parseOptionalEnum(status, AGENT_STATUSES, "status"),
+    );
   }
 
   @Get("agents/:id")
@@ -364,12 +401,17 @@ export class AdminController {
     @Query("page") page?: string,
     @Query("limit") limit?: string,
   ) {
+    const paging = parsePagination(page, limit);
     return this.adminService.getAllOrders({
-      status,
-      payment_status,
+      status: parseOptionalEnum(status, ORDER_STATUSES, "status"),
+      payment_status: parseOptionalEnum(
+        payment_status,
+        PAYMENT_STATUSES,
+        "payment_status",
+      ),
       search,
-      page: page ? parseInt(page, 10) : 1,
-      limit: limit ? Math.min(parseInt(limit, 10), 100) : 50,
+      page: paging.page,
+      limit: paging.limit,
     });
   }
 
@@ -419,10 +461,13 @@ export class AdminController {
   getBuyers(
     @Query("zone_id") zoneId?: string,
     @Query("is_suspended") isSuspended?: string,
+    @Query("is_blocked") isBlocked?: string,
   ) {
     return this.adminService.getBuyers(
       zoneId ? parseInt(zoneId, 10) : undefined,
-      isSuspended === "true",
+      /* Tri-state: absent must stay undefined, or the list silently filters. */
+      parseOptionalBoolean(isSuspended, "is_suspended"),
+      parseOptionalBoolean(isBlocked, "is_blocked"),
     );
   }
 
@@ -550,10 +595,11 @@ export class AdminController {
     @Query("page") page?: string,
     @Query("limit") limit?: string,
   ) {
+    const paging = parsePagination(page, limit, 10);
     return this.adminService.getBuyerWalletTransactions(
       userId,
-      page ? parseInt(page, 10) : 1,
-      limit ? Math.min(parseInt(limit, 10), 100) : 10,
+      paging.page,
+      paging.limit,
     );
   }
 
@@ -731,9 +777,10 @@ export class AdminController {
       },
     },
   })
-  @UsePipes(new ZodValidationPipe(createOutreachSchema))
+  /* Bound to @Body, not the handler: as @UsePipes it also validated
+     @CurrentUser against this schema and rejected every request. */
   createOutreachRecord(
-    @Body() dto: CreateOutreachDto,
+    @Body(new ZodValidationPipe(createOutreachSchema)) dto: CreateOutreachDto,
     @CurrentUser() user: JwtPayload,
   ) {
     return this.adminService.createOutreachRecord({
@@ -794,8 +841,10 @@ export class AdminController {
       },
     },
   })
-  getPendingKyc() {
-    return this.adminService.getPendingKyc();
+  getPendingKyc(@Query("kyc_status") kycStatus?: string) {
+    return this.adminService.getPendingKyc(
+      parseOptionalEnum(kycStatus, KYC_STATUSES, "kyc_status") ?? "submitted",
+    );
   }
 
   @Patch("agents/:id/kyc")
@@ -841,6 +890,35 @@ export class AdminController {
   }
 
   // ─── Commissions ────────────────────────────────────────────────────────────
+
+  /*
+   * Commissions could be marked paid but never listed, so the 15 seeded rows
+   * were unreachable through the API and a payout decision had nothing to read.
+   */
+  @Get("commissions")
+  @ApiOperation({ summary: "List commissions with filters and pagination" })
+  @ApiQuery({ name: "status", required: false, enum: COMMISSION_STATUSES })
+  @ApiQuery({ name: "type", required: false, enum: COMMISSION_TYPES })
+  @ApiQuery({ name: "agent_id", required: false, type: "integer" })
+  @ApiQuery({ name: "page", required: false, type: "integer" })
+  @ApiQuery({ name: "limit", required: false, type: "integer" })
+  @ApiResponse({ status: 200, description: "Commissions retrieved" })
+  getCommissions(
+    @Query("status") status?: string,
+    @Query("type") type?: string,
+    @Query("agent_id") agentId?: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ) {
+    const paging = parsePagination(page, limit);
+    return this.adminService.getCommissions({
+      status: parseOptionalEnum(status, COMMISSION_STATUSES, "status"),
+      type: parseOptionalEnum(type, COMMISSION_TYPES, "type"),
+      agentId: agentId ? parseInt(agentId, 10) : undefined,
+      page: paging.page,
+      limit: paging.limit,
+    });
+  }
 
   @Patch("commissions/:id/paid")
   @HttpCode(HttpStatus.OK)
@@ -968,8 +1046,10 @@ export class AdminController {
       },
     },
   })
-  createCategory(@Body() body: unknown) {
-    const dto = createCategorySchema.parse(body);
+  createCategory(
+    @Body(new ZodValidationPipe(createCategorySchema))
+    dto: z.infer<typeof createCategorySchema>,
+  ) {
     return this.taxonomy.createCategory(dto);
   }
 
@@ -977,8 +1057,11 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Rename or restyle a taxonomy node" })
   @ApiParam({ name: "id", example: 12 })
-  updateCategory(@Param("id", ParseIntPipe) id: number, @Body() body: unknown) {
-    const dto = updateCategorySchema.parse(body);
+  updateCategory(
+    @Param("id", ParseIntPipe) id: number,
+    @Body(new ZodValidationPipe(updateCategorySchema))
+    dto: z.infer<typeof updateCategorySchema>,
+  ) {
     return this.taxonomy.updateCategory(id, dto);
   }
 
@@ -1017,8 +1100,11 @@ export class AdminController {
   @ApiParam({ name: "id", example: 7 })
   @ApiResponse({ status: 200, description: "Payout approved" })
   @ApiResponse({ status: 400, description: "Payout is not pending" })
-  approveWithdrawal(@Param("id", ParseIntPipe) id: number) {
-    return this.adminService.approveWithdrawal(id);
+  approveWithdrawal(
+    @Param("id", ParseIntPipe) id: number,
+    @AdminId() adminId: number,
+  ) {
+    return this.adminService.approveWithdrawal(id, adminId);
   }
 
   @Patch("withdrawals/:id/reject")
@@ -1099,10 +1185,19 @@ export class AdminController {
   }
 
   @Get("api-keys")
-  @ApiOperation({ summary: "List all API keys for this admin" })
+  @ApiOperation({
+    summary: "List API keys for this admin, active only unless asked otherwise",
+  })
+  @ApiQuery({ name: "is_active", required: false, enum: ["true", "false"] })
   @ApiResponse({ status: 200, description: "API keys listed" })
-  listApiKeys(@AdminId() adminId: number) {
-    return this.adminApiKeysService.listApiKeys(adminId);
+  listApiKeys(
+    @AdminId() adminId: number,
+    @Query("is_active") isActive?: string,
+  ) {
+    return this.adminApiKeysService.listApiKeys(
+      adminId,
+      parseOptionalBoolean(isActive, "is_active"),
+    );
   }
 
   @Delete("api-keys/:keyId")

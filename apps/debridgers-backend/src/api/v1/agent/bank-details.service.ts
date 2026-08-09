@@ -4,6 +4,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  ServiceUnavailableException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -80,9 +81,10 @@ export class BankDetailsService {
       return banks;
     }
 
-    // TODO: Phase 3 - Implement bank lookup with Paystack API
-    throw new Error(
-      "Bank lookup not yet implemented. Enable PAYMENTS_SIMULATED for development.",
+    /* Not implemented yet, but a plain Error surfaced to callers as an opaque
+       500. 503 says the feature is unavailable rather than broken. */
+    throw new ServiceUnavailableException(
+      "Bank lookup is not available: the Paystack integration is not implemented yet. Enable PAYMENTS_SIMULATED for development.",
     );
   }
 

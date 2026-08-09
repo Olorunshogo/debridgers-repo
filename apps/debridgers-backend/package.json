@@ -18,6 +18,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/infrastructure/seeders/seeder.ts",
+    "db:seed:dev": "tsx src/infrastructure/seeders/dev-seeder.ts",
+    "db:seed:dev:reset": "tsx src/infrastructure/seeders/dev-seeder.ts reset",
     "docker:up": "docker compose -p debridgers -f ../../docker/docker-compose.yml up postgres -d --wait",
     "docker:down": "docker compose -p debridgers -f ../../docker/docker-compose.yml down",
     "docker:migrate": "pnpm docker:up && pnpm db:migrate"

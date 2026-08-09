@@ -45,12 +45,24 @@ import {
   resolveBankAccountSchema,
 } from "./dto/update-bank-details.dto";
 import { AuthGuard } from "../../shared/guards/auth.guard";
-import { RequestKeyGuard } from "../../shared/guards/keys.guard";
+import { RolesGuard } from "../../shared/guards/roles.guard";
+import { Roles } from "../../shared/decorators/roles.decorator";
 import { CurrentUser } from "../../shared/decorators/current-user.decorator";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";
 
+/*
+ * @Roles here is metadata only; RolesGuard is listed per route so it runs after
+ * AuthGuard has populated request.user. Controller-level guards run before
+ * method-level ones, so putting RolesGuard on the class would evaluate it
+ * against an empty user and reject everything.
+ *
+ * The two routes with no @UseGuards at all, `apply` and `leaderboard`, are
+ * public by design. RolesGuard never runs on them, so this metadata does not
+ * reach them.
+ */
 @ApiTags("Agent")
 @Controller("agent")
+@Roles("agent")
 export class AgentController {
   constructor(
     private readonly agentService: AgentService,
@@ -152,7 +164,7 @@ export class AgentController {
   }
 
   @Get("dashboard")
-  @UseGuards(AuthGuard, RequestKeyGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @ApiBearerAuth("access-token")
   @ApiOperation({ summary: "Get agent dashboard stats" })
   @ApiResponse({
@@ -180,7 +192,7 @@ export class AgentController {
   // ─── Profile ─────────────────────────────────────────────────────────────────
 
   @Get("me")
-  @UseGuards(AuthGuard, RequestKeyGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @ApiBearerAuth("access-token")
   @ApiOperation({ summary: "Get agent profile and dashboard" })
   @ApiResponse({
@@ -216,7 +228,7 @@ export class AgentController {
 
   @Patch("profile")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard, RequestKeyGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @ApiBearerAuth("access-token")
   @ApiOperation({ summary: "Update agent profile (name, phone, address)" })
   @ApiResponse({ status: 200, description: "Profile updated" })
@@ -230,7 +242,7 @@ export class AgentController {
 
   @Post("avatar")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard, RequestKeyGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @ApiBearerAuth("access-token")
   @UseInterceptors(FileInterceptor("file"))
   @ApiOperation({ summary: "Upload agent profile photo" })
@@ -251,7 +263,7 @@ export class AgentController {
 
   @Post("report")
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(AuthGuard, RequestKeyGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @ApiBearerAuth("access-token")
   @ApiOperation({ summary: "Submit a sales report" })
   @ApiBody({
@@ -287,7 +299,7 @@ export class AgentController {
   }
 
   @Get("reports")
-  @UseGuards(AuthGuard, RequestKeyGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @ApiBearerAuth("access-token")
   @ApiOperation({ summary: "Get all my submitted sales reports" })
   @ApiResponse({
@@ -315,7 +327,7 @@ export class AgentController {
   }
 
   @Get("commissions")
-  @UseGuards(AuthGuard, RequestKeyGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @ApiBearerAuth("access-token")
   @ApiOperation({ summary: "Get all my commission records" })
   @ApiResponse({
@@ -347,7 +359,7 @@ export class AgentController {
   // ─── Wallet ──────────────────────────────────────────────────────────────────
 
   @Get("wallet")
-  @UseGuards(AuthGuard, RequestKeyGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @ApiBearerAuth("access-token")
   @ApiOperation({
     summary: "Get my wallet balance",
@@ -377,7 +389,7 @@ export class AgentController {
   // ─── Stock ───────────────────────────────────────────────────────────────────
 
   @Get("products")
-  @UseGuards(AuthGuard, RequestKeyGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @ApiBearerAuth("access-token")
   @ApiOperation({ summary: "List active products available to request" })
   getProducts() {
@@ -386,7 +398,7 @@ export class AgentController {
 
   @Post("stock/request")
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(AuthGuard, RequestKeyGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @ApiBearerAuth("access-token")
   @ApiOperation({
     summary: "Request stock packs from the warehouse",
@@ -436,7 +448,7 @@ export class AgentController {
 
   @Post("stock/remit")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard, RequestKeyGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @ApiBearerAuth("access-token")
   @ApiOperation({
     summary: "Remit payment against a fulfilled stock request",
@@ -482,7 +494,7 @@ export class AgentController {
   }
 
   @Get("stock")
-  @UseGuards(AuthGuard, RequestKeyGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @ApiBearerAuth("access-token")
   @ApiOperation({
     summary: "Get all my stock requests with remittance progress",
@@ -516,7 +528,7 @@ export class AgentController {
 
   @Post("kyc")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard, RequestKeyGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @ApiBearerAuth("access-token")
   @ApiOperation({
     summary: "Submit KYC documents",
@@ -598,7 +610,7 @@ export class AgentController {
   }
 
   @Get("kyc")
-  @UseGuards(AuthGuard, RequestKeyGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @ApiBearerAuth("access-token")
   @ApiOperation({ summary: "Get my KYC status and rejection reason (if any)" })
   @ApiResponse({
@@ -625,7 +637,7 @@ export class AgentController {
   // === Bank details
 
   @Get("banks")
-  @UseGuards(AuthGuard, RequestKeyGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @ApiBearerAuth("access-token")
   @ApiOperation({
     summary: "List payable banks",
@@ -648,7 +660,7 @@ export class AgentController {
   }
 
   @Get("bank-details")
-  @UseGuards(AuthGuard, RequestKeyGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @ApiBearerAuth("access-token")
   @ApiOperation({ summary: "Get my saved payout bank details" })
   @ApiResponse({
@@ -674,7 +686,7 @@ export class AgentController {
 
   @Post("bank-details/resolve")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard, RequestKeyGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @ApiBearerAuth("access-token")
   @ApiOperation({
     summary: "Resolve an account name before saving",
@@ -712,7 +724,7 @@ export class AgentController {
   }
 
   @Patch("bank-details")
-  @UseGuards(AuthGuard, RequestKeyGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @ApiBearerAuth("access-token")
   @ApiOperation({
     summary: "Save my payout bank details",
@@ -739,7 +751,7 @@ export class AgentController {
   // === Withdrawals
 
   @Post("withdrawals")
-  @UseGuards(AuthGuard, RequestKeyGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @ApiBearerAuth("access-token")
   @ApiOperation({
     summary: "Request a payout",
@@ -753,7 +765,7 @@ export class AgentController {
   }
 
   @Get("withdrawals")
-  @UseGuards(AuthGuard, RequestKeyGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @ApiBearerAuth("access-token")
   @ApiOperation({ summary: "List this agent's payout requests" })
   @ApiResponse({ status: 200, description: "Withdrawals retrieved" })

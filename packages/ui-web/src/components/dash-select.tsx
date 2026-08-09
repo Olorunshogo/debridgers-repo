@@ -78,6 +78,11 @@ export const DashSelect = forwardRef<HTMLDivElement, DashSelectProps>(
         <div className="flex flex-col gap-1.5">
           <label className="flex cursor-pointer items-center gap-1">
             <span className="text-heading font-medium">{label}</span>
+            {required && (
+              <span className="text-error-red ml-0.5" aria-hidden="true">
+                *
+              </span>
+            )}
             {!required && (
               <span className="font-open-sans text-text text-sm">
                 (optional)
