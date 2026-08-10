@@ -10,7 +10,7 @@
 
 const BASE = process.env.VITE_API_URL || "http://localhost:4000/api/v1";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// === Helpers
 
 async function getMs(url: string): Promise<{ status: number; ms: number }> {
   const start = Date.now();
@@ -18,7 +18,7 @@ async function getMs(url: string): Promise<{ status: number; ms: number }> {
   return { status: res.status, ms: Date.now() - start };
 }
 
-// ─── Rate Limiting ────────────────────────────────────────────────────────────
+// === Rate Limiting
 
 describe("Rate Limiting (ThrottlerGuard)", () => {
   /*
@@ -95,7 +95,7 @@ describe("Rate Limiting (ThrottlerGuard)", () => {
   });
 });
 
-// ─── Benchmark / Latency ─────────────────────────────────────────────────────
+// === Benchmark / Latency
 
 describe("Benchmark — Response Time", () => {
   const P95_THRESHOLD_MS = 500; // 95th percentile must be under 500ms

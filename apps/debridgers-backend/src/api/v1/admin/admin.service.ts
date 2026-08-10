@@ -58,7 +58,7 @@ export class AdminService {
     return { message: "Admin profile retrieved", data: user ?? null };
   }
 
-  // ─── Dashboard ──────────────────────────────────────────────────────────────
+  // === Dashboard
 
   async getDashboardStats() {
     const [agentStats] = await this.db
@@ -107,7 +107,7 @@ export class AdminService {
     };
   }
 
-  // ─── Agents ─────────────────────────────────────────────────────────────────
+  // === Agents
 
   async getAgents(status?: "pending" | "approved" | "rejected" | "suspended") {
     const query = this.db
@@ -494,9 +494,9 @@ export class AdminService {
     return { message: "Target updated", data: { agentId, target } };
   }
 
-  // ─── Buyers ─────────────────────────────────────────────────────────────────
+  // === Buyers
 
-  // ─── Orders ──────────────────────────────────────────────────────────────────
+  // === Orders
 
   async getAllOrders(
     filters: {
@@ -816,7 +816,7 @@ export class AdminService {
     };
   }
 
-  // ─── Stock & Inventory ───────────────────────────────────────────────────────
+  // === Stock & Inventory
 
   async getStockRequests(status?: "pending" | "fulfilled" | "cancelled") {
     const query = this.db
@@ -906,7 +906,7 @@ export class AdminService {
     };
   }
 
-  // ─── Leads ──────────────────────────────────────────────────────────────────
+  // === Leads
 
   async getLeads() {
     const leads = await this.db
@@ -917,7 +917,7 @@ export class AdminService {
     return { message: "Leads retrieved", data: leads };
   }
 
-  // ─── Commissions ────────────────────────────────────────────────────────────
+  // === Commissions
 
   /*
    * Joins the agent so a row is readable without a second lookup, and returns
@@ -1015,7 +1015,7 @@ export class AdminService {
     return { message: "Commission marked as paid", data: updated };
   }
 
-  // ─── Products ────────────────────────────────────────────────────────────────
+  // === Products
 
   async createProduct(dto: CreateProductDto) {
     if (dto.category_id) await this.assertCategoryExists(dto.category_id);
@@ -1136,7 +1136,7 @@ export class AdminService {
     return { message: "Products retrieved", data: rows };
   }
 
-  // ─── Outreach ────────────────────────────────────────────────────────────────
+  // === Outreach
 
   async createOutreachRecord(dto: {
     shop_name: string;
@@ -1176,7 +1176,7 @@ export class AdminService {
     return { message: "Record deleted", data: null };
   }
 
-  // ─── Platform Settings (persisted in system_settings table) ─────────────────
+  // === Platform Settings (persisted in system_settings table)
 
   /*
    * Missing keys are materialised as real rows on first read rather than being

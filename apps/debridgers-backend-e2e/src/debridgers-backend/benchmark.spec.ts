@@ -28,7 +28,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "Admin@2026!";
 const N = Number(process.env.BENCH_N ?? 30);
 const CONCURRENCY = Number(process.env.BENCH_CONCURRENCY ?? 20);
 
-// ─── Tokens ───────────────────────────────────────────────────────────────────
+// === Tokens
 
 let buyerToken = "";
 let adminToken = "";
@@ -70,7 +70,7 @@ beforeAll(async () => {
   adminToken = a.data?.accessToken ?? "";
 }, 20_000);
 
-// ─── Stats helpers ────────────────────────────────────────────────────────────
+// === Stats helpers
 
 interface Stats {
   min: number;
@@ -117,7 +117,7 @@ afterAll(() => {
   console.log("-".repeat(100));
 });
 
-// ─── Sequential latency helper ────────────────────────────────────────────────
+// === Sequential latency helper
 
 async function sequential(
   url: string,
@@ -133,7 +133,7 @@ async function sequential(
   return computeStats(samples);
 }
 
-// ─── Concurrent throughput helper ────────────────────────────────────────────
+// === Concurrent throughput helper
 
 async function throughput(
   url: string,
@@ -152,7 +152,7 @@ async function throughput(
   return { rps: CONCURRENCY / elapsed, stats: computeStats(samples) };
 }
 
-// ─── Tier 1: Health (no DB) ───────────────────────────────────────────────────
+// === Tier 1: Health (no DB)
 // Threshold: <50ms p95. In-memory, no DB call.
 
 describe("Tier 1 — Health (no DB)", () => {
@@ -169,7 +169,7 @@ describe("Tier 1 — Health (no DB)", () => {
   });
 });
 
-// ─── Tier 2: Public DB-backed endpoints ──────────────────────────────────────
+// === Tier 2: Public DB-backed endpoints
 // Threshold: <700ms p95 sequential — Neon serverless adds ~250ms of network
 // latency per query. Concurrent Neon connections are pooled and will queue
 // under load; p99 threshold reflects that reality (~3s burst).
@@ -195,7 +195,7 @@ describe("Tier 2 — Public (DB-backed)", () => {
   });
 });
 
-// ─── Tier 3: Auth endpoints ───────────────────────────────────────────────────
+// === Tier 3: Auth endpoints
 // Threshold: <700ms p95 (1 DB query + bcrypt rounds). The 401 path still
 // does a DB lookup but skips bcrypt.compare on no-user-found, so it's cheap.
 
@@ -228,7 +228,7 @@ describe("Tier 3 — Auth endpoints", () => {
   });
 });
 
-// ─── Tier 4: Authenticated buyer endpoints ────────────────────────────────────
+// === Tier 4: Authenticated buyer endpoints
 // Single-query endpoints: p95 < 700ms.
 // Dashboard runs multiple aggregate queries sequentially — each adds ~280ms,
 // so we use a smaller N and a per-test timeout to avoid the global 30s limit.
@@ -274,7 +274,7 @@ describe("Tier 4 — Authenticated (buyer)", () => {
   }, 90_000);
 });
 
-// ─── Tier 5: Authenticated admin endpoints ────────────────────────────────────
+// === Tier 5: Authenticated admin endpoints
 // Dashboard is the heaviest endpoint — multiple aggregation queries.
 
 describe("Tier 5 — Authenticated (admin)", () => {

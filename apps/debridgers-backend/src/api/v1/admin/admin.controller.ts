@@ -152,7 +152,7 @@ export class AdminController {
     return { message: "Image uploaded", data: { url } };
   }
 
-  // ─── Dashboard ──────────────────────────────────────────────────────────────
+  // === Dashboard
 
   @Get("dashboard")
   @ApiOperation({ summary: "Platform-wide dashboard stats" })
@@ -179,7 +179,7 @@ export class AdminController {
     return this.adminService.getDashboardStats();
   }
 
-  // ─── Agents ─────────────────────────────────────────────────────────────────
+  // === Agents
 
   @Get("agents")
   @ApiOperation({ summary: "List all agents - filter by status" })
@@ -388,7 +388,7 @@ export class AdminController {
     return this.adminService.setAgentTarget(id, target);
   }
 
-  // ─── Orders ──────────────────────────────────────────────────────────────────
+  // === Orders
 
   @Get("orders")
   @ApiOperation({
@@ -425,7 +425,7 @@ export class AdminController {
     return this.adminService.getOrderById(id);
   }
 
-  // ─── Buyers ─────────────────────────────────────────────────────────────────
+  // === Buyers
 
   @Get("buyers")
   @ApiOperation({
@@ -611,7 +611,7 @@ export class AdminController {
     );
   }
 
-  // ─── Stock & Inventory ───────────────────────────────────────────────────────
+  // === Stock & Inventory
 
   @Get("stock/requests")
   @ApiOperation({ summary: "List all agent stock requests" })
@@ -730,7 +730,7 @@ export class AdminController {
     );
   }
 
-  // ─── Leads ──────────────────────────────────────────────────────────────────
+  // === Leads
 
   @Get("leads")
   @ApiOperation({
@@ -759,7 +759,7 @@ export class AdminController {
     return this.adminService.getLeads();
   }
 
-  // ─── Outreach ─────────────────────────────────────────────────────────────────
+  // === Outreach
 
   @Post("outreach")
   @HttpCode(HttpStatus.CREATED)
@@ -820,7 +820,7 @@ export class AdminController {
     return this.adminService.deleteOutreachRecord(id);
   }
 
-  // ─── KYC ────────────────────────────────────────────────────────────────────
+  // === KYC
 
   @Get("kyc")
   @ApiOperation({ summary: "List all agents with pending KYC submissions" })
@@ -897,7 +897,7 @@ export class AdminController {
     return this.adminService.reviewKyc(id, dto);
   }
 
-  // ─── Commissions ────────────────────────────────────────────────────────────
+  // === Commissions
 
   /*
    * Commissions could be marked paid but never listed, so the 15 seeded rows
@@ -951,7 +951,7 @@ export class AdminController {
     return this.adminService.markCommissionPaid(id, adminId);
   }
 
-  // ─── Products ────────────────────────────────────────────────────────────────
+  // === Products
 
   @Post("products")
   @HttpCode(HttpStatus.CREATED)
@@ -989,7 +989,7 @@ export class AdminController {
     return this.adminService.deleteProduct(id);
   }
 
-  // ─── Platform Settings ───────────────────────────────────────────────────────
+  // === Platform Settings
 
   @Get("settings")
   @ApiOperation({

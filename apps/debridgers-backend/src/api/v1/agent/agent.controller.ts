@@ -73,7 +73,7 @@ export class AgentController {
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
-  // ─── Public ─────────────────────────────────────────────────────────────────
+  // === Public
 
   @Post("apply")
   @HttpCode(HttpStatus.CREATED)
@@ -137,7 +137,7 @@ export class AgentController {
     return this.agentService.apply(dto as ApplyAgentDto, cvUrl);
   }
 
-  // ─── Leaderboard & Dashboard ─────────────────────────────────────────────────
+  // === Leaderboard & Dashboard
 
   @Get("leaderboard")
   @ApiOperation({ summary: "Get top 20 agents leaderboard (public)" })
@@ -189,7 +189,7 @@ export class AgentController {
     return this.agentService.getDashboardStats(user);
   }
 
-  // ─── Profile ─────────────────────────────────────────────────────────────────
+  // === Profile
 
   @Get("me")
   @UseGuards(AuthGuard, RolesGuard)
@@ -259,7 +259,7 @@ export class AgentController {
     return { message: "Avatar updated", data: { url } };
   }
 
-  // ─── Reports & Commissions ───────────────────────────────────────────────────
+  // === Reports & Commissions
 
   @Post("report")
   @HttpCode(HttpStatus.CREATED)
@@ -356,7 +356,7 @@ export class AgentController {
     return this.agentService.getCommissions(user);
   }
 
-  // ─── Wallet ──────────────────────────────────────────────────────────────────
+  // === Wallet
 
   @Get("wallet")
   @UseGuards(AuthGuard, RolesGuard)
@@ -386,7 +386,7 @@ export class AgentController {
     return this.walletService.getWallet(user);
   }
 
-  // ─── Stock ───────────────────────────────────────────────────────────────────
+  // === Stock
 
   @Get("products")
   @UseGuards(AuthGuard, RolesGuard)
@@ -524,7 +524,7 @@ export class AgentController {
     return this.stockService.getMyStockRequests(user);
   }
 
-  // ─── KYC ─────────────────────────────────────────────────────────────────────
+  // === KYC
 
   @Post("kyc")
   @HttpCode(HttpStatus.OK)

@@ -78,7 +78,7 @@ async function bootstrap() {
   const isProd = process.env.NODE_ENV === "production";
   console.log("🟢 [2] Environment:", isProd ? "production" : "development");
 
-  // ─── Fail fast on missing secrets ─────────────────────────────────────────
+  // === Fail fast on missing secrets
   const requiredEnv = [
     "ACCESS_TOKEN_SECRET",
     "REFRESH_TOKEN_SECRET",
@@ -96,7 +96,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   console.log("🟢 [5] App created, setting up middleware...");
 
-  // ─── Security headers (Helmet) ─────────────────────────────────────────────
+  // === Security headers (Helmet)
   app.use(
     helmet({
       crossOriginEmbedderPolicy: false, // allow Cloudinary images
@@ -113,7 +113,7 @@ async function bootstrap() {
     }),
   );
 
-  // ─── CORS — explicit allowlist, never reflect origin ──────────────────────
+  // === CORS — explicit allowlist, never reflect origin
   app.enableCors({
     origin: (
       origin: string | undefined,
@@ -154,7 +154,7 @@ async function bootstrap() {
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalInterceptors(new ApiResponseInterceptor());
 
-  // ─── Swagger — dev/staging only ───────────────────────────────────────────
+  // === Swagger — dev/staging only
   if (!isProd) {
     const config = new DocumentBuilder()
       .setTitle("Debridgers API")

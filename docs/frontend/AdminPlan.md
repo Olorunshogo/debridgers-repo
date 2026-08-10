@@ -969,17 +969,17 @@ like the real stored `agent_commission_rate`, so they look editable and are not.
 
 ### F30 Miscellaneous confirmed defects (low)
 
-**Status: partly fixed.** Two of six done, one written but unverified.
+**Status: five of six done. The sixth needs a product decision, not code.**
 
 - [x] `PATCH /admin/agents/:id/target` accepts a negative target and persists it.
       No lower bound. **Fixed and verified:** `setAgentTarget` throws
       `BadRequestException` below zero.
 - [x] Re-revoking an already-revoked API key returns 200; the where clause omits
-      `is_active` (`admin-api-keys.service.ts:130`). **Fixed, not yet
-      runtime-verified.** Note this was previously filed against F11 by mistake; F11
-      is about the _list_, not the revoke, and is still open.
-- [ ] Revoked keys carry no `revoked_at`, only `is_active: false`. Needs a column
-      plus a migration.
+      `is_active`. **Fixed and runtime-verified:** revoke twice gives 200 then 404.
+      Note this was previously filed against F11 by mistake; F11 is about the
+      _list_, not the revoke, and is now fixed separately.
+- [x] Revoked keys carry no `revoked_at`, only `is_active: false`. **Fixed:**
+      column added in migration 0006 and stamped on revoke.
 - [x] `POST /admin/upload` with no file returns 500 from an unguarded `file.buffer`.
       **Fixed and runtime-verified:** the param is optional and guarded at
       `admin.controller.ts:137`. With no file it returns 400
@@ -988,11 +988,14 @@ like the real stored `agent_commission_rate`, so they look editable and are not.
 - [ ] `promote-manager` applies no uniqueness or demotion check, so two agents can
       both be manager of the same state. Business rule needs confirming. **Blocked on
       a product decision, do not change it unprompted.**
-- [ ] Decorative comment separators (`// ─── Section ───`) appear through
-      `admin.service.ts` and `admin.controller.ts`, against the `// === Section`
-      convention in this repo's own standard. 21 remaining, 10 in `admin.service.ts`
-      and 11 in `admin.controller.ts`. Leave these until Phase 4 splits the
-      controller, so the rewrite is not done twice.
+- [x] Decorative comment separators (`// ─── Section ───`), against the
+      `// === Section` convention in this repo's own standard. **Fixed:** 66
+      converted across 9 files, wider than the 21 originally counted in the admin
+      files alone. `main.ts`, `agent.controller.ts`, `email.service.ts`,
+      `models.ts` and three e2e specs carried them too. Bare rules with no title
+      were deleted rather than converted, since a separator with nothing to
+      separate is decoration. Done now rather than parked until Phase 4: it is a
+      comment-only change, so it cannot conflict with a later restructure.
 
 ### F31 The F27 pipe bug also broke the entire buyer checkout (critical)
 
@@ -1345,22 +1348,31 @@ Also closed and verified since:
 - [x] F28 decided: keep deactivated nodes in the admin tree. The remaining work
       is a reactivate endpoint and UI, both moved to Phase 6.
 
-Partly done, still open:
+- [x] F17 `measure_value` to `integer`, backend and frontend. The form holds it
+      as a string because an input yields a string; that conversion is the form
+      boundary, not the redundancy the finding described.
+- [x] F18 `weight_grams` in both DTOs and in the product form
+- [x] F22 commissions list endpoint with filters and pagination
+- [x] F29 `buyer_referral_*` materialised as real rows, and writes validated
+- [x] F30 five of six, see its entry
 
-- [ ] F17 `measure_value` to `integer`. Backend done and verified;
-      `products.tsx` still converts through a string. Frontend half.
-- [ ] F18 `weight_grams`. In both DTOs, still absent from the product form.
-      Frontend half.
-- [ ] F19 pagination meta. Fixed as reported; the orders-versus-wallet envelope
-      split is deliberately deferred to Phase 3.
-- [ ] F30 the small confirmed defects. 4 of 6 done. Remaining: `revoked_at`
-      column, and `promote-manager` uniqueness which needs a product decision.
-      The 21 decorative separators are parked until Phase 4 rewrites those files.
+**Phase 1 is complete except one item, which is a decision rather than code.**
 
-Untouched:
+- [ ] **F30, `promote-manager` uniqueness.** Two agents can be manager of the
+      same state. Whether that is a defect depends on a business rule nobody has
+      stated. Needs an answer before any code moves, so it is not "remaining
+      work" in the usual sense.
 
-- [ ] F22 no commissions list endpoint, pairs with a Phase 6 page
-- [ ] F29 hardcoded `buyer_referral_*` settings presented as editable
+Deliberately moved rather than dropped:
+
+- **F19's envelope split to Phase 3.** The reported defect is fixed and
+  verified. Standardising the orders-versus-wallet response shape belongs with
+  the phase that centralises response contracts, or it gets done twice.
+- **F28's reactivate endpoint and UI to Phase 6.** The decision was taken here;
+  the remaining work is a route plus a screen.
+- **F2's round-trip regression test to Phase 5.** There is no test harness for
+  this yet, and adding one for a single assertion pre-empts the validation
+  sweep that will want it anyway.
 - ~~F26 Swagger bodies that contradict the DTOs~~ **retracted, not a defect.**
   Read its entry before re-testing `promote-manager` or `kyc`, and do not
   "fix" them.
@@ -1386,15 +1398,37 @@ bad restructure.
 - [x] F34 explicit `@Roles` on every protected controller, verified both
       directions. Done first because it is purely additive and because F7 removes
       a control, so something real had to replace it before anything came off.
-- [ ] F7 audit and remove the `VITE_PAYMENT_KEY` / `VITE_REQUEST_KEY` path.
-      Backend guard removal first, client second, rotation last. See F7.
-- [ ] F33 make the four dead payment routes reachable and admin-only
-- [ ] F8 delete or properly wire the duplicate auth guards, constant-time compare.
-      Read F8's correction first: six guard files, duplicate class names.
-- [ ] F9 writes from every mutating admin path. The table and service exist.
-- [ ] F32 real FK on `admin_api_keys.admin_id`, and reject keys whose owner is
-      inactive
-- [ ] Confirm rate limiting covers admin mutations
+- [x] F7 static key headers removed from backend guards and from the client.
+      `adminApiFetch` in `products.tsx` was a third instance the finding never
+      named, shipping `VITE_ADMIN_KEY_1/2`; it is gone and CORS is down to
+      `Content-Type` and `Authorization`.
+- [x] F33 the four dead payment routes are reachable and admin-only
+- [x] F8 the four dead static key guard files deleted. See "still open" below for
+      the one guard deliberately kept.
+- [x] F9 audit writes on withdrawal approve and reject, commission paid, agent
+      suspend, buyer block and unblock, and setting update. Verified: rows land
+      with the acting admin, action, resource id and details.
+- [x] F32 real FK on `admin_api_keys.admin_id`, and `validateApiKey` now joins
+      the owner and rejects blocked, suspended or non-admin owners.
+
+**Still open in Phase 2. Three items, precisely:**
+
+- [ ] **Rotate `REQUEST_KEY`, `PAYMENT_KEY_1`, `PAYMENT_KEY_2`, `ADMIN_KEY_1`,
+      `ADMIN_KEY_2` and delete them from every `.env`.** These shipped inside
+      published browser bundles, so treat all five as compromised. Nothing reads
+      them any more, so rotation cannot break anything. **This is a deploy task,
+      not a code change, and needs whoever holds the environment secrets.**
+- [ ] **Decide what happens to `api-key.guard.ts`.** It is the only sound key
+      mechanism, DB-backed and hashed, and it is in no guard chain, so the
+      `POST/GET/DELETE /admin/api-keys` endpoints mint keys that authenticate
+      nothing. Two coherent options, pick one: wire the guard onto the routes
+      that are meant to accept machine callers, or delete the guard **and** the
+      three endpoints together. Deleting the guard alone leaves a key-minting UI
+      for keys that do nothing, which is worse than either.
+- [ ] **Confirm rate limiting covers admin mutations.** Known so far: admin login
+      is throttled and the global default is 1000/minute, which is effectively no
+      limit for mutations. Decide the intended limit for destructive admin
+      routes, then assert it.
 
 **Achieves:** closes a live credential exposure, removes two dead auth paths,
 and makes privileged actions attributable.
@@ -1404,12 +1438,21 @@ after Phase 4 splits the controller.
 
 ### Phase 3 Typed admin API client
 
+Nothing in this phase has started.
+
 - [ ] `services/admin/` modules per domain in `packages/api-client`
 - [ ] Response schemas derived from the Drizzle schema via `drizzle-zod`
 - [ ] Types exported from the package index, camelCase at the boundary
-- [ ] Replace the unchecked cast in `apiFetch` with validation
+- [ ] Replace the unchecked cast in `apiFetch` with validation. It still ends
+      `return (json as { data: T }).data`, which is F15.
 - [ ] Strip `ApiXxx` interfaces and mappers from all 7 pages
 - [ ] F10 standardise response shapes while the contract is being centralised
+- [ ] **F19 remainder, moved here from Phase 1.** Orders returns `meta` as a
+      sibling of `data`; buyer wallet transactions nest `pagination` inside
+      `data`. Pick one envelope and apply it to both. The count-query and
+      interceptor bugs F19 originally described are already fixed and verified;
+      only the convention split is left, and it belongs to whichever phase
+      centralises response shapes so it is not done twice.
 
 **Achieves:** one definition per shape, runtime validation, and drift that fails
 loudly. Largest single phase and the highest leverage.
@@ -1420,10 +1463,21 @@ hand. Prefer that over hand-written mirrors.
 
 ### Phase 4 Split the admin controller
 
+Nothing in this phase has started.
+
 - [ ] Break `v1/admin` into agents, buyers, orders, stock, catalog, payouts, settings, api-keys
 - [ ] Controller, service, and DTO folder per module, sharing one guard set
 - [ ] F13 collapse the duplicate `catalog` write paths
-- [ ] F14 standardise on the query builder
+- [ ] **F35 delete the shadowed handlers.** `buyer.module.ts` registers
+      `BuyerController` before `OrderController`, and both declare
+      `POST /buyer/orders` and `POST /buyer/orders/initialize-payment`.
+      `OrderController`'s versions are unreachable dead code. Read F35 before
+      touching either file: the two implementations had diverged, and the dead
+      one carried a client-controlled pricing bug. Both are now safe, so this is
+      cleanup rather than a fix, but leaving two implementations of a money path
+      is how the next person gets it wrong.
+- [ ] F14 standardise on the query builder. `listProducts` is the last raw-SQL
+      product path.
 - [ ] Re-run the Phase 0 matrix, every row must match
 
 **Achieves:** reviewable files, parallel work without the merge collisions that
@@ -1434,9 +1488,22 @@ the frontend. Reversed, every move ripples into the pages.
 
 ### Phase 5 Validation and pagination sweep
 
+Nothing in this phase has started, apart from the admin-surface query params
+already done under F23.
+
 - [ ] Zod DTO on every body and query, replacing `@Body("key")`, `@Body("name")`,
       `@Body("reason")`, `@Body("target")`, and `@Body() body: unknown`
-- [ ] Audit every `@UsePipes` for over-application, the F27 cause
+- [ ] **Make `ZodValidationPipe` reject anything that is not a body.** Its
+      `transform` ignores the `ArgumentMetadata` second parameter, so it happily
+      validates a JWT payload or a route param. A `metadata.type === "body"`
+      guard would have made F27 and F31 impossible instead of fixing them one
+      handler at a time. Do this before the sweep below, not after.
+- [ ] Re-audit every `@UsePipes` after that guard lands. **Run the grep without
+      `| head`**: truncation is what hid F31's seven broken handlers the first
+      time.
+- [ ] **F2's round-trip regression test, moved here from Phase 1.** Assert every
+      DTO field survives a product create. There is no harness for this yet,
+      which is why it waits for the phase that needs one anyway.
 - [ ] F12 pagination, server-side search and filter
 - [ ] Frontend off in-memory filtering
 
@@ -1448,7 +1515,7 @@ follows Phase 3 centralising those shapes.
 
 ### Phase 6 Build the missing admin UI
 
-Ordered by likely value.
+Ordered by likely value. Nothing in this phase has started.
 
 - [ ] Orders list and detail, no page exists at all
 - [ ] KYC review, blocks agent onboarding
@@ -1457,13 +1524,41 @@ Ordered by likely value.
 - [ ] Stock requests and inventory
 - [ ] Agent detail, promote-manager, set target
 - [ ] Categories CRUD, frontend currently only reads `categories/leaves`
+- [ ] **F28 remainder, moved here from Phase 1.** Add
+      `PATCH /admin/categories/:id/reactivate`, render deactivated nodes muted
+      with a reactivate action, and stop offering them as a parent for new
+      products. The decision is already taken in F28: the admin tree keeps
+      returning deactivated nodes and each carries `is_active`. Do not "fix" the
+      API to hide them.
+- [ ] Commissions list page against `GET /admin/commissions`, which exists now
+      with status, type and agent filters plus pagination
 - [ ] Leads
-- [ ] API keys create/list/revoke, `commissions/:id/paid`, `upload`, `backfill-bank-codes`
+- [ ] API keys create/list/revoke, `commissions/:id/paid`, `upload`,
+      `backfill-bank-codes`. Hold this one until Phase 2 decides what happens to
+      `api-key.guard.ts`; building a UI to mint keys that authenticate nothing
+      would be work spent either way the decision goes.
 
 **Achieves:** admins can use what is already built.
 
-**Why last:** written before Phase 3, each of these 8 pages would duplicate the
+**Why last:** written before Phase 3, each of these pages would duplicate the
 pattern Phase 3 removes, roughly doubling the eventual cleanup.
+
+### Phase 6 is the last phase in this document
+
+There is no Phase 7. Work that surfaced during the audit but sits outside this
+plan's scope is recorded where it belongs rather than appended here:
+
+- **Buyer checkout payment-method modal, abandoned-order recovery, and the
+  "forgotten orders" endpoint** are specified in `docs/frontend/PLAN.md` under
+  "Planned: Checkout payment method selection" and "Abandoned orders". The modal
+  itself is built and verified; the recovery items are not.
+- **Admin tiering, invites, and bootstrapping the first super admin** are
+  specified in `docs/frontend/AdminAuthDesign.md`, which carries its own phased
+  plan. None of it is built.
+
+If you are picking this up cold, read the "Handoff" section at the top of this
+file first, then the phase you are starting. Every finding entry carries a
+**Status** line; trust that over any summary, including this one.
 
 ## Key decisions
 

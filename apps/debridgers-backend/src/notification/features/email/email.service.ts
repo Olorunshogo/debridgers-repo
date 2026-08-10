@@ -104,7 +104,7 @@ function infoBox(
 export class EmailService {
   constructor(private readonly core: CoreEmailService) {}
 
-  // ─── Welcome ────────────────────────────────────────────────────────────────
+  // === Welcome
 
   async sendWelcome(to: string, name: string, role: AppRole): Promise<void> {
     const orange = isAgentOrAdmin(role);
@@ -149,7 +149,7 @@ export class EmailService {
     });
   }
 
-  // ─── Agent Welcome ───────────────────────────────────────────────────────────
+  // === Agent Welcome
 
   async sendAgentWelcome(to: string, name: string): Promise<void> {
     const html = layout({
@@ -194,7 +194,7 @@ export class EmailService {
     });
   }
 
-  // ─── Agent Application Received ─────────────────────────────────────────────
+  // === Agent Application Received
 
   async sendAgentApplicationReceived(to: string, name: string): Promise<void> {
     const html = layout({
@@ -240,7 +240,7 @@ export class EmailService {
     });
   }
 
-  // ─── Agent Approved ──────────────────────────────────────────────────────────
+  // === Agent Approved
 
   async sendAgentApproved(to: string, name: string): Promise<void> {
     const html = layout({
@@ -286,7 +286,7 @@ export class EmailService {
     });
   }
 
-  // ─── Agent Rejected ──────────────────────────────────────────────────────────
+  // === Agent Rejected
 
   async sendAgentRejected(
     to: string,
@@ -336,7 +336,7 @@ export class EmailService {
     });
   }
 
-  // ─── Contact Confirmation ────────────────────────────────────────────────────
+  // === Contact Confirmation
 
   async sendContactConfirmation(to: string, name: string): Promise<void> {
     const html = layout({
@@ -376,7 +376,7 @@ export class EmailService {
     });
   }
 
-  // ─── Email Verification ──────────────────────────────────────────────────────
+  // === Email Verification
 
   async sendEmailVerification(
     to: string,
@@ -438,7 +438,7 @@ export class EmailService {
     });
   }
 
-  // ─── Buyer Login Notification ────────────────────────────────────────────────
+  // === Buyer Login Notification
 
   async sendBuyerLoginMessage(to: string, name: string): Promise<void> {
     const html = layout({
@@ -484,7 +484,7 @@ export class EmailService {
     });
   }
 
-  // ─── Agent Login Notification ────────────────────────────────────────────────
+  // === Agent Login Notification
 
   async sendAgentLoginMessage(to: string, name: string): Promise<void> {
     const html = layout({
@@ -527,7 +527,7 @@ export class EmailService {
     });
   }
 
-  // ─── Password Reset Request ──────────────────────────────────────────────────
+  // === Password Reset Request
 
   async sendPasswordReset(
     to: string,
@@ -576,7 +576,7 @@ export class EmailService {
     });
   }
 
-  // ─── Password Reset Confirmation ─────────────────────────────────────────────
+  // === Password Reset Confirmation
 
   async sendPasswordResetConfirmation(to: string, name: string): Promise<void> {
     const html = layout({
