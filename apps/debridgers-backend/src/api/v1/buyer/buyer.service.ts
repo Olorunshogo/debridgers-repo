@@ -135,7 +135,8 @@ export class BuyerService {
     });
 
     const deliveryFee = zone.delivery_fee || 0;
-    const total = subtotal + deliveryFee;
+    const handlingFee = 10000;
+    const total = subtotal + deliveryFee + handlingFee;
     const quantity = dto.cart.reduce((sum, item) => sum + item.qty, 0);
 
     const [order] = await this.db
@@ -146,6 +147,7 @@ export class BuyerService {
         quantity,
         unit_price: items[0]?.price_kobo || 0,
         delivery_fee: deliveryFee,
+        handling_fee: handlingFee,
         total_amount: total,
         order_mode: "referral",
         status: "pending",

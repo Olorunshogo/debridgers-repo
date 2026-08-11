@@ -1,10 +1,11 @@
 import "reflect-metadata";
 // Must be set before libuv initialises — expand thread pool for bcrypt burst.
 process.env.UV_THREADPOOL_SIZE = process.env.UV_THREADPOOL_SIZE ?? "16";
-import { Logger, VersioningType, ValidationPipe } from "@nestjs/common";
+import { Logger, VersioningType } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import helmet from "helmet";
+import * as express from "express";
 import * as fs from "fs";
 import * as path from "path";
 import * as https from "https";
@@ -72,13 +73,11 @@ function generateSelfSignedCert(
     key: fs.readFileSync(keyPath),
   };
 }
-
 async function bootstrap() {
   console.log("🟢 [1] Bootstrap starting...");
   const isProd = process.env.NODE_ENV === "production";
   console.log("🟢 [2] Environment:", isProd ? "production" : "development");
 
-  // ─── Fail fast on missing secrets ─────────────────────────────────────────
   const requiredEnv = [
     "ACCESS_TOKEN_SECRET",
     "REFRESH_TOKEN_SECRET",
@@ -96,30 +95,16 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   console.log("🟢 [5] App created, setting up middleware...");
 
-  // ─── Security headers (Helmet) ─────────────────────────────────────────────
-  app.use(
-    helmet({
-      crossOriginEmbedderPolicy: false, // allow Cloudinary images
-      contentSecurityPolicy: isProd
-        ? {
-            directives: {
-              defaultSrc: ["'self'"],
-              imgSrc: ["'self'", "data:", "https://res.cloudinary.com"],
-              scriptSrc: ["'self'"],
-              styleSrc: ["'self'", "'unsafe-inline'"],
-            },
-          }
-        : false,
-    }),
-  );
+  // ─── Body parsing — MUST be before CORS ─────────────────────────────────
+  app.use(express.json({ limit: "10mb" }));
+  app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
-  // ─── CORS — explicit allowlist, never reflect origin ──────────────────────
+  // ─── CORS ──────────────────────────────────────────────────────────────
   app.enableCors({
     origin: (
       origin: string | undefined,
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
-      // Allow server-to-server / curl (no origin) only in non-prod
       if (!origin) return callback(null, !isProd);
       if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
       callback(new Error(`CORS: origin ${origin} not allowed`));
@@ -130,7 +115,7 @@ async function bootstrap() {
       "Authorization",
       "X-Request-Key",
       "X-Payment-Key",
-      "X-Payment-Key_2",
+      "X-Payment-Key-2",
       "X-Admin-Key-1",
       "X-Admin-Key-2",
     ],
@@ -139,21 +124,7 @@ async function bootstrap() {
 
   app.setGlobalPrefix("api/v1");
 
-  // SECURITY FIX: Global validation pipe with strict whitelisting
-  // Prevents mass assignment attacks by rejecting unknown properties
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true, // Remove unknown properties
-      forbidNonWhitelisted: true, // Throw error if unknown properties sent
-      transform: true, // Auto-transform to DTO class
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
-      stopAtFirstError: false, // Report all validation errors at once
-      skipMissingProperties: false, // Require all properties per DTO
-    }),
-  );
-
+  // Zod schemas provide validation and whitelisting via ZodValidationPipe on each route
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalInterceptors(new ApiResponseInterceptor());
 

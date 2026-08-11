@@ -32,7 +32,7 @@ export async function apiFetch<T = unknown>(
   if (token) headers["Authorization"] = `Bearer ${token}`;
   if (requestKey) headers["X-Request-Key"] = requestKey;
   if (paymentKey1) headers["X-Payment-Key"] = paymentKey1;
-  if (paymentKey2) headers["X-Payment-Key_2"] = paymentKey2;
+  if (paymentKey2) headers["X-Payment-Key-2"] = paymentKey2;
 
   const url = `${BASE_BACKEND_URL}${path}`;
   let res = await fetch(url, { ...options, headers, credentials: "include" });

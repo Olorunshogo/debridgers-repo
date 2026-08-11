@@ -101,7 +101,7 @@ export class OrderController {
     // Send order confirmation email (fire-and-forget)
     try {
       // TODO: Get user name and email from JWT or database
-      const amount = `₦${Math.round(order.order.total_kobo / 100)}`;
+      const amount = `₦${Math.round(order.order.total_amount / 100)}`;
       this.emailService
         .sendOrderConfirmation(
           user.email || "buyer@example.com",
@@ -177,12 +177,12 @@ export class OrderController {
   @Post(":id/pay")
   @HttpCode(HttpStatus.OK)
   @UseGuards(AuthGuard, BuyerPaymentKeysGuard)
-  @UsePipes(new ZodValidationPipe(payOrderSchema))
   @ApiOperation({ summary: "Pay order with wallet or Paystack" })
   async payOrder(
     @CurrentUser() user: JwtPayload,
     @Param("id", ParseIntPipe) orderId: number,
-    @Body() dto: z.infer<typeof payOrderSchema>,
+    @Body(new ZodValidationPipe(payOrderSchema))
+    dto: z.infer<typeof payOrderSchema>,
   ) {
     // Check payment rate limit (prevent duplicate payments)
     const paymentRateLimit = await this.rateLimitService.checkPaymentAttempt(
@@ -329,12 +329,12 @@ export class OrderController {
     const payment = await this.paymentService.initiatePaystackPayment(
       user.sub,
       order.order.id,
-      order.order.total_kobo,
+      order.order.total_amount,
     );
 
     // Send order confirmation email
     try {
-      const amount = `₦${Math.round(order.order.total_kobo / 100)}`;
+      const amount = `₦${Math.round(order.order.total_amount / 100)}`;
       this.emailService
         .sendOrderConfirmation(
           user.email || "buyer@example.com",
@@ -357,7 +357,7 @@ export class OrderController {
         order_id: order.order.id,
         authorization_url: payment.authorization_url,
         reference: payment.reference,
-        amount_kobo: order.order.total_kobo,
+        amount_kobo: order.order.total_amount,
       },
     };
   }
