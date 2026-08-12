@@ -42,7 +42,7 @@ class BaseKeysGuard implements CanActivate {
       admin1: "x-admin-key-1",
       admin2: "x-admin-key-2",
       payment1: "x-payment-key",
-      payment2: "x-payment-key_2",
+      payment2: "x-payment-key-2",
       request: "x-request-key",
     };
     return map[keyName] || keyName.toLowerCase();

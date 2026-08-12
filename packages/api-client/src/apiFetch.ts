@@ -25,6 +25,7 @@ export async function apiFetch<T = unknown>(
   const requestKey = import.meta.env.VITE_REQUEST_KEY;
   const paymentKey1 = import.meta.env.VITE_PAYMENT_KEY_1;
   const paymentKey2 = import.meta.env.VITE_PAYMENT_KEY_2;
+
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
@@ -35,13 +36,22 @@ export async function apiFetch<T = unknown>(
   if (paymentKey2) headers["X-Payment-Key-2"] = paymentKey2;
 
   const url = `${BASE_BACKEND_URL}${path}`;
-  let res = await fetch(url, { ...options, headers, credentials: "include" });
+  const { headers: _ignoredHeaders, ...restOptions } = options;
+  let res = await fetch(url, {
+    ...restOptions,
+    headers,
+    credentials: "include",
+  });
 
   if (res.status === 401) {
     try {
       const { accessToken } = await refreshTokens();
       headers["Authorization"] = `Bearer ${accessToken}`;
-      res = await fetch(url, { ...options, headers, credentials: "include" });
+      res = await fetch(url, {
+        ...restOptions,
+        headers,
+        credentials: "include",
+      });
     } catch {
       clearTokens();
       throw new ApiError(401, "Session expired. Please log in again.");

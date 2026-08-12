@@ -57,9 +57,13 @@ const steps: { key: Step; label: string }[] = [
 ];
 
 interface WalletInfo {
-  available_balance: number;
-  pending_balance: number;
-  total_deposited: number;
+  wallet: {
+    available_balance: number;
+    pending_balance: number;
+    total_deposited: number;
+  };
+  transactions: unknown[];
+  pagination: unknown;
 }
 
 export default function BuyerCheckout() {
@@ -214,14 +218,14 @@ export default function BuyerCheckout() {
           },
         );
 
-        const orderId = orderRes.order.id;
-        const amount = orderRes.order.total_amount;
+        const orderId = orderRes.id;
+        const amount = orderRes.total_amount;
 
         // Check if wallet has enough balance
-        if (!wallet || wallet.available_balance < amount) {
+        if (!wallet || wallet.wallet.available_balance < amount) {
           const errorMsg = !wallet
             ? "Wallet not loaded. Please refresh and try again."
-            : `Insufficient wallet balance. Need ₦${Math.round(amount / 100)}, have ₦${Math.round(wallet.available_balance / 100)}`;
+            : `Insufficient wallet balance. Need ₦${Math.round(amount / 100)}, have ₦${Math.round(wallet.wallet.available_balance / 100)}`;
           setError(errorMsg);
           setLoading(false);
           return;
@@ -234,6 +238,11 @@ export default function BuyerCheckout() {
         };
         await apiFetch(`/buyer/orders/${orderId}/pay`, {
           method: "POST",
+          headers: {
+            "x-request-key": "request_key_change_in_production",
+            "x-payment-key": "payment_key_1_change_in_production",
+            "x-payment-key_2": "payment_key_2_change_in_production",
+          },
           body: JSON.stringify(paymentPayload),
         });
 
@@ -417,7 +426,7 @@ export default function BuyerCheckout() {
                   key: "wallet" as const,
                   label: "Pay with Wallet",
                   sub: wallet
-                    ? `Balance: ${formatFromKobo(wallet.available_balance)}`
+                    ? `Balance: ${formatFromKobo(wallet.wallet.available_balance)}`
                     : "Loading...",
                 },
               ].map((opt) => (

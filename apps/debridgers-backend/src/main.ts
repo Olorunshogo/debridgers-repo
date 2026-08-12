@@ -115,7 +115,8 @@ async function bootstrap() {
       "Authorization",
       "X-Request-Key",
       "X-Payment-Key",
-      "X-Payment-Key-2",
+      "X-Payment-Key-2", // ← Add hyphen version
+      "X-Payment-Key_2", // ← Add underscore version
       "X-Admin-Key-1",
       "X-Admin-Key-2",
     ],
