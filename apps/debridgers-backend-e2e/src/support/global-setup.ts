@@ -74,6 +74,15 @@ export default async function globalSetup() {
       ...backendEnv,
       PORT: String(BACKEND_PORT),
       NODE_ENV: "test",
+      /*
+       * Set after backendEnv so the suite's throttle settings win over anything
+       * in .env. The main suite raises the limit out of the way; the rate-limit
+       * suite tightens it. Without this every suite shares one 1000-request
+       * budget from a single IP and the later ones drown in 429s.
+       */
+      THROTTLE_LIMIT: process.env.THROTTLE_LIMIT ?? "1000000",
+      THROTTLE_TTL_MS: process.env.THROTTLE_TTL_MS ?? "60000",
+      AUTH_THROTTLE_LIMIT: process.env.AUTH_THROTTLE_LIMIT ?? "1000000",
     },
     stdio: "pipe",
   });

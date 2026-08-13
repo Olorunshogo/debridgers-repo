@@ -45,7 +45,7 @@ describe("Buyer", () => {
     adminToken = adminData.data?.accessToken ?? "";
   });
 
-  // ─── Public Products ────────────────────────────────────────────────────────
+  // === Public Products
 
   it("GET /products should return product list without auth", async () => {
     const res = await fetch(`${BASE}/products`);
@@ -67,7 +67,7 @@ describe("Buyer", () => {
     expect(res.status).toBe(200);
   });
 
-  // ─── Public Config ──────────────────────────────────────────────────────────
+  // === Public Config
 
   it("GET /config/public should return commission rate", async () => {
     const res = await fetch(`${BASE}/config/public`);
@@ -78,7 +78,7 @@ describe("Buyer", () => {
     expect(data.data.agent_commission_rate).toBeGreaterThan(0);
   });
 
-  // ─── Outreach Submit (admin / agent only) ──────────────────────────────────
+  // === Outreach Submit (admin / agent only)
 
   it("POST /admin/outreach should return 401 without auth", async () => {
     const res = await fetch(`${BASE}/admin/outreach`, {
@@ -134,7 +134,7 @@ describe("Buyer", () => {
     expect(res.status).toBe(403);
   });
 
-  // ─── Buyer Profile (auth required) ─────────────────────────────────────────
+  // === Buyer Profile (auth required)
 
   it("GET /buyer/me should require authentication", async () => {
     const res = await fetch(`${BASE}/buyer/me`);
@@ -165,7 +165,7 @@ describe("Buyer", () => {
     expect(res.status).toBe(200);
   });
 
-  // ─── Orders ─────────────────────────────────────────────────────────────────
+  // === Orders
 
   it("GET /buyer/orders should return empty array initially", async () => {
     if (!buyerToken) return;
@@ -209,7 +209,7 @@ describe("Buyer", () => {
     expect(data.data.some((o: { id: number }) => o.id === orderId)).toBe(true);
   });
 
-  // ─── Password Change ─────────────────────────────────────────────────────────
+  // === Password Change
 
   it("PATCH /buyer/password should reject wrong current password", async () => {
     if (!buyerToken) return;
@@ -243,7 +243,7 @@ describe("Buyer", () => {
     expect(res.status).toBe(200);
   });
 
-  // ─── Dashboard ───────────────────────────────────────────────────────────────
+  // === Dashboard
 
   it("GET /buyer/dashboard should return stats", async () => {
     if (!buyerToken) return;
@@ -257,7 +257,7 @@ describe("Buyer", () => {
     expect(data.data).toHaveProperty("total_spent_kobo");
   });
 
-  // ─── Admin Settings ───────────────────────────────────────────────────────────
+  // === Admin Settings
 
   it("GET /admin/settings should return platform settings", async () => {
     if (!adminToken) return;

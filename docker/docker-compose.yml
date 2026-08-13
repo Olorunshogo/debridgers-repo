@@ -18,16 +18,41 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   backend:
     build:
       context: ..
       dockerfile: docker/backend.Dockerfile
     ports:
-      - "4000:4000"
+      - "4001:4001"
     env_file:
       - ../apps/debridgers-backend/.env
+    # These override env_file, which is written for running the backend on the
+    # host. Inside the compose network the database and cache are reachable by
+    # service name, not localhost, so a container inheriting the host values
+    # cannot connect to either.
+    environment:
+      PORT: 4001
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/debridgers
+      DATABASE_URL_DIRECT: postgresql://postgres:postgres@postgres:5432/debridgers
+      UPSTASH_REDIS_URL: redis://redis:6379
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   frontend:
@@ -43,3 +68,4 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:

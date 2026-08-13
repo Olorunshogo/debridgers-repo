@@ -52,8 +52,9 @@ interface Product {
   category_id: number | null;
   /* Leaf name from the taxonomy join, for the list row. */
   category_name: string | null;
-  measure_value: number;
+  measure_value: number | null;
   measure_unit: MeasureUnit;
+  weight_grams: number | null;
   is_active: boolean;
   sort_order: number;
 }
@@ -64,10 +65,16 @@ interface ProductForm {
   price: string;
   description: string;
   image_url: string;
-  /* Held as a string because that is what the select yields; converted on save. */
+  /*
+   * Numeric fields are held as strings because that is what an input yields.
+   * The conversion at each end is the form boundary, not redundancy: the API
+   * types these as numbers, and did so falsely until `measure_value` became an
+   * integer column. Keep the parse honest rather than removing it.
+   */
   category_id: string;
   measure_value: string;
   measure_unit: MeasureUnit;
+  weight_grams: string;
 }
 
 interface BundledImage {
@@ -84,6 +91,7 @@ const emptyForm: ProductForm = {
   category_id: "",
   measure_value: "",
   measure_unit: "kg",
+  weight_grams: "",
 };
 
 const measureUnitOptions: { value: MeasureUnit; label: string }[] = [
@@ -97,6 +105,7 @@ const measureUnitOptions: { value: MeasureUnit; label: string }[] = [
  * list rather than read at runtime because the folder is a build asset, and the
  * alt text has to be written by a human anyway.
  */
+
 const bundledImages: BundledImage[] = [
   { file: "maize-1.jpg", alt: "Dried yellow maize grains in a heap" },
   { file: "maize-3.jpg", alt: "Fresh maize cobs with husks pulled back" },
@@ -179,8 +188,9 @@ export default function AdminProductsPage() {
       description: p.description ?? "",
       image_url: p.image_url ?? "",
       category_id: p.category_id ? String(p.category_id) : "",
-      measure_value: p.measure_value ? String(p.measure_value) : "",
+      measure_value: p.measure_value === null ? "" : String(p.measure_value),
       measure_unit: p.measure_unit ?? "kg",
+      weight_grams: p.weight_grams === null ? "" : String(p.weight_grams),
     });
     setError(null);
     setShowForm(true);
@@ -230,8 +240,13 @@ export default function AdminProductsPage() {
       return;
     }
     const price_kobo = Math.round(priceNaira * 100);
-    const parsedMeasure = parseInt(form.measure_value, 10);
-    const measure_value = isNaN(parsedMeasure) ? undefined : parsedMeasure;
+    /* Blank means "not set", so send undefined rather than 0. */
+    const toOptionalInt = (raw: string): number | undefined => {
+      const parsed = parseInt(raw, 10);
+      return isNaN(parsed) ? undefined : parsed;
+    };
+    const measure_value = toOptionalInt(form.measure_value);
+    const weight_grams = toOptionalInt(form.weight_grams);
     setSaving(true);
     setError(null);
     try {
@@ -247,6 +262,7 @@ export default function AdminProductsPage() {
             category_id: form.category_id ? Number(form.category_id) : null,
             measure_value,
             measure_unit: form.measure_unit,
+            weight_grams,
           }),
         });
       } else {
@@ -263,6 +279,7 @@ export default function AdminProductsPage() {
               : undefined,
             measure_value,
             measure_unit: form.measure_unit,
+            weight_grams,
           }),
         });
       }
@@ -470,6 +487,18 @@ export default function AdminProductsPage() {
                       ...p,
                       measure_unit: e.target.value as MeasureUnit,
                     }))
+                  }
+                />
+                {/* Shipping weight. The column existed with no way to set it,
+                    so every product read as weightless to delivery pricing. */}
+                <DashNumberInput
+                  label="Weight (grams)"
+                  id="weight-grams"
+                  min={0}
+                  placeholder="e.g. 25000 for a 25kg bag"
+                  value={form.weight_grams}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, weight_grams: e.target.value }))
                   }
                 />
               </div>

@@ -104,6 +104,7 @@ interface CheckoutViewProps {
 
 function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
   const [searchParams] = useSearchParams();
+  const { triggerDialog } = useDialog();
   const [step, setStep] = useState<CheckoutStep>("delivery");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryTime, setDeliveryTime] = useState<"today" | "tomorrow">(
@@ -133,9 +134,20 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
     setError(null);
     setLoading(true);
     try {
-      const res = await apiFetch<{
-        data: { authorization_url: string; reference: string };
-      }>("/payment/initialize", {
+      /*
+       * Step one: reserve the order. It is created pending and unpaid, priced
+       * entirely server-side, and the buyer picks a payment method next.
+       *
+       * Prices are deliberately not sent. The server reads them from the
+       * products table, so anything quoted here would be ignored.
+       */
+      const order = await apiFetch<{
+        order_id: number;
+        items_total_kobo: number;
+        delivery_fee_kobo: number;
+        handling_fee_kobo: number;
+        total_kobo: number;
+      }>("/buyer/orders", {
         method: "POST",
         body: JSON.stringify({
           delivery_address: deliveryAddress.trim(),
@@ -143,16 +155,46 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
           notes: note.trim() || undefined,
           cart: cartItems.map((i) => ({
             product_id: Number(i.id),
-            name: i.name,
-            price_kobo: Math.round(i.price * 100),
-            unit: i.unit,
             qty: i.qty,
           })),
         }),
       });
-      window.location.href = res.data.authorization_url;
-    } catch {
-      setError("Failed to initialize payment. Please try again.");
+
+      /* Balance is read here rather than in the dialog so the options render
+         already knowing whether the wallet can cover the total. */
+      let walletBalanceKobo = 0;
+      try {
+        const wallet = await apiFetch<{
+          wallet: { available_balance: number };
+        }>("/buyer/wallet");
+        walletBalanceKobo = wallet?.wallet?.available_balance ?? 0;
+      } catch {
+        /* A wallet we cannot read is a wallet the buyer cannot spend from.
+           Paystack stays available, so this is not worth failing checkout for. */
+      }
+
+      setLoading(false);
+      triggerDialog("PAYMENT_METHOD", {
+        orderId: order.order_id,
+        itemsTotalKobo: order.items_total_kobo,
+        deliveryFeeKobo: order.delivery_fee_kobo,
+        handlingFeeKobo: order.handling_fee_kobo,
+        totalKobo: order.total_kobo,
+        walletBalanceKobo,
+        onPaid: () => {
+          onConfirmed();
+          setStep("confirmed");
+        },
+      });
+      return;
+    } catch (err) {
+      /* Surface the server's reason where there is one. "Try again" is useless
+         advice for "this product is no longer available". */
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Could not start checkout. Please try again.",
+      );
       setLoading(false);
     }
   }
@@ -388,7 +430,7 @@ export default function PublicShop() {
 
   // Load products from public endpoint (no auth required)
   useEffect(() => {
-    fetch(`${BASE_BACKEND_URL}/products`)
+    fetch(`${BASE_BACKEND_URL}/api/v1/products`)
       .then((r) => r.json())
       .then((json) => {
         const rows: ApiProduct[] = (json.data ?? json) as ApiProduct[];

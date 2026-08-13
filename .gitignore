@@ -21,9 +21,6 @@ coverage
 
 
 # IDE
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
 .idea
 *.sublime-*
 
@@ -81,3 +78,8 @@ test-output
 # Ignored Folder
 docs/Screens/
 docs/*-snippets.md
+
+# Declaration output emitted next to sources by a stray tsc run.
+# Specs and test support files are never consumed as types, so any .d.ts
+# beside them is build residue.
+apps/debridgers-backend-e2e/src/**/*.d.ts

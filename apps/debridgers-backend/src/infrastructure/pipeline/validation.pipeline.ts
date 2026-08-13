@@ -1,4 +1,4 @@
-import { PipeTransform, BadRequestException } from "@nestjs/common";
+import { PipeTransform } from "@nestjs/common";
 import { ZodSchema, ZodError } from "zod";
 
 export class ZodValidationPipe implements PipeTransform {
@@ -17,7 +17,9 @@ export class ZodValidationPipe implements PipeTransform {
         field: Array.isArray(e.path) ? e.path.join(".") : String(e.path ?? ""),
         message: e.message as string,
       }));
-      throw new BadRequestException({ message: "Validation failed", errors });
+
+      // Use whatever was working before
+      throw new Error(JSON.stringify({ message: "Validation failed", errors }));
     }
     return result.data;
   }

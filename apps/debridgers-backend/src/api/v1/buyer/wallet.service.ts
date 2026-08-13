@@ -1,0 +1,332 @@
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
+import { Inject } from "@nestjs/common";
+import { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { eq, desc, count, sum, and, sql } from "drizzle-orm";
+import * as schema from "../../../infrastructure/persistence/index";
+import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
+
+@Injectable()
+export class WalletService {
+  constructor(
+    @Inject(DATABASE_CONNECTION)
+    private readonly db: NodePgDatabase<typeof schema>,
+  ) {}
+
+  /**
+   * Get or create buyer wallet
+   */
+  async getOrCreateWallet(userId: number) {
+    const wallet = await this.db
+      .select()
+      .from(schema.buyerWallets)
+      .where(eq(schema.buyerWallets.user_id, userId))
+      .limit(1);
+
+    if (!wallet || wallet.length === 0) {
+      const [newWallet] = await this.db
+        .insert(schema.buyerWallets)
+        .values({ user_id: userId })
+        .returning();
+      return newWallet;
+    }
+
+    return wallet[0];
+  }
+
+  /**
+   * Get wallet with transaction history
+   */
+  async getWalletWithTransactions(
+    userId: number,
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    const wallet = await this.getOrCreateWallet(userId);
+
+    const offset = (page - 1) * limit;
+
+    const [transactions, [{ total }]] = await Promise.all([
+      this.db
+        .select()
+        .from(schema.walletTransactions)
+        .where(eq(schema.walletTransactions.wallet_id, wallet.id))
+        .orderBy(desc(schema.walletTransactions.created_at))
+        .limit(limit)
+        .offset(offset),
+      this.db
+        .select({ total: count() })
+        .from(schema.walletTransactions)
+        .where(eq(schema.walletTransactions.wallet_id, wallet.id)),
+    ]);
+
+    return {
+      wallet: {
+        id: wallet.id,
+        available_balance: wallet.available_balance,
+        pending_balance: wallet.pending_balance,
+        total_deposited: wallet.total_deposited,
+      },
+      transactions,
+      pagination: {
+        page,
+        limit,
+        total: Number(total),
+      },
+    };
+  }
+
+  /**
+   * Deduct from wallet (for payment)
+   */
+  async deductBalance(userId: number, amount: number) {
+    const wallet = await this.getOrCreateWallet(userId);
+
+    if (wallet.available_balance < amount) {
+      throw new BadRequestException("Insufficient wallet balance");
+    }
+
+    const [updated] = await this.db
+      .update(schema.buyerWallets)
+      .set({
+        available_balance: wallet.available_balance - amount,
+      })
+      .where(eq(schema.buyerWallets.id, wallet.id))
+      .returning();
+
+    await this.db.insert(schema.walletTransactions).values({
+      wallet_id: wallet.id,
+      type: "withdraw",
+      amount,
+      status: "completed",
+      description: "Payment for order",
+    });
+
+    return updated;
+  }
+
+  /**
+   * Add to wallet (for deposit)
+   */
+  async addBalance(userId: number, amount: number, reference: string) {
+    const wallet = await this.getOrCreateWallet(userId);
+
+    const [updated] = await this.db
+      .update(schema.buyerWallets)
+      .set({
+        available_balance: wallet.available_balance + amount,
+        total_deposited: wallet.total_deposited + amount,
+      })
+      .where(eq(schema.buyerWallets.id, wallet.id))
+      .returning();
+
+    await this.db.insert(schema.walletTransactions).values({
+      wallet_id: wallet.id,
+      type: "deposit",
+      amount,
+      status: "completed",
+      reference,
+      description: "Deposit via Paystack",
+    });
+
+    return updated;
+  }
+
+  /**
+   * Create pending transaction (for Paystack deposit)
+   */
+  async createPendingTransaction(
+    userId: number,
+    amount: number,
+    reference: string,
+  ) {
+    const wallet = await this.getOrCreateWallet(userId);
+
+    const [transaction] = await this.db
+      .insert(schema.walletTransactions)
+      .values({
+        wallet_id: wallet.id,
+        type: "deposit",
+        amount,
+        status: "pending",
+        reference,
+        description: "Deposit initiated via Paystack",
+      })
+      .returning();
+
+    return transaction;
+  }
+
+  /**
+   * Confirm pending transaction
+   */
+  async confirmTransaction(reference: string, _amount?: number) {
+    const [transaction] = await this.db
+      .select()
+      .from(schema.walletTransactions)
+      .where(eq(schema.walletTransactions.reference, reference))
+      .limit(1);
+
+    if (!transaction) {
+      throw new NotFoundException("Transaction not found");
+    }
+
+    if (transaction.status === "completed") {
+      return transaction; // Already confirmed
+    }
+
+    // Update transaction to completed
+    await this.db
+      .update(schema.walletTransactions)
+      .set({ status: "completed" })
+      .where(eq(schema.walletTransactions.id, transaction.id));
+
+    // Add to wallet
+    const wallet = await this.db
+      .select()
+      .from(schema.buyerWallets)
+      .where(eq(schema.buyerWallets.id, transaction.wallet_id))
+      .limit(1);
+
+    if (wallet && wallet.length > 0) {
+      const w = wallet[0];
+      await this.db
+        .update(schema.buyerWallets)
+        .set({
+          available_balance: w.available_balance + transaction.amount,
+          total_deposited: w.total_deposited + transaction.amount,
+        })
+        .where(eq(schema.buyerWallets.id, w.id));
+    }
+
+    return transaction;
+  }
+
+  /**
+   * Update transaction with Paystack reference
+   */
+  async updateTransactionReference(
+    transactionId: number,
+    paystackReference: string,
+  ) {
+    await this.db
+      .update(schema.walletTransactions)
+      .set({ reference: paystackReference })
+      .where(eq(schema.walletTransactions.id, transactionId));
+  }
+
+  /**
+   * Validate amount
+   */
+  validateAmount(amount: number) {
+    const MIN_AMOUNT = 20000; // ₦200 (test mode)
+    const MAX_AMOUNT = 10000000; // ₦100,000
+
+    if (amount < MIN_AMOUNT || amount > MAX_AMOUNT) {
+      throw new BadRequestException(
+        `Amount must be between ₦${MIN_AMOUNT / 100} and ₦${MAX_AMOUNT / 100}`,
+      );
+    }
+  }
+
+  /**
+   * Get transaction history with filters
+   */
+  async getTransactionHistory(
+    userId: number,
+    filters?: {
+      type?: "deposit" | "withdraw" | "refund";
+      status?: "pending" | "completed" | "failed";
+      startDate?: Date;
+      endDate?: Date;
+      page?: number;
+      limit?: number;
+    },
+  ) {
+    const wallet = await this.getOrCreateWallet(userId);
+    const {
+      type,
+      status,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 20,
+    } = filters || {};
+    const offset = (page - 1) * limit;
+
+    const whereConditions = [
+      eq(schema.walletTransactions.wallet_id, wallet.id),
+    ];
+
+    if (type) {
+      whereConditions.push(eq(schema.walletTransactions.type, type));
+    }
+    if (status) {
+      whereConditions.push(eq(schema.walletTransactions.status, status));
+    }
+    if (startDate) {
+      whereConditions.push(
+        sql`${schema.walletTransactions.created_at} >= ${startDate}`,
+      );
+    }
+    if (endDate) {
+      whereConditions.push(
+        sql`${schema.walletTransactions.created_at} <= ${endDate}`,
+      );
+    }
+
+    const queryResult = await Promise.all([
+      this.db
+        .select()
+        .from(schema.walletTransactions)
+        .where(and(...(whereConditions as Parameters<typeof and>)))
+        .orderBy(desc(schema.walletTransactions.created_at))
+        .limit(limit)
+        .offset(offset),
+      this.db
+        .select({ total: count() })
+        .from(schema.walletTransactions)
+        .where(and(...(whereConditions as Parameters<typeof and>))),
+    ]);
+
+    const [transactions, countResult] = queryResult;
+    const totalCount =
+      Array.isArray(countResult) && countResult.length > 0
+        ? (countResult[0] as unknown as { total: number }).total
+        : 0;
+
+    return {
+      transactions,
+      pagination: { page, limit, total: totalCount },
+    };
+  }
+
+  /**
+   * Get wallet balance summary
+   */
+  async getWalletSummary(userId: number) {
+    const wallet = await this.getOrCreateWallet(userId);
+
+    const [withdrawSum] = await this.db
+      .select({ total: sum(schema.walletTransactions.amount) })
+      .from(schema.walletTransactions)
+      .where(
+        and(
+          eq(schema.walletTransactions.wallet_id, wallet.id),
+          eq(schema.walletTransactions.type, "withdraw"),
+          eq(schema.walletTransactions.status, "completed"),
+        ),
+      );
+
+    return {
+      available_balance: wallet.available_balance,
+      pending_balance: wallet.pending_balance,
+      total_deposited: wallet.total_deposited,
+      total_withdrawn: withdrawSum?.total ?? 0,
+      total_spent: withdrawSum?.total ?? 0,
+    };
+  }
+}

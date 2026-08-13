@@ -3,8 +3,14 @@ import { UserRole } from "./roles.type";
 
 export interface JwtPayload {
   sub: number;
+  id: number;
   email: string;
+  first_name: string;
+  last_name: string;
   role: UserRole;
+  api_version: string;
+  device: string;
+  ip_address: string;
   iat?: number;
   exp?: number;
 }

@@ -1,22 +1,84 @@
 import "reflect-metadata";
 // Must be set before libuv initialises — expand thread pool for bcrypt burst.
 process.env.UV_THREADPOOL_SIZE = process.env.UV_THREADPOOL_SIZE ?? "16";
-import { Logger, VersioningType } from "@nestjs/common";
+import { Logger, VersioningType, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import helmet from "helmet";
+import * as fs from "fs";
+import * as path from "path";
+import * as https from "https";
+import { spawnSync } from "child_process";
 import { AppModule } from "./app/app.module";
 import { ApiResponseInterceptor } from "./interceptors/api-response.interceptor";
 import { GlobalExceptionFilter } from "./filters/http-exception.filter";
 
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? "http://localhost:5173")
+const ALLOWED_ORIGINS = (
+  process.env.ALLOWED_ORIGINS ?? "https://localhost:5173"
+)
   .split(",")
   .map((o) => o.trim());
 
-async function bootstrap() {
-  const isProd = process.env.NODE_ENV === "production";
+function generateSelfSignedCert(
+  certPath: string,
+  keyPath: string,
+): { cert: Buffer; key: Buffer } {
+  const certDir = path.dirname(certPath);
 
-  // ─── Fail fast on missing secrets ─────────────────────────────────────────
+  // Create directory if it doesn't exist
+  if (!fs.existsSync(certDir)) {
+    fs.mkdirSync(certDir, { recursive: true });
+  }
+
+  // Check if certs already exist
+  if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
+    console.log("✅ Using existing certificates");
+    return {
+      cert: fs.readFileSync(certPath),
+      key: fs.readFileSync(keyPath),
+    };
+  }
+
+  console.log("🔧 Generating self-signed certificate...");
+  const result = spawnSync("openssl", [
+    "req",
+    "-x509",
+    "-newkey",
+    "rsa:2048",
+    "-keyout",
+    keyPath,
+    "-out",
+    certPath,
+    "-days",
+    "365",
+    "-nodes",
+    "-subj",
+    "/CN=localhost/O=Debridgers/C=NG",
+  ]);
+
+  if (result.error) {
+    throw new Error(`Failed to generate certificate: ${result.error.message}`);
+  }
+
+  if (result.status !== 0) {
+    throw new Error(
+      `OpenSSL error: ${result.stderr?.toString() || "Unknown error"}`,
+    );
+  }
+
+  console.log("✅ Self-signed certificate generated");
+  return {
+    cert: fs.readFileSync(certPath),
+    key: fs.readFileSync(keyPath),
+  };
+}
+
+async function bootstrap() {
+  console.log("🟢 [1] Bootstrap starting...");
+  const isProd = process.env.NODE_ENV === "production";
+  console.log("🟢 [2] Environment:", isProd ? "production" : "development");
+
+  // === Fail fast on missing secrets
   const requiredEnv = [
     "ACCESS_TOKEN_SECRET",
     "REFRESH_TOKEN_SECRET",
@@ -28,10 +90,13 @@ async function bootstrap() {
       process.exit(1);
     }
   }
+  console.log("🟢 [3] Env vars validated");
 
+  console.log("🟢 [4] Creating NestFactory app...");
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  console.log("🟢 [5] App created, setting up middleware...");
 
-  // ─── Security headers (Helmet) ─────────────────────────────────────────────
+  // === Security headers (Helmet)
   app.use(
     helmet({
       crossOriginEmbedderPolicy: false, // allow Cloudinary images
@@ -48,7 +113,7 @@ async function bootstrap() {
     }),
   );
 
-  // ─── CORS — explicit allowlist, never reflect origin ──────────────────────
+  // === CORS — explicit allowlist, never reflect origin
   app.enableCors({
     origin: (
       origin: string | undefined,
@@ -60,19 +125,36 @@ async function bootstrap() {
       callback(new Error(`CORS: origin ${origin} not allowed`));
     },
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+    /*
+     * The five static key headers were removed with F7. Nothing reads them any
+     * more: authorisation is the JWT plus RolesGuard. Do not re-add a header
+     * secret the browser has to carry, since a browser cannot keep one.
+     */
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   });
 
-  app.setGlobalPrefix("api");
-  app.enableVersioning({
-    type: VersioningType.URI,
-    defaultVersion: "1",
-  });
+  app.setGlobalPrefix("api/v1");
+
+  // SECURITY FIX: Global validation pipe with strict whitelisting
+  // Prevents mass assignment attacks by rejecting unknown properties
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // Remove unknown properties
+      forbidNonWhitelisted: true, // Throw error if unknown properties sent
+      transform: true, // Auto-transform to DTO class
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+      stopAtFirstError: false, // Report all validation errors at once
+      skipMissingProperties: false, // Require all properties per DTO
+    }),
+  );
 
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalInterceptors(new ApiResponseInterceptor());
 
-  // ─── Swagger — dev/staging only ───────────────────────────────────────────
+  // === Swagger — dev/staging only
   if (!isProd) {
     const config = new DocumentBuilder()
       .setTitle("Debridgers API")
@@ -100,14 +182,19 @@ async function bootstrap() {
       swaggerOptions: { persistAuthorization: true },
     });
     Logger.log(
-      `Swagger UI available at: http://localhost:${process.env.PORT ?? 4000}/api/docs`,
+      `Swagger UI available at: http://localhost:${process.env.PORT ?? 4001}/api/docs`,
     );
   }
 
-  const port = process.env.PORT || 4000;
-  await app.listen(port);
+  console.log("🟢 [6] Middleware setup complete");
+  const port = process.env.PORT || 4001;
 
-  Logger.log(`Application running on: http://localhost:${port}/api/v1`);
+  console.log("🟢 [7] Starting server...");
+  await app.listen(port);
+  Logger.log(`✅ Server running on: http://localhost:${port}/api/v1`);
 }
 
-bootstrap();
+bootstrap().catch((err) => {
+  console.error("❌ Bootstrap failed:", err);
+  process.exit(1);
+});

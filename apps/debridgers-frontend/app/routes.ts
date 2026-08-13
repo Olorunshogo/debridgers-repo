@@ -22,6 +22,11 @@ export default [
     route("forgot-password", "routes/auth/forgot-password.tsx"),
     route("reset-password", "routes/auth/reset-password.tsx"),
     route("verify-email", "routes/auth/verify-email.tsx"),
+    /*
+     * Deliberately prefixed, unlike its siblings above. Admins get their own
+     * URL so the entry point is not advertised on the public login page.
+     */
+    route("auth/admin/login", "routes/auth/admin-login.tsx"),
   ]),
 
   // === Buyer Dashboard

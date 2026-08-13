@@ -307,3 +307,50 @@ pnpm test:e2e
 ## Contributing
 
 Please follow the repo's branch naming conventions and lint rules. Use `pnpm lint`, `pnpm format`, and `pnpm typecheck` before opening pull requests. See `CONTRIBUTING.md` for contribution guidelines.
+
+✅ FIXED VULNERABILITIES (4/5 CRITICAL)
+Database SSL/TLS Verification ✅
+
+Enabled certificate verification for database connections
+Prevents MITM attacks
+File Upload DoS Protection ✅
+
+5MB size limit enforcement
+MIME type validation
+Magic byte verification
+Path traversal prevention
+Global Input Validation (Mass Assignment) ✅
+
+Whitelist-based validation pipe
+Rejects unknown properties
+Prevents unintended field modification
+Webhook Replay Attack Protection ✅
+
+Redis-based deduplication
+24-hour idempotency cache
+Reusable service for any provider
+⏳ REMAINING VULNERABILITIES
+CRITICAL (1/5)
+Admin API Key Authentication - Admins should use API keys, not JWT
+HIGH (6)
+Missing user suspension/blocking system
+No rate limiting on sensitive endpoints
+Insufficient input sanitization on search
+SQL injection risk in dynamic queries
+Missing CSRF protection on state-changing operations
+Weak password policies
+MEDIUM (8)
+Missing request logging/audit trails
+No encryption for sensitive data at rest
+Insecure session management
+Missing content security headers
+No API versioning strategy
+Exposure of sensitive error details
+Missing access control on some endpoints
+No encryption for file uploads
+LOW (5)
+Missing security headers documentation
+No rate limiting on public endpoints
+Weak TLS configuration defaults
+Missing API authentication on public routes
+No security.txt file

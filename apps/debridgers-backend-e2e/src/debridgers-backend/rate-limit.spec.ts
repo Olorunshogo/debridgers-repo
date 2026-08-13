@@ -10,7 +10,7 @@
 
 const BASE = process.env.VITE_API_URL || "http://localhost:4000/api/v1";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// === Helpers
 
 async function getMs(url: string): Promise<{ status: number; ms: number }> {
   const start = Date.now();
@@ -18,9 +18,21 @@ async function getMs(url: string): Promise<{ status: number; ms: number }> {
   return { status: res.status, ms: Date.now() - start };
 }
 
-// ─── Rate Limiting ────────────────────────────────────────────────────────────
+// === Rate Limiting
 
 describe("Rate Limiting (ThrottlerGuard)", () => {
+  /*
+   * Each test needs its own window. The suite runs against a deliberately tight
+   * limit (see the test:rate-limit script) and the tests finish in tens of
+   * milliseconds, so without this they all land in one window and whichever
+   * test runs last inherits a budget the earlier ones already spent. That was
+   * showing up as the exemption and 401 assertions failing for no real reason.
+   */
+  beforeEach(async () => {
+    const ttl = Number(process.env.THROTTLE_TTL_MS ?? 1000);
+    await new Promise((resolve) => setTimeout(resolve, ttl + 100));
+  });
+
   it("should allow up to 10 requests per second on public endpoint", async () => {
     const results = await Promise.all(
       Array.from({ length: 10 }, () => fetch(`${BASE}/products`)),
@@ -83,7 +95,7 @@ describe("Rate Limiting (ThrottlerGuard)", () => {
   });
 });
 
-// ─── Benchmark / Latency ─────────────────────────────────────────────────────
+// === Benchmark / Latency
 
 describe("Benchmark — Response Time", () => {
   const P95_THRESHOLD_MS = 500; // 95th percentile must be under 500ms

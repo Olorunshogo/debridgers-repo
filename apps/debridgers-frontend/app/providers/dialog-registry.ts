@@ -20,4 +20,5 @@ import type { DialogRegistry } from "@debridgers/ui-web";
 export const DIALOG_REGISTRY: DialogRegistry = {
   REQUEST_PAYOUT: () => import("../components/dialogs/RequestPayoutDialog"),
   AUTH_GATE: () => import("../components/dialogs/AuthDialog"),
+  PAYMENT_METHOD: () => import("../components/dialogs/PaymentMethodDialog"),
 };

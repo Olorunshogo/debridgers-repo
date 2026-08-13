@@ -71,16 +71,17 @@
   },
 
   // === TypeScript
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.enablePromptUseWorkspaceTsdk": true,
-  "typescript.preferences.importModuleSpecifier": "non-relative",
-  "typescript.preferences.quoteStyle": "single",
-  "typescript.updateImportsOnFileMove.enabled": "always",
-  "typescript.inlayHints.parameterNames.enabled": "literals",
-  "typescript.inlayHints.variableTypes.enabled": false,
-  "typescript.inlayHints.functionLikeReturnTypes.enabled": false,
-  "js/ts.autoClosingTags": false,
-  "auto-close-tag.fullMode": false,
+  "js/ts.autoClosingTags.enabled": true,
+  "js/ts.format.insertSpaceAfterTypeAssertion": true,
+  "js/ts.updateImportsOnPaste.enabled": true,
+  "js/ts.tsdk.promptToUseWorkspaceVersion": true,
+  "js/ts.preferences.importModuleSpecifier": "non-relative",
+  "js/ts.preferences.quoteStyle": "single",
+  "js/ts.updateImportsOnFileMove.enabled": "always",
+  "js/ts.inlayHints.parameterNames.enabled": "literals",
+  "js/ts.inlayHints.variableTypes.enabled": false,
+  "js/ts.inlayHints.functionLikeReturnTypes.enabled": false,
+  "auto-close-tag.fullMode": true,
 
   // === ESLint
   "eslint.enable": true,
@@ -131,6 +132,9 @@
 
   // === Terminal
   "terminal.integrated.defaultProfile.linux": "bash",
+  "terminal.integrated.mouseWheelScrollSensitivity": 3,
+  "terminal.integrated.gpuAcceleration": "off",
+
   // === Fix NX extension "pnpm: not found" — pnpm lives outside the shell PATH
   "terminal.integrated.env.linux": {
     "PATH": "/home/olorunshogo/.local/share/pnpm:${env:PATH}"
@@ -156,5 +160,7 @@
     "tailwind.config.*": "postcss.config.*",
     "eslint.config.*": ".prettierrc, .prettierignore, .editorconfig, .lintstagedrc*"
   },
-  "cSpell.words": ["debridgers", "nx", "pnpm"]
+  "cSpell.words": ["debridgers", "nx", "pnpm"],
+  "compile-hero.disable-compile-files-on-did-save-code": false,
+  "terminal.integrated.copyOnSelection": false
 }

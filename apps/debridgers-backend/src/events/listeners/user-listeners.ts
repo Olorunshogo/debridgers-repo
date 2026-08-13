@@ -82,6 +82,10 @@ export class UserListeners {
       payload.otp,
       payload.role,
     );
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`📧 [OTP] Email: ${payload.email} | OTP: ${payload.otp}`);
+    }
   }
 
   @OnEvent(USER_EVENTS.CONTACT_SUBMITTED)
@@ -148,6 +152,11 @@ export class UserListeners {
         payload.name,
         payload.token,
       );
+      if (process.env.NODE_ENV !== "production") {
+        console.log(
+          `📧 [PASSWORD_RESET] Email: ${payload.email} | Token: ${payload.token}`,
+        );
+      }
     } catch (error) {
       this.logger.warn(`Password reset email failed for ${payload.email}`);
       this.logger.debug(error);
@@ -182,6 +191,11 @@ export class UserListeners {
         payload.token,
         payload.role,
       );
+      if (process.env.NODE_ENV !== "production") {
+        console.log(
+          `📧 [EMAIL_VERIFICATION] Email: ${payload.email} | OTP: ${payload.token}`,
+        );
+      }
     } catch (error) {
       this.logger.warn(`Verification email failed for ${payload.email}`);
       this.logger.debug(error);

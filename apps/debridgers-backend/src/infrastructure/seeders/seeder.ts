@@ -31,6 +31,13 @@ const ZONES = [
     areas: ["Kawo", "Rigachikun", "Rigasa", "Unguwan Mu'azu"],
     is_active: true,
   },
+  {
+    name: "Chikun",
+    description: "Chikun LGA areas - Kachia, Kafanchan, Kagoro",
+    delivery_fee: naira(800),
+    areas: ["Kachia", "Kafanchan", "Kagoro", "Jema'a"],
+    is_active: true,
+  },
 ];
 
 const PRODUCTS = [
@@ -145,12 +152,16 @@ const PRODUCTS = [
 async function seed() {
   const url = process.env.DATABASE_URL;
 
+  if (!url) {
+    throw new Error("DATABASE_URL environment variable not set");
+  }
+
   // SSL is required for hosted providers (Neon, Supabase, etc.) but not for local Docker
-  const isLocal = url?.includes("localhost") || url?.includes("127.0.0.1");
+  const isLocal = url.includes("localhost") || url.includes("127.0.0.1");
 
   const pool = new Pool({
     connectionString: url,
-    ssl: isLocal ? false : { rejectUnauthorized: false },
+    ssl: isLocal ? false : true,
   });
 
   const db = drizzle(pool, { schema });
@@ -165,8 +176,9 @@ async function seed() {
     .where(eq(sql`lower(${schema.users.email})`, adminEmail.toLowerCase()))
     .limit(1);
 
+  const hashed = await bcrypt.hash(adminPassword, 12);
+
   if (existing.length === 0) {
-    const hashed = await bcrypt.hash(adminPassword, 12);
     await db.insert(schema.users).values({
       first_name: "Debridgers",
       last_name: "Admin",
@@ -175,9 +187,14 @@ async function seed() {
       role: "admin",
       is_email_verified: true,
     });
-    console.log(`✓ Admin seeded: ${adminEmail}`);
+    console.warn(`✓ Admin created: ${adminEmail}`);
   } else {
-    console.log(`- Admin already exists: ${adminEmail}`);
+    // Update existing admin password
+    await db
+      .update(schema.users)
+      .set({ password: hashed })
+      .where(eq(schema.users.id, existing[0].id));
+    console.warn(`✓ Admin password updated: ${adminEmail}`);
   }
 
   // === Zones
@@ -187,21 +204,21 @@ async function seed() {
 
   if (Number(zoneCount) === 0) {
     await db.insert(schema.zones).values(ZONES);
-    console.log(`✓ Zones seeded: ${ZONES.length} zones`);
+    console.warn(`✓ Zones seeded: ${ZONES.length} zones`);
   } else {
-    console.log(`- Zones already exist (${zoneCount}) — skipping`);
+    console.warn(`- Zones already exist (${zoneCount}) — skipping`);
   }
 
   // === Products
   const [{ total: productCount }] = await db
     .select({ total: count() })
-    .from(schema.products);
+    .from(schema.productsTable);
 
   if (Number(productCount) === 0) {
-    await db.insert(schema.products).values(PRODUCTS);
-    console.log(`✓ Products seeded: ${PRODUCTS.length} products`);
+    await db.insert(schema.productsTable).values(PRODUCTS);
+    console.warn(`✓ Products seeded: ${PRODUCTS.length} products`);
   } else {
-    console.log(`- Products already exist (${productCount}) — skipping`);
+    console.warn(`- Products already exist (${productCount}) — skipping`);
   }
 
   await pool.end();

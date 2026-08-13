@@ -1,7 +1,7 @@
 // === Models
 import type { Object } from "@/types/modelTypes";
 
-// ─── LGAs ─────────────────────────────────────────────────────────────────────
+// === LGAs
 
 export const kadunaLgas: Object[] = [
   { value: "chikun", label: "Chikun" },
@@ -29,7 +29,7 @@ export const kadunaLgas: Object[] = [
   { value: "zangon-kataf", label: "Zangon Kataf" },
 ];
 
-// ─── Areas by LGA ─────────────────────────────────────────────────────────────
+// === Areas by LGA
 
 export const kadunaAreasByLga: Record<string, Object[]> = {
   chikun: [
@@ -86,7 +86,7 @@ export const kadunaAreas: Object[] = Object.values(kadunaAreasByLga).flat();
 // Legacy flat list used by agent signup and daily report selects
 export const kadunaStateLgas: Object[] = [...kadunaLgas];
 
-// ─── Unsold Reasons ───────────────────────────────────────────────────────────
+// === Unsold Reasons
 
 export const unsoldReasons: Object[] = [
   { value: "no_customers", label: "No customers today" },

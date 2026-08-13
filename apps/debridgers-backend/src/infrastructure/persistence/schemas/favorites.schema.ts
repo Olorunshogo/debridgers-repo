@@ -1,7 +1,7 @@
 import { pgTable, serial, integer, uniqueIndex } from "drizzle-orm/pg-core";
 import { timestamps } from "../../helper/column.helper";
 import { users } from "./users.schema";
-import { products } from "./products.schema";
+import { productsTable } from "./product.schema";
 import { createInsertSchema } from "drizzle-zod";
 
 /*
@@ -22,7 +22,7 @@ export const favorites = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     product_id: integer()
       .notNull()
-      .references(() => products.id, { onDelete: "cascade" }),
+      .references(() => productsTable.id, { onDelete: "cascade" }),
     ...timestamps,
   },
   (table) => [

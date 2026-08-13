@@ -28,6 +28,9 @@ export * from "./hooks";
 // === Agent dialogs
 export * from "./components/agent/agent-request-payout-dialog";
 
+// === Buyer dialogs
+export * from "./components/buyer/buyer-payment-method-dialog";
+
 // === Shared auth forms
 export * from "./components/auth/auth-field";
 export * from "./components/auth/auth-otp-input";

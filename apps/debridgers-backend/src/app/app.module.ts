@@ -14,10 +14,10 @@ import { jwtConfig } from "../infrastructure/config/jwt.config";
 import { cloudinaryConfig } from "../infrastructure/config/cloudinary.config";
 import { paystackConfig } from "../infrastructure/config/paystack.config";
 import { mailtrapConfig } from "../infrastructure/config/mailtrap.config";
-import { safehavenConfig } from "../infrastructure/config/safehaven.config";
 import { DatabaseModule } from "../infrastructure/database/database.module";
 import { RedisModule } from "../infrastructure/redis/core/redis.module";
 import { LoggerModule } from "../infrastructure/logger/logger.module";
+import { AnalyticsModule } from "../infrastructure/analytics/analytics.module";
 
 // Notification
 import { EmailModule } from "../notification/features/email/email.module";
@@ -25,19 +25,13 @@ import { EmailModule } from "../notification/features/email/email.module";
 // Events
 import { UserListeners } from "../events/listeners/user-listeners";
 
-// Features
-import { AuthModule } from "./auth/auth.module";
-import { accessJwtConfig } from "./auth/config/access-jwt";
-import { refreshJwtConfig } from "./auth/config/refresh-jwt";
-import { ContactModule } from "./contact/contact.module";
-import { AgentModule } from "./agent/agent.module";
-import { BuyerModule } from "./buyer/buyer.module";
-import { AdminModule } from "./admin/admin.module";
-import { PaymentModule } from "./payment/payment.module";
-import { CommissionModule } from "./commission/commission.module";
-import { PublicModule } from "./public/public.module";
-import { SystemSettingsModule } from "./settings/system-settings.module";
-import { CatalogModule } from "./catalog/catalog.module";
+// API Versions
+import { V1AppModule } from "../api/v1/v1.app.module";
+import { V2AppModule } from "../api/v2/v2.app.module";
+
+// JWT Config (shared across versions)
+import { accessJwtConfig } from "../api/v1/auth/config/access-jwt";
+import { refreshJwtConfig } from "../api/v1/auth/config/refresh-jwt";
 
 @Module({
   imports: [
@@ -48,33 +42,38 @@ import { CatalogModule } from "./catalog/catalog.module";
         jwtConfig,
         cloudinaryConfig,
         paystackConfig,
-        safehavenConfig,
         mailtrapConfig,
         accessJwtConfig,
         refreshJwtConfig,
       ],
       envFilePath: [".env"],
     }),
+    /*
+     * Env-overridable so the e2e suites can differ. The default is deliberately
+     * loose because per-endpoint @Throttle decorators do the real work; this
+     * global limiter is a backstop.
+     *
+     * The main e2e run raises the limit out of the way: every suite hits this
+     * from one IP inside one window, so a shared budget made later suites fail
+     * with 429s they never caused. The rate-limit suite instead tightens it and
+     * runs alone, which is the only way to assert throttling deterministically.
+     */
     ThrottlerModule.forRoot([
-      { name: "short", ttl: 1000, limit: 10 }, // 10 req/s per IP
-      { name: "medium", ttl: 60000, limit: 100 }, // 100 req/min per IP
+      {
+        name: "short",
+        ttl: Number(process.env.THROTTLE_TTL_MS ?? 60000),
+        limit: Number(process.env.THROTTLE_LIMIT ?? 1000),
+      },
     ]),
     EventEmitterModule.forRoot(),
     ScheduleModule.forRoot(),
     DatabaseModule,
     RedisModule,
     LoggerModule,
-    SystemSettingsModule,
-    CatalogModule,
+    AnalyticsModule,
     EmailModule,
-    AuthModule,
-    ContactModule,
-    AgentModule,
-    BuyerModule,
-    AdminModule,
-    PaymentModule,
-    CommissionModule,
-    PublicModule,
+    V1AppModule,
+    V2AppModule,
   ],
   controllers: [AppController],
   providers: [

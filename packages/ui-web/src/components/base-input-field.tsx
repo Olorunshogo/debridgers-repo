@@ -40,6 +40,13 @@ export function BaseInputField({
         }
       >
         <span className="text-heading font-syne font-medium">{label}</span>
+        {/* aria-hidden: the input's own `required` already tells a screen
+            reader, so the asterisk is decoration for sighted users. */}
+        {required && !hideLabel && (
+          <span className="text-error-red ml-0.5" aria-hidden="true">
+            *
+          </span>
+        )}
         {!required && !hideLabel && (
           <span className="font-open-sans text-text text-sm">(optional)</span>
         )}

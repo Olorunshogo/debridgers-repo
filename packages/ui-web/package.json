@@ -16,6 +16,7 @@
     "dev": "tsup --watch",
     "watch": "tsup --watch",
     "build": "tsup",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write ."

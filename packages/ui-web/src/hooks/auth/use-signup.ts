@@ -31,6 +31,21 @@ export interface UseSignupResult {
   awaitingVerification: boolean;
 }
 
+/*
+ * A 409 carrying this code means the account exists but was never verified.
+ * register() has already reissued the OTP by that point, so it is the
+ * verification path rather than a failure. Showing it as an error banner would
+ * strand the user on the signup screen with no way forward.
+ *
+ * Read structurally instead of importing ApiError, which lives in the API
+ * client. Pulling that in would drag the transport layer into this UI package,
+ * which is the coupling the adapter exists to avoid.
+ */
+function isUnverifiedEmailError(error: unknown): boolean {
+  const body = (error as { body?: { code?: unknown } } | null)?.body;
+  return body?.code === "UNVERIFIED_EMAIL";
+}
+
 export function useSignup(options: UseSignupOptions): UseSignupResult {
   const { config, onRequiresVerification } = options;
   const adapter = useAuthAdapter();
@@ -63,6 +78,17 @@ export function useSignup(options: UseSignupOptions): UseSignupResult {
       values.fullName.trim(),
     );
 
+    const proceedToVerification = (): void => {
+      setAwaitingVerification(true);
+
+      if (onRequiresVerification) {
+        onRequiresVerification(values.email, role);
+        return;
+      }
+
+      adapter.navigate("/verify-email", { email: values.email, role });
+    };
+
     try {
       await adapter.register({
         first_name,
@@ -74,15 +100,13 @@ export function useSignup(options: UseSignupOptions): UseSignupResult {
         referred_by_agent_code: values.referredByAgentCode || undefined,
       });
 
-      setAwaitingVerification(true);
-
-      if (onRequiresVerification) {
-        onRequiresVerification(values.email, role);
+      proceedToVerification();
+    } catch (error) {
+      if (isUnverifiedEmailError(error)) {
+        proceedToVerification();
         return;
       }
 
-      adapter.navigate("/verify-email", { email: values.email, role });
-    } catch (error) {
       setApiError(
         error instanceof Error
           ? error.message

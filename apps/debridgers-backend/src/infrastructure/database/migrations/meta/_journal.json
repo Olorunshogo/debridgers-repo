@@ -1,0 +1,29 @@
+{
+  "version": "5",
+  "dialect": "postgresql",
+  "entries": [
+    { "idx": 0, "when": 1722470400000, "tag": "0000_outgoing_morlocks" },
+    { "idx": 1, "when": 1722470400000, "tag": "0001_same_kree" },
+    { "idx": 2, "when": 1722470400000, "tag": "0002_simple_elektra" },
+    { "idx": 3, "when": 1722470400000, "tag": "0003_lonely_penance" },
+    { "idx": 4, "when": 1722470400000, "tag": "0004_lame_johnny_blaze" },
+    { "idx": 5, "when": 1722470400000, "tag": "0005_wonderful_the_hood" },
+    { "idx": 6, "when": 1722470400000, "tag": "0006_curious_triathlon" },
+    { "idx": 7, "when": 1722470400000, "tag": "0007_email_notifications" },
+    { "idx": 8, "when": 1722470400000, "tag": "0008_fair_eternity" },
+    { "idx": 9, "when": 1722470400000, "tag": "0009_melodic_ironclad" },
+    { "idx": 10, "when": 1722470400000, "tag": "0010_daily_namorita" },
+    { "idx": 11, "when": 1722470400000, "tag": "0011_light_corsair" },
+    { "idx": 12, "when": 1722470400000, "tag": "0012_mixed_whiplash" },
+    { "idx": 13, "when": 1722470400000, "tag": "0013_broken_quicksilver" },
+    { "idx": 14, "when": 1722470400000, "tag": "0014_flat_payback" },
+    { "idx": 15, "when": 1722470400000, "tag": "0015_product_taxonomy" },
+    {
+      "idx": 16,
+      "when": 1722470400000,
+      "tag": "0016_product_variety_backfill"
+    },
+    { "idx": 17, "when": 1722470400000, "tag": "0018_add_payment_tables" },
+    { "idx": 18, "when": 1722470400000, "tag": "0018_boring_azazel" }
+  ]
+}
