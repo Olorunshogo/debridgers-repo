@@ -7,6 +7,7 @@ import { WalletService } from "./wallet.service";
 import { OrderController } from "./order.controller";
 import { OrderService } from "./order.service";
 import { PaymentService } from "./payment.service";
+import { WalletPaymentController } from "./wallet-payment.controller";
 import { NotificationsService } from "./notifications.service";
 import { NotificationsController } from "./notifications.controller";
 import { BuyerRateLimitService } from "./buyer-rate-limit.service";
@@ -31,6 +32,7 @@ import { CloudinaryService } from "../../../infrastructure/cloudinary/cloudinary
     OrderController,
     NotificationsController,
     PaystackWebhookController,
+    WalletPaymentController,
   ],
   providers: [
     BuyerService,

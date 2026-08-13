@@ -138,7 +138,8 @@ export class OrderService {
     });
 
     const deliveryFee = zone.delivery_fee || 0;
-    const total = subtotal + deliveryFee;
+    const handlingFee = 10000;
+    const total = subtotal + deliveryFee + handlingFee;
 
     // Create order
     const [order] = await this.db
@@ -149,6 +150,7 @@ export class OrderService {
         quantity: items.reduce((sum, item) => sum + item.qty, 0),
         unit_price: items[0]?.price_kobo || 0,
         delivery_fee: deliveryFee,
+        handling_fee: handlingFee,
         total_amount: total,
         delivery_address: dto.delivery_address,
         notes: dto.notes,
@@ -181,6 +183,7 @@ export class OrderService {
         })),
         subtotal_kobo: subtotal,
         delivery_fee_kobo: deliveryFee,
+        handling_fee_kobo: handlingFee,
         total_kobo: total,
         delivery_address: dto.delivery_address,
         zone_id: zoneId,

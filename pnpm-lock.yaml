@@ -171,6 +171,9 @@ importers:
       drizzle-zod:
         specifier: ^0.8.3
         version: 0.8.3(drizzle-orm@0.45.2(@neondatabase/serverless@1.0.2)(@types/pg@8.20.0)(pg@8.20.0))(zod@4.3.6)
+      express:
+        specifier: ^5.2.1
+        version: 5.2.1
       file-stream-rotator:
         specifier: ^1.0.0
         version: 1.0.0

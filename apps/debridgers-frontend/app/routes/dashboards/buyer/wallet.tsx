@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSearchParams } from "react-router";
 import { ArrowUpRight, ArrowDownLeft, Plus } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
 import { formatCurrency, DashNumberInput } from "@debridgers/ui-web";
@@ -82,21 +83,39 @@ function fmt(n: number) {
 }
 
 export default function BuyerWallet() {
+  const [searchParams] = useSearchParams();
   const [data, setData] = useState<WalletData | null>(null);
   const [loading, setLoading] = useState(true);
   const [showFundModal, setShowFundModal] = useState<boolean>(false);
   const [fundAmount, setFundAmount] = useState("");
   const [funding, setFunding] = useState<boolean>(false);
-  const [funded, setFunded] = useState<boolean>(false);
+  const [depositSuccess, setDepositSuccess] = useState<boolean>(false);
 
-  useEffect(() => {
+  // Fetch wallet data
+  const fetchWalletData = () => {
     apiFetch<ApiWalletResponse>("/buyer/wallet")
       .then((walletData) => setData(buildWalletData(walletData)))
       .catch(console.error)
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchWalletData();
   }, []);
 
-  async function handleFund(e: React.FormEvent<HTMLFormElement>) {
+  // Detect return from Paystack deposit
+  useEffect(() => {
+    const ref = searchParams.get("trxref") ?? searchParams.get("reference");
+    if (ref) {
+      setDepositSuccess(true);
+      setShowFundModal(false);
+      setFundAmount("");
+      // Refresh wallet data after deposit
+      fetchWalletData();
+    }
+  }, [searchParams]);
+
+  async function handleFund(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setFunding(true);
 
@@ -264,7 +283,7 @@ export default function BuyerWallet() {
               <h3 className="font-syne text-heading mb-4 text-lg font-bold">
                 Add Funds
               </h3>
-              {funded ? (
+              {depositSuccess ? (
                 <p className="text-status-delivered-text text-sm font-medium">
                   Funds added successfully!
                 </p>

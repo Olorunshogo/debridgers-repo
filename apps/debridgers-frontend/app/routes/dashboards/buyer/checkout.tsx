@@ -56,6 +56,16 @@ const steps: { key: Step; label: string }[] = [
   { key: "confirmed", label: "Confirmed" },
 ];
 
+interface WalletInfo {
+  wallet: {
+    available_balance: number;
+    pending_balance: number;
+    total_deposited: number;
+  };
+  transactions: unknown[];
+  pagination: unknown;
+}
+
 export default function BuyerCheckout() {
   const { items: cartItems, subtotal, clear } = useCart();
   const [searchParams] = useSearchParams();
@@ -76,12 +86,28 @@ export default function BuyerCheckout() {
   const [quote, setQuote] = useState<OrderQuote | null>(null);
   const [quoting, setQuoting] = useState<boolean>(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
+  /* Payment method selection */
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "wallet">("card");
+  const [wallet, setWallet] = useState<WalletInfo | null>(null);
+  const [walletLoading, setWalletLoading] = useState(true);
 
   // === Delivery zones
   useEffect(() => {
     publicRequest<DeliveryZone[]>("/zones")
       .then(setZones)
       .catch(() => setZones([]));
+  }, []);
+
+  // === Wallet balance
+  useEffect(() => {
+    apiFetch<WalletInfo>("/buyer/wallet")
+      .then((res) => {
+        setWallet(res);
+      })
+      .catch(() => {
+        setWallet(null);
+      })
+      .finally(() => setWalletLoading(false));
   }, []);
 
   /*
@@ -164,36 +190,101 @@ export default function BuyerCheckout() {
     }
   }, [searchParams, cartItems, clear]);
 
-  async function handleContinue(e: React.FormEvent) {
+  async function handleContinue(e: React.SyntheticEvent) {
     e.preventDefault();
     if (cartItems.length === 0 || !deliveryAddress.trim() || !zoneId) return;
     setError(null);
     setLoading(true);
+
     try {
-      const res = await apiFetch<{
-        authorization_url: string;
-        reference: string;
-        order_id: number;
-        amount_kobo: number;
-      }>("/buyer/orders/initialize-payment", {
-        method: "POST",
-        body: JSON.stringify({
-          delivery_address: deliveryAddress.trim(),
-          zone_id: zoneId ? Number(zoneId) : undefined,
-          delivery_time: deliveryTime,
-          notes: note.trim() || undefined,
-          cart: cartItems.map((i) => ({
-            product_id: Number(i.id),
-            name: i.name,
-            price_kobo: Math.round(i.price * 100),
-            unit: i.unit,
-            qty: i.qty,
-          })),
-        }),
-      });
-      window.location.href = res.authorization_url;
-    } catch {
-      setError("Failed to initialize payment. Please try again.");
+      if (paymentMethod === "wallet") {
+        // Wallet payment: create order then deduct from wallet
+        const orderRes = await apiFetch<{ id: number; total_amount: number }>(
+          "/buyer/orders",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              delivery_address: deliveryAddress.trim(),
+              zone_id: zoneId ? Number(zoneId) : undefined,
+              delivery_time: deliveryTime,
+              cart: cartItems.map((i) => ({
+                product_id: Number(i.id),
+                name: i.name,
+                price_kobo: Math.round(i.price * 100),
+                unit: i.unit,
+                qty: i.qty,
+              })),
+            }),
+          },
+        );
+
+        const orderId = orderRes.id;
+        const amount = orderRes.total_amount;
+
+        // Check if wallet has enough balance
+        if (!wallet || wallet.wallet.available_balance < amount) {
+          const errorMsg = !wallet
+            ? "Wallet not loaded. Please refresh and try again."
+            : `Insufficient wallet balance. Need ₦${Math.round(amount / 100)}, have ₦${Math.round(wallet.wallet.available_balance / 100)}`;
+          setError(errorMsg);
+          setLoading(false);
+          return;
+        }
+
+        // Deduct from wallet
+        const paymentPayload = {
+          payment_method: "wallet",
+          amount_kobo: amount,
+        };
+        await apiFetch(`/buyer/orders/${orderId}/pay`, {
+          method: "POST",
+          headers: {
+            "x-request-key": "request_key_change_in_production",
+            "x-payment-key": "payment_key_1_change_in_production",
+            "x-payment-key_2": "payment_key_2_change_in_production",
+          },
+          body: JSON.stringify(paymentPayload),
+        });
+
+        // Success - clear cart and show confirmation
+        if (cartItems.length > 0) {
+          localStorage.setItem(
+            LAST_ORDER_STORAGE_KEY,
+            JSON.stringify(cartItems),
+          );
+        }
+        clear();
+        setStep("confirmed");
+      } else {
+        // Card payment: initialize Paystack
+        const res = await apiFetch<{
+          authorization_url: string;
+          reference: string;
+          order_id: number;
+          amount_kobo: number;
+        }>("/buyer/orders/initialize-payment", {
+          method: "POST",
+          body: JSON.stringify({
+            delivery_address: deliveryAddress.trim(),
+            zone_id: zoneId ? Number(zoneId) : undefined,
+            delivery_time: deliveryTime,
+            cart: cartItems.map((i) => ({
+              product_id: Number(i.id),
+              name: i.name,
+              price_kobo: Math.round(i.price * 100),
+              unit: i.unit,
+              qty: i.qty,
+            })),
+          }),
+        });
+        window.location.href = res.authorization_url;
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to process payment. Please try again.",
+      );
       setLoading(false);
     }
   }
@@ -318,6 +409,55 @@ export default function BuyerCheckout() {
               placeholder="Enter your full delivery address..."
               rows={3}
             />
+          </div>
+
+          <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
+            <h3 className="font-syne text-heading font-semibold">
+              Payment Method
+            </h3>
+            <div className="flex gap-3">
+              {[
+                {
+                  key: "card" as const,
+                  label: "Pay with Card",
+                  sub: "Paystack",
+                },
+                {
+                  key: "wallet" as const,
+                  label: "Pay with Wallet",
+                  sub: wallet
+                    ? `Balance: ${formatFromKobo(wallet.wallet.available_balance)}`
+                    : "Loading...",
+                },
+              ].map((opt) => (
+                <label
+                  key={opt.key}
+                  className={`flex flex-1 cursor-pointer items-center gap-2 rounded-xl border px-4 py-3 transition-colors ${
+                    paymentMethod === opt.key
+                      ? "border-primary bg-dash-quick-action-hover"
+                      : "border-gray-border bg-transparent"
+                  } ${
+                    opt.key === "wallet" && walletLoading ? "opacity-50" : ""
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value={opt.key}
+                    checked={paymentMethod === opt.key}
+                    onChange={() => setPaymentMethod(opt.key)}
+                    disabled={opt.key === "wallet" && walletLoading}
+                    className="accent-primary"
+                  />
+                  <div>
+                    <p className="text-heading text-sm font-medium">
+                      {opt.label}
+                    </p>
+                    <p className="text-text text-xs">{opt.sub}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
           </div>
 
           <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
@@ -483,21 +623,26 @@ export default function BuyerCheckout() {
               loading ||
               cartItems.length === 0 ||
               !deliveryAddress.trim() ||
-              !zoneId
+              !zoneId ||
+              (paymentMethod === "wallet" && walletLoading)
             }
             className="bg-primary flex cursor-pointer items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? (
-              "Initializing payment..."
+              `Processing ${paymentMethod === "wallet" ? "wallet" : "card"} payment...`
             ) : (
               <>
-                Pay with Paystack
+                {paymentMethod === "wallet"
+                  ? "Pay with Wallet"
+                  : "Pay with Card"}
                 <ArrowRight size={16} />
               </>
             )}
           </button>
           <p className="text-text text-center text-xs">
-            You&apos;ll be redirected to Paystack to complete payment securely.
+            {paymentMethod === "wallet"
+              ? "Payment will be deducted from your wallet."
+              : "You'll be redirected to Paystack to complete payment securely."}
           </p>
         </div>
       </form>
