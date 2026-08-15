@@ -16,9 +16,14 @@ import { WalletService } from "./wallet.service";
 import { BuyerRateLimitService } from "./buyer-rate-limit.service";
 import { EmailService } from "../../../notification/features/email/email.service";
 import { AuthGuard } from "../../shared/guards/auth.guard";
-import { RequestKeyGuard } from "../../shared/guards/keys.guard";
+import {
+  RequestKeyGuard,
+  BuyerPaymentKeysGuard,
+} from "../../shared/guards/keys.guard";
 import { CurrentUser } from "../../shared/decorators/current-user.decorator";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";
+import { PaystackDvaService } from "../payment/paystack-dva.service";
+import { WithdrawalService } from "../payment/withdrawal.service";
 
 class DepositDto {
   @IsNumber()
@@ -30,6 +35,14 @@ class ConfirmDepositDto {
   @IsString()
   @MinLength(1)
   reference!: string;
+}
+
+class WithdrawalDto {
+  @IsNumber()
+  @IsPositive()
+  amount_kobo!: number;
+
+  reason?: string;
 }
 
 @ApiTags("Buyer - Wallet")
@@ -45,6 +58,8 @@ export class WalletController {
     private readonly rateLimitService: BuyerRateLimitService,
     private readonly config: ConfigService,
     private readonly emailService: EmailService,
+    private readonly paystackDvaService: PaystackDvaService,
+    private readonly withdrawalService: WithdrawalService,
   ) {
     this.baseUrl =
       this.config.get<string>("PAYSTACK_URL") ?? "https://api.paystack.co";
@@ -75,8 +90,36 @@ export class WalletController {
     };
   }
 
+  @Get("dva")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Get buyer's Dedicated Virtual Account (DVA) details",
+  })
+  async getDva(@CurrentUser() user: JwtPayload) {
+    const dva = await this.paystackDvaService.getDvaForUser(user.sub);
+
+    if (!dva) {
+      return {
+        statusCode: 200,
+        message: "DVA not yet created",
+        data: null,
+      };
+    }
+
+    return {
+      statusCode: 200,
+      message: "DVA details retrieved",
+      data: {
+        account_number: dva.account_number,
+        bank_name: dva.bank_name,
+        account_name: dva.account_name,
+      },
+    };
+  }
+
   @Post("deposit")
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(AuthGuard, BuyerPaymentKeysGuard)
   @ApiOperation({ summary: "Initiate Paystack deposit to wallet" })
   async initiateDeposit(
     @CurrentUser() user: JwtPayload,
@@ -177,6 +220,7 @@ export class WalletController {
 
   @Post("deposit/confirm")
   @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard, BuyerPaymentKeysGuard)
   @ApiOperation({ summary: "Confirm Paystack deposit via webhook" })
   async confirmDeposit(@Body() dto: ConfirmDepositDto) {
     // TODO: Verify Paystack signature
@@ -217,6 +261,23 @@ export class WalletController {
         available_balance: wallet.available_balance,
         amount_added: transaction.amount,
       },
+    };
+  }
+
+  @Post("withdraw")
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(AuthGuard, BuyerPaymentKeysGuard)
+  @ApiOperation({ summary: "Withdraw from wallet to bank account" })
+  async withdraw(@CurrentUser() user: JwtPayload, @Body() dto: WithdrawalDto) {
+    const result = await this.withdrawalService.initiateWithdrawal(user.sub, {
+      amount_kobo: dto.amount_kobo,
+      reason: dto.reason,
+    });
+
+    return {
+      statusCode: 201,
+      message: "Withdrawal initiated",
+      data: result,
     };
   }
 }

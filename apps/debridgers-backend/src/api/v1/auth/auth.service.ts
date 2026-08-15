@@ -23,6 +23,8 @@ import { USER_ROLES } from "../../../interfaces/users/roles.type";
 import { LoginDto } from "./dto/login.dto";
 import { AuthAttemptService } from "./auth-attempt.service";
 import { PostHogService } from "../../../infrastructure/analytics/posthog.service";
+import { PaystackDvaService } from "../payment/paystack-dva.service";
+import { WalletService } from "../buyer/wallet.service";
 
 @Injectable()
 export class AuthService {
@@ -37,6 +39,8 @@ export class AuthService {
     private readonly eventEmitter: EventEmitter2,
     private readonly authAttempt: AuthAttemptService,
     private readonly posthog: PostHogService,
+    private readonly paystackDvaService: PaystackDvaService,
+    private readonly walletService: WalletService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -133,6 +137,12 @@ export class AuthService {
         });
       }
 
+      if (role === USER_ROLES.BUYER) {
+        await tx.insert(schema.buyerWallets).values({
+          user_id: createdUser.id,
+        });
+      }
+
       if (!isTestMode) {
         await tx.insert(schema.email_verification).values({
           user_id: createdUser.id,
@@ -154,6 +164,24 @@ export class AuthService {
     });
 
     console.warn("🔵 [REGISTER] 6. Register finished, returning response");
+
+    if (role === USER_ROLES.BUYER && !isTestMode) {
+      try {
+        await this.paystackDvaService.createDvaForUser(user.id, {
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          phone: user.phone || "",
+        });
+        console.warn(
+          "🔵 [REGISTER] 7. DVA created successfully for user:",
+          user.id,
+        );
+      } catch (error) {
+        console.error("⚠️ [REGISTER] Failed to create DVA for buyer:", error);
+      }
+    }
+
     return {
       message: isTestMode
         ? "Registration successful."

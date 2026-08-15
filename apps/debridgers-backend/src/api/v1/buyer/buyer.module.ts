@@ -43,5 +43,6 @@ import { CloudinaryService } from "../../../infrastructure/cloudinary/cloudinary
     BuyerRateLimitService,
     CloudinaryService,
   ],
+  exports: [WalletService],
 })
 export class BuyerModule {}
