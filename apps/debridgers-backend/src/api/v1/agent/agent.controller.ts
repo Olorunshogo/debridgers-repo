@@ -31,7 +31,10 @@ import { BankDetailsService } from "./bank-details.service";
 import { CloudinaryService } from "../../../infrastructure/cloudinary/cloudinary.service";
 import { ZodValidationPipe } from "../../../infrastructure/pipeline/validation.pipeline";
 import { applyAgentSchema, ApplyAgentDto } from "./dto/apply-agent.dto";
-import { requestWithdrawalSchema } from "./dto/request-withdrawal.dto";
+import {
+  requestWithdrawalSchema,
+  RequestWithdrawalDto,
+} from "./dto/request-withdrawal.dto";
 import {
   updateAgentProfileSchema,
   UpdateAgentProfileDto,
@@ -42,7 +45,9 @@ import { remitStockSchema, RemitStockDto } from "./dto/remit-stock.dto";
 import { submitKycSchema, SubmitKycDto } from "./dto/submit-kyc.dto";
 import {
   updateBankDetailsSchema,
+  UpdateBankDetailsDto,
   resolveBankAccountSchema,
+  ResolveBankAccountDto,
 } from "./dto/update-bank-details.dto";
 import { AuthGuard } from "../../shared/guards/auth.guard";
 import { RolesGuard } from "../../shared/guards/roles.guard";
@@ -718,8 +723,10 @@ export class AgentController {
     },
   })
   @ApiResponse({ status: 400, description: "Account could not be verified" })
-  resolveBankAccount(@Body() body: unknown) {
-    const dto = resolveBankAccountSchema.parse(body);
+  resolveBankAccount(
+    @Body(new ZodValidationPipe(resolveBankAccountSchema))
+    dto: ResolveBankAccountDto,
+  ) {
     return this.bankDetailsService.resolve(dto);
   }
 
@@ -743,8 +750,11 @@ export class AgentController {
   })
   @ApiResponse({ status: 200, description: "Bank details saved" })
   @ApiResponse({ status: 400, description: "Account could not be verified" })
-  updateBankDetails(@Body() body: unknown, @CurrentUser() user: JwtPayload) {
-    const dto = updateBankDetailsSchema.parse(body);
+  updateBankDetails(
+    @Body(new ZodValidationPipe(updateBankDetailsSchema))
+    dto: UpdateBankDetailsDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
     return this.bankDetailsService.updateBankDetails(dto, user);
   }
 
@@ -759,8 +769,11 @@ export class AgentController {
       "Creates a pending withdrawal for admin review and debits the available balance immediately, so the same money cannot be requested twice.",
   })
   @ApiResponse({ status: 201, description: "Payout requested" })
-  requestWithdrawal(@Body() body: unknown, @CurrentUser() user: JwtPayload) {
-    const dto = requestWithdrawalSchema.parse(body);
+  requestWithdrawal(
+    @Body(new ZodValidationPipe(requestWithdrawalSchema))
+    dto: RequestWithdrawalDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
     return this.agentService.requestWithdrawal(dto, user);
   }
 

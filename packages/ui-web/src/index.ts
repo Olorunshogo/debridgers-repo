@@ -30,6 +30,8 @@ export * from "./components/agent/agent-request-payout-dialog";
 
 // === Buyer dialogs
 export * from "./components/buyer/buyer-payment-method-dialog";
+export * from "./components/help/help-guide-dialog";
+export * from "./components/help/support-ticket-dialog";
 
 // === Shared auth forms
 export * from "./components/auth/auth-field";
@@ -61,6 +63,7 @@ export * from "./components/text-input";
 export * from "./components/email-input";
 export * from "./components/textarea-input";
 export * from "./components/dash-select";
+export * from "./components/dash-submit-button";
 
 // === Other components
 export * from "./components/app-logo";

@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Link, useSearchParams } from "react-router";
 import { motion } from "framer-motion";
-import { CheckCircle2, ArrowRight } from "lucide-react";
+import { CheckCircle2, ArrowRight, Loader2 } from "lucide-react";
 import { apiFetch, publicRequest } from "@debridgers/api-client";
 import { useCart, LAST_ORDER_STORAGE_KEY } from "../../../features/cart";
 import {
@@ -12,6 +12,7 @@ import {
   stateSelectOptions,
   lgaSelectOptions,
   DashTextareaInput,
+  DashSubmitButton,
 } from "@debridgers/ui-web";
 
 export function meta() {
@@ -68,8 +69,10 @@ interface WalletInfo {
 
 export default function BuyerCheckout() {
   const { items: cartItems, subtotal, clear } = useCart();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [step, setStep] = useState<Step>("delivery");
+  /* Confirming the Paystack return, distinct from submitting a new order. */
+  const [confirming, setConfirming] = useState<boolean>(false);
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryTime, setDeliveryTime] = useState<"today" | "tomorrow">(
     "today",
@@ -89,7 +92,12 @@ export default function BuyerCheckout() {
   /* Payment method selection */
   const [paymentMethod, setPaymentMethod] = useState<"card" | "wallet">("card");
   const [wallet, setWallet] = useState<WalletInfo | null>(null);
-  const [walletLoading, setWalletLoading] = useState(true);
+  const [walletLoading, setWalletLoading] = useState<boolean>(true);
+
+  /* Read inside the confirmation effect, which must not re-run as the cart
+     changes or it would fire a second confirmation mid-flight. */
+  const cartItemsRef = useRef(cartItems);
+  cartItemsRef.current = cartItems;
 
   // === Delivery zones
   useEffect(() => {
@@ -176,19 +184,62 @@ export default function BuyerCheckout() {
     return () => window.clearTimeout(timer);
   }, [zoneId, cartItems]);
 
-  // Detect return from Paystack - trxref or reference appended to callback URL
+  /*
+   * Return leg from Paystack. Arriving here proves the buyer came back, not
+   * that they paid - Paystack sends the same callback when a card is declined
+   * or the page is abandoned. So the reference is confirmed with the server
+   * before anything is treated as bought, and the cart survives a failure.
+   */
   useEffect(() => {
     const ref = searchParams.get("trxref") ?? searchParams.get("reference");
-    if (ref) {
-      /* Snapshot before clearing so "repeat last order" has something to
-         restore. Taken from the shared cart rather than re-reading storage. */
-      if (cartItems.length > 0) {
-        localStorage.setItem(LAST_ORDER_STORAGE_KEY, JSON.stringify(cartItems));
-      }
-      clear();
-      setStep("confirmed");
-    }
-  }, [searchParams, cartItems, clear]);
+    if (!ref) return;
+
+    let cancelled = false;
+    setConfirming(true);
+
+    apiFetch<{ order_id: number; payment_status: string }>(
+      "/buyer/orders/confirm-payment",
+      { method: "POST", body: JSON.stringify({ reference: ref }) },
+    )
+      .then(() => {
+        if (cancelled) return;
+        /* Snapshot before clearing so "repeat last order" has something to
+           restore. Taken from the shared cart rather than re-reading storage. */
+        if (cartItemsRef.current.length > 0) {
+          localStorage.setItem(
+            LAST_ORDER_STORAGE_KEY,
+            JSON.stringify(cartItemsRef.current),
+          );
+        }
+        clear();
+        setStep("confirmed");
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setError(
+          err instanceof Error
+            ? err.message
+            : "We could not confirm that payment. Your cart has been kept.",
+        );
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setConfirming(false);
+        /* Drop the reference so a refresh cannot replay this confirmation. */
+        setSearchParams(
+          (params) => {
+            params.delete("trxref");
+            params.delete("reference");
+            return params;
+          },
+          { replace: true },
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, setSearchParams, clear]);
 
   async function handleContinue(e: React.SyntheticEvent) {
     e.preventDefault();
@@ -199,27 +250,27 @@ export default function BuyerCheckout() {
     try {
       if (paymentMethod === "wallet") {
         // Wallet payment: create order then deduct from wallet
-        const orderRes = await apiFetch<{ id: number; total_amount: number }>(
-          "/buyer/orders",
-          {
-            method: "POST",
-            body: JSON.stringify({
-              delivery_address: deliveryAddress.trim(),
-              zone_id: zoneId ? Number(zoneId) : undefined,
-              delivery_time: deliveryTime,
-              cart: cartItems.map((i) => ({
-                product_id: Number(i.id),
-                name: i.name,
-                price_kobo: Math.round(i.price * 100),
-                unit: i.unit,
-                qty: i.qty,
-              })),
-            }),
-          },
-        );
+        const orderRes = await apiFetch<{
+          order_id: number;
+          total_kobo: number;
+        }>("/buyer/orders", {
+          method: "POST",
+          body: JSON.stringify({
+            delivery_address: deliveryAddress.trim(),
+            zone_id: zoneId ? Number(zoneId) : undefined,
+            delivery_time: deliveryTime,
+            cart: cartItems.map((i) => ({
+              product_id: Number(i.id),
+              name: i.name,
+              price_kobo: Math.round(i.price * 100),
+              unit: i.unit,
+              qty: i.qty,
+            })),
+          }),
+        });
 
-        const orderId = orderRes.id;
-        const amount = orderRes.total_amount;
+        const orderId = orderRes.order_id;
+        const amount = orderRes.total_kobo;
 
         // Check if wallet has enough balance
         if (!wallet || wallet.wallet.available_balance < amount) {
@@ -238,11 +289,6 @@ export default function BuyerCheckout() {
         };
         await apiFetch(`/buyer/orders/${orderId}/pay`, {
           method: "POST",
-          headers: {
-            "x-request-key": "request_key_change_in_production",
-            "x-payment-key": "payment_key_1_change_in_production",
-            "x-payment-key_2": "payment_key_2_change_in_production",
-          },
           body: JSON.stringify(paymentPayload),
         });
 
@@ -261,7 +307,8 @@ export default function BuyerCheckout() {
           authorization_url: string;
           reference: string;
           order_id: number;
-          amount_kobo: number;
+          /* Same figures as the quote, minus package_count. */
+          totals: Omit<OrderQuote, "package_count">;
         }>("/buyer/orders/initialize-payment", {
           method: "POST",
           body: JSON.stringify({
@@ -287,6 +334,21 @@ export default function BuyerCheckout() {
       );
       setLoading(false);
     }
+  }
+
+  /* Hides the form while the return leg settles, so the buyer cannot pay twice. */
+  if (confirming) {
+    return (
+      <div className="flex flex-col items-center gap-4 py-16 text-center">
+        <Loader2 size={40} className="text-primary animate-spin" />
+        <h2 className="font-syne text-heading text-xl font-bold">
+          Confirming your payment
+        </h2>
+        <p className="text-text max-w-87.5 text-sm">
+          This only takes a moment. Please do not close this page.
+        </p>
+      </div>
+    );
   }
 
   if (step === "confirmed") {
@@ -617,28 +679,21 @@ export default function BuyerCheckout() {
             </p>
           )}
 
-          <button
-            type="submit"
+          <DashSubmitButton
+            variant="primary"
+            loading={loading}
+            loadingText={`Processing ${paymentMethod === "wallet" ? "wallet" : "card"} payment...`}
             disabled={
-              loading ||
               cartItems.length === 0 ||
               !deliveryAddress.trim() ||
               !zoneId ||
               (paymentMethod === "wallet" && walletLoading)
             }
-            className="bg-primary flex cursor-pointer items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex"
           >
-            {loading ? (
-              `Processing ${paymentMethod === "wallet" ? "wallet" : "card"} payment...`
-            ) : (
-              <>
-                {paymentMethod === "wallet"
-                  ? "Pay with Wallet"
-                  : "Pay with Card"}
-                <ArrowRight size={16} />
-              </>
-            )}
-          </button>
+            {paymentMethod === "wallet" ? "Pay with Wallet" : "Pay with Card"}
+            <ArrowRight size={16} />
+          </DashSubmitButton>
           <p className="text-text text-center text-xs">
             {paymentMethod === "wallet"
               ? "Payment will be deducted from your wallet."

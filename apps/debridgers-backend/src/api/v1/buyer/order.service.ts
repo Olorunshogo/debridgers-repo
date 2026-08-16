@@ -270,9 +270,29 @@ export class OrderService {
       throw new NotFoundException("Order not found");
     }
 
+    /*
+     * Joined rather than reading order_items alone, which left the caller with
+     * only a product_id and forced the name to be the id as a string. The
+     * buyer's order detail and "repeat last order" both need the real name,
+     * unit and image.
+     *
+     * unit_price still comes from the line, never from products: a later price
+     * change must not rewrite what someone already paid.
+     */
     const items = await this.db
-      .select()
+      .select({
+        product_id: schema.order_items.product_id,
+        quantity: schema.order_items.quantity,
+        unit_price_kobo: schema.order_items.unit_price_kobo,
+        name: schema.productsTable.name,
+        unit: schema.productsTable.unit,
+        image_url: schema.productsTable.image_url,
+      })
       .from(schema.order_items)
+      .innerJoin(
+        schema.productsTable,
+        eq(schema.productsTable.id, schema.order_items.product_id),
+      )
       .where(eq(schema.order_items.order_id, orderId));
 
     const zone = await this.db
@@ -288,7 +308,9 @@ export class OrderService {
       payment_status: order.payment_status,
       items: items.map((item) => ({
         product_id: item.product_id,
-        name: item.product_id.toString(), // TODO: Join with products table
+        name: item.name,
+        unit: item.unit,
+        image_url: item.image_url,
         qty: item.quantity,
         unit_price: item.unit_price_kobo,
         subtotal: item.quantity * item.unit_price_kobo,
@@ -315,6 +337,31 @@ export class OrderService {
       // @ts-ignore - Drizzle enum type mismatch
       .set({ status: status })
       .where(eq(schema.orders.id, orderId))
+      .returning();
+
+    return updated;
+  }
+
+  /*
+   * Used when Paystack initialisation fails after the order row already
+   * exists, and by the reconciliation sweep for checkouts that were never
+   * paid. Only ever touches orders that are still unpaid, so a payment that
+   * landed in the meantime can never be cancelled out from under the buyer.
+   */
+  async cancelOrderForFailedPayment(
+    orderId: number,
+    reason = "Payment initialization failed",
+  ) {
+    const [updated] = await this.db
+      .update(schema.orders)
+      // @ts-ignore - Drizzle enum type mismatch
+      .set({ status: "cancelled", cancellation_reason: reason })
+      .where(
+        and(
+          eq(schema.orders.id, orderId),
+          eq(schema.orders.payment_status, "unpaid"),
+        ),
+      )
       .returning();
 
     return updated;

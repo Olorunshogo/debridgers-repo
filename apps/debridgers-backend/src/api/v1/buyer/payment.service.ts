@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
 } from "@nestjs/common";
 import { Inject } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -23,6 +24,7 @@ export class PaymentService {
   ];
   private readonly baseUrl = "https://api.paystack.co";
   private readonly secretKey: string;
+  private readonly appUrl: string;
 
   constructor(
     @Inject(DATABASE_CONNECTION)
@@ -33,6 +35,7 @@ export class PaymentService {
     private readonly config: ConfigService,
   ) {
     this.secretKey = this.config.get<string>("PAYSTACK_SECRET_KEY") ?? "";
+    this.appUrl = this.config.get<string>("APP_URL") ?? "";
   }
 
   /**
@@ -166,6 +169,94 @@ export class PaymentService {
     };
   }
 
+  /*
+   * Confirms a card payment from the buyer's return leg, so an order is not
+   * left unpaid when the webhook is delayed, misconfigured or unreachable.
+   * Nothing here trusts the client: the order is resolved from the reference
+   * rather than from an id the caller chose, so a reference can only ever
+   * settle the one order it was issued for, and it must belong to this buyer
+   * for this amount. Safe to run alongside the webhook, since an already-paid
+   * order returns unchanged.
+   */
+  async confirmOrderPayment(userId: number, reference: string) {
+    const [order] = await this.db
+      .select()
+      .from(schema.orders)
+      .where(eq(schema.orders.payment_reference, reference))
+      .limit(1);
+
+    if (!order) {
+      throw new NotFoundException("No order found for that payment reference");
+    }
+
+    if (order.buyer_id !== userId) {
+      throw new ForbiddenException("This order belongs to another account");
+    }
+
+    if (order.payment_status === "paid") {
+      return { order_id: order.id, payment_status: "paid", already: true };
+    }
+
+    const verified = await this.verifyPaystackTransaction(reference);
+
+    if (verified.status !== "success") {
+      throw new BadRequestException(
+        `Payment not completed (Paystack status: ${verified.status})`,
+      );
+    }
+
+    // Settle against what Paystack says was received, never what a client claims.
+    if (verified.amount !== order.total_amount) {
+      throw new BadRequestException(
+        "Paid amount does not match the order total",
+      );
+    }
+
+    await this.orderService.updatePaymentStatus(order.id, "paid");
+    await this.orderService.updateOrderStatus(order.id, "confirmed");
+
+    await this.notificationsService.notifyPaymentConfirmed(
+      order.buyer_id,
+      order.id,
+      order.total_amount,
+      "paystack",
+    );
+
+    return { order_id: order.id, payment_status: "paid", already: false };
+  }
+
+  /*
+   * Single place that asks Paystack what actually happened to a reference.
+   * Shared by the buyer's return leg and the reconciliation sweep so both
+   * read the same source of truth.
+   */
+  async verifyPaystackTransaction(
+    reference: string,
+  ): Promise<{ status: string; amount: number }> {
+    if (!this.secretKey) {
+      throw new BadRequestException("Paystack secret key not configured");
+    }
+
+    const response = await fetch(
+      `${this.baseUrl}/transaction/verify/${encodeURIComponent(reference)}`,
+      { headers: { Authorization: `Bearer ${this.secretKey}` } },
+    );
+
+    const verified = (await response.json()) as {
+      status: boolean;
+      data?: { status: string; amount: number };
+      message?: string;
+    };
+
+    if (!verified.status || !verified.data) {
+      throw new BadRequestException(
+        `Paystack error: ${verified.message ?? "Could not verify transaction"}`,
+      );
+    }
+
+    return { status: verified.data.status, amount: verified.data.amount };
+  }
+
   /**
    * Call Paystack Initialize Transaction API
    */
@@ -191,6 +282,12 @@ export class PaymentService {
       const body: Record<string, unknown> = {
         email,
         amount: amountKobo,
+        /*
+         * Sent per request rather than relying on the Paystack dashboard's
+         * default, which is one field shared by every environment: without it
+         * local, staging and production buyers all return to the same place.
+         */
+        callback_url: `${this.appUrl}/buyer-dashboard/checkout`,
         metadata: {
           order_id: orderId,
           type: "order_payment",

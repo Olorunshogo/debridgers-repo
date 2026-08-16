@@ -9,6 +9,7 @@ import {
   DashSwitchInput,
   SubmitButton,
   DashTextareaInput,
+  DashSubmitButton,
 } from "@debridgers/ui-web";
 import {
   apiFetch,
@@ -396,14 +397,15 @@ export default function BuyerSettings() {
             </div>
           )}
           <div className="flex flex-col gap-2">
-            <button
+            <DashSubmitButton
+              variant="secondary"
               type="button"
+              loading={avatarUploading}
+              loadingText="Uploading..."
               onClick={() => fileRef.current?.click()}
-              disabled={avatarUploading}
-              className="border-gray-border text-heading cursor-pointer rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {avatarUploading ? "Uploading..." : "Change Photo"}
-            </button>
+              Change Photo
+            </DashSubmitButton>
             <input
               ref={fileRef}
               type="file"

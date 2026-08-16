@@ -9,10 +9,26 @@ import { z } from "zod";
  * devices. It also makes the sync idempotent, which matters for a debounced
  * writer that may retry.
  */
-export const cartLineSchema = z.object({
-  product_id: z.number().int().positive(),
-  quantity: z.number().int().min(1).max(999),
-});
+/*
+ * Accepts either spelling. The order endpoints take `qty` and cart sync takes
+ * `quantity`, so a caller that gets it the wrong way round used to see a
+ * rejection with nothing pointing at the cause. Both normalise to `quantity`
+ * here, which keeps every existing client working.
+ */
+export const cartLineSchema = z
+  .object({
+    product_id: z.number().int().positive(),
+    quantity: z.number().int().min(1).max(999).optional(),
+    qty: z.number().int().min(1).max(999).optional(),
+  })
+  .refine((line) => line.quantity !== undefined || line.qty !== undefined, {
+    message: "quantity is required",
+    path: ["quantity"],
+  })
+  .transform((line) => ({
+    product_id: line.product_id,
+    quantity: (line.quantity ?? line.qty) as number,
+  }));
 
 export const syncCartSchema = z.object({
   items: z.array(cartLineSchema).max(200),

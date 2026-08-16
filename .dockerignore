@@ -1,4 +1,9 @@
 .react-router
 build
-node_modules
+# Must be ** prefixed: a bare `node_modules` matches only the root one, letting
+# the host's apps/*/node_modules into the image, where its pnpm symlinks point
+# at peer-dependency hashes the container's own install never produced.
+**/node_modules
+**/.react-router
+**/dist
 README.md

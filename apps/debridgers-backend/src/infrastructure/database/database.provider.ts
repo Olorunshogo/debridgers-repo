@@ -8,6 +8,28 @@ import { Logger } from "@nestjs/common";
 
 export const DATABASE_CONNECTION = Symbol("DATABASE_CONNECTION");
 
+/*
+ * A containerised Postgres is reached by service name rather than localhost, so
+ * the hostname alone cannot tell a throwaway database from a hosted one, and
+ * assuming remote means assuming SSL that a local container will not offer.
+ * DATABASE_SSL lets the caller say outright; without it the old hostname
+ * heuristic still applies, so existing deployments are unaffected.
+ *
+ * Kept deliberately identical to shouldUseSsl in dev-seeder.ts: when the two
+ * disagree, migrations succeed and every runtime query fails.
+ */
+function shouldUseSsl(
+  url: string | undefined,
+  configService: ConfigService,
+): boolean {
+  const override = configService.get<string>("DATABASE_SSL");
+
+  if (override === "false") return false;
+  if (override === "true") return true;
+
+  return !(url?.includes("localhost") || url?.includes("127.0.0.1"));
+}
+
 const connectionProvider = {
   provide: DATABASE_CONNECTION,
   inject: [ConfigService],
@@ -15,20 +37,18 @@ const connectionProvider = {
     const logger = new Logger("DatabaseModule");
     const url = configService.get<string>("DBConfig.url");
 
-    // SECURITY FIX: Always verify SSL certificates in production
-    // Only disable SSL for localhost development
-    const isLocal = url?.includes("localhost") || url?.includes("127.0.0.1");
-
     const pool = new Pool({
       connectionString: url,
-      ssl: isLocal
-        ? false // Local development: no SSL required
-        : {
-            rejectUnauthorized: true, // CRITICAL: Always true (was false - VULNERABLE!)
+      // Certificates are always verified when SSL is on; only a database that
+      // has explicitly been declared local is allowed to skip SSL entirely.
+      ssl: shouldUseSsl(url, configService)
+        ? {
+            rejectUnauthorized: true,
             ca: configService.get<string>("DB_SSL_CA"),
             cert: configService.get<string>("DB_SSL_CERT"),
             key: configService.get<string>("DB_SSL_KEY"),
-          },
+          }
+        : false,
       allowExitOnIdle: true,
       connectionTimeoutMillis: 72000,
     });

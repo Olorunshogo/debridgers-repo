@@ -36,7 +36,7 @@ debridgers-repo/
 ├── libs/
 │   ├── shared-theme/             # @debridgers/shared-theme - Tailwind tokens + preset
 │   └── shared-utils/             # @debridgers/shared-utils - shared helper utilities
-├── docker/                      # Docker Compose and Dockerfiles
+├── docker/                      # Docker Compose for postgres and redis
 ├── docs/                        # Project documentation and research notes
 ├── package.json                 # Root workspace scripts and dependency versions
 ├── pnpm-workspace.yaml          # Workspace package layout

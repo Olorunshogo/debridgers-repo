@@ -15,6 +15,7 @@ import {
   MapPin,
   Banknote,
 } from "lucide-react";
+import { supportWhatsAppHref } from "@debridgers/ui-web";
 
 export interface NavItem {
   label: string;
@@ -70,7 +71,7 @@ const buyerNavGroups: NavGroup[] = [
       {
         label: "WhatsApp Support",
         icon: MessageCircle,
-        href: "https://chat.whatsapp.com/GjMvQOIbO9qAFjUGR3ZYVK?s=sw&p=i&mlu=2",
+        href: supportWhatsAppHref(),
       },
       { label: "Help Center", icon: HelpCircle, href: "/buyer-dashboard/help" },
     ],
@@ -125,7 +126,7 @@ const agentNavGroups: NavGroup[] = [
       {
         label: "WhatsApp Support",
         icon: MessageCircle,
-        href: "https://chat.whatsapp.com/GjMvQOIbO9qAFjUGR3ZYVK?s=sw&p=i&mlu=2",
+        href: supportWhatsAppHref(),
       },
       { label: "Help Center", icon: HelpCircle, href: "/agent-dashboard/help" },
     ],
@@ -156,7 +157,7 @@ const adminNavGroups: NavGroup[] = [
       {
         label: "WhatsApp Support",
         icon: MessageCircle,
-        href: "https://chat.whatsapp.com/GjMvQOIbO9qAFjUGR3ZYVK?s=sw&p=i&mlu=2",
+        href: supportWhatsAppHref(),
       },
     ],
   },

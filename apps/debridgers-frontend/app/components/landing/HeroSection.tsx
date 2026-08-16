@@ -115,7 +115,7 @@ export function HeroSection({
                         <div key={index} className="relative inline-block">
                           <span className="text-secondary">{part.text}</span>
                           <img
-                            src="/images/landing/curved-underline.jpg"
+                            src="/images/landing/curved-underline.png"
                             alt="Curved Underline"
                             className="absolute -bottom-3 left-1/2 w-[85%] -translate-x-1/2 md:w-[78%] lg:w-[82%]"
                             style={{

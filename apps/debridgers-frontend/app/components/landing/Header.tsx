@@ -8,6 +8,7 @@ import {
   PrimaryLink,
   SecondaryLink,
   WhatsAppLink,
+  supportWhatsAppHref,
 } from "@debridgers/ui-web";
 import { X } from "lucide-react";
 
@@ -27,7 +28,7 @@ interface HeaderProps {
 
 export function Header({
   navLinks,
-  orderNowHref = "https://wa.me/+2347012288798",
+  orderNowHref = supportWhatsAppHref(),
   signUpHref,
   heroSectionId,
   isAuthenticated = false,

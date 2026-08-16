@@ -14,27 +14,39 @@ export function meta() {
   ];
 }
 
+/* Mirrors the notifications row the backend returns. */
 interface Notification {
-  id: string;
+  id: number;
   title: string;
   description: string;
-  timestamp: string;
+  created_at: string;
   read: boolean;
 }
 
 const READ_IDS_KEY = "debridgers_read_notif_ids";
 
-function getReadIds(): Set<string> {
+function getReadIds(): Set<number> {
   try {
     const stored = localStorage.getItem(READ_IDS_KEY);
-    return new Set(stored ? (JSON.parse(stored) as string[]) : []);
+    return new Set(stored ? (JSON.parse(stored) as number[]) : []);
   } catch {
     return new Set();
   }
 }
 
-function saveReadIds(ids: Set<string>) {
+function saveReadIds(ids: Set<number>) {
   localStorage.setItem(READ_IDS_KEY, JSON.stringify([...ids]));
+}
+
+function formatTimestamp(iso: string): string {
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return "";
+  return at.toLocaleString(undefined, {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export default function BuyerNotifications() {
@@ -59,7 +71,7 @@ export default function BuyerNotifications() {
     localStorage.setItem("debridgers_has_unread", "false");
   }
 
-  function markOneRead(id: string) {
+  function markOneRead(id: number) {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
     );
@@ -95,7 +107,7 @@ export default function BuyerNotifications() {
         {unreadCount > 0 && (
           <button
             onClick={markAllRead}
-            className="text-primary text-sm font-medium underline underline-offset-2"
+            className="text-primary cursor-pointer text-sm font-medium underline underline-offset-2"
           >
             Mark all read
           </button>
@@ -145,7 +157,9 @@ export default function BuyerNotifications() {
                   <p className="text-text text-sm leading-relaxed">
                     {n.description}
                   </p>
-                  <p className="text-icon-secondary text-xs">{n.timestamp}</p>
+                  <p className="text-icon-secondary text-xs">
+                    {formatTimestamp(n.created_at)}
+                  </p>
                 </div>
               </motion.div>
             ))}

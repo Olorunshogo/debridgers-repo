@@ -21,4 +21,6 @@ export const DIALOG_REGISTRY: DialogRegistry = {
   REQUEST_PAYOUT: () => import("../components/dialogs/RequestPayoutDialog"),
   AUTH_GATE: () => import("../components/dialogs/AuthDialog"),
   PAYMENT_METHOD: () => import("../components/dialogs/PaymentMethodDialog"),
+  HELP_GUIDE: () => import("../components/dialogs/HelpGuideDialog"),
+  SUPPORT_TICKET: () => import("../components/dialogs/SupportTicketDialog"),
 };

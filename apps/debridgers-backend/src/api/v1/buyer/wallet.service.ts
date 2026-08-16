@@ -205,6 +205,49 @@ export class WalletService {
     return transaction;
   }
 
+  async getTransactionByReference(reference: string) {
+    const [transaction] = await this.db
+      .select()
+      .from(schema.walletTransactions)
+      .where(eq(schema.walletTransactions.reference, reference))
+      .limit(1);
+
+    if (!transaction) {
+      throw new NotFoundException("Transaction not found");
+    }
+
+    return transaction;
+  }
+
+  /*
+   * Resolves the wallet a transaction belongs to, plus its owner, so callers do
+   * not have to guess the user. The confirm handler used to hardcode user 1,
+   * which reported a stranger's wallet back to whoever deposited.
+   */
+  async getWalletWithOwner(walletId: number) {
+    const [wallet] = await this.db
+      .select()
+      .from(schema.buyerWallets)
+      .where(eq(schema.buyerWallets.id, walletId))
+      .limit(1);
+
+    if (!wallet) {
+      throw new NotFoundException("Wallet not found");
+    }
+
+    const [owner] = await this.db
+      .select({
+        id: schema.users.id,
+        email: schema.users.email,
+        first_name: schema.users.first_name,
+      })
+      .from(schema.users)
+      .where(eq(schema.users.id, wallet.user_id))
+      .limit(1);
+
+    return { wallet, owner };
+  }
+
   /**
    * Update transaction with Paystack reference
    */

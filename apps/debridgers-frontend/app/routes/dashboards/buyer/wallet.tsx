@@ -2,8 +2,12 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "react-router";
 import { ArrowUpRight, ArrowDownLeft, Plus } from "lucide-react";
-import { apiFetch } from "@debridgers/api-client";
-import { formatCurrency, DashNumberInput } from "@debridgers/ui-web";
+import { apiFetch, ApiError } from "@debridgers/api-client";
+import {
+  formatCurrency,
+  DashNumberInput,
+  DashSubmitButton,
+} from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -83,13 +87,15 @@ function fmt(n: number) {
 }
 
 export default function BuyerWallet() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [data, setData] = useState<WalletData | null>(null);
   const [loading, setLoading] = useState(true);
   const [showFundModal, setShowFundModal] = useState<boolean>(false);
   const [fundAmount, setFundAmount] = useState("");
   const [funding, setFunding] = useState<boolean>(false);
   const [depositSuccess, setDepositSuccess] = useState<boolean>(false);
+  const [confirmingDeposit, setConfirmingDeposit] = useState<boolean>(false);
+  const [depositError, setDepositError] = useState<string | null>(null);
 
   // Fetch wallet data
   const fetchWalletData = () => {
@@ -103,16 +109,45 @@ export default function BuyerWallet() {
     fetchWalletData();
   }, []);
 
-  // Detect return from Paystack deposit
+  /*
+   * Returning from Paystack. The reference in the URL only proves the buyer
+   * came back, not that they paid, so nothing is treated as successful until
+   * the backend has verified the charge with Paystack and credited the wallet.
+   * The Paystack webhook does the same job server-side; confirmTransaction is
+   * idempotent, so whichever arrives second is a no-op.
+   */
   useEffect(() => {
     const ref = searchParams.get("trxref") ?? searchParams.get("reference");
-    if (ref) {
-      setDepositSuccess(true);
-      setShowFundModal(false);
-      setFundAmount("");
-      // Refresh wallet data after deposit
-      fetchWalletData();
+
+    if (!ref) {
+      return;
     }
+
+    setShowFundModal(false);
+    setFundAmount("");
+    setDepositError(null);
+    setConfirmingDeposit(true);
+
+    apiFetch("/buyer/wallet/deposit/confirm", {
+      method: "POST",
+      body: JSON.stringify({ reference: ref }),
+    })
+      .then(() => {
+        setDepositSuccess(true);
+        fetchWalletData();
+      })
+      .catch((err: unknown) => {
+        setDepositError(
+          err instanceof ApiError
+            ? err.message
+            : "We could not confirm this deposit. If you were charged, your balance will update shortly.",
+        );
+      })
+      .finally(() => {
+        setConfirmingDeposit(false);
+        // Drop the reference so a page refresh cannot replay the confirmation.
+        setSearchParams({}, { replace: true });
+      });
   }, [searchParams]);
 
   async function handleFund(e: React.SyntheticEvent<HTMLFormElement>) {
@@ -160,6 +195,23 @@ export default function BuyerWallet() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Deposit outcome. Lives at page level because returning from Paystack
+          closes the modal, so a banner inside it would never be seen. */}
+      {confirmingDeposit && (
+        <div className="border-gray-border text-text rounded-xl border bg-white px-4 py-3 text-sm">
+          Confirming your deposit...
+        </div>
+      )}
+      {depositSuccess && !confirmingDeposit && (
+        <div className="text-status-delivered-text border-gray-border rounded-xl border bg-white px-4 py-3 text-sm font-medium">
+          Funds added successfully.
+        </div>
+      )}
+      {depositError && !confirmingDeposit && (
+        <div className="border-gray-border rounded-xl border bg-white px-4 py-3 text-sm font-medium text-red-600">
+          {depositError}
+        </div>
+      )}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -189,13 +241,14 @@ export default function BuyerWallet() {
           </div>
         </div>
         <div className="mt-6">
-          <button
+          <DashSubmitButton
+            variant="tertiary"
+            type="button"
+            icon={Plus}
             onClick={() => setShowFundModal(true)}
-            className="bg-secondary text-heading inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-opacity hover:opacity-90"
           >
-            <Plus size={16} />
             Add Funds
-          </button>
+          </DashSubmitButton>
         </div>
         <div className="pointer-events-none absolute -top-12 -right-12 h-40 w-40 rounded-full border-2 border-white/10" />
         <div className="pointer-events-none absolute -top-6 -right-6 h-24 w-24 rounded-full border-2 border-white/10" />
@@ -298,20 +351,22 @@ export default function BuyerWallet() {
                     required
                   />
                   <div className="flex gap-3">
-                    <button
+                    <DashSubmitButton
+                      variant="secondary"
                       type="button"
                       onClick={() => setShowFundModal(false)}
-                      className="border-gray-border text-text flex-1 rounded-full border py-3 text-sm font-medium"
+                      className="flex-1 py-3"
                     >
                       Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={funding}
-                      className="bg-primary flex-1 rounded-full py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                    </DashSubmitButton>
+                    <DashSubmitButton
+                      variant="primary"
+                      loading={funding}
+                      loadingText="Processing..."
+                      className="flex-1"
                     >
-                      {funding ? "Processing..." : "Add Funds"}
-                    </button>
+                      Add Funds
+                    </DashSubmitButton>
                   </div>
                 </form>
               )}

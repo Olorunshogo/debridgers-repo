@@ -1,5 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router";
+import {
+  SUPPORT,
+  partnerMailtoHref,
+  supportMailtoHref,
+  supportTelHref,
+  supportWhatsAppHref,
+} from "@debridgers/ui-web";
 
 // === Footer Woodmark component
 type FooterWordmarkProps = {
@@ -103,31 +110,28 @@ export default function Footer() {
                     Call us directly
                   </p>
                   <a
-                    href="tel:+2347012288798"
+                    href={supportTelHref}
                     className="text-white/90 transition-colors duration-200 hover:text-white"
                   >
-                    +2347012288798
+                    {SUPPORT.phoneDisplay}
                   </a>
-                  {/**
-                   * 08167042797
-                   * 09047480536
-                   */}
+                  <p className="text-xs text-white/70">{SUPPORT.hours}</p>
                 </div>
                 <div className="font-open-sans flex flex-col gap-1 text-white">
                   <h3 className="text-sm tracking-widest text-white uppercase">
                     Email us at
                   </h3>
                   <a
-                    href="mailto:support@debridgers.com"
+                    href={supportMailtoHref}
                     className="text-sm text-white underline decoration-white decoration-1 underline-offset-4 transition-colors duration-300 ease-in-out hover:text-white"
                   >
-                    support@debridgers.com
+                    {SUPPORT.supportEmail}
                   </a>
                   <a
-                    href="mailto:partner@debridgers.com"
+                    href={partnerMailtoHref}
                     className="text-sm text-white underline decoration-white decoration-1 underline-offset-4 transition-colors duration-300 ease-in-out hover:text-white"
                   >
-                    partner@debridgers.com
+                    {SUPPORT.partnerEmail}
                   </a>
                 </div>
               </div>
@@ -168,7 +172,7 @@ export default function Footer() {
               { label: "Contact", to: "/contact" },
               {
                 label: "WhatsApp",
-                to: "https://chat.whatsapp.com/GjMvQOIbO9qAFjUGR3ZYVK?s=sw&p=i&mlu=2",
+                to: supportWhatsAppHref(),
               },
             ].map((link) => (
               <Link

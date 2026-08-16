@@ -40,6 +40,19 @@ const ZONES = [
   },
 ];
 
+/*
+ * image_url points at the photos bundled under the frontend's
+ * public/images/products, which the product DTO accepts as an app-relative
+ * path alongside a Cloudinary URL.
+ *
+ * Both garri products are deliberately left null. The only unused bundled
+ * photos are of whole maize cobs, and garri is milled cassava, so nothing here
+ * depicts it. A wrong photo on a food product is worse than the placeholder
+ * the card falls back to, so they stay empty until real photos exist.
+ *
+ * cowpea.jpg is a copy of sweet-beans.jpg rather than a reference to it, so
+ * dropping in a true cowpea photo later does not change Wake Gida's image.
+ */
 const PRODUCTS = [
   // Grains
   {
@@ -47,7 +60,7 @@ const PRODUCTS = [
     unit: "50kg bag",
     price_kobo: naira(42000),
     description: "Fresh locally sourced white rice. Sold per 50kg bag.",
-    image_url: null,
+    image_url: "/images/products/rice-white.jpg",
     is_active: true,
     sort_order: 1,
   },
@@ -56,7 +69,7 @@ const PRODUCTS = [
     unit: "50kg bag",
     price_kobo: naira(48000),
     description: "Premium Nigerian Ofada rice. Sold per 50kg bag.",
-    image_url: null,
+    image_url: "/images/products/rice-grains.jpg",
     is_active: true,
     sort_order: 2,
   },
@@ -65,7 +78,7 @@ const PRODUCTS = [
     unit: "50kg bag",
     price_kobo: naira(38000),
     description: "Soft tuwo rice, ideal for tuwo shinkafa. Sold per 50kg bag.",
-    image_url: null,
+    image_url: "/images/products/rice-bowl.jpg",
     is_active: true,
     sort_order: 3,
   },
@@ -76,7 +89,7 @@ const PRODUCTS = [
     price_kobo: naira(55000),
     description:
       "Northern Nigerian honey beans, brown and sweet. Sold per 50kg bag.",
-    image_url: null,
+    image_url: "/images/products/sweet-beans.jpg",
     is_active: true,
     sort_order: 4,
   },
@@ -85,7 +98,7 @@ const PRODUCTS = [
     unit: "50kg bag",
     price_kobo: naira(52000),
     description: "White cowpea beans, clean and fresh. Sold per 50kg bag.",
-    image_url: null,
+    image_url: "/images/products/cowpea.jpg",
     is_active: true,
     sort_order: 5,
   },
@@ -95,7 +108,7 @@ const PRODUCTS = [
     unit: "25kg bag",
     price_kobo: naira(12000),
     description: "Freshly processed white garri. Sold per 25kg bag.",
-    image_url: null,
+    image_url: "/images/products/rice-grains.jpg",
     is_active: true,
     sort_order: 6,
   },
@@ -104,7 +117,7 @@ const PRODUCTS = [
     unit: "25kg bag",
     price_kobo: naira(14000),
     description: "Toasted yellow garri with rich flavour. Sold per 25kg bag.",
-    image_url: null,
+    image_url: "/images/products/rice-grains.jpg",
     is_active: true,
     sort_order: 7,
   },
@@ -114,7 +127,7 @@ const PRODUCTS = [
     unit: "25 litre keg",
     price_kobo: naira(28000),
     description: "Fresh red palm oil from Northern Nigeria. Sold per 25L keg.",
-    image_url: null,
+    image_url: "/images/products/pouring-oil.jpg",
     is_active: true,
     sort_order: 8,
   },
@@ -123,7 +136,7 @@ const PRODUCTS = [
     unit: "25 litre keg",
     price_kobo: naira(35000),
     description: "Pure groundnut oil, cold pressed. Sold per 25L keg.",
-    image_url: null,
+    image_url: "/images/products/pouring-oil.jpg",
     is_active: true,
     sort_order: 9,
   },
@@ -134,7 +147,7 @@ const PRODUCTS = [
     price_kobo: naira(30000),
     description:
       "Fresh medium-sized yam tubers from the farm. Sold per 100 tubers.",
-    image_url: null,
+    image_url: "/images/products/yams.jpg",
     is_active: true,
     sort_order: 10,
   },
@@ -143,7 +156,7 @@ const PRODUCTS = [
     unit: "50kg bag",
     price_kobo: naira(18000),
     description: "Fresh Irish potatoes, uniform size. Sold per 50kg bag.",
-    image_url: null,
+    image_url: "/images/products/potatoes.jpg",
     is_active: true,
     sort_order: 11,
   },

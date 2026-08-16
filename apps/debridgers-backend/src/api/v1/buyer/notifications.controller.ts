@@ -56,6 +56,24 @@ export class NotificationsController {
     };
   }
 
+  /*
+   * Must stay above @Patch(":id/read"). Nest matches in declaration order, so
+   * the parameterised route would otherwise swallow "mark-all" as an id and
+   * ParseIntPipe would reject it, leaving this route unreachable.
+   */
+  @Patch("mark-all/read")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Mark all notifications as read" })
+  async markAllAsRead(@CurrentUser() user: JwtPayload) {
+    await this.notificationsService.markAllAsRead(user.sub);
+
+    return {
+      statusCode: 200,
+      message: "All notifications marked as read",
+      data: null,
+    };
+  }
+
   @Patch(":id/read")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Mark notification as read" })
@@ -68,19 +86,6 @@ export class NotificationsController {
     return {
       statusCode: 200,
       message: "Notification marked as read",
-      data: null,
-    };
-  }
-
-  @Patch("mark-all/read")
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Mark all notifications as read" })
-  async markAllAsRead(@CurrentUser() user: JwtPayload) {
-    await this.notificationsService.markAllAsRead(user.sub);
-
-    return {
-      statusCode: 200,
-      message: "All notifications marked as read",
       data: null,
     };
   }

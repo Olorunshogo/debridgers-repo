@@ -1,4 +1,4 @@
-import { PipeTransform } from "@nestjs/common";
+import { BadRequestException, PipeTransform } from "@nestjs/common";
 import { ZodSchema, ZodError } from "zod";
 
 export class ZodValidationPipe implements PipeTransform {
@@ -18,8 +18,13 @@ export class ZodValidationPipe implements PipeTransform {
         message: e.message as string,
       }));
 
-      // Use whatever was working before
-      throw new Error(JSON.stringify({ message: "Validation failed", errors }));
+      /*
+       * Must be an HttpException. GlobalExceptionFilter only reads a status off
+       * HttpException; a plain Error fell through to 500, so bad input was
+       * indistinguishable from a crash and the field errors never reached the
+       * client.
+       */
+      throw new BadRequestException({ message: "Validation failed", errors });
     }
     return result.data;
   }

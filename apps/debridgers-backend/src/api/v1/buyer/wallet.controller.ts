@@ -180,35 +180,96 @@ export class WalletController {
   @Post("deposit/confirm")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Confirm Paystack deposit via webhook" })
-  async confirmDeposit(@Body() dto: ConfirmDepositDto) {
-    // TODO: Verify Paystack signature
-    // For now, trust the webhook
+  async confirmDeposit(
+    @Body() dto: ConfirmDepositDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    /*
+     * Ask Paystack whether this reference was actually paid. Previously the
+     * handler credited the wallet on the strength of the reference alone, so a
+     * buyer could initialise a deposit, never pay, post the reference back and
+     * mint the balance.
+     */
+    const verifyResponse = await fetch(
+      `${this.baseUrl}/transaction/verify/${encodeURIComponent(dto.reference)}`,
+      { headers: { Authorization: `Bearer ${this.secretKey}` } },
+    );
+
+    const verified = (await verifyResponse.json()) as {
+      status: boolean;
+      data?: { status: string; amount: number; reference: string };
+      message?: string;
+    };
+
+    if (!verified.status || !verified.data) {
+      throw new HttpException(
+        {
+          statusCode: 400,
+          message: `Paystack error: ${verified.message || "Could not verify transaction"}`,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (verified.data.status !== "success") {
+      throw new HttpException(
+        {
+          statusCode: 400,
+          message: `Deposit not paid (Paystack status: ${verified.data.status})`,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const pending = await this.walletService.getTransactionByReference(
+      dto.reference,
+    );
+
+    /*
+     * Credit what Paystack says was received, not what the client asked for at
+     * initialise time, and refuse if the two disagree.
+     */
+    if (verified.data.amount !== pending.amount) {
+      throw new HttpException(
+        {
+          statusCode: 400,
+          message: "Paid amount does not match the initiated deposit",
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Checked before crediting: a stranger's reference must not move money.
+    const { owner } = await this.walletService.getWalletWithOwner(
+      pending.wallet_id,
+    );
+
+    if (owner?.id !== user.sub) {
+      throw new HttpException(
+        { statusCode: 403, message: "This deposit belongs to another account" },
+        HttpStatus.FORBIDDEN,
+      );
+    }
 
     const transaction = await this.walletService.confirmTransaction(
       dto.reference,
     );
 
-    // Get wallet by transaction's wallet_id
-    const wallet = await this.walletService.getOrCreateWallet(1); // TODO: Get from transaction
+    const { wallet } = await this.walletService.getWalletWithOwner(
+      transaction.wallet_id,
+    );
 
-    // Send deposit confirmation email (fire-and-forget)
-    try {
-      // In a real scenario, we'd get user info from the transaction metadata
-      // For now, we'd need to query the database to get user name/email
-      // This is a limitation that should be addressed in the full implementation
+    if (owner?.email) {
       this.emailService
         .sendDepositConfirmation(
-          "buyer@example.com", // TODO: Get from transaction user
-          "Buyer",
+          owner.email,
+          owner.first_name || "Buyer",
           `₦${Math.round(transaction.amount / 100)}`,
           dto.reference,
         )
         .catch((err) => {
           console.error("Failed to send deposit confirmation email:", err);
-          // Don't fail the API if email fails
         });
-    } catch (err) {
-      console.error("Error sending deposit email:", err);
     }
 
     return {

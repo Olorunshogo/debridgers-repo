@@ -53,6 +53,10 @@ const payOrderSchema = z.object({
   amount_kobo: z.number().int().positive(),
 });
 
+const confirmPaymentSchema = z.object({
+  reference: z.string().min(1).max(100),
+});
+
 const cancelOrderSchema = z.object({
   reason: z.string().min(5),
 });
@@ -234,6 +238,33 @@ export class OrderController {
     throw new Error("Invalid payment method");
   }
 
+  /*
+   * Called when Paystack redirects the buyer back. The webhook is the primary
+   * settlement path; this exists so the buyer is not shown an unconfirmed
+   * order when that webhook is slow or cannot reach us at all.
+   */
+  @Post("confirm-payment")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Confirm a card payment from the Paystack return" })
+  async confirmPayment(
+    @CurrentUser() user: JwtPayload,
+    @Body(new ZodValidationPipe(confirmPaymentSchema))
+    dto: z.infer<typeof confirmPaymentSchema>,
+  ) {
+    const result = await this.paymentService.confirmOrderPayment(
+      user.sub,
+      dto.reference,
+    );
+
+    return {
+      statusCode: 200,
+      message: result.already
+        ? "Payment already confirmed"
+        : "Payment confirmed",
+      data: result,
+    };
+  }
+
   @Post(":id/cancel")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Cancel unpaid or pending order" })
@@ -327,12 +358,26 @@ export class OrderController {
     // Create order
     const order = await this.orderService.createOrder(user.sub, dto);
 
-    // Initialize Paystack payment
-    const payment = await this.paymentService.initiatePaystackPayment(
-      user.sub,
-      order.order.id,
-      order.order.total_kobo,
-    );
+    /*
+     * The order exists before Paystack is called, so a failure here would
+     * otherwise strand it as pending/unpaid forever with no way for the buyer
+     * to pay or clear it. Cancelled rather than deleted to keep the audit
+     * trail, and the original error still reaches the client.
+     */
+    let payment: Awaited<
+      ReturnType<typeof this.paymentService.initiatePaystackPayment>
+    >;
+
+    try {
+      payment = await this.paymentService.initiatePaystackPayment(
+        user.sub,
+        order.order.id,
+        order.order.total_kobo,
+      );
+    } catch (err) {
+      await this.orderService.cancelOrderForFailedPayment(order.order.id);
+      throw err;
+    }
 
     // Send order confirmation email
     try {

@@ -2,7 +2,11 @@ import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
-import { formatFromKobo } from "@debridgers/ui-web";
+import {
+  formatFromKobo,
+  DashSubmitButton,
+  DashTextareaInput,
+} from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -117,6 +121,51 @@ export default function BuyerOrders() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("all");
   const [selected, setSelected] = useState<Order | null>(null);
+  const [confirmingCancel, setConfirmingCancel] = useState<boolean>(false);
+  const [cancelReason, setCancelReason] = useState<string>("");
+  const [cancelling, setCancelling] = useState<boolean>(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+
+  function closeDetail(): void {
+    setSelected(null);
+    setConfirmingCancel(false);
+    setCancelReason("");
+    setCancelError(null);
+  }
+
+  /*
+   * The backend only lets an order be cancelled while it is still unpaid, which
+   * maps to the Pending status here. Anything already paid has to go through a
+   * refund request instead, so the button is not offered for those.
+   */
+  async function handleCancel(): Promise<void> {
+    if (!selected || cancelReason.trim().length < 5) return;
+
+    setCancelling(true);
+    setCancelError(null);
+
+    try {
+      await apiFetch(`/buyer/orders/${selected.id}/cancel`, {
+        method: "POST",
+        body: JSON.stringify({ reason: cancelReason.trim() }),
+      });
+
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === selected.id ? { ...o, status: "cancelled" } : o,
+        ),
+      );
+      closeDetail();
+    } catch (err) {
+      setCancelError(
+        err instanceof Error
+          ? err.message
+          : "Could not cancel this order. Please try again.",
+      );
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   useEffect(() => {
     apiFetch<ApiOrder[]>("/buyer/orders")
@@ -211,12 +260,14 @@ export default function BuyerOrders() {
                       </span>
                       {(order.status === "active" ||
                         order.status === "delivered") && (
-                        <button
+                        <DashSubmitButton
+                          variant="primary"
+                          type="button"
                           onClick={(e) => e.stopPropagation()}
-                          className="bg-primary rounded-full px-3 py-1 text-xs font-medium text-white transition-opacity hover:opacity-80"
+                          className="px-3 py-1 text-xs font-medium"
                         >
                           Track
-                        </button>
+                        </DashSubmitButton>
                       )}
                     </div>
                   </motion.div>
@@ -237,7 +288,7 @@ export default function BuyerOrders() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-40 cursor-pointer bg-black/30"
-              onClick={() => setSelected(null)}
+              onClick={closeDetail}
             />
             <motion.div
               key="popover"
@@ -259,8 +310,9 @@ export default function BuyerOrders() {
                   </p>
                 </div>
                 <button
-                  onClick={() => setSelected(null)}
-                  className="text-icon-secondary rounded-full p-1.5 transition-colors"
+                  onClick={closeDetail}
+                  aria-label="Close order details"
+                  className="text-icon-secondary cursor-pointer rounded-full p-1.5 transition-colors"
                 >
                   <X size={18} />
                 </button>
@@ -273,11 +325,70 @@ export default function BuyerOrders() {
                 </span>
                 {(selected.status === "active" ||
                   selected.status === "delivered") && (
-                  <button className="bg-primary rounded-full px-3 py-1 text-xs font-medium text-white">
+                  <DashSubmitButton
+                    variant="primary"
+                    type="button"
+                    className="px-3 py-1 text-xs font-medium"
+                  >
                     Track
-                  </button>
+                  </DashSubmitButton>
                 )}
               </div>
+
+              {selected.status === "pending" && (
+                <div className="border-gray-border mt-5 flex flex-col gap-3 border-t pt-5">
+                  {confirmingCancel ? (
+                    <>
+                      <DashTextareaInput
+                        label="Why are you cancelling?"
+                        name="cancelReason"
+                        rows={3}
+                        placeholder="Let us know so we can improve."
+                        value={cancelReason}
+                        onChange={(e) => setCancelReason(e.target.value)}
+                        error={cancelError ?? undefined}
+                      />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <DashSubmitButton
+                          variant="secondary"
+                          type="button"
+                          disabled={cancelling}
+                          onClick={() => setConfirmingCancel(false)}
+                          className="text-xs"
+                        >
+                          Keep order
+                        </DashSubmitButton>
+                        <DashSubmitButton
+                          variant="primary"
+                          type="button"
+                          loading={cancelling}
+                          loadingText="Cancelling..."
+                          disabled={cancelReason.trim().length < 5}
+                          onClick={handleCancel}
+                          className="px-4 py-2 text-xs"
+                        >
+                          Confirm cancellation
+                        </DashSubmitButton>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <DashSubmitButton
+                        variant="secondary"
+                        type="button"
+                        onClick={() => setConfirmingCancel(true)}
+                        className="w-fit text-xs"
+                      >
+                        Cancel order
+                      </DashSubmitButton>
+                      <p className="text-text text-xs">
+                        Only unpaid orders can be cancelled here. Once an order
+                        is paid, contact support to request a refund.
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
             </motion.div>
           </>
         )}

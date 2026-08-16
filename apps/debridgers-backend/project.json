@@ -55,12 +55,10 @@
       "cache": false,
       "options": {
         "commands": [
-          "pnpm run docker:up",
-          "pnpm run db:migrate",
-          "pnpm run dev"
+          "docker compose -p debridgers -f docker/docker-compose.yml up postgres redis -d --wait",
+          "pnpm --filter @debridgers/debridgers-backend dev"
         ],
-        "parallel": false,
-        "cwd": "apps/debridgers-backend"
+        "parallel": false
       }
     }
   }

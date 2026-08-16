@@ -12,6 +12,7 @@ import {
   SubmitButton,
 } from "@debridgers/ui-web";
 import { BASE_BACKEND_URL } from "@debridgers/api-client";
+import { SUPPORT, supportMailtoHref, supportTelHref } from "@debridgers/ui-web";
 
 // === Metadata
 export function meta({}: Route.MetaArgs) {
@@ -20,7 +21,7 @@ export function meta({}: Route.MetaArgs) {
     {
       name: "description",
       content:
-        "Reach out to Debridgers for orders, partnership inquiries or support. We are available 24 hours a day. Call, email or send us a message and we will get back to you promptly.",
+        "Reach out to Debridgers for orders, partnership inquiries or support. Our team is available Monday to Friday, 9am to 5pm. Call, email or send us a message and we will get back to you promptly.",
     },
     {
       name: "keywords",
@@ -36,7 +37,7 @@ export function meta({}: Route.MetaArgs) {
     {
       property: "og:description",
       content:
-        "Reach out to Debridgers for orders, partnership inquiries or support. We are available 24 hours a day.",
+        "Reach out to Debridgers for orders, partnership inquiries or support. Our team is available Monday to Friday, 9am to 5pm.",
     },
     { property: "og:image", content: "https://debridgers.com/og-image.png" },
     { property: "og:image:width", content: "1200" },
@@ -55,7 +56,7 @@ export function meta({}: Route.MetaArgs) {
     {
       name: "twitter:description",
       content:
-        "Reach out to Debridgers for orders, partnership inquiries or support. We are available 24 hours a day.",
+        "Reach out to Debridgers for orders, partnership inquiries or support. Our team is available Monday to Friday, 9am to 5pm.",
     },
     { name: "twitter:image", content: "https://debridgers.com/og-image.png" },
     {
@@ -106,19 +107,19 @@ const contactItems = [
   {
     icon: Phone,
     label: "Phone",
-    value: "+234 701 228 8798",
-    href: "tel:+2347012288798",
+    value: SUPPORT.phoneDisplay,
+    href: supportTelHref,
   },
   {
     icon: Mail,
     label: "Email",
-    value: "support@debridgers.com",
-    href: "mailto:support@debridgers.com",
+    value: SUPPORT.supportEmail,
+    href: supportMailtoHref,
   },
   {
     icon: Clock,
     label: "Business Hours",
-    value: "Active 24hrs",
+    value: SUPPORT.hours,
     href: undefined,
   },
 ];
@@ -287,15 +288,15 @@ export default function ContactPage() {
                   { text: "." },
                 ],
               }}
-              subtext="Reach out for orders, partnership inquiries or support. We're available 24 hours a day."
+              subtext="Reach out for orders, partnership inquiries or support. Our team is available Monday to Friday, 9am to 5pm."
               secondaryCta={{ label: "Contact Us", href: "#contact-us" }}
               trustItems={[
-                { icon: "lucide:phone", label: "+234 701 228 8798" },
+                { icon: "lucide:phone", label: SUPPORT.phoneDisplay },
                 {
                   icon: "lucide:mail",
-                  label: "support@debridgers.com",
+                  label: SUPPORT.supportEmail,
                 },
-                { icon: "lucide:clock", label: "Active 24hrs" },
+                { icon: "lucide:clock", label: SUPPORT.hours },
                 { icon: "lucide:map-pin", label: "Kaduna, Nigeria" },
               ]}
             />

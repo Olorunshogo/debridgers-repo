@@ -27,7 +27,11 @@ import {
   LAST_ORDER_STORAGE_KEY,
   type CartItem,
 } from "../../../features/cart";
-import { formatFromKobo, formatCurrency } from "@debridgers/ui-web";
+import {
+  formatFromKobo,
+  formatCurrency,
+  supportWhatsAppHref,
+} from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -123,7 +127,57 @@ interface ApiDashboard {
   } | null;
 }
 
-function mapApiToDashboard(api: ApiDashboard): DashboardData {
+/*
+ * GET /buyer/spending returns one row per week of delivered orders over the
+ * last six weeks, oldest first, with amounts in kobo.
+ */
+interface ApiSpendingWeek {
+  week: string;
+  amount_kobo: number;
+  amount_naira: number;
+}
+
+/* One line of GET /buyer/orders/:id, used to rebuild the cart on repeat. */
+interface LastOrderItem {
+  product_id: number;
+  name: string;
+  unit: string;
+  image_url: string | null;
+  qty: number;
+  unit_price: number;
+}
+
+function buildSpending(rows: ApiSpendingWeek[]): DashboardData["spending"] {
+  const weeks: SpendingWeek[] = rows.map((row) => ({
+    week: row.week,
+    amount: Math.round(row.amount_kobo / 100),
+  }));
+
+  if (weeks.length === 0) {
+    return { weeks, thisWeek: "N/A", thisMonth: "N/A", avgPerWeek: "N/A" };
+  }
+
+  const total = weeks.reduce((sum, w) => sum + w.amount, 0);
+  const thisWeek = weeks[weeks.length - 1].amount;
+
+  /*
+   * The API labels weeks as "Mon DD" with no year, so a true calendar month
+   * cannot be derived from it. The last four buckets are used as the month.
+   */
+  const thisMonth = weeks.slice(-4).reduce((sum, w) => sum + w.amount, 0);
+
+  return {
+    weeks,
+    thisWeek: formatCurrency(thisWeek),
+    thisMonth: formatCurrency(thisMonth),
+    avgPerWeek: formatCurrency(Math.round(total / weeks.length)),
+  };
+}
+
+function mapApiToDashboard(
+  api: ApiDashboard,
+  spendingRows: ApiSpendingWeek[],
+): DashboardData {
   const dbStatusToUi = (s: string): RecentOrder["status"] => {
     if (s === "out_for_delivery" || s === "confirmed") return "on-the-way";
     if (s === "delivered") return "delivered";
@@ -212,12 +266,7 @@ function mapApiToDashboard(api: ApiDashboard): DashboardData {
       items: nd ? [`${nd.quantity} pack${nd.quantity !== 1 ? "s" : ""}`] : [],
       hasOrder: !!nd,
     },
-    spending: {
-      weeks: [],
-      thisWeek: "N/A",
-      thisMonth: "N/A",
-      avgPerWeek: "N/A",
-    },
+    spending: buildSpending(spendingRows),
   };
 }
 
@@ -294,25 +343,65 @@ export default function BuyerOverview() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  function repeatLastOrder() {
-    const last = localStorage.getItem(LAST_ORDER_STORAGE_KEY);
-    if (!last) {
-      navigate("/buyer-dashboard/shop");
-      return;
-    }
-    /* Through the shared cart, so the shop reflects it immediately rather than
-       waiting for a remount to re-read storage. */
+  /*
+   * Server first, localStorage only as a fallback.
+   *
+   * This used to read the snapshot alone, which is written at checkout and so
+   * only exists in the browser the order was placed from. On a new device, or
+   * after clearing storage, the button silently navigated to an empty shop and
+   * looked broken. The buyer's real order history is on the server, so ask it.
+   */
+  async function repeatLastOrder(): Promise<void> {
     try {
-      replaceItems(JSON.parse(last) as CartItem[]);
+      const orders = await apiFetch<{ id: number }[]>("/buyer/orders");
+
+      if (orders.length > 0) {
+        /* The list comes back newest first, so the head is the last order. */
+        const detail = await apiFetch<{ items: LastOrderItem[] }>(
+          `/buyer/orders/${orders[0].id}`,
+        );
+
+        const items: CartItem[] = detail.items.map((item) => ({
+          id: String(item.product_id),
+          name: item.name,
+          price: item.unit_price / 100,
+          unit: item.unit,
+          image_url: item.image_url,
+          qty: item.qty,
+        }));
+
+        if (items.length > 0) {
+          replaceItems(items);
+          navigate("/buyer-dashboard/shop");
+          return;
+        }
+      }
     } catch {
-      /* corrupt snapshot - fall through to the shop with the cart untouched */
+      /* Offline or the call failed - fall through to the local snapshot. */
     }
+
+    const last = localStorage.getItem(LAST_ORDER_STORAGE_KEY);
+    if (last) {
+      try {
+        replaceItems(JSON.parse(last) as CartItem[]);
+      } catch {
+        /* corrupt snapshot - go to the shop with the cart untouched */
+      }
+    }
+
     navigate("/buyer-dashboard/shop");
   }
 
   useEffect(() => {
-    apiFetch<ApiDashboard>("/buyer/dashboard")
-      .then((api) => setData(mapApiToDashboard(api)))
+    Promise.all([
+      apiFetch<ApiDashboard>("/buyer/dashboard"),
+      // The chart is secondary to the rest of the page, so a failure here
+      // leaves the dashboard usable with an empty chart rather than blank.
+      apiFetch<ApiSpendingWeek[]>("/buyer/spending").catch(() => []),
+    ])
+      .then(([api, spendingRows]) =>
+        setData(mapApiToDashboard(api, spendingRows)),
+      )
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -343,7 +432,7 @@ export default function BuyerOverview() {
         actions={
           <>
             <a
-              href="https://chat.whatsapp.com/GjMvQOIbO9qAFjUGR3ZYVK?s=sw&p=i&mlu=2"
+              href={supportWhatsAppHref()}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-secondary text-heading inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-90"

@@ -350,6 +350,25 @@ function assertSafeTarget(url: string): void {
   }
 }
 
+/*
+ * A containerised Postgres is reached by service name rather than localhost, so
+ * the hostname alone cannot tell a throwaway database from a hosted one, and
+ * assuming remote means assuming SSL that a local container will not offer.
+ * DATABASE_SSL lets the caller say outright; without it the old hostname
+ * heuristic still applies, so existing callers are unaffected.
+ */
+function shouldUseSsl(url: string): boolean {
+  if (process.env.DATABASE_SSL === "false") {
+    return false;
+  }
+
+  if (process.env.DATABASE_SSL === "true") {
+    return true;
+  }
+
+  return !(url.includes("localhost") || url.includes("127.0.0.1"));
+}
+
 // === Helpers
 
 type Db = NodePgDatabase<typeof schema>;
@@ -450,8 +469,7 @@ async function seedDev(): Promise<void> {
 
   assertSafeTarget(url);
 
-  const isLocal = url.includes("localhost") || url.includes("127.0.0.1");
-  const pool = new Pool({ connectionString: url, ssl: isLocal ? false : true });
+  const pool = new Pool({ connectionString: url, ssl: shouldUseSsl(url) });
   const db = drizzle(pool, { schema }) as Db;
 
   try {
@@ -627,9 +645,18 @@ async function seedDev(): Promise<void> {
 
     // === Orders
     /* 25 rows so the paginated endpoints cross a page boundary. */
+    /*
+     * Length must stay coprime with the buyer count. Both the buyer and the
+     * status were indexed by i % 5 against five buyers, which locked each
+     * buyer to a single status: one buyer held every delivered order and the
+     * rest had none, so the spending chart was empty for four of five logins.
+     * Delivered repeats so every buyer has several weeks of chart data.
+     */
     const orderStatuses: OrderStatus[] = [
       "pending",
+      "delivered",
       "confirmed",
+      "delivered",
       "out_for_delivery",
       "delivered",
       "cancelled",
@@ -826,8 +853,7 @@ async function resetDev(): Promise<void> {
 
   assertSafeTarget(url);
 
-  const isLocal = url.includes("localhost") || url.includes("127.0.0.1");
-  const pool = new Pool({ connectionString: url, ssl: isLocal ? false : true });
+  const pool = new Pool({ connectionString: url, ssl: shouldUseSsl(url) });
   const db = drizzle(pool, { schema }) as Db;
 
   try {

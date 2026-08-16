@@ -147,6 +147,19 @@ export default function BuyerShop() {
                   aria-label={`Add ${product.name} to cart`}
                   className="border-gray-border hover:border-primary flex w-40 shrink-0 cursor-pointer flex-col gap-2 rounded-xl border bg-white p-3 text-left transition-colors"
                 >
+                  <div className="bg-bg-light h-20 w-full overflow-hidden rounded-lg">
+                    {product.image_url ? (
+                      <img
+                        src={product.image_url}
+                        alt={product.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <Package size={20} className="text-text opacity-20" />
+                      </div>
+                    )}
+                  </div>
                   <span className="font-syne text-heading line-clamp-2 text-sm font-semibold">
                     {product.name}
                   </span>

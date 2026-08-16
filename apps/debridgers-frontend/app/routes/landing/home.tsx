@@ -9,7 +9,11 @@ import {
 import { Icon } from "@iconify/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
-import { PrimaryLink, WhatsAppLink } from "@debridgers/ui-web";
+import {
+  PrimaryLink,
+  WhatsAppLink,
+  supportWhatsAppHref,
+} from "@debridgers/ui-web";
 
 // === Why Debridgers
 interface WhyCardData {
@@ -321,7 +325,7 @@ function WhatWeDeliver() {
             </h2>
 
             <PrimaryLink
-              href="https://wa.me/+2347012288798"
+              href={supportWhatsAppHref()}
               className="font-syne px-6 py-3 text-xl font-bold sm:text-2xl lg:text-3xl"
             >
               Send Order
@@ -691,7 +695,7 @@ export default function Home() {
           >
             <div className="group relative overflow-hidden rounded-3xl shadow-2xl">
               <img
-                src="/images/market-lady.jpg"
+                src="/images/landing/market-lady.jpg"
                 alt="Smiling Nigerian woman at fresh produce market"
                 className="h-full max-h-130 w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-105 lg:max-h-132"
               />

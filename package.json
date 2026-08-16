@@ -43,7 +43,7 @@
     "db:migrate": "nx run debridgers-backend:db --args=migrate",
     "db:generate": "nx run debridgers-backend:db --args=generate",
     "db:seed": "pnpm --filter @debridgers/debridgers-backend db:seed",
-    "docker:up": "docker compose -p debridgers -f docker/docker-compose.yml up postgres -d --wait",
+    "docker:up": "docker compose -p debridgers -f docker/docker-compose.yml up postgres redis -d --wait",
     "docker:down": "docker compose -p debridgers -f docker/docker-compose.yml down",
     "docker:migrate": "pnpm docker:up && pnpm db:migrate",
     "test:e2e": "nx test debridgers-backend-e2e",

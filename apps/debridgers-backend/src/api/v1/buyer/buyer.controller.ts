@@ -30,12 +30,16 @@ import {
   UpdateProfileDto,
 } from "./dto/update-profile.dto";
 import { createOrderSchema, CreateOrderDto } from "./dto/create-order.dto";
-import { syncCartSchema } from "./dto/sync-cart.dto";
+import { syncCartSchema, SyncCartDto } from "./dto/sync-cart.dto";
 import {
   initializeOrderPaymentSchema,
   InitializeOrderPaymentDto,
 } from "./dto/initialize-order-payment.dto";
-import { quoteCartSchema } from "./dto/quote-cart.dto";
+import { quoteCartSchema, QuoteCartDto } from "./dto/quote-cart.dto";
+import {
+  changePasswordSchema,
+  ChangePasswordDto,
+} from "./dto/change-password.dto";
 import { AuthGuard } from "../../shared/guards/auth.guard";
 import { RolesGuard } from "../../shared/guards/roles.guard";
 import { Roles } from "../../shared/decorators/roles.decorator";
@@ -133,21 +137,12 @@ export class BuyerController {
     return this.buyerService.getProducts();
   }
 
-  @Get("notifications")
-  @ApiOperation({ summary: "Get notifications for this buyer" })
-  getNotifications(@CurrentUser() user: JwtPayload) {
-    return this.buyerService.getNotifications(user);
-  }
-
-  @Patch("notifications/:id/read")
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Mark a notification as read" })
-  markNotificationRead(
-    @Param("id", ParseIntPipe) id: number,
-    @CurrentUser() user: JwtPayload,
-  ) {
-    return this.buyerService.markNotificationRead(id, user);
-  }
+  /*
+   * Notifications live entirely on NotificationsController. They were declared
+   * here too, and because this controller registers first its
+   * "notifications/:id/read" matched /buyer/notifications/mark-all/read,
+   * feeding "mark-all" to ParseIntPipe and making mark-all-read unreachable.
+   */
 
   @Patch("password")
   @HttpCode(HttpStatus.OK)
@@ -157,10 +152,10 @@ export class BuyerController {
   @ApiResponse({ status: 200, description: "Password updated" })
   @ApiResponse({ status: 401, description: "Current password incorrect" })
   changePassword(
-    @Body() body: { old_password: string; new_password: string },
+    @Body(new ZodValidationPipe(changePasswordSchema)) dto: ChangePasswordDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.buyerService.changePassword(body, user);
+    return this.buyerService.changePassword(dto, user);
   }
 
   // === Cart
@@ -179,8 +174,10 @@ export class BuyerController {
       "Full replace, not a delta. The client holds the authoritative cart in localStorage and syncs the whole thing on a debounce, so this is idempotent and safe to retry.",
   })
   @ApiResponse({ status: 200, description: "Cart synced" })
-  syncCart(@Body() body: unknown, @CurrentUser() user: JwtPayload) {
-    const dto = syncCartSchema.parse(body);
+  syncCart(
+    @Body(new ZodValidationPipe(syncCartSchema)) dto: SyncCartDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
     return this.buyerService.replaceCart(dto, user);
   }
 
@@ -191,8 +188,10 @@ export class BuyerController {
       "Called once on login. Takes the higher quantity per product rather than summing, so adding the same item on two devices does not double the order.",
   })
   @ApiResponse({ status: 200, description: "Cart merged" })
-  mergeCart(@Body() body: unknown, @CurrentUser() user: JwtPayload) {
-    const dto = syncCartSchema.parse(body);
+  mergeCart(
+    @Body(new ZodValidationPipe(syncCartSchema)) dto: SyncCartDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
     return this.buyerService.mergeCart(dto, user);
   }
 
@@ -269,8 +268,10 @@ export class BuyerController {
       "Returns items total, delivery fee (zone base + weight surcharge), handling fee and grand total, so checkout can show fees before payment.",
   })
   @ApiResponse({ status: 200, description: "Quote generated" })
-  quoteCart(@Body() body: unknown, @CurrentUser() user: JwtPayload) {
-    const dto = quoteCartSchema.parse(body);
+  quoteCart(
+    @Body(new ZodValidationPipe(quoteCartSchema)) dto: QuoteCartDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
     return this.buyerService.quoteCart(dto, user);
   }
 }

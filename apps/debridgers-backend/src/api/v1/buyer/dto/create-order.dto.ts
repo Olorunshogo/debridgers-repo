@@ -18,14 +18,28 @@ export const createOrderSchema = z.object({
   notes: z.string().max(500).optional(),
   cart: z
     .array(
-      z.object({
-        product_id: z.number().int().positive(),
-        qty: z.number().int().min(1).max(999),
-        // Accepted for compatibility, re-derived server-side. Never trusted.
-        name: z.string().optional(),
-        unit: z.string().optional(),
-        price_kobo: z.number().optional(),
-      }),
+      z
+        .object({
+          product_id: z.number().int().positive(),
+          // `quantity` is the cart-sync spelling; both normalise to qty below.
+          qty: z.number().int().min(1).max(999).optional(),
+          quantity: z.number().int().min(1).max(999).optional(),
+          // Accepted for compatibility, re-derived server-side. Never trusted.
+          name: z.string().optional(),
+          unit: z.string().optional(),
+          price_kobo: z.number().optional(),
+        })
+        .refine(
+          (line) => line.qty !== undefined || line.quantity !== undefined,
+          {
+            message: "qty is required",
+            path: ["qty"],
+          },
+        )
+        .transform((line) => ({
+          ...line,
+          qty: (line.qty ?? line.quantity) as number,
+        })),
     )
     .min(1, "Cart is empty"),
 });
