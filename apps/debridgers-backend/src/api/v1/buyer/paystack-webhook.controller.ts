@@ -18,6 +18,7 @@ import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.p
 import { WalletService } from "./wallet.service";
 import { EmailService } from "../../../notification/features/email/email.service";
 import { OrderService } from "./order.service";
+import { WithdrawalService } from "../payment/withdrawal.service";
 
 @Controller("webhook")
 export class PaystackWebhookController {
@@ -27,6 +28,7 @@ export class PaystackWebhookController {
     private readonly walletService: WalletService,
     private readonly emailService: EmailService,
     private readonly orderService: OrderService,
+    private readonly withdrawalService: WithdrawalService,
     private readonly config: ConfigService,
   ) {}
 
@@ -144,6 +146,33 @@ export class PaystackWebhookController {
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`Webhook processing error for ${data.reference}: ${msg}`);
+        return { statusCode: 200, message: "Webhook processed" };
+      }
+    }
+
+    if (typedEvent.event === "transfer.success") {
+      const data = typedEvent.data as {
+        reference?: string;
+        status?: string;
+        amount?: number;
+      };
+
+      if (!data.reference) {
+        throw new BadRequestException("No reference in webhook data");
+      }
+
+      try {
+        console.error(`📍 WITHDRAWAL WEBHOOK: ${data.reference}`);
+        await this.withdrawalService.handleWithdrawalWebhook(typedEvent);
+        console.error(
+          `✅ Withdrawal ${data.reference} status updated to ${data.status}`,
+        );
+        return { statusCode: 200, message: "Withdrawal confirmed" };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(
+          `Withdrawal webhook processing error for ${data.reference}: ${msg}`,
+        );
         return { statusCode: 200, message: "Webhook processed" };
       }
     }

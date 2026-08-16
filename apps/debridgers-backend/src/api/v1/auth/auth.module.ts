@@ -9,6 +9,7 @@ import { RefreshGuard } from "../../shared/guards/refresh.guard";
 import { DatabaseModule } from "../../../infrastructure/database/database.module";
 import { RedisModule } from "../../../infrastructure/redis/core/redis.module";
 import { AnalyticsModule } from "../../../infrastructure/analytics/analytics.module";
+import { PaymentModule } from "../payment/payment.module";
 import { accessJwtConfig } from "./config/access-jwt";
 import { refreshJwtConfig } from "./config/refresh-jwt";
 
@@ -18,6 +19,7 @@ import { refreshJwtConfig } from "./config/refresh-jwt";
     JwtModule.register({}),
     RedisModule,
     AnalyticsModule,
+    PaymentModule,
   ],
   controllers: [AuthController],
   providers: [
@@ -27,7 +29,14 @@ import { refreshJwtConfig } from "./config/refresh-jwt";
     RolesGuard,
     RefreshGuard,
   ],
-  exports: [AuthGuard, RolesGuard, RefreshGuard, JwtModule, AuthAttemptService],
+  exports: [
+    AuthGuard,
+    RolesGuard,
+    RefreshGuard,
+    JwtModule,
+    AuthAttemptService,
+    AuthService,
+  ],
 })
 export class AuthModule {}
 
