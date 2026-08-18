@@ -8,33 +8,23 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq, desc, count, sum, and, sql } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
+import { NotificationsService } from "./notifications.service";
+import { LedgerService } from "../payment/ledger.service";
 
 @Injectable()
 export class WalletService {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
+    private readonly notificationsService: NotificationsService,
+    private readonly ledger: LedgerService,
   ) {}
 
   /**
    * Get or create buyer wallet
    */
   async getOrCreateWallet(userId: number) {
-    const wallet = await this.db
-      .select()
-      .from(schema.buyerWallets)
-      .where(eq(schema.buyerWallets.user_id, userId))
-      .limit(1);
-
-    if (!wallet || wallet.length === 0) {
-      const [newWallet] = await this.db
-        .insert(schema.buyerWallets)
-        .values({ user_id: userId })
-        .returning();
-      return newWallet;
-    }
-
-    return wallet[0];
+    return this.ledger.getOrCreateWallet(userId);
   }
 
   /**
@@ -83,25 +73,11 @@ export class WalletService {
    * Deduct from wallet (for payment)
    */
   async deductBalance(userId: number, amount: number) {
-    const wallet = await this.getOrCreateWallet(userId);
+    const wallet = await this.ledger.getOrCreateWallet(userId);
 
-    if (wallet.available_balance < amount) {
-      throw new BadRequestException("Insufficient wallet balance");
-    }
-
-    const [updated] = await this.db
-      .update(schema.buyerWallets)
-      .set({
-        available_balance: wallet.available_balance - amount,
-      })
-      .where(eq(schema.buyerWallets.id, wallet.id))
-      .returning();
-
-    await this.db.insert(schema.walletTransactions).values({
-      wallet_id: wallet.id,
+    const { wallet: updated } = await this.ledger.debit(wallet.id, {
       type: "withdraw",
       amount,
-      status: "completed",
       description: "Payment for order",
     });
 
@@ -112,25 +88,18 @@ export class WalletService {
    * Add to wallet (for deposit)
    */
   async addBalance(userId: number, amount: number, reference: string) {
-    const wallet = await this.getOrCreateWallet(userId);
+    const wallet = await this.ledger.getOrCreateWallet(userId);
 
-    const [updated] = await this.db
-      .update(schema.buyerWallets)
-      .set({
-        available_balance: wallet.available_balance + amount,
-        total_deposited: wallet.total_deposited + amount,
-      })
-      .where(eq(schema.buyerWallets.id, wallet.id))
-      .returning();
-
-    await this.db.insert(schema.walletTransactions).values({
-      wallet_id: wallet.id,
-      type: "deposit",
-      amount,
-      status: "completed",
-      reference,
-      description: "Deposit via Paystack",
-    });
+    const { wallet: updated } = await this.ledger.credit(
+      wallet.id,
+      {
+        type: "deposit",
+        amount,
+        reference,
+        description: "Deposit via Paystack",
+      },
+      true,
+    );
 
     return updated;
   }
@@ -143,66 +112,46 @@ export class WalletService {
     amount: number,
     reference: string,
   ) {
-    const wallet = await this.getOrCreateWallet(userId);
+    const wallet = await this.ledger.getOrCreateWallet(userId);
 
-    const [transaction] = await this.db
-      .insert(schema.walletTransactions)
-      .values({
-        wallet_id: wallet.id,
-        type: "deposit",
-        amount,
-        status: "pending",
-        reference,
-        description: "Deposit initiated via Paystack",
-      })
-      .returning();
-
-    return transaction;
+    return this.ledger.recordEntry(wallet.id, {
+      type: "deposit",
+      amount,
+      status: "pending",
+      reference,
+      description: "Deposit initiated via Paystack",
+    });
   }
 
   /**
    * Confirm pending transaction
    */
   async confirmTransaction(reference: string, _amount?: number) {
-    const [transaction] = await this.db
-      .select()
-      .from(schema.walletTransactions)
-      .where(eq(schema.walletTransactions.reference, reference))
-      .limit(1);
+    /*
+     * Reachable from two places at once: the buyer posting to
+     * /deposit/confirm and Paystack's charge.success webhook. The ledger's
+     * pending-to-completed flip is the lock, so only one of them credits.
+     */
+    const settled = await this.ledger.settlePendingCredit(reference, true);
 
-    if (!transaction) {
-      throw new NotFoundException("Transaction not found");
+    if (!settled) {
+      const existing = await this.ledger.findEntryByReference(reference);
+
+      if (!existing) {
+        throw new NotFoundException("Transaction not found");
+      }
+
+      return existing; // Already confirmed by the other caller
     }
 
-    if (transaction.status === "completed") {
-      return transaction; // Already confirmed
-    }
+    await this.notificationsService.notifyWalletTransaction(
+      settled.wallet.user_id,
+      "deposit",
+      settled.transaction.amount,
+      "completed",
+    );
 
-    // Update transaction to completed
-    await this.db
-      .update(schema.walletTransactions)
-      .set({ status: "completed" })
-      .where(eq(schema.walletTransactions.id, transaction.id));
-
-    // Add to wallet
-    const wallet = await this.db
-      .select()
-      .from(schema.buyerWallets)
-      .where(eq(schema.buyerWallets.id, transaction.wallet_id))
-      .limit(1);
-
-    if (wallet && wallet.length > 0) {
-      const w = wallet[0];
-      await this.db
-        .update(schema.buyerWallets)
-        .set({
-          available_balance: w.available_balance + transaction.amount,
-          total_deposited: w.total_deposited + transaction.amount,
-        })
-        .where(eq(schema.buyerWallets.id, w.id));
-    }
-
-    return transaction;
+    return settled.transaction;
   }
 
   async getTransactionByReference(reference: string) {

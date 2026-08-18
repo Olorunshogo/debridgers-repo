@@ -14,6 +14,7 @@ import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.p
 import { WalletService } from "./wallet.service";
 import { OrderService } from "./order.service";
 import { NotificationsService } from "./notifications.service";
+import { LedgerService } from "../payment/ledger.service";
 
 @Injectable()
 export class PaymentService {
@@ -33,6 +34,7 @@ export class PaymentService {
     private readonly orderService: OrderService,
     private readonly notificationsService: NotificationsService,
     private readonly config: ConfigService,
+    private readonly ledger: LedgerService,
   ) {
     this.secretKey = this.config.get<string>("PAYSTACK_SECRET_KEY") ?? "";
     this.appUrl = this.config.get<string>("APP_URL") ?? "";
@@ -490,13 +492,19 @@ export class PaymentService {
 
     if (!order) return;
 
-    // Refund to wallet
-    const refundAmount = Math.floor(amount / 100); // Convert from kobo
-    await this.walletService.addBalance(
-      order.buyer_id,
-      refundAmount,
-      `refund_${transactionId}`,
-    );
+    /*
+     * Paystack sends `amount` in kobo and the wallet stores kobo, so it goes
+     * through unscaled. It was previously divided by 100 before being credited
+     * as kobo, which refunded one naira for every hundred owed.
+     */
+    const wallet = await this.ledger.getOrCreateWallet(order.buyer_id);
+
+    await this.ledger.credit(wallet.id, {
+      type: "refund",
+      amount,
+      reference: `refund_${transactionId}`,
+      description: `Refund for order ${order.id}`,
+    });
 
     // Update order status
     await this.orderService.updateOrderStatus(order.id, "refunded");
@@ -507,7 +515,7 @@ export class PaymentService {
       order.buyer_id,
       order.id,
       "refunded",
-      `Refund of ₦${refundAmount / 100} has been added to your wallet.`,
+      `Refund of ₦${amount / 100} has been added to your wallet.`,
     );
   }
 
@@ -543,6 +551,14 @@ export class PaymentService {
   /**
    * Handle Paystack webhook event (returns 200 OK immediately)
    * Long-running tasks are processed asynchronously
+   *
+   * NOT ROUTED. No controller calls this, so this method and everything it
+   * reaches (processWebhookEventAsync, handleDispute, handleRefund,
+   * resolveDispute) is currently dead. Live Paystack events are served by
+   * PaystackWebhookController, which handles charge.success and transfer.*
+   * only, and by PaymentService.handleWebhook. Anyone wiring this up should
+   * know none of it has ever run against a real event, and that the refund
+   * branch carried a units bug for its whole life.
    */
   handlePaystackWebhook(event: unknown): { success: boolean } {
     // Return 200 OK immediately to Paystack

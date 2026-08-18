@@ -10,10 +10,25 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
+import { NotificationsService } from "../buyer/notifications.service";
+import { PaystackBankService, type BankOption } from "./paystack-bank.service";
+import { LedgerService } from "./ledger.service";
 
 export interface WithdrawalDto {
   amount_kobo: number;
   reason?: string;
+}
+
+export interface PayoutAccountDto {
+  bank_code: string;
+  account_number: string;
+}
+
+export interface PayoutAccount {
+  bank_code: string;
+  bank_name: string;
+  account_number: string;
+  account_name: string;
 }
 
 @Injectable()
@@ -26,20 +41,27 @@ export class WithdrawalService {
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
     private readonly config: ConfigService,
+    private readonly notificationsService: NotificationsService,
+    private readonly bankService: PaystackBankService,
+    private readonly ledger: LedgerService,
   ) {
     this.secretKey = this.config.get<string>("PaystackConfig.secretKey") ?? "";
   }
 
-  async initiateWithdrawal(
+  // === Payout account
+
+  async listBanks(): Promise<BankOption[]> {
+    return this.bankService.listBanks();
+  }
+
+  /*
+   * Resolves the account with Paystack before saving, so the buyer sees the
+   * real account name and a typo cannot silently send money to a stranger.
+   */
+  async setPayoutAccount(
     userId: number,
-    dto: WithdrawalDto,
-  ): Promise<{
-    withdrawal_id: number;
-    amount_kobo: number;
-    reference: string;
-    status: string;
-  }> {
-    // Get wallet
+    dto: PayoutAccountDto,
+  ): Promise<PayoutAccount> {
     const [wallet] = await this.db
       .select()
       .from(schema.buyerWallets)
@@ -50,73 +72,154 @@ export class WithdrawalService {
       throw new NotFoundException("Wallet not found");
     }
 
-    // Check balance
-    if (wallet.available_balance < dto.amount_kobo) {
-      throw new BadRequestException(
-        `Insufficient balance. Available: ₦${wallet.available_balance / 100}`,
-      );
-    }
+    const bankName = await this.bankService.requireBankName(dto.bank_code);
 
-    // Check if user has DVA
-    if (!wallet.account_number) {
-      throw new BadRequestException(
-        "Your account is not yet set up for withdrawals. Please contact support.",
-      );
-    }
-
-    // Get user details for recipient
-    const [user] = await this.db
-      .select()
-      .from(schema.users)
-      .where(eq(schema.users.id, userId))
-      .limit(1);
-
-    if (!user) {
-      throw new NotFoundException("User not found");
-    }
-
-    // Create recipient in Paystack if not already created
-    const recipientResponse = await this.createOrGetRecipient(
-      wallet.account_number,
-      wallet.account_name || `${user.first_name} ${user.last_name}`,
+    const resolved = await this.bankService.resolveAccount(
+      dto.account_number,
+      dto.bank_code,
     );
 
-    if (!recipientResponse.recipient_code) {
+    const recipientCode = await this.bankService.createRecipient(
+      dto.account_number,
+      dto.bank_code,
+      resolved.account_name,
+    );
+
+    await this.db
+      .update(schema.buyerWallets)
+      .set({
+        payout_bank_code: dto.bank_code,
+        payout_bank_name: bankName,
+        payout_account_number: dto.account_number,
+        payout_account_name: resolved.account_name,
+        paystack_recipient_code: recipientCode,
+      })
+      .where(eq(schema.buyerWallets.id, wallet.id));
+
+    return {
+      bank_code: dto.bank_code,
+      bank_name: bankName,
+      account_number: dto.account_number,
+      account_name: resolved.account_name,
+    };
+  }
+
+  async getPayoutAccount(userId: number): Promise<PayoutAccount | null> {
+    const [wallet] = await this.db
+      .select()
+      .from(schema.buyerWallets)
+      .where(eq(schema.buyerWallets.user_id, userId))
+      .limit(1);
+
+    if (!wallet?.payout_account_number) {
+      return null;
+    }
+
+    return {
+      bank_code: wallet.payout_bank_code ?? "",
+      bank_name: wallet.payout_bank_name ?? "",
+      account_number: wallet.payout_account_number,
+      account_name: wallet.payout_account_name ?? "",
+    };
+  }
+
+  // === Withdrawal
+
+  async initiateWithdrawal(
+    userId: number,
+    dto: WithdrawalDto,
+  ): Promise<{
+    withdrawal_id: number;
+    amount_kobo: number;
+    reference: string;
+    status: string;
+  }> {
+    const [wallet] = await this.db
+      .select()
+      .from(schema.buyerWallets)
+      .where(eq(schema.buyerWallets.user_id, userId))
+      .limit(1);
+
+    if (!wallet) {
+      throw new NotFoundException("Wallet not found");
+    }
+
+    if (!wallet.paystack_recipient_code) {
       throw new BadRequestException(
-        "Failed to set up recipient. Please try again.",
+        "Add a bank account before withdrawing from your wallet.",
       );
     }
 
     const reference = `WD_${userId}_${Date.now()}`;
 
-    // Initiate transfer
-    const transferResponse = await fetch(`${this.baseUrl}/transfer`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${this.secretKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        source: "balance",
-        amount: dto.amount_kobo / 100, // Convert kobo to naira
-        recipient: recipientResponse.recipient_code,
-        reason: dto.reason || "Wallet withdrawal",
-        reference,
-      }),
+    /*
+     * Debit and record before calling Paystack, in one transaction. The ledger
+     * puts the balance check in the UPDATE's own predicate, so two concurrent
+     * withdrawals cannot both pass it and overdraw; if it rejects, nothing was
+     * charged. The entry stays pending until the transfer webhook settles it.
+     */
+    const transaction = await this.db.transaction(async (tx) => {
+      const debited = await this.ledger.applyDebit(
+        wallet.id,
+        dto.amount_kobo,
+        tx,
+      );
+
+      if (!debited) {
+        throw new BadRequestException(
+          `Insufficient balance. Available: ₦${wallet.available_balance / 100}`,
+        );
+      }
+
+      return this.ledger.recordEntry(
+        wallet.id,
+        {
+          type: "withdraw",
+          amount: dto.amount_kobo,
+          status: "pending",
+          reference,
+          description: dto.reason ?? "Withdrawal to bank account",
+        },
+        tx,
+      );
     });
 
-    const transferData = (await transferResponse.json()) as {
+    let transferData: {
       status: boolean;
       message?: string;
-      data?: {
-        transfer_code: string;
-        reference: string;
-        status: string;
-        amount: number;
-      };
+      data?: { transfer_code: string; reference: string; status: string };
     };
 
-    if (!transferData.status) {
+    try {
+      // Paystack expects kobo for NGN, so amount_kobo goes through unscaled.
+      const transferResponse = await fetch(`${this.baseUrl}/transfer`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.secretKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          source: "balance",
+          amount: dto.amount_kobo,
+          recipient: wallet.paystack_recipient_code,
+          reason: dto.reason ?? "Wallet withdrawal",
+          reference,
+        }),
+      });
+
+      transferData = (await transferResponse.json()) as typeof transferData;
+    } catch (err) {
+      await this.reverse(transaction.id, wallet.id, dto.amount_kobo);
+      this.logger.error(
+        `Withdrawal transfer errored for user ${userId}: ${err instanceof Error ? err.message : err}`,
+      );
+      throw new BadRequestException(
+        "Withdrawal failed. Your balance has not been affected.",
+      );
+    }
+
+    if (!transferData.status || !transferData.data) {
+      await this.reverse(transaction.id, wallet.id, dto.amount_kobo);
       this.logger.error(
         `Withdrawal transfer failed for user ${userId}: ${transferData.message}`,
       );
@@ -125,71 +228,32 @@ export class WithdrawalService {
       );
     }
 
-    // Create withdrawal record with pending status
-    const [withdrawal] = await this.db
-      .insert(schema.walletTransactions)
-      .values({
-        wallet_id: wallet.id,
-        type: "withdraw",
-        amount: dto.amount_kobo,
-        status: "pending",
-        reference: transferData.data!.reference,
-        description: "Withdrawal to bank account",
-      })
-      .returning();
+    await this.notificationsService.notifyWalletTransaction(
+      userId,
+      "withdrawal",
+      dto.amount_kobo,
+      "processing",
+    );
 
     this.logger.log(
       `Initiated withdrawal for user ${userId}: ₦${dto.amount_kobo / 100}`,
     );
 
     return {
-      withdrawal_id: withdrawal.id,
+      withdrawal_id: transaction.id,
       amount_kobo: dto.amount_kobo,
-      reference: transferData.data!.reference,
-      status: transferData.data!.status,
+      reference,
+      status: transferData.data.status,
     };
   }
 
-  private async createOrGetRecipient(
-    accountNumber: string,
-    accountName: string,
-  ): Promise<{ recipient_code: string }> {
-    try {
-      const response = await fetch(`${this.baseUrl}/transferrecipient`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.secretKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          type: "nuban",
-          account_number: accountNumber,
-          bank_code: "035", // Wema Bank code
-          name: accountName,
-        }),
-      });
-
-      const data = (await response.json()) as {
-        status: boolean;
-        message?: string;
-        data?: { recipient_code: string };
-      };
-
-      if (!data.status) {
-        this.logger.error(
-          `Failed to create transfer recipient: ${data.message}`,
-        );
-        throw new Error(data.message);
-      }
-
-      return { recipient_code: data.data!.recipient_code };
-    } catch (error) {
-      this.logger.error(
-        `Error creating transfer recipient:`,
-        error instanceof Error ? error.message : error,
-      );
-      throw error;
-    }
+  /* Undo the debit when the transfer never reached Paystack. */
+  private async reverse(
+    transactionId: number,
+    walletId: number,
+    amount: number,
+  ): Promise<void> {
+    await this.ledger.reverseEntry(transactionId, walletId, amount);
   }
 
   async handleWithdrawalWebhook(payload: Record<string, unknown>) {
@@ -200,53 +264,59 @@ export class WithdrawalService {
       return;
     }
 
-    const [transaction] = await this.db
-      .select()
-      .from(schema.walletTransactions)
-      .where(eq(schema.walletTransactions.reference, reference))
-      .limit(1);
+    const transaction = await this.ledger.findEntryByReference(reference);
 
     if (!transaction) {
       this.logger.warn(`Withdrawal not found for reference ${reference}`);
       return;
     }
 
-    const status = (data.status as string)?.toLowerCase();
-    let txnStatus: "completed" | "failed" | "pending" = "pending";
-
-    if (status === "success") {
-      txnStatus = "completed";
-    } else if (status === "failed") {
-      txnStatus = "failed";
-
-      // Refund to wallet if transfer failed
-      const [wallet] = await this.db
-        .select()
-        .from(schema.buyerWallets)
-        .where(eq(schema.buyerWallets.id, transaction.wallet_id))
-        .limit(1);
-
-      if (wallet) {
-        await this.db
-          .update(schema.buyerWallets)
-          .set({
-            available_balance: wallet.available_balance + transaction.amount,
-          })
-          .where(eq(schema.buyerWallets.id, wallet.id));
-
-        this.logger.log(
-          `Refunded ₦${transaction.amount / 100} to wallet for failed withdrawal ${reference}`,
-        );
-      }
+    // Paystack retries webhooks, so a settled withdrawal must not move twice.
+    if (transaction.status !== "pending") {
+      this.logger.log(
+        `Withdrawal ${reference} already ${transaction.status}, ignoring replay`,
+      );
+      return;
     }
 
-    await this.db
-      .update(schema.walletTransactions)
-      .set({
-        status: txnStatus,
-      })
-      .where(eq(schema.walletTransactions.id, transaction.id));
+    const [wallet] = await this.db
+      .select()
+      .from(schema.buyerWallets)
+      .where(eq(schema.buyerWallets.id, transaction.wallet_id))
+      .limit(1);
 
-    this.logger.log(`Withdrawal ${reference} status updated to ${txnStatus}`);
+    const event = payload.event as string;
+    const succeeded = event === "transfer.success";
+
+    if (succeeded) {
+      await this.ledger.markEntry(transaction.id, "completed");
+    } else {
+      /*
+       * transfer.failed and transfer.reversed both mean the money came back, so
+       * the debit taken at initiation is returned here.
+       */
+      await this.ledger.reverseEntry(
+        transaction.id,
+        transaction.wallet_id,
+        transaction.amount,
+      );
+
+      this.logger.log(
+        `Refunded ₦${transaction.amount / 100} to wallet for failed withdrawal ${reference}`,
+      );
+    }
+
+    if (wallet) {
+      await this.notificationsService.notifyWalletTransaction(
+        wallet.user_id,
+        "withdrawal",
+        transaction.amount,
+        succeeded ? "completed" : "failed and refunded to your wallet",
+      );
+    }
+
+    this.logger.log(
+      `Withdrawal ${reference} status updated to ${succeeded ? "completed" : "failed"}`,
+    );
   }
 }
