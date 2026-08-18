@@ -97,9 +97,9 @@ dead links where a feature existed on both sides but nothing joined them.
   inline queries in four places). `PaymentService` reads the rate at call time
   instead of caching it in its constructor.
   - Unit mismatch worth knowing: the setting is stored as a **percentage**
-    (1-100, validated in `updateSetting`) while payment code needs a **fraction**
-    (0.30). Wiring them naively would have multiplied commission by 30. The
-    conversion lives in one place, `getAgentCommissionRate()`.
+    (1-100, validated in `updateSetting`) while payment code needs a
+    **fraction**. Wiring them naively would have multiplied every commission by
+    a hundred. The conversion lives in one place, `getAgentCommissionRate()`.
   - `createSubaccount` was posting a hardcoded `settlement_bank: "058"` and
     `account_number: "0000000000"`, creating subaccounts that could never settle.
     It now uses the agent's real details and refuses if they are absent.
@@ -115,11 +115,11 @@ dead links where a feature existed on both sides but nothing joined them.
   the commission as **both** `commissionPercent` (5, for display) and
   `commissionRate` (0.05, for maths), because the percentage/fraction ambiguity
   already caused one real bug server-side.
-  - `landing/agents.tsx` previously defaulted to a hardcoded `30` while its own
-    fetch was in flight, rendering an earnings table at 6x the real rate on the
-    page whose whole purpose is stating what agents earn. It now shows a skeleton
-    until the live figure arrives.
-  - That page's SEO metadata also hardcoded "Earn 30% Commission" in its title,
+  - `landing/agents.tsx` previously defaulted to a hardcoded rate while its own
+    fetch was in flight, overstating the earnings table on the page whose whole
+    purpose is stating what agents earn. It now shows a skeleton until the live
+    figure arrives.
+  - That page's SEO metadata also hardcoded a commission figure in its title,
     description, keywords and social cards. `meta()` is static and the rate is an
     admin setting, so the figure was removed rather than left to go stale again.
 - **Migration `0016`** pushes products from their type node down onto their

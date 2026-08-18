@@ -582,7 +582,7 @@ GET /api/v1/admin/commissions?status=pending&agent_id=5&page=1
       "agent_id": 5,
       "agent_name": "Amina Yusuf",
       "type": "direct",
-      "amount": "₦22,500",
+      "amount": "₦3,750",
       "status": "pending",
       "source_order": 42,
       "created_at": "2026-06-10T10:00:00Z",

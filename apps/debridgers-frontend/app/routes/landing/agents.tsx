@@ -11,9 +11,9 @@ import { formatCurrency } from "@debridgers/ui-web";
 
 /*
  * No commission figure in the metadata. The rate is an admin setting that can
- * change at any time, and meta() is static - it previously advertised "30%"
- * in the page title and social cards, which became a false claim the moment
- * the rate was set to anything else.
+ * change at any time, and meta() is static - it previously advertised a fixed
+ * rate in the page title and social cards, which became a false claim the
+ * moment the rate was changed.
  */
 export function meta() {
   return [
@@ -209,9 +209,9 @@ export default function AgentsPage() {
   const [activeStep, setActiveStep] = useState<number>(0);
   /*
    * Shared context rather than a local fetch. This page used to default to a
-   * hardcoded 30 while its own request was in flight, so every visitor briefly
-   * saw an earnings table computed at the wrong rate - on the page whose whole
-   * purpose is telling agents what they will earn.
+   * hardcoded rate while its own request was in flight, so every visitor
+   * briefly saw an earnings table computed at the wrong figure - on the page
+   * whose whole purpose is telling agents what they will earn.
    */
   const { commissionPercent: commissionRate, isLoading: configLoading } =
     usePlatformConfig();

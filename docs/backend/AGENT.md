@@ -218,7 +218,7 @@ An Agent is someone who:
 #### What Happens:
 
 - System auto-calculates commission:
-  - If they collected ₦5,000 → Commission = ₦1,500 (30%)
+  - If they collected ₦5,000 → Commission = ₦250 (5%)
 - Commission appears in their wallet as "pending"
 - Commission becomes "available" when admin marks as paid
 
@@ -231,7 +231,7 @@ An Agent is someone who:
 #### Success Requirements:
 
 - ✅ Agent can submit multiple reports daily
-- ✅ Commission auto-calculates correctly (30%)
+- ✅ Commission auto-calculates correctly (5%)
 - ✅ Commission tracked as "pending" → "paid"
 - ✅ Agent can see all their past reports
 - ✅ Admin can filter reports by agent/date
@@ -239,7 +239,7 @@ An Agent is someone who:
 #### Testing:
 
 ```
-□ Agent submits report: 5 bags, ₦5,000 → Commission shows ₦1,500
+□ Agent submits report: 5 bags, ₦5,000 → Commission shows ₦250
 □ Agent submits report: 10 bags, ₦10,000 → Commission shows ₦3,000
 □ Admin marks commission paid → Agent wallet updates
 □ Agent can see history of all reports
@@ -292,7 +292,7 @@ Total Earned:       ₦500,000 (all-time)
 ```
 □ Agent submits report → Pending balance increases
 □ Admin confirms → Available balance increases
-□ Check math: 30% commission is always correct
+□ Check math: 5% commission is always correct
 □ View full history for any agent
 □ No access between agents' wallets
 ```
@@ -601,7 +601,7 @@ AGENT ADMIN DASHBOARD
 | **Agent Onboarding Time** | <48 hours from apply to login | Measure from app submit to first login   |
 | **KYC Approval Time**     | <24 hours                     | Admin review dashboard                   |
 | **Stock Fulfillment**     | <2 hours                      | Request timestamp to fulfilled timestamp |
-| **Commission Accuracy**   | 100% correct (30% of sales)   | Audit: random reports and verify math    |
+| **Commission Accuracy**   | 100% correct (5% of sales)    | Audit: random reports and verify math    |
 | **Payout Success Rate**   | 99.9% (transfers complete)    | Check bank statements vs requests        |
 | **Email Delivery**        | 95%+ delivered                | Check email logs                         |
 | **System Uptime**         | 99.5% or higher               | Monitoring dashboard                     |
@@ -640,8 +640,8 @@ AGENT ADMIN DASHBOARD
 
 ### 4. Sales Reporting Flow
 
-- [ ] **Submit Report:** Agent submits 5 bags, ₦5,000 → Commission = ₦1,500
-- [ ] **Math Check:** Verify 30% commission on various amounts (test: ₦1000, ₦5000, ₦10000, ₦75000)
+- [ ] **Submit Report:** Agent submits 5 bags, ₦5,000 → Commission = ₦250
+- [ ] **Math Check:** Verify 5% commission on various amounts (test: ₦1000, ₦5000, ₦10000, ₦75000)
 - [ ] **Pending Status:** Commission shows as "pending"
 - [ ] **Confirmation:** Admin marks paid → Status changes to "paid"
 - [ ] **Multiple Reports:** Agent can submit multiple daily reports

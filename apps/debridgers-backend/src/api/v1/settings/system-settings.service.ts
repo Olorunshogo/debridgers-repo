@@ -98,15 +98,19 @@ export class SystemSettingsService {
   // === Commission rate
 
   /*
-   * The stored value is a percentage (the admin UI and `updateSetting` both
-   * validate 1-100), but every consumer needs a fraction. Converting in one
-   * place keeps a 30 from ever being multiplied as 30x instead of 0.30.
+   * Both sources are percentages: the stored setting (the admin UI and
+   * `updateSetting` validate 1-100) and AGENT_COMMISSION_RATE. Consumers need
+   * a fraction, so the divide happens here, once. Doing it in one place keeps
+   * a 5 from ever being multiplied as 5x instead of 0.05.
    */
   async getAgentCommissionRate(): Promise<number> {
-    const envFraction = parseFloat(
-      String(this.config.get("PaystackConfig.commissionRate") ?? "0.30"),
+    const envPercent = parseFloat(
+      String(this.config.get("PaystackConfig.agentCommissionPercent") ?? "5"),
     );
-    const fallback = Number.isNaN(envFraction) ? 0.3 : envFraction;
+    const fallback =
+      Number.isNaN(envPercent) || envPercent < 1 || envPercent > 100
+        ? 0.05
+        : envPercent / 100;
 
     const stored = await this.get("agent_commission_rate");
     if (stored === null) return fallback;
@@ -125,6 +129,53 @@ export class SystemSettingsService {
   /* Percentage form, for the admin and public config responses. */
   async getAgentCommissionPercent(): Promise<number> {
     return (await this.getAgentCommissionRate()) * 100;
+  }
+
+  // === Referral and override rates
+
+  /*
+   * Generic percent reader. Every percentage setting is stored 1-100 and every
+   * consumer needs a fraction, so the divide happens here rather than at each
+   * call site. `getAgentCommissionRate` predates this and keeps its own env
+   * fallback; everything else routes through here.
+   */
+  async getPercentAsFraction(key: string, fallback: number): Promise<number> {
+    const stored = await this.get(key);
+    if (stored === null) return fallback / 100;
+
+    const percent = parseFloat(stored);
+    if (Number.isNaN(percent) || percent < 0 || percent > 100) {
+      this.logger.warn(
+        `${key} is out of range ("${stored}"); using ${fallback}%`,
+      );
+      return fallback / 100;
+    }
+
+    return percent / 100;
+  }
+
+  /* Whole kobo reader for money-valued settings. */
+  async getKobo(key: string, fallback: number): Promise<number> {
+    const stored = await this.get(key);
+    if (stored === null) return fallback;
+
+    const kobo = parseInt(stored, 10);
+    if (Number.isNaN(kobo) || kobo < 0) {
+      this.logger.warn(
+        `${key} is not valid kobo ("${stored}"); using ${fallback}`,
+      );
+      return fallback;
+    }
+
+    return kobo;
+  }
+
+  async getAgentOverrideRate(): Promise<number> {
+    return this.getPercentAsFraction("agent_override_rate_percent", 5);
+  }
+
+  async getStateManagerOverrideRate(): Promise<number> {
+    return this.getPercentAsFraction("state_manager_override_rate_percent", 2);
   }
 
   // === Writes

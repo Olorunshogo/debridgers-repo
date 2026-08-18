@@ -15,9 +15,9 @@ import { apiFetch } from "@debridgers/api-client";
  * before anyone signs in.
  *
  * Before this existed, `landing/agents.tsx` fetched the endpoint itself and fell
- * back to a hardcoded 30, so a slow or failed request rendered an entire
- * earnings table at the wrong rate on the one page whose job is telling agents
- * what they will earn.
+ * back to a hardcoded rate, so a slow or failed request rendered an entire
+ * earnings table at the wrong figure on the one page whose job is telling
+ * agents what they will earn.
  */
 
 // === Types
@@ -33,8 +33,9 @@ interface PlatformConfigContextType {
   /*
    * The API serves a PERCENTAGE (5), not a fraction (0.05). Both are exposed
    * deliberately: the same ambiguity already caused a real bug server-side,
-   * where a stored 30 would have been multiplied as 30x rather than 0.30. No
-   * call site should have to remember which form it received.
+   * where a stored percentage would have been multiplied as-is rather than
+   * divided down first. No call site should have to remember which form it
+   * received.
    */
   commissionPercent: number;
   commissionRate: number;

@@ -151,8 +151,8 @@ POST /api/v1/agent/report
 
 - `pages_sold`: Count of bags/packs sold
 - `amount`: Total revenue from those sales (in naira)
-- System auto-calculates: **Commission = amount × 30%**
-  - Example: ₦75,000 × 0.3 = ₦22,500 commission
+- System auto-calculates: **Commission = amount × 5%**
+  - Example: ₦75,000 × 0.05 = ₦3,750 commission
 - Commission created with status: `pending`
 
 ---
@@ -281,7 +281,7 @@ Agent Submits Sales Report
     ↓
     (pages_sold: 5, amount: ₦75,000)
     ↓
-System Calculates Commission: ₦75,000 × 30% = ₦22,500
+System Calculates Commission: ₦75,000 × 5% = ₦3,750
     ↓
 Commission Created (status: pending)
     ↓
@@ -428,7 +428,7 @@ Agent receives funds in bank (24-48h)
     │  ├─ agent_id (FK)            │ │├─ id (PK)       │
     │  ├─ order_id (nullable)      │ │├─ stock_req_id  │
     │  ├─ type: direct/bonus/etc   │ │├─ amount_remit  │
-    │  ├─ amount (30% of sale)     │ │└─ created_at    │
+    │  ├─ amount (5% of sale)      │ │└─ created_at    │
     │  ├─ status: pending/paid     │ └─────────────────┘
     │  ├─ paid_at (nullable)       │
     │  └─ created_at               │
@@ -688,7 +688,7 @@ Agent receives funds in bank account
 
 ### **Sprint 4: Commission System** (Week 4)
 
-- [x] Commission auto-calculation (amount × 30%)
+- [x] Commission auto-calculation (amount × 5%)
 - [x] Commission recording on report submission
 - [x] Commission status tracking (pending → paid)
 - [x] Commission aggregation & dashboard
@@ -934,7 +934,7 @@ Returns:
 
 ---
 
-- Automatic 30% commission on all sales
+- Automatic 5% commission on all sales
 - Real-time earning tracking
 - Commission status visibility (pending/paid)
 - Sales history with detailed reports
@@ -1151,8 +1151,8 @@ Returns:
 
 **Commission Calculation Seems Wrong**
 
-- Formula: `commission = sales_amount × 0.30`
-- Example: ₦75,000 sale = ₦22,500 commission (30%)
+- Formula: `commission = sales_amount × 0.05`
+- Example: ₦75,000 sale = ₦3,750 commission (5%)
 - Check: Sales report amount field
 - Check: Commission calculation in database
 - Resolution: Verify formula, manual adjustment if needed
@@ -1166,7 +1166,7 @@ The **Debridgers Agents Network** is a complete, end-to-end platform for managin
 🎯 **For Agents:**
 
 - Frictionless onboarding (apply → verify → earn → withdraw)
-- Transparent earnings with automatic 30% commission
+- Transparent earnings with automatic 5% commission
 - Secure bank transfers with Paystack verification
 - Real-time earning dashboards and performance tracking
 
