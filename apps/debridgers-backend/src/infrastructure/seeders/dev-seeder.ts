@@ -722,8 +722,7 @@ async function seedDev(): Promise<void> {
         agent_id: agentIds[i % agentIds.length],
         order_id: orderId,
         type: i % 4 === 0 ? ("buyer_referral" as const) : ("direct" as const),
-        /* numeric column, so Drizzle expects a string */
-        amount: (300 + i * 25).toFixed(2),
+        amount_kobo: naira(300 + i * 25),
         status: commissionStatuses[i % commissionStatuses.length],
         paid_at:
           commissionStatuses[i % commissionStatuses.length] === "paid"

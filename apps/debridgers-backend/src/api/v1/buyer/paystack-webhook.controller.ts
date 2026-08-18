@@ -8,7 +8,10 @@ import {
   BadRequestException,
   Headers,
   Inject,
+  Req,
+  RawBodyRequest,
 } from "@nestjs/common";
+import { Request } from "express";
 import { ConfigService } from "@nestjs/config";
 import * as crypto from "crypto";
 import { eq } from "drizzle-orm";
@@ -36,13 +39,15 @@ export class PaystackWebhookController {
   @HttpCode(HttpStatus.OK)
   async handleWebhookPost(
     @Body() event: unknown,
+    @Req() req: RawBodyRequest<Request>,
     @Headers("x-paystack-signature") signature: string,
   ) {
-    return this.handleWebhook(event, signature, "charge");
+    return this.handleWebhook(event, req.rawBody, signature, "charge");
   }
 
   private async handleWebhook(
     event: unknown,
+    rawBody: Buffer | undefined,
     signature: string,
     _type: "deposit" | "charge",
   ) {
@@ -56,6 +61,7 @@ export class PaystackWebhookController {
     }
 
     const verified = this.verifyPaystackSignature(
+      rawBody,
       event,
       signature,
       paystackSecret,
@@ -137,7 +143,7 @@ export class PaystackWebhookController {
 
           console.error(`✓ Wallet deposit confirmed for ${data.reference}`);
           return { statusCode: 200, message: "Deposit confirmed" };
-        } catch (depositErr) {
+        } catch {
           console.error(
             `⚠ Not a valid order payment or wallet deposit: ${data.reference}`,
           );
@@ -150,7 +156,16 @@ export class PaystackWebhookController {
       }
     }
 
-    if (typedEvent.event === "transfer.success") {
+    /*
+     * failed and reversed matter as much as success: both mean the money came
+     * back and the buyer's debit has to be returned. Only success was routed
+     * here before, so failed transfers sat pending forever.
+     */
+    if (
+      typedEvent.event === "transfer.success" ||
+      typedEvent.event === "transfer.failed" ||
+      typedEvent.event === "transfer.reversed"
+    ) {
       const data = typedEvent.data as {
         reference?: string;
         status?: string;
@@ -162,12 +177,16 @@ export class PaystackWebhookController {
       }
 
       try {
-        console.error(`📍 WITHDRAWAL WEBHOOK: ${data.reference}`);
-        await this.withdrawalService.handleWithdrawalWebhook(typedEvent);
+        console.error(
+          `📍 WITHDRAWAL WEBHOOK: ${data.reference} (${typedEvent.event})`,
+        );
+        await this.withdrawalService.handleWithdrawalWebhook(
+          typedEvent as Record<string, unknown>,
+        );
         console.error(
           `✅ Withdrawal ${data.reference} status updated to ${data.status}`,
         );
-        return { statusCode: 200, message: "Withdrawal confirmed" };
+        return { statusCode: 200, message: "Withdrawal processed" };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(
@@ -181,15 +200,26 @@ export class PaystackWebhookController {
   }
 
   private verifyPaystackSignature(
+    rawBody: Buffer | undefined,
     body: unknown,
     signature: string,
     secret: string,
   ): boolean {
+    // Falls back to the re-serialised body only if rawBody is unavailable.
+    const payload = rawBody ?? Buffer.from(JSON.stringify(body));
+
     const hash = crypto
       .createHmac("sha512", secret)
-      .update(JSON.stringify(body))
+      .update(payload)
       .digest("hex");
 
-    return hash === signature;
+    const expected = Buffer.from(hash);
+    const provided = Buffer.from(signature);
+
+    if (expected.length !== provided.length) {
+      return false;
+    }
+
+    return crypto.timingSafeEqual(expected, provided);
   }
 }

@@ -143,7 +143,7 @@ export class PayoutSchedulerService {
 
     const [result] = await this.db
       .select({
-        total: sum(schema.commissions.amount).mapWith((val) => val ?? "0"),
+        total: sum(schema.commissions.amount_kobo).mapWith((val) => val ?? "0"),
       })
       .from(schema.commissions)
       .where(

@@ -65,14 +65,11 @@ import {
   parseOptionalEnum,
   parsePagination,
 } from "../../../infrastructure/helper/query.helper";
+import { ORDER_STATUSES } from "../../shared/order-status";
 
-const ORDER_STATUSES = [
-  "pending",
-  "confirmed",
-  "out_for_delivery",
-  "delivered",
-  "cancelled",
-] as const;
+const updateOrderStatusSchema = z.object({
+  status: z.enum(ORDER_STATUSES),
+});
 const PAYMENT_STATUSES = ["unpaid", "awaiting", "paid", "failed"] as const;
 const AGENT_STATUSES = [
   "pending",
@@ -423,6 +420,22 @@ export class AdminController {
   })
   getOrderById(@Param("id", ParseIntPipe) id: number) {
     return this.adminService.getOrderById(id);
+  }
+
+  @Patch("orders/:id/status")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Advance an order through its lifecycle",
+    description:
+      "Legal moves: pending → confirmed → out_for_delivery → delivered, and cancelled from any open state. Notifies the buyer on every change and stamps delivered_at.",
+  })
+  updateOrderStatus(
+    @Param("id", ParseIntPipe) id: number,
+    @Body(new ZodValidationPipe(updateOrderStatusSchema))
+    dto: z.infer<typeof updateOrderStatusSchema>,
+    @AdminId() adminId: number,
+  ) {
+    return this.adminService.updateOrderStatus(id, dto.status, adminId);
   }
 
   // === Buyers

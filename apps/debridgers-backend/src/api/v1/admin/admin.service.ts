@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
@@ -20,6 +21,11 @@ import { SystemSettingsService } from "../settings/system-settings.service";
 import { WalletService } from "../agent/wallet.service";
 import { TaxonomyService } from "../catalog/taxonomy.service";
 import { AuditLogService } from "../../../infrastructure/audit/audit-log.service";
+import {
+  ORDER_STATUS_TRANSITIONS,
+  ORDER_STATUS_NOTIFICATION,
+  type OrderStatus,
+} from "../../shared/order-status";
 
 /*
  * The single source of truth for a setting's starting value. Anything listed
@@ -28,10 +34,14 @@ import { AuditLogService } from "../../../infrastructure/audit/audit-log.service
 const SETTING_DEFAULTS: Record<string, string> = {
   buyer_referral_discount_kobo: "50000",
   buyer_referral_discount_type: "flat",
+  agent_override_rate_percent: "5",
+  state_manager_override_rate_percent: "2",
 };
 
 @Injectable()
 export class AdminService {
+  private readonly logger = new Logger(AdminService.name);
+
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
@@ -85,7 +95,7 @@ export class AdminService {
       .where(eq(schema.orders.status, "delivered"));
 
     const [commissionStats] = await this.db
-      .select({ total: sum(schema.commissions.amount) })
+      .select({ total: sum(schema.commissions.amount_kobo) })
       .from(schema.commissions)
       .where(eq(schema.commissions.status, "pending"));
 
@@ -196,7 +206,7 @@ export class AdminService {
       .limit(1);
 
     const [commissionTotal] = await this.db
-      .select({ total: sum(schema.commissions.amount) })
+      .select({ total: sum(schema.commissions.amount_kobo) })
       .from(schema.commissions)
       .where(
         and(
@@ -244,18 +254,18 @@ export class AdminService {
         .set({ is_email_verified: true })
         .where(eq(schema.users.id, agentId));
 
-      // Generate unique referral codes
-      const code = crypto.randomBytes(4).toString("hex").toUpperCase(); // e.g. A3F2B1C9
-      const buyerCode = `BUYER-${code}`;
-      const agentCode = `AGENT-${code}`;
-
-      await this.db
-        .update(schema.agent_profiles)
-        .set({
-          referral_buyer_code: buyerCode,
-          referral_agent_code: agentCode,
-        })
-        .where(eq(schema.agent_profiles.user_id, agentId));
+      /*
+       * Issue referral codes once, on first approval only.
+       *
+       * This regenerated on every approval, so re-approving an agent silently
+       * invalidated every link they had already shared. The COALESCE keeps an
+       * existing code and fills in only what is missing.
+       *
+       * The two codes also used to share one random suffix, which meant
+       * publishing the buyer code handed out the agent recruitment code as
+       * well. They are now independent.
+       */
+      await this.issueReferralCodes(agentId);
 
       // Create wallet if it doesn't exist yet
       const [existingWallet] = await this.db
@@ -613,6 +623,65 @@ export class AdminService {
     return { message: "Order retrieved", data: order };
   }
 
+  /*
+   * The only path that moves an order past "confirmed". Until this existed
+   * nothing set out_for_delivery or delivered, which left every buyer's
+   * spending chart and lifetime-spend permanently at zero, since both aggregate
+   * on status = 'delivered'.
+   */
+  async updateOrderStatus(
+    orderId: number,
+    status: OrderStatus,
+    adminId: number,
+  ) {
+    const [order] = await this.db
+      .select()
+      .from(schema.orders)
+      .where(eq(schema.orders.id, orderId))
+      .limit(1);
+
+    if (!order) throw new NotFoundException("Order not found");
+
+    if (order.status === status) {
+      return { message: "Order already in that status", data: order };
+    }
+
+    const allowed = ORDER_STATUS_TRANSITIONS[order.status];
+    if (!allowed.includes(status)) {
+      throw new BadRequestException(
+        `Cannot move an order from ${order.status} to ${status}`,
+      );
+    }
+
+    if (status === "out_for_delivery" && order.payment_status !== "paid") {
+      throw new BadRequestException(
+        "Order must be paid before it goes out for delivery",
+      );
+    }
+
+    const [updated] = await this.db
+      .update(schema.orders)
+      .set({
+        status,
+        ...(status === "delivered" ? { delivered_at: new Date() } : {}),
+      })
+      .where(eq(schema.orders.id, orderId))
+      .returning();
+
+    await this.db.insert(schema.notifications).values({
+      user_id: order.buyer_id,
+      title: ORDER_STATUS_NOTIFICATION[status].title(orderId),
+      description: ORDER_STATUS_NOTIFICATION[status].body,
+      read: false,
+    });
+
+    this.logger.log(
+      `Admin ${adminId} moved order ${orderId} from ${order.status} to ${status}`,
+    );
+
+    return { message: "Order status updated", data: updated };
+  }
+
   async getBuyers(zoneId?: number, isSuspended?: boolean, isBlocked?: boolean) {
     const whereConditions = [eq(schema.users.role, "buyer")];
 
@@ -954,7 +1023,7 @@ export class AdminService {
           agent_email: schema.users.email,
           order_id: schema.commissions.order_id,
           type: schema.commissions.type,
-          amount: schema.commissions.amount,
+          amount_kobo: schema.commissions.amount_kobo,
           status: schema.commissions.status,
           paid_at: schema.commissions.paid_at,
           created_at: schema.commissions.created_at,
@@ -1208,20 +1277,89 @@ export class AdminService {
     };
   }
 
+  /*
+   * Generate a referral code that is not already taken. The unique constraint
+   * is the real guard; without a retry a collision surfaced as a raw database
+   * error in the middle of approving an agent.
+   */
+  private async generateUniqueCode(
+    prefix: string,
+    column:
+      | typeof schema.agent_profiles.referral_buyer_code
+      | typeof schema.agent_profiles.referral_agent_code,
+  ): Promise<string> {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const candidate = `${prefix}-${crypto
+        .randomBytes(4)
+        .toString("hex")
+        .toUpperCase()}`;
+
+      const [taken] = await this.db
+        .select({ user_id: schema.agent_profiles.user_id })
+        .from(schema.agent_profiles)
+        .where(eq(column, candidate))
+        .limit(1);
+
+      if (!taken) return candidate;
+    }
+
+    throw new BadRequestException(
+      "Could not generate a unique referral code. Please try again.",
+    );
+  }
+
+  private async issueReferralCodes(agentId: number): Promise<void> {
+    const [existing] = await this.db
+      .select({
+        buyer: schema.agent_profiles.referral_buyer_code,
+        agent: schema.agent_profiles.referral_agent_code,
+      })
+      .from(schema.agent_profiles)
+      .where(eq(schema.agent_profiles.user_id, agentId))
+      .limit(1);
+
+    if (existing?.buyer && existing?.agent) return;
+
+    const buyerCode =
+      existing?.buyer ??
+      (await this.generateUniqueCode(
+        "BUYER",
+        schema.agent_profiles.referral_buyer_code,
+      ));
+    const agentCode =
+      existing?.agent ??
+      (await this.generateUniqueCode(
+        "AGENT",
+        schema.agent_profiles.referral_agent_code,
+      ));
+
+    await this.db
+      .update(schema.agent_profiles)
+      .set({ referral_buyer_code: buyerCode, referral_agent_code: agentCode })
+      .where(eq(schema.agent_profiles.user_id, agentId));
+  }
+
   async updateSetting(key: string, value: string, adminId?: number) {
     const allowed = [
       "agent_commission_rate",
       "buyer_referral_discount_kobo",
       "buyer_referral_discount_type",
+      "agent_override_rate_percent",
+      "state_manager_override_rate_percent",
     ];
     if (!allowed.includes(key))
       throw new BadRequestException(`Unknown setting key: ${key}`);
 
-    if (key === "agent_commission_rate") {
+    const percentKeys = [
+      "agent_commission_rate",
+      "agent_override_rate_percent",
+      "state_manager_override_rate_percent",
+    ];
+    if (percentKeys.includes(key)) {
       const n = parseFloat(value);
       if (isNaN(n) || n < 1 || n > 100)
         throw new BadRequestException(
-          "Commission rate must be a number between 1 and 100",
+          `${key} must be a number between 1 and 100`,
         );
     }
 
@@ -1241,6 +1379,14 @@ export class AdminService {
           'Referral discount type must be "flat" or "percent"',
         );
     }
+
+    /*
+     * Read the current value before overwriting it. `details` is a jsonb column
+     * documented as holding before/after values, and it was not being populated
+     * for settings, so a bad change was traceable but not revertable: nobody
+     * knew what to put back.
+     */
+    const previous = await this.settings.get(key);
 
     await this.db
       .insert(schema.system_settings)
@@ -1262,7 +1408,7 @@ export class AdminService {
       admin_id: adminId ?? null,
       action: "setting.update",
       resource_type: "system_setting",
-      details: { key, value },
+      details: { key, before: previous, after: value },
     });
 
     return { message: "Setting updated", data: { key, value } };

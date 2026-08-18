@@ -90,10 +90,44 @@ async function bootstrap() {
       process.exit(1);
     }
   }
+  /*
+   * PAYMENTS_SIMULATED marks orders paid without taking any money, which is
+   * what makes checkout testable without Paystack. In production it would mint
+   * paid orders for free, so refuse to boot rather than trust a deploy config.
+   */
+  if (isProd && process.env.PAYMENTS_SIMULATED === "true") {
+    Logger.error(
+      "PAYMENTS_SIMULATED must not be enabled in production: it marks orders paid with no payment taken",
+      "Bootstrap",
+    );
+    process.exit(1);
+  }
+
+  /*
+   * A test key in production takes real checkouts to a sandbox that will never
+   * settle, and the failure is silent from the buyer's side.
+   */
+  if (isProd && process.env.PAYSTACK_SECRET_KEY?.startsWith("sk_test_")) {
+    Logger.error(
+      "PAYSTACK_SECRET_KEY is a test key but NODE_ENV is production",
+      "Bootstrap",
+    );
+    process.exit(1);
+  }
+
   console.log("🟢 [3] Env vars validated");
 
   console.log("🟢 [4] Creating NestFactory app...");
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  /*
+   * rawBody is needed by the Paystack webhook: the signature is an HMAC over
+   * the exact bytes Paystack sent, and re-serialising the parsed body with
+   * JSON.stringify only happens to match while key order and escaping survive
+   * the round trip.
+   */
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+    rawBody: true,
+  });
   console.log("🟢 [5] App created, setting up middleware...");
 
   // === Security headers (Helmet)

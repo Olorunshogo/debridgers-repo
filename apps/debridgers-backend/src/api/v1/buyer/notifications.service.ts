@@ -1,6 +1,6 @@
 import { Injectable, Inject } from "@nestjs/common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, count } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
 
@@ -84,10 +84,31 @@ export class NotificationsService {
    * Mark notification as read
    */
   async markAsRead(userId: number, notificationId: number) {
+    // user_id is part of the predicate: without it any buyer could mark
+    // another buyer's notification read by guessing an id.
     await this.db
       .update(schema.notifications)
       .set({ read: true })
-      .where(eq(schema.notifications.id, notificationId));
+      .where(
+        and(
+          eq(schema.notifications.id, notificationId),
+          eq(schema.notifications.user_id, userId),
+        ),
+      );
+  }
+
+  async getUnreadCount(userId: number): Promise<number> {
+    const [row] = await this.db
+      .select({ total: count() })
+      .from(schema.notifications)
+      .where(
+        and(
+          eq(schema.notifications.user_id, userId),
+          eq(schema.notifications.read, false),
+        ),
+      );
+
+    return Number(row?.total ?? 0);
   }
 
   /**

@@ -16,6 +16,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { PlatformConfigProvider } from "./contexts/PlatformConfigContext";
 import { DIALOG_REGISTRY } from "./providers/dialog-registry";
 import { AppAuthAdapterProvider } from "./providers/auth-adapter";
+import { AppPaymentAdapterProvider } from "./providers/payment-adapter";
 import { CartProvider } from "./features/cart";
 
 export const meta: MetaFunction = () => [
@@ -72,11 +73,16 @@ export default function App() {
         <DialogProvider registry={DIALOG_REGISTRY}>
           {/* Inside the router and AuthProvider - the adapter needs both */}
           <AppAuthAdapterProvider>
-            {/* One cart for every page - landing shop, buyer shop, checkout */}
-            <CartProvider>
-              <IntroAnimation />
-              <Outlet />
-            </CartProvider>
+            {/* Supplies transport to the shared payment hooks, as the auth
+                adapter does for the auth hooks. Inside AppAuthAdapterProvider
+                so its requests carry a session. */}
+            <AppPaymentAdapterProvider>
+              {/* One cart for every page - landing shop, buyer shop, checkout */}
+              <CartProvider>
+                <IntroAnimation />
+                <Outlet />
+              </CartProvider>
+            </AppPaymentAdapterProvider>
           </AppAuthAdapterProvider>
         </DialogProvider>
       </PlatformConfigProvider>

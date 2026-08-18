@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from "@nestjs/common";
@@ -10,6 +11,7 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq, desc, sum, count, and, inArray, sql } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
+import { EmailService } from "../../../notification/features/email/email.service";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { CreateOrderDto } from "./dto/create-order.dto";
@@ -23,12 +25,15 @@ import { SystemSettingsService } from "../settings/system-settings.service";
 
 @Injectable()
 export class BuyerService {
+  private readonly logger = new Logger(BuyerService.name);
+
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
     private readonly payment: PaymentService,
     private readonly config: ConfigService,
     private readonly settings: SystemSettingsService,
+    private readonly emailService: EmailService,
   ) {}
 
   async getProfile(user: JwtPayload) {
@@ -162,6 +167,36 @@ export class BuyerService {
       );
 
       return created;
+    });
+
+    /*
+     * OrderController also declares POST /buyer/orders and sent this email, but
+     * BuyerController registers first and wins the path, so that copy never ran.
+     * Fire-and-forget: a mail outage must not fail an order that is already
+     * committed.
+     */
+    this.emailService
+      .sendOrderConfirmation(
+        user.email,
+        user.first_name || "Buyer",
+        `#DBR-${String(order.id).padStart(4, "0")}`,
+        `₦${Math.round(totals.totalKobo / 100)}`,
+        lines.length,
+      )
+      .catch((err) => {
+        this.logger.error(
+          `Failed to send order confirmation email for order ${order.id}: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        );
+      });
+
+    await this.db.insert(schema.notifications).values({
+      user_id: user.sub,
+      title: `Order #${order.id} received`,
+      description:
+        "We have received your order. You will be notified once payment is confirmed.",
+      read: false,
     });
 
     return {
@@ -313,14 +348,32 @@ export class BuyerService {
       .groupBy(sql`date_trunc('week', ${schema.orders.created_at})`)
       .orderBy(sql`date_trunc('week', ${schema.orders.created_at})`);
 
-    return {
-      message: "Weekly spending retrieved",
-      data: rows.map((r) => ({
-        week: r.week,
-        amount_kobo: Number(r.amount ?? 0),
-        amount_naira: Number(r.amount ?? 0) / 100,
-      })),
-    };
+    /*
+     * Zero-fill the six buckets. The GROUP BY only returns weeks that had a
+     * delivered order, so a quiet fortnight silently shortened the x-axis and
+     * made the average per week divide by the wrong denominator.
+     */
+    const byWeek = new Map(rows.map((r) => [r.week, Number(r.amount ?? 0)]));
+
+    const weeks: Array<{
+      week: string;
+      amount_kobo: number;
+      amount_naira: number;
+    }> = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const start = startOfWeek(new Date(), i);
+      const label = formatWeekLabel(start);
+      const amountKobo = byWeek.get(label) ?? 0;
+
+      weeks.push({
+        week: label,
+        amount_kobo: amountKobo,
+        amount_naira: amountKobo / 100,
+      });
+    }
+
+    return { message: "Weekly spending retrieved", data: weeks };
   }
 
   async changePassword(
@@ -822,12 +875,39 @@ export class BuyerService {
       };
     }
 
-    const payment = await this.payment.initializeBuyerOrder({
-      email: buyer.email,
-      amountKobo: totals.totalKobo,
-      orderId: order.id,
-      buyerId: user.sub,
-    });
+    /*
+     * The order and its items are committed above, before Paystack is called.
+     * If the gateway call fails the order would otherwise sit pending and
+     * unpaid forever, with no way for the buyer to pay it or clear it, so it
+     * is cancelled here. Cancelled rather than deleted to keep the audit trail,
+     * and the original error still reaches the client.
+     */
+    let payment: Awaited<ReturnType<typeof this.payment.initializeBuyerOrder>>;
+
+    try {
+      payment = await this.payment.initializeBuyerOrder({
+        email: buyer.email,
+        amountKobo: totals.totalKobo,
+        orderId: order.id,
+        buyerId: user.sub,
+      });
+    } catch (err) {
+      await this.db
+        .update(schema.orders)
+        .set({
+          status: "cancelled",
+          cancellation_reason: "Payment initialization failed",
+        })
+        .where(eq(schema.orders.id, order.id));
+
+      this.logger.error(
+        `Payment initialization failed for order ${order.id}, order cancelled: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+
+      throw err;
+    }
 
     await this.db
       .update(schema.orders)
@@ -844,4 +924,32 @@ export class BuyerService {
       },
     };
   }
+}
+
+// === Weekly spending helpers
+
+/*
+ * Postgres date_trunc('week', ...) is ISO: weeks start Monday. These mirror
+ * that so the labels generated here line up with the labels the query groups
+ * by, otherwise zero-filling would never match a real bucket.
+ */
+function startOfWeek(from: Date, weeksAgo: number): Date {
+  const d = new Date(from);
+  d.setUTCHours(0, 0, 0, 0);
+
+  const isoDay = d.getUTCDay() === 0 ? 7 : d.getUTCDay();
+  d.setUTCDate(d.getUTCDate() - (isoDay - 1) - weeksAgo * 7);
+
+  return d;
+}
+
+/* Matches to_char(..., 'Mon DD') in the query above. */
+function formatWeekLabel(date: Date): string {
+  const month = date.toLocaleString("en-US", {
+    month: "short",
+    timeZone: "UTC",
+  });
+  const day = String(date.getUTCDate()).padStart(2, "0");
+
+  return `${month} ${day}`;
 }

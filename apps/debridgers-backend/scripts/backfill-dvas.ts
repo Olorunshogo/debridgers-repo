@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import { eq, isNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import * as schema from "../src/infrastructure/persistence/index";
 
 const pool = new Pool({
@@ -43,89 +43,89 @@ async function createPaystackCustomer(
     data?: { id: number; customer_code: string };
   };
 
-  if (!data.status) {
+  if (!data.status || !data.data) {
     throw new Error(`Failed to create Paystack customer: ${data.message}`);
   }
 
-  return data.data!;
+  return data.data;
 }
 
-async function assignDvaToCustomer(
+async function resolvePreferredBank(): Promise<string> {
+  const secretKey = process.env.PAYSTACK_SECRET_KEY;
+  if (!secretKey) throw new Error("PAYSTACK_SECRET_KEY not set");
+
+  const response = await fetch(
+    "https://api.paystack.co/dedicated_account/available_providers",
+    { headers: { Authorization: `Bearer ${secretKey}` } },
+  );
+
+  const data = (await response.json()) as {
+    status: boolean;
+    message?: string;
+    data?: Array<{ provider_slug: string }>;
+  };
+
+  if (!data.status || !data.data?.length) {
+    throw new Error(`No DVA providers available: ${data.message}`);
+  }
+
+  const configured = process.env.PAYSTACK_PREFERRED_BANK;
+  const match = configured
+    ? data.data.find((p) => p.provider_slug === configured)
+    : undefined;
+
+  return match?.provider_slug ?? data.data[0].provider_slug;
+}
+
+/*
+ * POST /dedicated_account against an existing customer returns the account
+ * synchronously. The previous version called /dedicated_account/assign and then
+ * polled GET /dedicated_account?customer=, reading .account_number off a
+ * response whose data is an array - so it never matched and every buyer hit the
+ * 30-second timeout.
+ */
+async function createDvaForCustomer(
   customerCode: string,
-  dto: CreateCustomerDto,
+  preferredBank: string,
 ): Promise<{
   account_number: string;
-  bank: string;
+  bank_name: string;
   account_name: string;
 }> {
   const secretKey = process.env.PAYSTACK_SECRET_KEY;
   if (!secretKey) throw new Error("PAYSTACK_SECRET_KEY not set");
 
-  const response = await fetch(
-    "https://api.paystack.co/dedicated_account/assign",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${secretKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: dto.email,
-        first_name: dto.firstName,
-        last_name: dto.lastName,
-        phone: dto.phone,
-        preferred_bank: "wema-bank",
-        country: "NG",
-      }),
+  const response = await fetch("https://api.paystack.co/dedicated_account", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${secretKey}`,
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify({
+      customer: customerCode,
+      preferred_bank: preferredBank,
+    }),
+  });
 
   const data = (await response.json()) as {
     status: boolean;
     message?: string;
     data?: {
       account_number: string;
-      bank: string;
       account_name: string;
+      bank: { name: string; id: number; slug: string };
     };
   };
 
-  if (!data.status) {
-    throw new Error(`Failed to assign DVA: ${data.message}`);
+  if (!data.status || !data.data?.account_number) {
+    throw new Error(`Failed to create DVA: ${data.message}`);
   }
 
-  // DVA assignment is asynchronous, so we poll for the account details
-  // Wait up to 30 seconds for the DVA to be ready
-  for (let attempt = 0; attempt < 30; attempt++) {
-    const getResponse = await fetch(
-      `https://api.paystack.co/dedicated_account?customer=${customerCode}`,
-      {
-        headers: {
-          Authorization: `Bearer ${secretKey}`,
-        },
-      },
-    );
-
-    const getData = (await getResponse.json()) as {
-      status: boolean;
-      data?: {
-        account_number: string;
-        bank: string;
-        account_name: string;
-      };
-    };
-
-    if (getData.status && getData.data?.account_number) {
-      return getData.data;
-    }
-
-    // Wait 1 second before retry
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  }
-
-  throw new Error(
-    "DVA assignment timeout - account details not ready after 30 seconds",
-  );
+  return {
+    account_number: data.data.account_number,
+    bank_name: data.data.bank.name,
+    account_name: data.data.account_name,
+  };
 }
 
 async function backfillDvas() {
@@ -155,6 +155,9 @@ async function backfillDvas() {
       return;
     }
 
+    const preferredBank = await resolvePreferredBank();
+    console.log(`✓ Using provider: ${preferredBank}`);
+
     let successCount = 0;
     let failCount = 0;
 
@@ -174,14 +177,14 @@ async function backfillDvas() {
         });
         console.log(`  ✓ Created Paystack customer ${customer.customer_code}`);
 
-        // Assign DVA
-        const dva = await assignDvaToCustomer(customer.customer_code, {
-          email: user.email,
-          firstName: user.first_name,
-          lastName: user.last_name,
-          phone: user.phone || "",
-        });
-        console.log(`  ✓ Created DVA: ${dva.account_number} (${dva.bank})`);
+        // Create the dedicated account
+        const dva = await createDvaForCustomer(
+          customer.customer_code,
+          preferredBank,
+        );
+        console.log(
+          `  ✓ Created DVA: ${dva.account_number} (${dva.bank_name})`,
+        );
 
         // Update database
         await db
@@ -189,7 +192,7 @@ async function backfillDvas() {
           .set({
             paystack_customer_code: customer.customer_code,
             account_number: dva.account_number,
-            bank_name: dva.bank,
+            bank_name: dva.bank_name,
             account_name: dva.account_name,
           })
           .where(eq(schema.buyerWallets.id, wallet.id));

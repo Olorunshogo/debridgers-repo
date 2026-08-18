@@ -1,4 +1,4 @@
-export default async function globalTeardown() {
+export default async function globalTeardown(): Promise<void> {
   const server = global.__BACKEND_PROCESS__;
   if (server) {
     server.kill("SIGTERM");

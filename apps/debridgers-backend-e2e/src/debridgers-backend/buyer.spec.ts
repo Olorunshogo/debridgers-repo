@@ -7,6 +7,7 @@ let buyerToken: string;
 let productId: number;
 let orderId: number;
 let adminToken: string;
+let zoneId: number | undefined;
 
 describe("Buyer", () => {
   beforeAll(async () => {
@@ -43,6 +44,21 @@ describe("Buyer", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const adminData = (await adminRes.json()) as any;
     adminToken = adminData.data?.accessToken ?? "";
+
+    /*
+     * A freshly registered buyer has no zone_id, and resolveDeliveryZone
+     * refuses checkout without one, so the zone has to come from the catalogue
+     * rather than the buyer profile.
+     *
+     * The path is `/zones`, not `/public/zones`: PublicController is declared
+     * as a bare `@Controller()`, so its routes sit directly under the global
+     * `/api/v1` prefix. The wrong path 404'd, `zoneId` stayed undefined, and
+     * the checkout test below silently returned instead of running.
+     */
+    const zonesRes = await fetch(`${BASE}/zones`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const zonesData = (await zonesRes.json()) as any;
+    zoneId = zonesData.data?.[0]?.id;
   });
 
   // === Public Products
@@ -179,23 +195,37 @@ describe("Buyer", () => {
   });
 
   it("POST /buyer/orders should create an order", async () => {
-    if (!buyerToken || !productId) return;
+    /*
+     * Asserted rather than skipped. These were guard-and-return conditions,
+     * which meant a broken fixture turned this test into a silent pass.
+     */
+    expect(buyerToken).toBeTruthy();
+    expect(productId).toBeTruthy();
+    expect(zoneId).toBeTruthy();
+
     const res = await fetch(`${BASE}/buyer/orders`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${buyerToken}`,
       },
+      /*
+       * Matches createOrderSchema: the basket is `cart`, and delivery_time is
+       * required. This previously sent `items` with a client-supplied
+       * total_amount_kobo, which the API rejects - prices are re-derived
+       * server-side and never taken from the client.
+       */
       body: JSON.stringify({
-        items: [{ product_id: productId, quantity: 2 }],
         delivery_address: "12 Test Street, Kaduna",
-        total_amount_kobo: 5000,
+        zone_id: zoneId,
+        delivery_time: "morning",
+        cart: [{ product_id: productId, qty: 2 }],
       }),
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = (await res.json()) as any;
     expect([200, 201]).toContain(res.status);
-    if (data.data?.id) orderId = data.data.id;
+    if (data.data?.order_id) orderId = data.data.order_id;
   });
 
   it("GET /buyer/orders should show the newly created order", async () => {
@@ -253,8 +283,9 @@ describe("Buyer", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = (await res.json()) as any;
     expect(res.status).toBe(200);
-    expect(data.data).toHaveProperty("total_orders");
-    expect(data.data).toHaveProperty("total_spent_kobo");
+    /* Counters are nested under `stats`, not flattened onto data. */
+    expect(data.data.stats).toHaveProperty("total_orders");
+    expect(data.data.stats).toHaveProperty("total_spent_kobo");
   });
 
   // === Admin Settings

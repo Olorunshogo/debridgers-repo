@@ -491,9 +491,21 @@ export default function BuyerOverview() {
             </Link>
           </div>
           <div className="flex flex-col gap-2">
-            {data.recentOrders.map((order) => (
-              <OrderRow key={order.id} order={order} />
-            ))}
+            {data.recentOrders.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 py-4 text-center">
+                <p className="text-text text-sm">No orders yet.</p>
+                <Link
+                  to="/buyer-dashboard/shop"
+                  className="bg-secondary text-heading mt-1 rounded-full px-4 py-2 text-xs font-semibold transition-opacity hover:opacity-80"
+                >
+                  Browse the shop
+                </Link>
+              </div>
+            ) : (
+              data.recentOrders.map((order) => (
+                <OrderRow key={order.id} order={order} />
+              ))
+            )}
           </div>
         </div>
 

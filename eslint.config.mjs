@@ -54,7 +54,7 @@ export default [
       "@typescript-eslint/explicit-module-boundary-types": "off",
 
       // General
-      "no-console": ["warn", { allow: ["warn", "error"] }],
+      "no-console": ["warn", { allow: ["warn", "error", "log"] }],
       "prefer-const": "error",
       "no-var": "error",
     },

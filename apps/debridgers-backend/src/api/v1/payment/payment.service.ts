@@ -9,6 +9,7 @@ import { ConfigService } from "@nestjs/config";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
+import { percentOfKobo, formatNaira } from "../../shared/money";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
 import { WebhookDeduplicationService } from "../../../infrastructure/webhook/webhook-deduplication.service";
 import { InitializePaymentDto } from "./dto/initialize-payment.dto";
@@ -206,17 +207,25 @@ export class PaymentService {
 
       if (agentId) {
         const commissionRate = await this.settings.getAgentCommissionRate();
-        const commissionAmount = amount * commissionRate;
+        /*
+         * Paystack sends `amount` in kobo, so the commission is derived from
+         * the kobo figure directly rather than from the naira value above. That
+         * keeps the whole calculation in integers.
+         */
+        const commissionKobo = percentOfKobo(
+          data.amount as number,
+          commissionRate * 100,
+        );
 
         await this.db.insert(schema.commissions).values({
           agent_id: agentId,
           type: "direct",
-          amount: String(commissionAmount),
+          amount_kobo: commissionKobo,
           status: "paid",
           paid_at: new Date(),
         });
         this.logger.log(
-          `Commission ₦${commissionAmount} recorded for agent ${agentId}`,
+          `Commission ${formatNaira(commissionKobo)} recorded for agent ${agentId}`,
         );
       }
     } else if (

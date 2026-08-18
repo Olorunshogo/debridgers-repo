@@ -1,0 +1,161 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# Cancel superseded runs on the same branch so PRs do not queue behind their own old pushes.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Kept in one place so every job installs the same pnpm build the lockfile was generated with.
+  PNPM_VERSION: "10.32.1"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+      - name: Cache Nx
+        uses: actions/cache@v4
+        with:
+          path: |
+            .nx/cache
+            .nx/workspace-data
+          key: nx-lint-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            nx-lint-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+      - name: Cache Nx
+        uses: actions/cache@v4
+        with:
+          path: |
+            .nx/cache
+            .nx/workspace-data
+          key: nx-typecheck-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            nx-typecheck-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+      - name: Cache Nx
+        uses: actions/cache@v4
+        with:
+          path: |
+            .nx/cache
+            .nx/workspace-data
+          key: nx-build-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            nx-build-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+  e2e:
+    name: E2E
+    runs-on: ubuntu-latest
+    # Versions match docker/docker-compose.yml so CI exercises the same images developers run locally.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: debridgers
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/debridgers
+      UPSTASH_REDIS_URL: redis://localhost:6379
+      PORT: "4000"
+      ALLOWED_ORIGINS: "http://localhost:5173"
+      ADMIN_EMAIL: admin@debridgers.com
+      ADMIN_PASSWORD: "Admin@2026!"
+      # Dummy values are fine here: nothing signed with them is trusted outside this CI run, and
+      # requiring a real secret to run CI would be worse than a literal test value.
+      ACCESS_TOKEN_SECRET: ci-access-token-secret-not-for-production
+      REFRESH_TOKEN_SECRET: ci-refresh-token-secret-not-for-production
+      # keys.guard.ts requires every one of these to be set or the route it gates becomes unreachable.
+      REQUEST_KEY: ci-request-key
+      ADMIN_KEY_1: ci-admin-key-1
+      ADMIN_KEY_2: ci-admin-key-2
+      PAYMENT_KEY_1: ci-payment-key-1
+      PAYMENT_KEY_2: ci-payment-key-2
+      # Genuinely sensitive, so it comes from a secret. Empty is fine: PAYSTACK_SECRET_KEY is
+      # optional at boot and only read lazily by payment routes.
+      PAYSTACK_SECRET_KEY: ${{ secrets.PAYSTACK_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+      - name: Cache Nx
+        uses: actions/cache@v4
+        with:
+          path: |
+            .nx/cache
+            .nx/workspace-data
+          key: nx-e2e-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            nx-e2e-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
+      # global-setup.ts builds the backend itself if dist is missing, but building it as its own
+      # step surfaces a build failure separately from a test failure.
+      - run: pnpm build:backend
+      # No apps/debridgers-backend/.env is written: global-setup.ts falls back to process.env for
+      # every value it needs when that file is absent, and the job env above supplies all of them.
+      - run: pnpm test:e2e

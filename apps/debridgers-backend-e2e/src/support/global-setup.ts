@@ -2,6 +2,20 @@ import "dotenv/config";
 import { spawn, spawnSync, type ChildProcess } from "child_process";
 import { resolve } from "path";
 import { existsSync } from "fs";
+import {
+  assertIsTestDatabase,
+  ensureDatabaseExists,
+  resolveTestDatabaseUrl,
+  runMigrations,
+  runSeed,
+  truncateAllTables,
+} from "./test-db";
+import { readBackendEnv } from "./backend-env";
+import {
+  TEST_REDIS_DB,
+  flushTestRedis,
+  resolveTestRedisUrl,
+} from "./test-redis";
 
 // Use port 4000 (default fallback used by all spec files)
 const BACKEND_PORT = 4000;
@@ -31,7 +45,7 @@ async function waitForServer(): Promise<void> {
   throw new Error(`Backend did not start within ${MAX_WAIT_MS / 1000}s`);
 }
 
-export default async function globalSetup() {
+export default async function globalSetup(): Promise<void> {
   process.env.NODE_ENV = "test";
   process.env.VITE_API_URL = BASE_URL;
 
@@ -51,22 +65,43 @@ export default async function globalSetup() {
   // Load backend .env so the server gets DB credentials etc.
   const backendEnv = (() => {
     try {
-      const fs = require("fs") as typeof import("fs");
-      const raw = fs.readFileSync(resolve(backendRoot, ".env"), "utf8");
-      const env: Record<string, string> = {};
-      for (const line of raw.split("\n")) {
-        if (!line.includes("=") || line.startsWith("#")) continue;
-        const i = line.indexOf("=");
-        env[line.slice(0, i).trim()] = line
-          .slice(i + 1)
-          .trim()
-          .replace(/^"|"$/g, "");
-      }
-      return env;
+      return readBackendEnv();
     } catch {
       return {};
     }
   })();
+
+  // === Test database
+  const devDatabaseUrl = backendEnv.DATABASE_URL ?? process.env.DATABASE_URL;
+  if (!devDatabaseUrl) {
+    throw new Error(
+      "Cannot resolve a test database: no DATABASE_URL found in backend .env or process.env",
+    );
+  }
+
+  const testDatabaseUrl = resolveTestDatabaseUrl(devDatabaseUrl);
+  assertIsTestDatabase(testDatabaseUrl);
+
+  await ensureDatabaseExists(testDatabaseUrl);
+  runMigrations(backendRoot, testDatabaseUrl);
+  await truncateAllTables(testDatabaseUrl);
+  runSeed(backendRoot, {
+    databaseUrl: testDatabaseUrl,
+    adminEmail: process.env.ADMIN_EMAIL ?? "admin@debridgers.com",
+    adminPassword: process.env.ADMIN_PASSWORD ?? "Admin@2026!",
+  });
+  console.log(`✓ Test database ready\n`);
+
+  // === Test Redis
+  const devRedisUrl =
+    backendEnv.UPSTASH_REDIS_URL ?? process.env.UPSTASH_REDIS_URL;
+  const testRedisUrl = devRedisUrl
+    ? resolveTestRedisUrl(devRedisUrl)
+    : undefined;
+  if (testRedisUrl) {
+    await flushTestRedis(testRedisUrl);
+    console.log(`✓ Test Redis (db ${TEST_REDIS_DB}) flushed\n`);
+  }
 
   const server = spawn("node", [distMain], {
     env: {
@@ -74,6 +109,15 @@ export default async function globalSetup() {
       ...backendEnv,
       PORT: String(BACKEND_PORT),
       NODE_ENV: "test",
+      // Overrides backendEnv's dev DATABASE_URL so the spawned server actually
+      // talks to the isolated test database, not the developer's own.
+      DATABASE_URL: testDatabaseUrl,
+      DATABASE_URL_DIRECT: testDatabaseUrl,
+      /*
+       * Same reasoning for Redis: rate-limit counters are keyed by user id and
+       * outlive the truncated database, so the suite gets its own logical db.
+       */
+      ...(testRedisUrl ? { UPSTASH_REDIS_URL: testRedisUrl } : {}),
       /*
        * Set after backendEnv so the suite's throttle settings win over anything
        * in .env. The main suite raises the limit out of the way; the rate-limit

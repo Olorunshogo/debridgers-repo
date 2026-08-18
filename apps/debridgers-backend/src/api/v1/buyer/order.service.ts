@@ -438,21 +438,58 @@ export class OrderService {
       throw new BadRequestException("Only paid orders can be refunded");
     }
 
-    // Create refund request record (you may want a separate refunds table)
+    /*
+     * This used to set status to "delivered", which marked an order the buyer
+     * is disputing as successfully completed and fed it into the spending
+     * totals. The request is now persisted as a real refund row for admin to
+     * action, and the order goes to the status that means "under review".
+     */
+    const [existing] = await this.db
+      .select()
+      .from(schema.refunds)
+      .where(eq(schema.refunds.order_id, orderId))
+      .limit(1);
+
+    if (existing) {
+      throw new BadRequestException(
+        "A refund has already been requested for this order",
+      );
+    }
+
+    const reference = `RF_${orderId}_${Date.now()}`;
+
+    const [refund] = await this.db
+      .insert(schema.refunds)
+      .values({
+        order_id: orderId,
+        amount: String(order.total_amount),
+        reference,
+        reason,
+        status: "initiated",
+      })
+      .returning();
+
     await this.db
       .update(schema.orders)
-      .set({
-        status: "delivered",
-        notes: `Refund requested: ${reason}`,
-      })
+      .set({ notes: `Refund requested: ${reason}` })
       .where(eq(schema.orders.id, orderId));
+
+    await this.db.insert(schema.notifications).values({
+      user_id: userId,
+      title: `Refund requested for order #${orderId}`,
+      description:
+        "We have received your refund request and will review it shortly.",
+      read: false,
+    });
 
     return {
       order_id: orderId,
-      status: "refund_pending",
+      refund_id: refund.id,
+      status: refund.status,
+      reference,
       reason,
       amount_kobo: order.total_amount,
-      requested_at: new Date().toISOString(),
+      requested_at: refund.initiated_at.toISOString(),
     };
   }
 

@@ -17,7 +17,14 @@ import { ApplyAgentDto } from "./dto/apply-agent.dto";
 import { SubmitReportDto } from "./dto/submit-report.dto";
 import { UpdateAgentProfileDto } from "./dto/update-agent-profile.dto";
 import { RequestWithdrawalDto } from "./dto/request-withdrawal.dto";
+import { WalletService } from "./wallet.service";
+import { SystemSettingsService } from "../settings/system-settings.service";
+import { percentOfKobo, nairaToKobo } from "../../shared/money";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";
+import {
+  ORDER_STATUS_TRANSITIONS,
+  ORDER_STATUS_NOTIFICATION,
+} from "../../shared/order-status";
 
 @Injectable()
 export class AgentService {
@@ -25,6 +32,8 @@ export class AgentService {
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
     private readonly eventEmitter: EventEmitter2,
+    private readonly walletService: WalletService,
+    private readonly settings: SystemSettingsService,
   ) {}
 
   /*
@@ -171,6 +180,13 @@ export class AgentService {
         address: schema.agent_profiles.address,
         state: schema.agent_profiles.state,
         lga: schema.agent_profiles.lga,
+        /*
+         * The Swagger example advertised these but the select never included
+         * them, so an approved agent had no way to read the codes they are
+         * supposed to share. Referral cannot function without this.
+         */
+        referral_buyer_code: schema.agent_profiles.referral_buyer_code,
+        referral_agent_code: schema.agent_profiles.referral_agent_code,
       })
       .from(schema.users)
       .leftJoin(
@@ -183,7 +199,7 @@ export class AgentService {
     if (!agent) throw new NotFoundException("Agent not found");
 
     const [earningsSummary] = await this.db
-      .select({ total: sum(schema.commissions.amount) })
+      .select({ total: sum(schema.commissions.amount_kobo) })
       .from(schema.commissions)
       .where(eq(schema.commissions.agent_id, user.sub));
 
@@ -260,7 +276,16 @@ export class AgentService {
       );
     }
 
-    const commissionAmount = Number(dto.amount) * 0.3;
+    /*
+     * The rate was hardcoded at 0.3 here, so every sales report paid 30%
+     * regardless of what the admin had set. It now reads the same setting every
+     * other commission path reads, and the arithmetic stays in whole kobo.
+     */
+    const rate = await this.settings.getAgentCommissionRate();
+    const commissionKobo = percentOfKobo(
+      nairaToKobo(Number(dto.amount)),
+      rate * 100,
+    );
 
     const [report] = await this.db
       .insert(schema.sales_reports)
@@ -275,13 +300,13 @@ export class AgentService {
     await this.db.insert(schema.commissions).values({
       agent_id: user.sub,
       type: "direct",
-      amount: String(commissionAmount),
+      amount_kobo: commissionKobo,
       status: "pending",
     });
 
     return {
       message: "Report submitted successfully",
-      data: { report_id: report.id, commission_earned: commissionAmount },
+      data: { report_id: report.id, commission_earned: commissionKobo },
     };
   }
 
@@ -351,12 +376,12 @@ export class AgentService {
       .where(eq(schema.sales_reports.agent_id, user.sub));
 
     const [totalEarnedRow] = await this.db
-      .select({ total: sum(schema.commissions.amount) })
+      .select({ total: sum(schema.commissions.amount_kobo) })
       .from(schema.commissions)
       .where(eq(schema.commissions.agent_id, user.sub));
 
     const [pendingCommissionRow] = await this.db
-      .select({ total: sum(schema.commissions.amount) })
+      .select({ total: sum(schema.commissions.amount_kobo) })
       .from(schema.commissions)
       .where(
         and(
@@ -443,20 +468,11 @@ export class AgentService {
       );
     }
 
-    const [wallet] = await this.db
-      .select({ available_balance: schema.wallets.available_balance })
-      .from(schema.wallets)
-      .where(eq(schema.wallets.agent_id, user.sub))
-      .limit(1);
-
-    const available = wallet?.available_balance ?? 0;
-    if (dto.amount_kobo > available) {
-      throw new BadRequestException(
-        "That is more than your available balance.",
-      );
-    }
-
-    /* One transaction: never debit without a matching request row. */
+    /*
+     * One transaction: never debit without a matching request row. The balance
+     * check is the debit's own UPDATE predicate rather than a prior SELECT, so
+     * two withdrawals racing cannot both pass it and drain the wallet twice.
+     */
     const withdrawal = await this.db.transaction(async (tx) => {
       const [created] = await tx
         .insert(schema.withdrawals)
@@ -471,10 +487,17 @@ export class AgentService {
         })
         .returning();
 
-      await tx
-        .update(schema.wallets)
-        .set({ available_balance: available - dto.amount_kobo })
-        .where(eq(schema.wallets.agent_id, user.sub));
+      const debited = await this.walletService.debit(
+        user.sub,
+        dto.amount_kobo,
+        tx,
+      );
+
+      if (!debited) {
+        throw new BadRequestException(
+          "That is more than your available balance.",
+        );
+      }
 
       return created;
     });
@@ -493,5 +516,81 @@ export class AgentService {
       .orderBy(desc(schema.withdrawals.created_at));
 
     return { message: "Withdrawals retrieved", data: rows };
+  }
+
+  // === Orders
+
+  /*
+   * Scoped to buyers this agent referred. An agent has no business reading, let
+   * alone moving, an order that belongs to someone else's buyer.
+   */
+  async getReferredOrders(user: JwtPayload) {
+    const buyer = schema.users;
+
+    const rows = await this.db
+      .select({
+        id: schema.orders.id,
+        status: schema.orders.status,
+        payment_status: schema.orders.payment_status,
+        quantity: schema.orders.quantity,
+        total_amount: schema.orders.total_amount,
+        delivery_address: schema.orders.delivery_address,
+        created_at: schema.orders.created_at,
+        buyer_first_name: buyer.first_name,
+        buyer_last_name: buyer.last_name,
+        buyer_phone: buyer.phone,
+      })
+      .from(schema.orders)
+      .innerJoin(buyer, eq(schema.orders.buyer_id, buyer.id))
+      .where(eq(buyer.referred_by_agent_id, user.sub))
+      .orderBy(desc(schema.orders.created_at));
+
+    return { message: "Orders retrieved", data: rows };
+  }
+
+  async markOrderOutForDelivery(orderId: number, user: JwtPayload) {
+    const [row] = await this.db
+      .select({
+        id: schema.orders.id,
+        status: schema.orders.status,
+        payment_status: schema.orders.payment_status,
+        buyer_id: schema.orders.buyer_id,
+        referred_by_agent_id: schema.users.referred_by_agent_id,
+      })
+      .from(schema.orders)
+      .innerJoin(schema.users, eq(schema.orders.buyer_id, schema.users.id))
+      .where(eq(schema.orders.id, orderId))
+      .limit(1);
+
+    if (!row || row.referred_by_agent_id !== user.sub) {
+      throw new NotFoundException("Order not found");
+    }
+
+    if (!ORDER_STATUS_TRANSITIONS[row.status].includes("out_for_delivery")) {
+      throw new BadRequestException(
+        `Cannot move an order from ${row.status} to out_for_delivery`,
+      );
+    }
+
+    if (row.payment_status !== "paid") {
+      throw new BadRequestException(
+        "Order must be paid before it goes out for delivery",
+      );
+    }
+
+    const [updated] = await this.db
+      .update(schema.orders)
+      .set({ status: "out_for_delivery" })
+      .where(eq(schema.orders.id, orderId))
+      .returning();
+
+    await this.db.insert(schema.notifications).values({
+      user_id: row.buyer_id,
+      title: ORDER_STATUS_NOTIFICATION.out_for_delivery.title(orderId),
+      description: ORDER_STATUS_NOTIFICATION.out_for_delivery.body,
+      read: false,
+    });
+
+    return { message: "Order marked out for delivery", data: updated };
   }
 }

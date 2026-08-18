@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpCode,
+  HttpException,
   HttpStatus,
   Param,
   ParseIntPipe,
@@ -22,6 +23,7 @@ import {
   ApiResponse,
 } from "@nestjs/swagger";
 import { BuyerService } from "./buyer.service";
+import { BuyerRateLimitService } from "./buyer-rate-limit.service";
 import { CloudinaryService } from "../../../infrastructure/cloudinary/cloudinary.service";
 import { ZodValidationPipe } from "../../../infrastructure/pipeline/validation.pipeline";
 import { FileValidationPipe } from "../../../infrastructure/file/file-validation.pipe";
@@ -55,6 +57,7 @@ export class BuyerController {
   constructor(
     private readonly buyerService: BuyerService,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly rateLimitService: BuyerRateLimitService,
   ) {}
 
   @Get("me")
@@ -98,14 +101,34 @@ export class BuyerController {
     return { message: "Avatar updated", data: { url } };
   }
 
+  /*
+   * OrderController used to declare this path too. This controller registers
+   * first so it always won, which quietly disabled the rate limit and the
+   * confirmation email that lived on the other copy. The duplicates are gone
+   * and both behaviours now live on this path.
+   */
   @Post("orders")
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: "Place a new order" })
   @ApiResponse({ status: 201, description: "Order placed" })
-  createOrder(
+  @ApiResponse({ status: 429, description: "Too many orders" })
+  async createOrder(
     @Body(new ZodValidationPipe(createOrderSchema)) dto: CreateOrderDto,
     @CurrentUser() user: JwtPayload,
   ) {
+    const rateLimit = await this.rateLimitService.checkOrderLimit(user.sub);
+
+    if (!rateLimit.allowed) {
+      throw new HttpException(
+        {
+          statusCode: 429,
+          message: `Too many orders. Try again in ${rateLimit.resetIn} seconds`,
+          data: { remaining: 0, resetIn: rateLimit.resetIn },
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
     return this.buyerService.createOrder(dto, user);
   }
 

@@ -5,6 +5,7 @@ import {
   integer,
   numeric,
   timestamp,
+  date,
 } from "drizzle-orm/pg-core";
 import { timestamps } from "../../helper/column.helper";
 import { users } from "./users.schema";
@@ -31,8 +32,20 @@ export const commissions = pgTable("commissions", {
     .references(() => users.id, { onDelete: "cascade" }),
   order_id: integer().references(() => orders.id, { onDelete: "cascade" }),
   type: commissionTypeEnum().notNull(),
-  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  /*
+   * Deprecated. Numeric naira, kept for one release so a rollback does not lose
+   * data. Nothing should read it; `amount_kobo` is the value.
+   */
+  amount: numeric("amount", { precision: 12, scale: 2 }),
+  /* Integer kobo, matching every other balance in the system. */
+  amount_kobo: integer().notNull().default(0),
   status: commissionStatusEnum().notNull().default("pending"),
+  /*
+   * The earning month an override was calculated for. Null for types that the
+   * monthly run does not produce. A partial unique index on
+   * (agent_id, type, period) makes a repeated run collide rather than pay twice.
+   */
+  period: date(),
   paid_at: timestamp(),
   ...timestamps,
 });

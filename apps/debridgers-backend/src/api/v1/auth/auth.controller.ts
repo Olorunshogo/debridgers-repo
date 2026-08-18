@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
+  Query,
   Req,
   UseGuards,
   UsePipes,
@@ -44,6 +46,34 @@ import { JwtPayload } from "../../../interfaces/users/jwt.type";
 @Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  /*
+   * Lets the signup form check a referral code before submit. Registration now
+   * rejects an unknown code instead of silently attributing the buyer to admin,
+   * so without this the user only finds out about a typo when signup fails.
+   *
+   * Throttled because a referral code is eight hex characters, well within
+   * reach of a script enumerating valid codes to farm attributions.
+   */
+  @Get("referral/validate")
+  @HttpCode(HttpStatus.OK)
+  @Throttle(authThrottle(20))
+  @ApiOperation({ summary: "Check whether an agent referral code is usable" })
+  @ApiResponse({
+    status: 200,
+    description: "Validation result",
+    schema: {
+      example: {
+        statusCode: 200,
+        message: "Referral code checked",
+        data: { valid: true, referrer_name: "Amina Yusuf" },
+      },
+    },
+  })
+  async validateReferralCode(@Query("code") code: string) {
+    const data = await this.authService.validateReferralCode(code ?? "");
+    return { message: "Referral code checked", data };
+  }
 
   @Post("register")
   @ApiOperation({ summary: "Register a new buyer account" })

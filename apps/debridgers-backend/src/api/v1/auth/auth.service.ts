@@ -2,6 +2,7 @@ import {
   ConflictException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
   BadRequestException,
@@ -25,7 +26,6 @@ import { AuthAttemptService } from "./auth-attempt.service";
 import { hashRefreshToken, refreshTokenMatches } from "./token-hash";
 import { PostHogService } from "../../../infrastructure/analytics/posthog.service";
 import { PaystackDvaService } from "../payment/paystack-dva.service";
-import { WalletService } from "../buyer/wallet.service";
 
 /* Wrong OTP guesses allowed before the code is burned and a resend is required. */
 const MAX_OTP_ATTEMPTS = 5;
@@ -45,8 +45,7 @@ const SESSION_BINDING = process.env.SESSION_BINDING ?? "device";
 
 @Injectable()
 export class AuthService {
-  // Cached once per process — admin referrer ID never changes at runtime
-  private defaultReferrerIdCache: number | null | undefined = undefined;
+  private readonly logger = new Logger(AuthService.name);
 
   constructor(
     @Inject(DATABASE_CONNECTION)
@@ -57,7 +56,6 @@ export class AuthService {
     private readonly authAttempt: AuthAttemptService,
     private readonly posthog: PostHogService,
     private readonly paystackDvaService: PaystackDvaService,
-    private readonly walletService: WalletService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -195,7 +193,16 @@ export class AuthService {
           user.id,
         );
       } catch (error) {
-        console.error("⚠️ [REGISTER] Failed to create DVA for buyer:", error);
+        /*
+         * Deliberately non-fatal: a Paystack outage must not block signup. The
+         * buyer lands with no account number, which blocks withdrawals, so the
+         * wallet page can repair it later via ensureDvaForUser.
+         */
+        this.logger.error(
+          `Failed to create DVA for buyer ${user.id} (${user.email}): ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
       }
     }
 
@@ -634,34 +641,94 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  private async resolveBuyerReferrerId(referralCode?: string) {
-    if (referralCode) {
-      const [recruiterProfile] = await this.db
-        .select({ user_id: schema.agent_profiles.user_id })
-        .from(schema.agent_profiles)
-        .where(eq(schema.agent_profiles.referral_agent_code, referralCode))
-        .limit(1);
+  /*
+   * Resolve the agent who referred a buyer, from the code the buyer typed.
+   *
+   * Two things were wrong here and both silently mis-attributed real signups.
+   *
+   * It matched `referral_agent_code`, which is the code an agent gives to
+   * someone joining as an AGENT. The buyer-facing code is
+   * `referral_buyer_code`. The two were effectively swapped in the one place
+   * buyers use them, so a buyer pasting the correct code got no attribution and
+   * one pasting the recruitment code got attributed.
+   *
+   * And an unrecognised code fell back to the admin account rather than
+   * failing. A typo permanently assigned that buyer to admin, the real referrer
+   * lost the link, and nobody was told. A bad code is now a validation error the
+   * user can see and fix while still on the form.
+   */
+  private async resolveBuyerReferrerId(
+    referralCode?: string,
+  ): Promise<number | null> {
+    const code = referralCode?.trim();
 
-      if (recruiterProfile) {
-        return recruiterProfile.user_id;
-      }
-    }
+    // No code is not an error. It means an organic signup with no referrer.
+    if (!code) return null;
 
-    // Cache the admin ID — it never changes between restarts
-    if (this.defaultReferrerIdCache !== undefined) {
-      return this.defaultReferrerIdCache;
-    }
-
-    const adminEmail =
-      this.config.get<string>("ADMIN_EMAIL") ?? "admin@debridgers.com";
-    const [defaultReferrer] = await this.db
-      .select({ id: schema.users.id })
-      .from(schema.users)
-      .where(eq(sql`lower(${schema.users.email})`, adminEmail.toLowerCase()))
+    const [referrer] = await this.db
+      .select({
+        user_id: schema.agent_profiles.user_id,
+        status: schema.agent_profiles.status,
+      })
+      .from(schema.agent_profiles)
+      .where(eq(schema.agent_profiles.referral_buyer_code, code))
       .limit(1);
 
-    this.defaultReferrerIdCache = defaultReferrer?.id ?? null;
-    return this.defaultReferrerIdCache;
+    if (!referrer) {
+      throw new BadRequestException({
+        message:
+          "That referral code is not recognised. Check it and try again.",
+        code: "INVALID_REFERRAL_CODE",
+        field: "referred_by_agent_code",
+      });
+    }
+
+    /*
+     * An unapproved agent's code must not attribute. Codes are only issued on
+     * approval, so this catches an agent suspended or reverted after issue.
+     */
+    if (referrer.status !== "approved") {
+      throw new BadRequestException({
+        message: "That referral code is not active.",
+        code: "INACTIVE_REFERRAL_CODE",
+        field: "referred_by_agent_code",
+      });
+    }
+
+    return referrer.user_id;
+  }
+
+  /*
+   * Public code check, so the signup form can validate as the user types
+   * instead of failing them on submit. Returns whether the code is usable and
+   * who it belongs to, never anything else about that agent.
+   */
+  async validateReferralCode(
+    code: string,
+  ): Promise<{ valid: boolean; referrer_name?: string }> {
+    const trimmed = code?.trim();
+    if (!trimmed) return { valid: false };
+
+    const [row] = await this.db
+      .select({
+        first_name: schema.users.first_name,
+        last_name: schema.users.last_name,
+        status: schema.agent_profiles.status,
+      })
+      .from(schema.agent_profiles)
+      .innerJoin(
+        schema.users,
+        eq(schema.users.id, schema.agent_profiles.user_id),
+      )
+      .where(eq(schema.agent_profiles.referral_buyer_code, trimmed))
+      .limit(1);
+
+    if (!row || row.status !== "approved") return { valid: false };
+
+    return {
+      valid: true,
+      referrer_name: `${row.first_name} ${row.last_name}`.trim(),
+    };
   }
 
   private async refreshVerificationOtp(

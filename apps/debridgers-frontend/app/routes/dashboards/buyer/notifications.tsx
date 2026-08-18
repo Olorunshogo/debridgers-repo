@@ -23,21 +23,6 @@ interface Notification {
   read: boolean;
 }
 
-const READ_IDS_KEY = "debridgers_read_notif_ids";
-
-function getReadIds(): Set<number> {
-  try {
-    const stored = localStorage.getItem(READ_IDS_KEY);
-    return new Set(stored ? (JSON.parse(stored) as number[]) : []);
-  } catch {
-    return new Set();
-  }
-}
-
-function saveReadIds(ids: Set<number>) {
-  localStorage.setItem(READ_IDS_KEY, JSON.stringify([...ids]));
-}
-
 function formatTimestamp(iso: string): string {
   const at = new Date(iso);
   if (Number.isNaN(at.getTime())) return "";
@@ -51,33 +36,41 @@ function formatTimestamp(iso: string): string {
 
 export default function BuyerNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     apiFetch<Notification[]>("/buyer/notifications")
-      .then((rows) => {
-        const readIds = getReadIds();
-        setNotifications(
-          rows.map((n) => ({ ...n, read: n.read || readIds.has(n.id) })),
-        );
-      })
+      .then((rows) => setNotifications(rows))
       .catch(() => setNotifications([]))
       .finally(() => setLoading(false));
   }, []);
 
+  /* Optimistic - the server's read column is the source of truth, so roll back on failure. */
   function markAllRead() {
+    const previous = notifications;
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    saveReadIds(new Set(notifications.map((n) => n.id)));
     localStorage.setItem("debridgers_has_unread", "false");
+
+    apiFetch("/buyer/notifications/mark-all/read", { method: "PATCH" }).catch(
+      () => {
+        setNotifications(previous);
+        localStorage.setItem(
+          "debridgers_has_unread",
+          previous.some((n) => !n.read) ? "true" : "false",
+        );
+      },
+    );
   }
 
   function markOneRead(id: number) {
+    const previous = notifications;
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
     );
-    const ids = getReadIds();
-    ids.add(id);
-    saveReadIds(ids);
+
+    apiFetch(`/buyer/notifications/${id}/read`, { method: "PATCH" }).catch(() =>
+      setNotifications(previous),
+    );
   }
 
   const unreadCount = notifications.filter((n) => !n.read).length;

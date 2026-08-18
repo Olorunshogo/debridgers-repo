@@ -4,6 +4,8 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseIntPipe,
   Patch,
   Post,
   UploadedFile,
@@ -292,7 +294,7 @@ export class AgentController {
       example: {
         statusCode: 201,
         message: "Report submitted successfully",
-        data: { report_id: 12, commission_earned: 22500 },
+        data: { report_id: 12, commission_earned: 3750 },
       },
     },
   })
@@ -784,5 +786,33 @@ export class AgentController {
   @ApiResponse({ status: 200, description: "Withdrawals retrieved" })
   getWithdrawals(@CurrentUser() user: JwtPayload) {
     return this.agentService.getWithdrawals(user);
+  }
+
+  // === Orders
+
+  @Get("orders")
+  @UseGuards(AuthGuard, RolesGuard)
+  @ApiBearerAuth("access-token")
+  @ApiOperation({ summary: "List orders from buyers this agent referred" })
+  @ApiResponse({ status: 200, description: "Orders retrieved" })
+  getReferredOrders(@CurrentUser() user: JwtPayload) {
+    return this.agentService.getReferredOrders(user);
+  }
+
+  @Patch("orders/:id/out-for-delivery")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard, RolesGuard)
+  @ApiBearerAuth("access-token")
+  @ApiOperation({
+    summary: "Mark a referred buyer's order as out for delivery",
+    description:
+      "Agents can only move an order onto the road. Confirming delivery stays with admin.",
+  })
+  @ApiResponse({ status: 200, description: "Order marked out for delivery" })
+  markOutForDelivery(
+    @Param("id", ParseIntPipe) id: number,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.agentService.markOrderOutForDelivery(id, user);
   }
 }

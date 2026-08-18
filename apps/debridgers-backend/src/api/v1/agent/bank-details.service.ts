@@ -4,9 +4,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  ServiceUnavailableException,
 } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
@@ -16,6 +14,7 @@ import {
   ResolveBankAccountDto,
   UpdateBankDetailsDto,
 } from "./dto/update-bank-details.dto";
+import { PaystackBankService } from "../payment/paystack-bank.service";
 
 /*
  * Agent bank details, and the reason payouts were unreachable before this
@@ -41,27 +40,14 @@ interface ResolvedAccount {
   account_name: string;
 }
 
-/* The bank list changes rarely and every agent loading settings asks for it. */
-const BANK_LIST_TTL_MS = 6 * 60 * 60 * 1000;
-
 @Injectable()
 export class BankDetailsService {
   private readonly logger = new Logger(BankDetailsService.name);
-  private bankCache: { banks: BankOption[]; expiresAt: number } | null = null;
-
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
-    private readonly config: ConfigService,
+    private readonly bankService: PaystackBankService,
   ) {}
-
-  /*
-   * Mirrors the checkout flow's PAYMENTS_SIMULATED switch so bank details can be
-   * exercised end to end before SafeHaven credentials exist.
-   */
-  private get simulated(): boolean {
-    return this.config.get<string>("PAYMENTS_SIMULATED") === "true";
-  }
 
   // === Bank list
 
@@ -71,21 +57,9 @@ export class BankDetailsService {
   }
 
   private async loadBanks(): Promise<BankOption[]> {
-    if (this.bankCache && this.bankCache.expiresAt > Date.now()) {
-      return this.bankCache.banks;
-    }
+    const banks = await this.bankService.listBanks();
 
-    if (this.simulated) {
-      const banks = SIMULATED_BANKS;
-      this.bankCache = { banks, expiresAt: Date.now() + BANK_LIST_TTL_MS };
-      return banks;
-    }
-
-    /* Not implemented yet, but a plain Error surfaced to callers as an opaque
-       500. 503 says the feature is unavailable rather than broken. */
-    throw new ServiceUnavailableException(
-      "Bank lookup is not available: the Paystack integration is not implemented yet. Enable PAYMENTS_SIMULATED for development.",
-    );
+    return banks.map((b) => ({ bankCode: b.code, name: b.name }));
   }
 
   private async requireBankName(bankCode: string): Promise<string> {
@@ -112,20 +86,15 @@ export class BankDetailsService {
   }> {
     const bankName = await this.requireBankName(dto.bank_code);
 
-    if (this.simulated) {
-      return {
-        message: "Account resolved",
-        data: {
-          account_name: `SIMULATED ACCOUNT ${dto.account_number.slice(-4)}`,
-          bank_name: bankName,
-        },
-      };
-    }
-
-    // TODO: Phase 3 - Implement account verification with Paystack API
-    throw new Error(
-      "Account verification not yet implemented. Enable PAYMENTS_SIMULATED for development.",
+    const resolved = await this.bankService.resolveAccount(
+      dto.account_number,
+      dto.bank_code,
     );
+
+    return {
+      message: "Account resolved",
+      data: { account_name: resolved.account_name, bank_name: bankName },
+    };
   }
 
   // === Read
@@ -284,35 +253,3 @@ export class BankDetailsService {
     };
   }
 }
-
-/*
- * Enough real Nigerian bank codes to drive the UI in simulation mode. Replaced
- * by the live SafeHaven list as soon as PAYMENTS_SIMULATED is off.
- */
-const SIMULATED_BANKS: BankOption[] = [
-  { bankCode: "044", name: "Access Bank" },
-  { bankCode: "023", name: "Citibank Nigeria" },
-  { bankCode: "050", name: "Ecobank Nigeria" },
-  { bankCode: "070", name: "Fidelity Bank" },
-  { bankCode: "011", name: "First Bank of Nigeria" },
-  { bankCode: "214", name: "First City Monument Bank" },
-  { bankCode: "058", name: "Guaranty Trust Bank" },
-  { bankCode: "030", name: "Heritage Bank" },
-  { bankCode: "301", name: "Jaiz Bank" },
-  { bankCode: "082", name: "Keystone Bank" },
-  { bankCode: "076", name: "Polaris Bank" },
-  { bankCode: "101", name: "Providus Bank" },
-  { bankCode: "221", name: "Stanbic IBTC Bank" },
-  { bankCode: "068", name: "Standard Chartered Bank" },
-  { bankCode: "232", name: "Sterling Bank" },
-  { bankCode: "100", name: "Suntrust Bank" },
-  { bankCode: "032", name: "Union Bank of Nigeria" },
-  { bankCode: "033", name: "United Bank for Africa" },
-  { bankCode: "215", name: "Unity Bank" },
-  { bankCode: "035", name: "Wema Bank" },
-  { bankCode: "057", name: "Zenith Bank" },
-  { bankCode: "999992", name: "OPay" },
-  { bankCode: "999991", name: "PalmPay" },
-  { bankCode: "50211", name: "Kuda Bank" },
-  { bankCode: "090405", name: "Moniepoint MFB" },
-];

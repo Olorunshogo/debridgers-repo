@@ -8,11 +8,10 @@ import {
   Param,
   ParseIntPipe,
   Post,
-  Query,
   UseGuards,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
-import { OrderService, CreateOrderDto } from "./order.service";
+import { OrderService } from "./order.service";
 import { PaymentService } from "./payment.service";
 import { BuyerRateLimitService } from "./buyer-rate-limit.service";
 import { EmailService } from "../../../notification/features/email/email.service";
@@ -23,30 +22,6 @@ import { CurrentUser } from "../../shared/decorators/current-user.decorator";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";
 import { ZodValidationPipe } from "../../../infrastructure/pipeline/validation.pipeline";
 import { z } from "zod";
-
-/*
- * name, price_kobo and unit are optional and ignored by the service, which
- * re-reads all three from the product table. They stay in the schema only so
- * existing clients that send a full cart are not rejected. Do not start
- * trusting them again.
- */
-const createOrderSchema = z.object({
-  delivery_address: z.string().min(10),
-  zone_id: z.number().int().positive().optional(),
-  delivery_time: z.string(),
-  notes: z.string().optional(),
-  cart: z
-    .array(
-      z.object({
-        product_id: z.number().int().positive(),
-        name: z.string().optional(),
-        price_kobo: z.number().int().positive().optional(),
-        unit: z.string().optional(),
-        qty: z.number().int().positive(),
-      }),
-    )
-    .min(1),
-});
 
 const payOrderSchema = z.object({
   payment_method: z.enum(["wallet", "paystack"]),
@@ -84,89 +59,12 @@ export class OrderController {
     private readonly emailService: EmailService,
   ) {}
 
-  @Post()
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: "Create order from cart" })
-  async createOrder(
-    @CurrentUser() user: JwtPayload,
-    @Body(new ZodValidationPipe(createOrderSchema)) dto: CreateOrderDto,
-  ) {
-    // Check rate limit
-    const rateLimitCheck = await this.rateLimitService.checkOrderLimit(
-      user.sub,
-    );
-    if (!rateLimitCheck.allowed) {
-      throw new HttpException(
-        {
-          statusCode: 429,
-          message: `Too many orders. Try again in ${rateLimitCheck.resetIn} seconds`,
-          data: { remaining: 0, resetIn: rateLimitCheck.resetIn },
-        },
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
-
-    const order = await this.orderService.createOrder(user.sub, dto);
-
-    // Send order confirmation email (fire-and-forget)
-    try {
-      // TODO: Get user name and email from JWT or database
-      const amount = `₦${Math.round(order.order.total_kobo / 100)}`;
-      this.emailService
-        .sendOrderConfirmation(
-          user.email || "buyer@example.com",
-          user.first_name || "Buyer",
-          `#DBR-${String(order.order.id).padStart(4, "0")}`,
-          amount,
-          order.order.items.length,
-        )
-        .catch((err) => {
-          console.error("Failed to send order confirmation email:", err);
-          // Don't fail the API if email fails
-        });
-    } catch (err) {
-      console.error("Error sending order email:", err);
-    }
-
-    return {
-      statusCode: 201,
-      message: "Order created",
-      data: order,
-      rateLimit: {
-        remaining: rateLimitCheck.remaining,
-        limit: 5,
-        window: "1 hour",
-      },
-    };
-  }
-
-  @Get()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "List buyer's orders" })
-  async getOrders(
-    @CurrentUser() user: JwtPayload,
-    @Query("status") status?: string,
-    @Query("payment_status") paymentStatus?: string,
-    @Query("page") page?: string,
-    @Query("limit") limit?: string,
-  ) {
-    const pageNum = page ? parseInt(page, 10) : 1;
-    const limitNum = limit ? Math.min(parseInt(limit, 10), 50) : 10;
-
-    const orders = await this.orderService.getOrders(
-      user.sub,
-      status,
-      paymentStatus,
-      pageNum,
-      limitNum,
-    );
-
-    return {
-      statusCode: 200,
-      message: "Orders retrieved",
-      data: orders,
-    };
-  }
+  /*
+   * POST / and GET / used to live here, duplicating BuyerController's
+   * "buyer/orders" routes. That controller registers first and always won the
+   * match, so these were unreachable. Removed rather than left as dead code;
+   * BuyerController owns order creation and listing.
+   */
 
   @Get(":id")
   @HttpCode(HttpStatus.OK)
@@ -333,79 +231,10 @@ export class OrderController {
     };
   }
 
-  @Post("initialize-payment")
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: "Create order and initialize Paystack payment" })
-  async initializePayment(
-    @CurrentUser() user: JwtPayload,
-    @Body(new ZodValidationPipe(createOrderSchema)) dto: CreateOrderDto,
-  ) {
-    // Check rate limit
-    const rateLimitCheck = await this.rateLimitService.checkOrderLimit(
-      user.sub,
-    );
-    if (!rateLimitCheck.allowed) {
-      throw new HttpException(
-        {
-          statusCode: 429,
-          message: `Too many orders. Try again in ${rateLimitCheck.resetIn} seconds`,
-          data: { remaining: 0, resetIn: rateLimitCheck.resetIn },
-        },
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
-
-    // Create order
-    const order = await this.orderService.createOrder(user.sub, dto);
-
-    /*
-     * The order exists before Paystack is called, so a failure here would
-     * otherwise strand it as pending/unpaid forever with no way for the buyer
-     * to pay or clear it. Cancelled rather than deleted to keep the audit
-     * trail, and the original error still reaches the client.
-     */
-    let payment: Awaited<
-      ReturnType<typeof this.paymentService.initiatePaystackPayment>
-    >;
-
-    try {
-      payment = await this.paymentService.initiatePaystackPayment(
-        user.sub,
-        order.order.id,
-        order.order.total_kobo,
-      );
-    } catch (err) {
-      await this.orderService.cancelOrderForFailedPayment(order.order.id);
-      throw err;
-    }
-
-    // Send order confirmation email
-    try {
-      const amount = `₦${Math.round(order.order.total_kobo / 100)}`;
-      this.emailService
-        .sendOrderConfirmation(
-          user.email || "buyer@example.com",
-          user.first_name || "Buyer",
-          `#DBR-${String(order.order.id).padStart(4, "0")}`,
-          amount,
-          order.order.items.length,
-        )
-        .catch((err) => {
-          console.error("Failed to send order confirmation email:", err);
-        });
-    } catch (err) {
-      console.error("Error sending order email:", err);
-    }
-
-    return {
-      statusCode: 201,
-      message: "Order created and payment initialized",
-      data: {
-        order_id: order.order.id,
-        authorization_url: payment.authorization_url,
-        reference: payment.reference,
-        amount_kobo: order.order.total_kobo,
-      },
-    };
-  }
+  /*
+   * "initialize-payment" also lived here and was shadowed by
+   * BuyerController's "orders/initialize-payment" for the same
+   * registration-order reason. Its order-cancelling failure path has been
+   * moved onto the live handler in BuyerService.
+   */
 }

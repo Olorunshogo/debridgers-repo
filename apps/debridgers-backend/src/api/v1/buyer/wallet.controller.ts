@@ -43,6 +43,16 @@ class WithdrawalDto {
   reason?: string;
 }
 
+class PayoutAccountDto {
+  @IsString()
+  @MinLength(3)
+  bank_code!: string;
+
+  @IsString()
+  @MinLength(10)
+  account_number!: string;
+}
+
 @ApiTags("Buyer - Wallet")
 @Controller("buyer/wallet")
 @UseGuards(AuthGuard, RolesGuard)
@@ -336,5 +346,64 @@ export class WalletController {
       message: "Withdrawal initiated",
       data: result,
     };
+  }
+
+  // === Payout account
+
+  @Get("banks")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "List Nigerian banks for choosing a payout account",
+  })
+  async getBanks() {
+    const banks = await this.withdrawalService.listBanks();
+
+    return { statusCode: 200, message: "Banks retrieved", data: banks };
+  }
+
+  @Get("payout-account")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Get the bank account withdrawals are paid to" })
+  async getPayoutAccount(@CurrentUser() user: JwtPayload) {
+    const account = await this.withdrawalService.getPayoutAccount(user.sub);
+
+    return {
+      statusCode: 200,
+      message: account ? "Payout account retrieved" : "No payout account set",
+      data: account,
+    };
+  }
+
+  @Post("payout-account")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Set the bank account withdrawals are paid to",
+    description:
+      "The account is resolved with Paystack first, so the buyer confirms a real account name rather than a number they may have mistyped.",
+  })
+  async setPayoutAccount(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: PayoutAccountDto,
+  ) {
+    const account = await this.withdrawalService.setPayoutAccount(user.sub, {
+      bank_code: dto.bank_code,
+      account_number: dto.account_number,
+    });
+
+    return { statusCode: 200, message: "Payout account saved", data: account };
+  }
+
+  /*
+   * Signup creates the DVA but swallows failures so an outage cannot block
+   * registration. This lets the wallet page recover from that without support
+   * having to run the backfill script.
+   */
+  @Post("dva")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Create this buyer's virtual account if missing" })
+  async ensureDva(@CurrentUser() user: JwtPayload) {
+    const dva = await this.paystackDvaService.ensureDvaForUser(user.sub);
+
+    return { statusCode: 200, message: "Virtual account ready", data: dva };
   }
 }
