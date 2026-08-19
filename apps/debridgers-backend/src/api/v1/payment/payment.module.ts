@@ -10,6 +10,9 @@ import { PaystackDvaService } from "./paystack-dva.service";
 import { WithdrawalService } from "./withdrawal.service";
 import { PaystackBankService } from "./paystack-bank.service";
 import { LedgerService } from "./ledger.service";
+import { BuyerPaymentService } from "./buyer-payment.service";
+import { PaystackWebhookController } from "./paystack-webhook.controller";
+import { OrderReconciliationService } from "./order-reconciliation.service";
 /*
  * Provided here rather than imported from BuyerModule: BuyerModule already
  * imports this module, so pulling it back the other way would close a cycle.
@@ -34,16 +37,18 @@ import { WebhookModule } from "../../../infrastructure/webhook/webhook.module";
     JwtModule.register({}),
     ScheduleModule.forRoot(),
   ],
-  controllers: [PaymentController],
+  controllers: [PaymentController, PaystackWebhookController],
   providers: [
     LedgerService,
     PaymentService,
+    BuyerPaymentService,
     PayoutService,
     PayoutSchedulerService,
     RefundService,
     PaystackDvaService,
     WithdrawalService,
     PaystackBankService,
+    OrderReconciliationService,
     NotificationsService,
     AuthGuard,
     RolesGuard,
@@ -51,11 +56,13 @@ import { WebhookModule } from "../../../infrastructure/webhook/webhook.module";
   exports: [
     LedgerService,
     PaymentService,
+    BuyerPaymentService,
     PayoutService,
     RefundService,
     PaystackDvaService,
     WithdrawalService,
     PaystackBankService,
+    OrderReconciliationService,
   ],
 })
 export class PaymentModule {}

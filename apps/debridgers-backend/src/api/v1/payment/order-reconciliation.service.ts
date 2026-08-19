@@ -10,9 +10,9 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, asc, eq, lt } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
-import { OrderService } from "./order.service";
-import { PaymentService } from "./payment.service";
-import { NotificationsService } from "./notifications.service";
+import { OrderService } from "../buyer/order.service";
+import { BuyerPaymentService } from "./buyer-payment.service";
+import { NotificationsService } from "../buyer/notifications.service";
 
 /*
  * Buyers who reach Paystack and never come back leave their order pending and
@@ -42,7 +42,7 @@ export class OrderReconciliationService {
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
     private readonly orderService: OrderService,
-    private readonly paymentService: PaymentService,
+    private readonly buyerPaymentService: BuyerPaymentService,
     private readonly notificationsService: NotificationsService,
     private readonly config: ConfigService,
   ) {
@@ -86,9 +86,10 @@ export class OrderReconciliationService {
 
       if (order.payment_reference) {
         try {
-          const verified = await this.paymentService.verifyPaystackTransaction(
-            order.payment_reference,
-          );
+          const verified =
+            await this.buyerPaymentService.verifyPaystackTransaction(
+              order.payment_reference,
+            );
 
           if (verified.status === "success") {
             // Only settle when the amount matches, same rule as the buyer path.
