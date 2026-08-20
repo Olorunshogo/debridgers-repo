@@ -1,6 +1,6 @@
 import { Injectable, Logger, Inject } from "@nestjs/common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
 
@@ -62,8 +62,8 @@ export class AdminAccountService {
       await tx
         .update(schema.adminAccounts)
         .set({
-          balance: schema.adminAccounts.balance + amount,
-          total_received: schema.adminAccounts.total_received + amount,
+          balance: sql`${schema.adminAccounts.balance} + ${amount}`,
+          total_received: sql`${schema.adminAccounts.total_received} + ${amount}`,
           updated_at: new Date(),
         })
         .where(eq(schema.adminAccounts.id, account.id));
@@ -100,8 +100,8 @@ export class AdminAccountService {
       await tx
         .update(schema.adminAccounts)
         .set({
-          balance: schema.adminAccounts.balance - amount,
-          total_paid_out: schema.adminAccounts.total_paid_out + amount,
+          balance: sql`${schema.adminAccounts.balance} - ${amount}`,
+          total_paid_out: sql`${schema.adminAccounts.total_paid_out} + ${amount}`,
           updated_at: new Date(),
         })
         .where(eq(schema.adminAccounts.id, account.id));

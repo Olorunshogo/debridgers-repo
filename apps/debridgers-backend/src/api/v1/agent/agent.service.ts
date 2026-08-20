@@ -17,7 +17,7 @@ import { ApplyAgentDto } from "./dto/apply-agent.dto";
 import { SubmitReportDto } from "./dto/submit-report.dto";
 import { UpdateAgentProfileDto } from "./dto/update-agent-profile.dto";
 import { RequestWithdrawalDto } from "./dto/request-withdrawal.dto";
-import { AgentWalletService } from "./wallet.service";
+import { AgentWalletService } from "../wallet/agent-wallet.service";
 import { SystemSettingsService } from "../settings/system-settings.service";
 import { percentOfKobo, nairaToKobo } from "../../shared/money";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";

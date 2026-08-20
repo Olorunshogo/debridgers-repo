@@ -4,7 +4,7 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq, and, gte, lt, sum, inArray, sql } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
-import { AgentWalletService } from "../agent/wallet.service";
+import { AgentWalletService } from "../wallet/agent-wallet.service";
 import { SystemSettingsService } from "../settings/system-settings.service";
 import { percentOfKobo } from "../../shared/money";
 

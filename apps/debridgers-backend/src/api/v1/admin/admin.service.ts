@@ -18,7 +18,7 @@ import { ReviewKycDto } from "./dto/review-kyc.dto";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { SystemSettingsService } from "../settings/system-settings.service";
-import { AgentWalletService } from "../agent/wallet.service";
+import { AgentWalletService } from "../wallet/agent-wallet.service";
 import { TaxonomyService } from "../catalog/taxonomy.service";
 import { AuditLogService } from "../../../infrastructure/audit/audit-log.service";
 import {

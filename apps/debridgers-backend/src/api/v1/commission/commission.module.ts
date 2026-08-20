@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { CommissionService } from "./commission.service";
 import { DatabaseModule } from "../../../infrastructure/database/database.module";
-import { AgentWalletService } from "../agent/wallet.service";
+import { AgentWalletService } from "../wallet/agent-wallet.service";
 import { SystemSettingsModule } from "../settings/system-settings.module";
 
 @Module({

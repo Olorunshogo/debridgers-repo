@@ -26,7 +26,7 @@ import {
   FileFieldsInterceptor,
 } from "@nestjs/platform-express";
 import { AgentService } from "./agent.service";
-import { AgentWalletService } from "./wallet.service";
+import { AgentWalletService } from "../wallet/agent-wallet.service";
 import { StockService } from "./stock.service";
 import { KycService } from "./kyc.service";
 import { BankDetailsService } from "./bank-details.service";

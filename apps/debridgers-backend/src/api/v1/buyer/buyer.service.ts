@@ -833,6 +833,7 @@ export class BuyerService {
       const [created] = await tx
         .insert(schema.orders)
         .values({
+          order_reference: `ord_${randomBytes(6).toString("hex")}`,
           buyer_id: user.sub,
           zone_id: zoneId,
           quantity: totalQuantity,
