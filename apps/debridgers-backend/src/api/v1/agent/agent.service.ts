@@ -17,7 +17,7 @@ import { ApplyAgentDto } from "./dto/apply-agent.dto";
 import { SubmitReportDto } from "./dto/submit-report.dto";
 import { UpdateAgentProfileDto } from "./dto/update-agent-profile.dto";
 import { RequestWithdrawalDto } from "./dto/request-withdrawal.dto";
-import { WalletService } from "./wallet.service";
+import { AgentWalletService } from "./wallet.service";
 import { SystemSettingsService } from "../settings/system-settings.service";
 import { percentOfKobo, nairaToKobo } from "../../shared/money";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";
@@ -32,7 +32,7 @@ export class AgentService {
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
     private readonly eventEmitter: EventEmitter2,
-    private readonly walletService: WalletService,
+    private readonly walletService: AgentWalletService,
     private readonly settings: SystemSettingsService,
   ) {}
 

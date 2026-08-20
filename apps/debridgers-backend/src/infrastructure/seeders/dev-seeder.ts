@@ -4,6 +4,7 @@ import { Pool } from "pg";
 import { drizzle, NodePgDatabase } from "drizzle-orm/node-postgres";
 import { count, eq, inArray, sql } from "drizzle-orm";
 import * as bcrypt from "bcryptjs";
+import { randomBytes } from "crypto";
 import * as schema from "../persistence/index";
 
 /*
@@ -681,6 +682,7 @@ async function seedDev(): Promise<void> {
       const [order] = await db
         .insert(schema.orders)
         .values({
+          order_reference: `ord_${randomBytes(6).toString("hex")}`,
           buyer_id: buyerIds[i % buyerIds.length],
           agent_id: agentIds[i % agentIds.length],
           zone_id: zone.id,

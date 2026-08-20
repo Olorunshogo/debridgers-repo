@@ -8,6 +8,7 @@ import {
   uniqueIndex,
   text,
   AnyPgColumn,
+  timestamp,
 } from "drizzle-orm/pg-core";
 import { SQL, sql } from "drizzle-orm";
 import { timestamps } from "../../helper/column.helper";
@@ -39,6 +40,9 @@ export const users = pgTable(
     is_phone_verified: boolean().notNull().default(false),
     is_blocked: boolean().notNull().default(false),
     is_suspended: boolean().notNull().default(false),
+    suspended_at: timestamp(),
+    suspended_reason: text(),
+    total_deposited: integer().notNull().default(0), // in kobo
     // zone assigned from delivery address (buyers) or LGA (agents)
     zone_id: integer(),
     delivery_address: text(),

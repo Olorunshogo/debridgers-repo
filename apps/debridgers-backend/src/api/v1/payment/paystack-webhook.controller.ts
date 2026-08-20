@@ -18,7 +18,7 @@ import { eq } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
-import { WalletService } from "../buyer/wallet.service";
+import { WalletService } from "../wallet/wallet.service";
 import { EmailService } from "../../../notification/features/email/email.service";
 import { OrderService } from "../buyer/order.service";
 import { WithdrawalService } from "./withdrawal.service";

@@ -26,7 +26,7 @@ import {
   FileFieldsInterceptor,
 } from "@nestjs/platform-express";
 import { AgentService } from "./agent.service";
-import { WalletService } from "./wallet.service";
+import { AgentWalletService } from "./wallet.service";
 import { StockService } from "./stock.service";
 import { KycService } from "./kyc.service";
 import { BankDetailsService } from "./bank-details.service";
@@ -73,7 +73,7 @@ import { JwtPayload } from "../../../interfaces/users/jwt.type";
 export class AgentController {
   constructor(
     private readonly agentService: AgentService,
-    private readonly walletService: WalletService,
+    private readonly walletService: AgentWalletService,
     private readonly stockService: StockService,
     private readonly kycService: KycService,
     private readonly bankDetailsService: BankDetailsService,

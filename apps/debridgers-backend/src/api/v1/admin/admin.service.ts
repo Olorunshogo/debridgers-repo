@@ -18,7 +18,7 @@ import { ReviewKycDto } from "./dto/review-kyc.dto";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { SystemSettingsService } from "../settings/system-settings.service";
-import { WalletService } from "../agent/wallet.service";
+import { AgentWalletService } from "../agent/wallet.service";
 import { TaxonomyService } from "../catalog/taxonomy.service";
 import { AuditLogService } from "../../../infrastructure/audit/audit-log.service";
 import {
@@ -47,7 +47,7 @@ export class AdminService {
     private readonly db: NodePgDatabase<typeof schema>,
     private readonly eventEmitter: EventEmitter2,
     private readonly settings: SystemSettingsService,
-    private readonly wallet: WalletService,
+    private readonly wallet: AgentWalletService,
     private readonly taxonomy: TaxonomyService,
     private readonly audit: AuditLogService,
   ) {}

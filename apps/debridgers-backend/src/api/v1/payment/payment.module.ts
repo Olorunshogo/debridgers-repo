@@ -9,6 +9,8 @@ import { RefundService } from "./refund.service";
 import { PaystackDvaService } from "./paystack-dva.service";
 import { WithdrawalService } from "./withdrawal.service";
 import { PaystackBankService } from "./paystack-bank.service";
+import { PaystackSubaccountService } from "./paystack-subaccount.service";
+import { PaystackInvoiceService } from "./paystack-invoice.service";
 import { LedgerService } from "./ledger.service";
 import { BuyerPaymentService } from "./buyer-payment.service";
 import { PaystackWebhookController } from "./paystack-webhook.controller";
@@ -42,6 +44,8 @@ import { WebhookModule } from "../../../infrastructure/webhook/webhook.module";
     LedgerService,
     PaymentService,
     BuyerPaymentService,
+    PaystackSubaccountService,
+    PaystackInvoiceService,
     PayoutService,
     PayoutSchedulerService,
     RefundService,
@@ -57,6 +61,8 @@ import { WebhookModule } from "../../../infrastructure/webhook/webhook.module";
     LedgerService,
     PaymentService,
     BuyerPaymentService,
+    PaystackSubaccountService,
+    PaystackInvoiceService,
     PayoutService,
     RefundService,
     PaystackDvaService,

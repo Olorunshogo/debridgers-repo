@@ -11,10 +11,12 @@ import { eq } from "drizzle-orm";
 import * as crypto from "crypto";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
-import { WalletService } from "../buyer/wallet.service";
+import { WalletService } from "../wallet/wallet.service";
 import { OrderService } from "../buyer/order.service";
 import { NotificationsService } from "../buyer/notifications.service";
 import { LedgerService } from "./ledger.service";
+import { AdminAccountService } from "./admin-account.service";
+import { PaystackInvoiceService } from "./paystack-invoice.service";
 
 @Injectable()
 export class BuyerPaymentService {
@@ -35,6 +37,8 @@ export class BuyerPaymentService {
     private readonly notificationsService: NotificationsService,
     private readonly config: ConfigService,
     private readonly ledger: LedgerService,
+    private readonly adminAccount: AdminAccountService,
+    private readonly invoice: PaystackInvoiceService,
   ) {
     this.secretKey = this.config.get<string>("PAYSTACK_SECRET_KEY") ?? "";
     this.appUrl = this.config.get<string>("APP_URL") ?? "";
@@ -67,9 +71,45 @@ export class BuyerPaymentService {
     // Deduct from wallet
     await this.walletService.deductBalance(userId, amount);
 
+    // Create payment record (tracks order payment for admin & Paystack)
+    const [_paymentRecord] = await this.db
+      .insert(schema.paymentRecords)
+      .values({
+        order_id: orderId,
+        buyer_id: userId,
+        amount_kobo: amount,
+        payment_method: "wallet",
+        status: "completed",
+        paystack_reference: `order_${orderId}`, // Track by order ID in Paystack
+        description: `Wallet payment for order #${order.order_reference || orderId} → DVA 9605038516`,
+        completed_at: new Date(),
+      })
+      .returning();
+
+    // Record transaction in admin ledger (for auditing & filtering)
+    await this.adminAccount.creditPlatformAccount(
+      amount,
+      "order_payment",
+      `order_${orderId}`,
+      `Order #${order.order_reference || orderId} - wallet payment from user ${userId} → DVA`,
+    );
+
     // Update order status
     await this.orderService.updatePaymentStatus(orderId, "paid");
     await this.orderService.updateOrderStatus(orderId, "confirmed");
+
+    // Mark Paystack invoice as paid (fire-and-forget)
+    if (order.paystack_invoice_code) {
+      this.invoice
+        .markInvoiceAsPaid(order.paystack_invoice_code, "wallet")
+        .catch((err) => {
+          console.error(
+            `Failed to mark invoice as paid in Paystack: ${
+              err instanceof Error ? err.message : String(err)
+            }`,
+          );
+        });
+    }
 
     // Send payment confirmation notification
     await this.notificationsService.notifyPaymentConfirmed(
