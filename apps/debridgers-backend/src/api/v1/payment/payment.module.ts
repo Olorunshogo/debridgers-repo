@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
 import { ScheduleModule } from "@nestjs/schedule";
 import { PaymentController } from "./payment.controller";
@@ -13,31 +13,26 @@ import { PaystackSubaccountService } from "./paystack-subaccount.service";
 import { PaystackInvoiceService } from "./paystack-invoice.service";
 import { LedgerService } from "./ledger.service";
 import { BuyerPaymentService } from "./buyer-payment.service";
+import { AdminAccountService } from "./admin-account.service";
 import { PaystackWebhookController } from "./paystack-webhook.controller";
 import { OrderReconciliationService } from "./order-reconciliation.service";
-/*
- * Provided here rather than imported from BuyerModule: BuyerModule already
- * imports this module, so pulling it back the other way would close a cycle.
- * The service holds no state beyond the db handle, so a second instance is fine.
- */
 import { NotificationsService } from "../buyer/notifications.service";
+import { OrderService } from "../buyer/order.service";
+import { EmailModule } from "../../../notification/features/email/email.module";
 import { AuthGuard } from "../../shared/guards/auth.guard";
 import { RolesGuard } from "../../shared/guards/roles.guard";
 import { DatabaseModule } from "../../../infrastructure/database/database.module";
 import { WebhookModule } from "../../../infrastructure/webhook/webhook.module";
+import { WalletModule } from "../wallet/wallet.module";
 
 @Module({
-  /*
-   * JwtModule and the guards are registered locally rather than imported from
-   * AuthModule: AuthModule already imports this module for PaystackDvaService,
-   * so importing it back would close a cycle. AuthGuard resolves the signing
-   * secret through ConfigService, so a bare register({}) is all it needs.
-   */
   imports: [
     DatabaseModule,
     WebhookModule,
     JwtModule.register({}),
     ScheduleModule.forRoot(),
+    EmailModule, // ← Add this
+    forwardRef(() => WalletModule),
   ],
   controllers: [PaymentController, PaystackWebhookController],
   providers: [
@@ -54,6 +49,8 @@ import { WebhookModule } from "../../../infrastructure/webhook/webhook.module";
     PaystackBankService,
     OrderReconciliationService,
     NotificationsService,
+    OrderService,
+    AdminAccountService,
     AuthGuard,
     RolesGuard,
   ],

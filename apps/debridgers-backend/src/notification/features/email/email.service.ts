@@ -725,4 +725,100 @@ export class EmailService {
       html,
     });
   }
+
+  // === Admin Invite
+
+  async sendAdminInvite(opts: {
+    email: string;
+    invite_code: string;
+    temp_password?: string;
+  }): Promise<void> {
+    const appUrl = process.env.APP_URL || "http://localhost:5173";
+    const dashboardUrl = `${appUrl}/admin-dashboard`;
+
+    const html = layout({
+      headerBg: BRAND_ORANGE,
+      outerBg: "#fff8ed",
+      title: "Admin Invite - Debridgers",
+      preheader:
+        "You have been invited to manage Debridgers as a domain admin.",
+      body: `
+        <tr>
+          <td style="padding:32px 32px 8px 32px;">
+            <h2 style="margin:0 0 12px 0;font-size:22px;font-weight:700;color:#111827;">Admin Invite</h2>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              Hi, you have been invited to join DEBRIDGERS as a domain admin. Use the credentials and code below to complete your setup.
+            </p>
+          </td>
+        </tr>
+        ${button("Go to Dashboard", dashboardUrl, BRAND_ORANGE)}
+        <tr>
+          <td style="padding:24px 32px 8px 32px;">
+            <p style="margin:0 0 12px 0;font-size:13px;font-weight:600;color:#111827;">Your Login Information:</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 32px 16px 32px;">
+            <p style="margin:0 0 8px 0;font-size:13px;font-weight:600;color:#111827;">Email:</p>
+            <div style="display:inline-block;padding:12px 16px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-family:monospace;font-size:14px;letter-spacing:0.5px;color:#92400e;">
+              ${opts.email}
+            </div>
+          </td>
+        </tr>
+        ${
+          opts.temp_password
+            ? `
+        <tr>
+          <td style="padding:0 32px 16px 32px;">
+            <p style="margin:0 0 8px 0;font-size:13px;font-weight:600;color:#111827;">Temporary Password:</p>
+            <div style="display:inline-block;padding:12px 16px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-family:monospace;font-size:14px;letter-spacing:1px;color:#92400e;">
+              ${opts.temp_password}
+            </div>
+          </td>
+        </tr>
+        `
+            : ""
+        }
+        <tr>
+          <td style="padding:0 32px 16px 32px;">
+            <p style="margin:0 0 8px 0;font-size:13px;font-weight:600;color:#111827;">Your Invite Code (32 characters):</p>
+            <div style="display:inline-block;padding:12px 16px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-family:monospace;font-size:14px;letter-spacing:1px;color:#92400e;word-break:break-all;">
+              ${opts.invite_code}
+            </div>
+          </td>
+        </tr>
+        ${infoBox(
+          "<strong>Important:</strong> This invite code is valid for <strong>10 minutes only</strong>. Do not share this code with anyone. Save it securely.",
+          BRAND_ORANGE,
+          "#fffbeb",
+          "#92400e",
+        )}
+        <tr>
+          <td style="padding:24px 32px 8px 32px;">
+            <p style="margin:0 0 12px 0;font-size:15px;line-height:1.7;color:#374151;">
+              <strong>Next steps:</strong><br/>
+              1. Click "Go to Dashboard" above<br/>
+              2. Log in with your email and temporary password<br/>
+              3. Verify your invite code in the modal that appears<br/>
+              4. Change your password (required within 2 minutes)
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 32px 28px 32px;">
+            <p style="margin:0;font-size:14px;line-height:1.7;color:#6b7280;">
+              Welcome to the team,<br/>
+              <strong>The Debridgers Team</strong>
+            </p>
+          </td>
+        </tr>
+      `,
+    });
+
+    await this.core.send({
+      to: opts.email,
+      subject: "Admin Invite - Debridgers",
+      html,
+    });
+  }
 }

@@ -9,6 +9,7 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq, desc, count, sum, and, inArray, sql } from "drizzle-orm";
 import * as crypto from "crypto";
+import * as bcrypt from "bcryptjs";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
 import { USER_EVENTS } from "../../../events/event-types/user.event.types";
@@ -110,8 +111,8 @@ export class AdminService {
         pending_agents: pendingStats?.total ?? 0,
         total_buyers: buyerStats?.total ?? 0,
         total_orders: orderStats?.total ?? 0,
-        total_revenue: revenueStats?.total ?? 0,
-        pending_commissions: commissionStats?.total ?? "0.00",
+        total_revenue: String(revenueStats?.total ?? 0),
+        pending_commissions: String(commissionStats?.total ?? 0),
         total_leads: leadStats?.total ?? 0,
       },
     };
@@ -1562,5 +1563,37 @@ export class AdminService {
     });
 
     return { message: "Payout rejected and balance returned", data: updated };
+  }
+
+  async changePassword(
+    dto: { current_password: string; new_password: string },
+    adminId: number,
+  ) {
+    const [admin] = await this.db
+      .select({ id: schema.users.id, password: schema.users.password })
+      .from(schema.users)
+      .where(eq(schema.users.id, adminId))
+      .limit(1);
+
+    if (!admin) throw new NotFoundException("Admin not found");
+    if (!admin.password)
+      throw new BadRequestException("No password set on this account");
+
+    const valid = await bcrypt.compare(dto.current_password, admin.password);
+    if (!valid) throw new BadRequestException("Current password is incorrect");
+
+    if (dto.current_password === dto.new_password) {
+      throw new BadRequestException(
+        "New password must be different from current password",
+      );
+    }
+
+    const hashed = await bcrypt.hash(dto.new_password, 12);
+    await this.db
+      .update(schema.users)
+      .set({ password: hashed })
+      .where(eq(schema.users.id, adminId));
+
+    return { message: "Password changed successfully", data: null };
   }
 }

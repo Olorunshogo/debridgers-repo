@@ -14,6 +14,8 @@ import {
   Package,
   MapPin,
   Banknote,
+  Mail,
+  Truck,
 } from "lucide-react";
 import { supportWhatsAppHref } from "@debridgers/ui-web";
 
@@ -143,6 +145,11 @@ const adminNavGroups: NavGroup[] = [
       { label: "Products", icon: Package, href: "/admin-dashboard/products" },
       { label: "Outreach", icon: MapPin, href: "/admin-dashboard/outreach" },
       { label: "Payouts", icon: Banknote, href: "/admin-dashboard/payouts" },
+      {
+        label: "Admin Invites",
+        icon: Mail,
+        href: "/admin-dashboard/admin-invites",
+      },
     ],
   },
   {
@@ -163,24 +170,72 @@ const adminNavGroups: NavGroup[] = [
   },
 ];
 
+const buyerAdminNavGroups: NavGroup[] = [
+  {
+    label: "MAIN",
+    items: [
+      {
+        label: "Overview",
+        icon: LayoutDashboard,
+        href: "/buyer-admin-dashboard",
+      },
+      {
+        label: "Buyers",
+        icon: ShoppingCart,
+        href: "/buyer-admin-dashboard/buyers",
+      },
+      {
+        label: "Deliveries",
+        icon: Truck,
+        href: "/buyer-admin-dashboard/deliveries",
+      },
+    ],
+  },
+  {
+    label: "ACCOUNT",
+    items: [
+      {
+        label: "Settings",
+        icon: User,
+        href: "/buyer-admin-dashboard/settings",
+      },
+    ],
+  },
+  {
+    label: "SUPPORT",
+    items: [
+      {
+        label: "WhatsApp Support",
+        icon: MessageCircle,
+        href: supportWhatsAppHref(),
+      },
+    ],
+  },
+];
+
 export function useDashboardNav() {
   const { pathname } = useLocation();
 
   const isBuyer = pathname.startsWith("/buyer-dashboard");
   const isAgent = pathname.startsWith("/agent-dashboard");
   const isAdmin = pathname.startsWith("/admin-dashboard");
+  const isBuyerAdmin = pathname.startsWith("/buyer-admin-dashboard");
 
   const groups = isAdmin
     ? adminNavGroups
     : isAgent
       ? agentNavGroups
-      : buyerNavGroups;
+      : isBuyerAdmin
+        ? buyerAdminNavGroups
+        : buyerNavGroups;
 
   const basePath = isAdmin
     ? "/admin-dashboard"
     : isAgent
       ? "/agent-dashboard"
-      : "/buyer-dashboard";
+      : isBuyerAdmin
+        ? "/buyer-admin-dashboard"
+        : "/buyer-dashboard";
 
   const allItems = groups.flatMap((g) => g.items);
 
@@ -193,5 +248,14 @@ export function useDashboardNav() {
 
   const isActive = (href: string) => href === activeHref;
 
-  return { groups, allItems, isActive, basePath, isBuyer, isAgent, isAdmin };
+  return {
+    groups,
+    allItems,
+    isActive,
+    basePath,
+    isBuyer,
+    isAgent,
+    isAdmin,
+    isBuyerAdmin,
+  };
 }

@@ -11,11 +11,12 @@ import {
 } from "@nestjs/common";
 import { AuthGuard } from "../../../shared/guards/auth.guard";
 import { RolesGuard } from "../../../shared/guards/roles.guard";
+import { AdminKeyGuard } from "../../../shared/guards/admin-key.guard";
 import { Roles } from "../../../shared/decorators/roles.decorator";
 import { BuyerAdminService } from "./buyer-admin.service";
 
 @Controller("admin/buyers")
-@UseGuards(AuthGuard, RolesGuard)
+@UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
 @Roles("admin")
 export class BuyerAdminController {
   constructor(private readonly buyerAdminService: BuyerAdminService) {}

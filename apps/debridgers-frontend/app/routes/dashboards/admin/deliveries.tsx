@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Truck, Calendar, MapPin, User } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
-import { useNavigate } from "@remix-run/react";
+import { useNavigate } from "react-router";
 import { DashSearchInput } from "@debridgers/ui-web";
 
 export function meta() {

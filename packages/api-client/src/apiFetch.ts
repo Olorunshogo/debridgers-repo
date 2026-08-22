@@ -58,3 +58,14 @@ export async function apiFetch<T = unknown>(
   const json = await res.json();
   return (json as { data: T }).data;
 }
+
+/**
+ * POST/PUT/DELETE mutation with automatic token refresh.
+ * Convenience wrapper around apiFetch for mutation operations.
+ */
+export async function apiMutate<T = unknown>(
+  path: string,
+  options: RequestInit & { method: "POST" | "PUT" | "DELETE" | "PATCH" },
+): Promise<T> {
+  return apiFetch<T>(path, options);
+}

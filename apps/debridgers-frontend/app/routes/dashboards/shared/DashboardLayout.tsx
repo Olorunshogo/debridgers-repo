@@ -11,6 +11,7 @@ import {
   decodeJwtPayload,
 } from "@debridgers/api-client";
 import { useAuth } from "../../../contexts/AuthContext";
+import { ChangePasswordModal } from "../../../components/admin/ChangePasswordModal";
 
 const titleMaps: Record<string, Record<string, string>> = {
   "/agent-dashboard": {
@@ -40,7 +41,14 @@ const titleMaps: Record<string, Record<string, string>> = {
     "/admin-dashboard/products": "Products",
     "/admin-dashboard/outreach": "Outreach Records",
     "/admin-dashboard/payouts": "Payouts",
+    "/admin-dashboard/admin-invites": "Admin Invites",
     "/admin-dashboard/settings": "Settings",
+  },
+  "/buyer-admin-dashboard": {
+    "/buyer-admin-dashboard": "Overview",
+    "/buyer-admin-dashboard/buyers": "Manage Buyers",
+    "/buyer-admin-dashboard/deliveries": "Track Deliveries",
+    "/buyer-admin-dashboard/settings": "Settings",
   },
 };
 
@@ -55,8 +63,15 @@ function getInitials(name: string): string {
 export default function DashboardLayout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { groups, isActive, basePath, isAgent, isBuyer, isAdmin } =
-    useDashboardNav();
+  const {
+    groups,
+    isActive,
+    basePath,
+    isAgent,
+    isBuyer,
+    isAdmin,
+    isBuyerAdmin,
+  } = useDashboardNav();
   /*
    * The flags above come from useDashboardNav, which reads them off the URL -
    * they say which dashboard is being viewed, not who is viewing it. The real
@@ -64,23 +79,17 @@ export default function DashboardLayout() {
    */
   const { user, isLoading, dashboardPath } = useAuth();
   const [mobileOpen, setMobileOpen] = useState<boolean>(false);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState<string>("");
   const [hasUnread, setHasUnread] = useState<boolean>(false);
   const [userProfile, setUserProfile] = useState<{
     name: string;
     sub: string;
     avatar_url?: string | null;
   } | null>(null);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] =
+    useState<boolean>(false);
 
-  /*
-   * Route guard. Without it any signed-in user could open /admin-dashboard and
-   * get the admin shell rendered around them - the API calls behind it fail, so
-   * no records leak, but the nav and page structure were still on display.
-   *
-   * Waits for isLoading because the session is read from a token on mount, and
-   * acting on the intermediate null would bounce every legitimate user to
-   * /login on a hard refresh.
-   */
+  // Route guard: verify user can access this dashboard
   useEffect(() => {
     if (isLoading) return;
 
@@ -94,11 +103,28 @@ export default function DashboardLayout() {
     }
   }, [isLoading, user, dashboardPath, basePath, navigate]);
 
+  // Trigger password change modal for admins (TODO: uncomment setTimeout for 120s delay in prod)
   useEffect(() => {
-    if (isAdmin) {
+    if (isLoading || !user) return;
+    if (!isAdmin && !isBuyerAdmin) return;
+
+    // TODO: Uncomment for production - show modal after 120 seconds
+    // const timer = setTimeout(() => {
+    //   setIsChangePasswordOpen(true);
+    // }, 120000);
+
+    // For testing: trigger immediately
+    setIsChangePasswordOpen(true);
+
+    // return () => clearTimeout(timer);
+  }, [isLoading, user, isAdmin, isBuyerAdmin]);
+
+  useEffect(() => {
+    if (isAdmin || isBuyerAdmin) {
       const token = getAccessToken();
       const payload = token ? decodeJwtPayload<{ email: string }>(token) : null;
-      setUserProfile({ name: "Debridgers Admin", sub: payload?.email ?? "" });
+      const name = isBuyerAdmin ? "Buyer Admin" : "Debridgers Admin";
+      setUserProfile({ name, sub: payload?.email ?? "" });
       return;
     }
     const endpoint = isAgent ? "/agent/me" : isBuyer ? "/buyer/me" : null;
@@ -116,7 +142,7 @@ export default function DashboardLayout() {
         setUserProfile({ name, sub, avatar_url: p.avatar_url });
       })
       .catch(() => {});
-  }, [isAgent, isBuyer, isAdmin]);
+  }, [isAgent, isBuyer, isAdmin, isBuyerAdmin]);
 
   const notifPath = isBuyer
     ? `${basePath}/notifications`
@@ -144,9 +170,13 @@ export default function DashboardLayout() {
   const titleMap = titleMaps[basePath] ?? {};
   const pageTitle = titleMap[pathname] ?? "Dashboard";
 
-  async function handleLogout() {
+  async function handleLogout(): Promise<void> {
     await logout();
     navigate("/login");
+  }
+
+  function handlePasswordChangeSuccess(): void {
+    setIsChangePasswordOpen(false);
   }
 
   function Sidebar({ onNavClick }: { onNavClick?: () => void }) {
@@ -346,6 +376,12 @@ export default function DashboardLayout() {
             </main>
           </div>
         </div>
+
+        {/* Password change modal for admin users */}
+        <ChangePasswordModal
+          isOpen={isChangePasswordOpen}
+          onSuccess={handlePasswordChangeSuccess}
+        />
       </div>
     </div>
   );

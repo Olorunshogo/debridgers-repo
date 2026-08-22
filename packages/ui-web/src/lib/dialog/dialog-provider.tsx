@@ -230,7 +230,7 @@ function DialogPanel({
           role="dialog"
           aria-modal={isTop}
           tabIndex={-1}
-          className="border-gray-border pointer-events-auto max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl border bg-white p-6 outline-none md:rounded-xl"
+          className="border-gray-border pointer-events-auto max-h-[90vh] w-full max-w-160 overflow-y-auto rounded-t-2xl border bg-white p-6 outline-none md:rounded-xl"
           variants={dialogPanelVariants}
           initial="initial"
           animate="animate"

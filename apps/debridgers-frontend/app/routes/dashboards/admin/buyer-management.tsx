@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Wallet, Package, AlertCircle } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
-import { useNavigate } from "@remix-run/react";
+import { useNavigate } from "react-router";
 
 export function meta() {
   return [

@@ -52,6 +52,10 @@ export const users = pgTable(
     mailtrap_contact_id: text(),
     refresh_token: text(),
     email_notifications: boolean().notNull().default(true),
+    // Admin tier: super_admin (owner), sub_admin (invited)
+    admin_tier: varchar("admin_tier", { length: 20 }),
+    // Unique API key for admin authentication via header
+    admin_api_key: varchar("admin_api_key", { length: 255 }).unique(),
     ...timestamps,
   },
   (table) => [uniqueIndex("users_email_idx").on(lower(table.email))],

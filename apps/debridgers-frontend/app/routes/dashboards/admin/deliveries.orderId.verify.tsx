@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "@remix-run/react";
+import { useParams, useNavigate } from "react-router";
 import { apiFetch, apiMutate } from "@debridgers/api-client";
 import {
   Camera,
-  Upload,
   CheckCircle,
   MapPin,
   User,
@@ -67,7 +66,7 @@ export default function VerifyDelivery() {
           `/admin/deliveries/${orderId}`,
         );
         setOrder(data);
-      } catch (err) {
+      } catch (_err) {
         setError("Failed to load order details");
       } finally {
         setLoading(false);
@@ -106,10 +105,13 @@ export default function VerifyDelivery() {
     setError("");
 
     try {
-      await apiMutate("POST", `/admin/deliveries/${orderId}/verify`, {
-        photos: photoUrls,
-        notes,
-        recipient_name: order?.buyer_name,
+      await apiMutate(`/admin/deliveries/${orderId}/verify`, {
+        method: "POST",
+        body: JSON.stringify({
+          photos: photoUrls,
+          notes,
+          recipient_name: order?.buyer_name,
+        }),
       });
 
       setSuccess(true);

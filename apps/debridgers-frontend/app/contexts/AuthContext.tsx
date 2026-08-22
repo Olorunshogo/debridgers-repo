@@ -20,6 +20,7 @@ interface AuthUser {
   sub: number;
   email: string;
   role: "buyer" | "agent" | "admin";
+  admin_tier?: "super" | "sub";
 }
 
 interface AuthContextType {
@@ -41,7 +42,9 @@ const AuthContext = createContext<AuthContextType | null>(null);
 function readUserFromToken(): AuthUser | null {
   const token = getAccessToken();
   if (!token) return null;
-  const payload = decodeJwtPayload<JwtPayload & { exp?: number }>(token);
+  const payload = decodeJwtPayload<
+    JwtPayload & { exp?: number; admin_tier?: "super" | "sub" }
+  >(token);
   if (!payload) return null;
   // Check expiry
   if (payload.exp && payload.exp * 1000 < Date.now()) return null;
@@ -49,13 +52,16 @@ function readUserFromToken(): AuthUser | null {
     sub: payload.sub as unknown as number,
     email: payload.email ?? "",
     role: (payload.role as AuthUser["role"]) ?? "buyer",
+    admin_tier: payload.admin_tier,
   };
 }
 
-function dashboardForRole(role: string): string {
+function dashboardForRole(role: string, adminTier?: string): string {
   switch (role) {
     case "admin":
-      return "/admin-dashboard";
+      return adminTier === "sub"
+        ? "/buyer-admin-dashboard"
+        : "/admin-dashboard";
     case "agent":
       return "/agent-dashboard";
     default:
@@ -116,7 +122,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
-  const dashboardPath = user ? dashboardForRole(user.role) : "/buyer-dashboard";
+  const dashboardPath = user
+    ? dashboardForRole(user.role, user.admin_tier)
+    : "/buyer-dashboard";
 
   return (
     <AuthContext.Provider
