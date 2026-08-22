@@ -55,12 +55,37 @@ export class PublicController {
         description: schema.productsTable.description,
         image_url: schema.productsTable.image_url,
         category: schema.productsTable.category,
+        category_id: schema.productsTable.category_id,
       })
       .from(schema.productsTable)
       .where(eq(schema.productsTable.is_active, true))
       .orderBy(schema.productsTable.sort_order);
 
-    return { message: "Products retrieved", data: rows };
+    /*
+     * Labels come from the taxonomy, not from the stored text column.
+     *
+     * That column used to hold whatever the seeder wrote, which was the leaf
+     * name - so a bag of honey beans announced itself as "Wake Gida" where a
+     * category belonged. Deriving both levels here means the card and the
+     * filter chips read the same tree and cannot disagree with it.
+     *
+     * The stored value is still the fallback for a product with no leaf yet.
+     */
+    const labels = await this.taxonomy.categoryLabels();
+
+    const data = rows.map(({ category_id, category, ...product }) => {
+      const derived = category_id ? labels.get(category_id) : undefined;
+
+      return {
+        ...product,
+        /* Root ancestor - drives the shop's filter chips. */
+        category: derived?.category ?? category,
+        /* Immediate parent - labels the product card. */
+        subcategory: derived?.subcategory ?? category,
+      };
+    });
+
+    return { message: "Products retrieved", data };
   }
 
   @Get("zones")

@@ -5,6 +5,12 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { count, eq, sql } from "drizzle-orm";
 import * as bcrypt from "bcryptjs";
 import * as schema from "../persistence/index";
+import {
+  PRODUCTS,
+  TAXONOMY,
+  PRODUCT_LEAF_PATHS,
+  type TaxonomyNodeSeed,
+} from "./catalog";
 
 // ₦ → kobo
 const naira = (n: number) => n * 100;
@@ -40,127 +46,105 @@ const ZONES = [
   },
 ];
 
+type Db = ReturnType<typeof drizzle<typeof schema>>;
+
+async function seedTaxonomy(db: Db): Promise<Map<string, number>> {
+  const leafIds = new Map<string, number>();
+
+  const insertNode = async (
+    node: TaxonomyNodeSeed,
+    parentId: number | null,
+    path: string[],
+  ): Promise<void> => {
+    const trail = [...path, node.name];
+    const [row] = await db
+      .insert(schema.product_categories)
+      .values({
+        name: node.name,
+        slug: node.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        parent_id: parentId,
+        sort_order: 0,
+        is_active: true,
+      })
+      .returning({ id: schema.product_categories.id });
+
+    if (!node.children?.length) {
+      leafIds.set(trail.join(" > "), row.id);
+      return;
+    }
+
+    for (const child of node.children) {
+      await insertNode(child, row.id, trail);
+    }
+  };
+
+  for (const root of TAXONOMY) {
+    await insertNode(root, null, []);
+  }
+
+  return leafIds;
+}
+
+/* Rebuilds the same path → id map from rows already in the database, so a
+   re-run attaches products without needing to reseed the tree. */
+async function loadLeafIds(db: Db): Promise<Map<string, number>> {
+  const rows = await db
+    .select({
+      id: schema.product_categories.id,
+      name: schema.product_categories.name,
+      parent_id: schema.product_categories.parent_id,
+    })
+    .from(schema.product_categories);
+
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  const hasChildren = new Set(
+    rows.map((r) => r.parent_id).filter((id): id is number => id !== null),
+  );
+
+  const pathOf = (id: number): string => {
+    const trail: string[] = [];
+    let cursor = byId.get(id);
+    while (cursor) {
+      trail.unshift(cursor.name);
+      cursor = cursor.parent_id ? byId.get(cursor.parent_id) : undefined;
+    }
+    return trail.join(" > ");
+  };
+
+  const leafIds = new Map<string, number>();
+  for (const row of rows) {
+    if (!hasChildren.has(row.id)) leafIds.set(pathOf(row.id), row.id);
+  }
+  return leafIds;
+}
+
 /*
- * image_url points at the photos bundled under the frontend's
- * public/images/products, which the product DTO accepts as an app-relative
- * path alongside a Cloudinary URL.
- *
- * Both garri products are deliberately left null. The only unused bundled
- * photos are of whole maize cobs, and garri is milled cassava, so nothing here
- * depicts it. A wrong photo on a food product is worse than the placeholder
- * the card falls back to, so they stay empty until real photos exist.
- *
- * cowpea.jpg is a copy of sweet-beans.jpg rather than a reference to it, so
- * dropping in a true cowpea photo later does not change Wake Gida's image.
+ * Points each product at its leaf. `category` is deliberately NOT written here:
+ * it is derived from the tree when a product is read, so there is one place the
+ * label can come from. Writing it at seed time is what let it drift to a
+ * variety name in the first place.
  */
-const PRODUCTS = [
-  // Grains
-  {
-    name: "Local White Rice",
-    unit: "50kg bag",
-    price_kobo: naira(42000),
-    description: "Fresh locally sourced white rice. Sold per 50kg bag.",
-    image_url: "/images/products/rice-white.jpg",
-    is_active: true,
-    sort_order: 1,
-  },
-  {
-    name: "Ofada Rice",
-    unit: "50kg bag",
-    price_kobo: naira(48000),
-    description: "Premium Nigerian Ofada rice. Sold per 50kg bag.",
-    image_url: "/images/products/rice-grains.jpg",
-    is_active: true,
-    sort_order: 2,
-  },
-  {
-    name: "Tuwo Rice",
-    unit: "50kg bag",
-    price_kobo: naira(38000),
-    description: "Soft tuwo rice, ideal for tuwo shinkafa. Sold per 50kg bag.",
-    image_url: "/images/products/rice-bowl.jpg",
-    is_active: true,
-    sort_order: 3,
-  },
-  // Beans
-  {
-    name: "Wake Gida (Honey Beans)",
-    unit: "50kg bag",
-    price_kobo: naira(55000),
-    description:
-      "Northern Nigerian honey beans, brown and sweet. Sold per 50kg bag.",
-    image_url: "/images/products/sweet-beans.jpg",
-    is_active: true,
-    sort_order: 4,
-  },
-  {
-    name: "Cowpea (White Beans)",
-    unit: "50kg bag",
-    price_kobo: naira(52000),
-    description: "White cowpea beans, clean and fresh. Sold per 50kg bag.",
-    image_url: "/images/products/cowpea.jpg",
-    is_active: true,
-    sort_order: 5,
-  },
-  // Garri
-  {
-    name: "White Garri",
-    unit: "25kg bag",
-    price_kobo: naira(12000),
-    description: "Freshly processed white garri. Sold per 25kg bag.",
-    image_url: "/images/products/rice-grains.jpg",
-    is_active: true,
-    sort_order: 6,
-  },
-  {
-    name: "Yellow Garri (Toasted)",
-    unit: "25kg bag",
-    price_kobo: naira(14000),
-    description: "Toasted yellow garri with rich flavour. Sold per 25kg bag.",
-    image_url: "/images/products/rice-grains.jpg",
-    is_active: true,
-    sort_order: 7,
-  },
-  // Oil
-  {
-    name: "Palm Oil",
-    unit: "25 litre keg",
-    price_kobo: naira(28000),
-    description: "Fresh red palm oil from Northern Nigeria. Sold per 25L keg.",
-    image_url: "/images/products/pouring-oil.jpg",
-    is_active: true,
-    sort_order: 8,
-  },
-  {
-    name: "Groundnut Oil",
-    unit: "25 litre keg",
-    price_kobo: naira(35000),
-    description: "Pure groundnut oil, cold pressed. Sold per 25L keg.",
-    image_url: "/images/products/pouring-oil.jpg",
-    is_active: true,
-    sort_order: 9,
-  },
-  // Tubers
-  {
-    name: "Yam",
-    unit: "100 tubers",
-    price_kobo: naira(30000),
-    description:
-      "Fresh medium-sized yam tubers from the farm. Sold per 100 tubers.",
-    image_url: "/images/products/yams.jpg",
-    is_active: true,
-    sort_order: 10,
-  },
-  {
-    name: "Irish Potato",
-    unit: "50kg bag",
-    price_kobo: naira(18000),
-    description: "Fresh Irish potatoes, uniform size. Sold per 50kg bag.",
-    image_url: "/images/products/potatoes.jpg",
-    is_active: true,
-    sort_order: 11,
-  },
-];
+async function attachProductsToLeaves(
+  db: Db,
+  leafIds: Map<string, number>,
+): Promise<number> {
+  let attached = 0;
+
+  for (const [productName, leafPath] of Object.entries(PRODUCT_LEAF_PATHS)) {
+    const leafId = leafIds.get(leafPath);
+    if (leafId === undefined) continue;
+
+    const result = await db
+      .update(schema.productsTable)
+      .set({ category_id: leafId })
+      .where(eq(schema.productsTable.name, productName))
+      .returning({ id: schema.productsTable.id });
+
+    attached += result.length;
+  }
+
+  return attached;
+}
 
 async function seed() {
   const url = process.env.DATABASE_URL;
@@ -233,6 +217,29 @@ async function seed() {
   } else {
     console.warn(`- Products already exist (${productCount}) — skipping`);
   }
+
+  // === Taxonomy
+  /*
+   * Production had no category tree at all, so every product read back as
+   * "Uncategorized" with a null category_id and GET /categories returned
+   * nothing. Seeded here so the deployed catalogue matches dev.
+   */
+  const [{ total: categoryCount }] = await db
+    .select({ total: count() })
+    .from(schema.product_categories);
+
+  let leafIds = new Map<string, number>();
+
+  if (Number(categoryCount) === 0) {
+    leafIds = await seedTaxonomy(db);
+    console.warn(`✓ Taxonomy seeded: ${leafIds.size} leaves`);
+  } else {
+    leafIds = await loadLeafIds(db);
+    console.warn(`- Taxonomy already exists (${categoryCount}) — reusing`);
+  }
+
+  const attached = await attachProductsToLeaves(db, leafIds);
+  console.warn(`✓ Products attached to categories: ${attached}`);
 
   await pool.end();
 }

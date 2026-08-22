@@ -178,6 +178,55 @@ export class TaxonomyService {
     return null;
   }
 
+  /*
+   * Display labels for every node, in one query.
+   *
+   * Two levels, because the shop needs two different things and a single string
+   * cannot be both:
+   *   category    - the root ancestor (Grains), which drives the filter chips
+   *   subcategory - the immediate parent (Rice), which labels the product card
+   *
+   * A leaf directly under a root - Oil > Palm Oil - reports Oil for both, which
+   * is correct: there is no intermediate level to name.
+   *
+   * Built as a map rather than resolved per product, so listing the catalogue
+   * stays one query instead of one per row.
+   */
+  async categoryLabels(): Promise<
+    Map<number, { category: string; subcategory: string }>
+  > {
+    const rows = await this.db
+      .select({
+        id: schema.product_categories.id,
+        name: schema.product_categories.name,
+        parent_id: schema.product_categories.parent_id,
+      })
+      .from(schema.product_categories);
+
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    const labels = new Map<number, { category: string; subcategory: string }>();
+
+    for (const row of rows) {
+      const trail: string[] = [];
+      let cursor: (typeof rows)[number] | undefined = row;
+
+      /* Bounded so a cycle from a bad parent_id cannot spin forever. */
+      for (let hops = 0; cursor && hops < 10; hops += 1) {
+        trail.unshift(cursor.name);
+        cursor = cursor.parent_id ? byId.get(cursor.parent_id) : undefined;
+      }
+
+      if (trail.length === 0) continue;
+
+      labels.set(row.id, {
+        category: trail[0],
+        subcategory: trail.length > 1 ? trail[trail.length - 2] : trail[0],
+      });
+    }
+
+    return labels;
+  }
+
   // === Writes
 
   async createCategory(input: CreateCategoryInput) {

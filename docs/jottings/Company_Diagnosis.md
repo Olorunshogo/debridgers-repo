@@ -174,7 +174,7 @@ Then permanently separate these metrics.
 
 Okay then.
 
-### 3. 3. Commercial validation is behind technical validation
+### 3. Commercial validation is behind technical validation
 
 This is probably the biggest strategic imbalance in the company.
 

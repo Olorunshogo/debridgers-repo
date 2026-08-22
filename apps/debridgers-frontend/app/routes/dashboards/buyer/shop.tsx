@@ -41,7 +41,7 @@ interface ApiProduct {
   category: string | null;
 }
 
-const ITEMS_PER_PAGE = 9;
+const ITEMS_PER_PAGE = 12;
 
 export default function BuyerShop() {
   const {

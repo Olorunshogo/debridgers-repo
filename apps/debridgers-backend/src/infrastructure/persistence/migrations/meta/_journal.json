@@ -78,6 +78,13 @@
       "when": 1786275084994,
       "tag": "0010_commissions_amount_nullable",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1786275085994,
+      "tag": "0011_recompute_product_category",
+      "breakpoints": true
     }
   ]
 }

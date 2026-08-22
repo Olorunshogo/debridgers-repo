@@ -657,7 +657,7 @@ export default function BuyerWallet() {
           >
             Add Funds
           </DashSubmitButton>
-          <DashSubmitButton
+          {/* <DashSubmitButton
             variant="tertiary"
             type="button"
             icon={ArrowUpRight}
@@ -665,7 +665,7 @@ export default function BuyerWallet() {
             onClick={openWithdrawModal}
           >
             Withdraw
-          </DashSubmitButton>
+          </DashSubmitButton> */}
         </div>
         {!payoutAccountLoading && !payoutAccount && (
           <p className="mt-3 text-xs text-white/70">
@@ -677,7 +677,7 @@ export default function BuyerWallet() {
       </motion.div>
 
       {/* === Payout account */}
-      <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
+      {/* <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
         <h3 className="font-syne text-heading font-semibold">Payout Account</h3>
         {payoutAccountLoading ? (
           <div className="bg-gray-border h-16 animate-pulse rounded-xl" />
@@ -720,7 +720,7 @@ export default function BuyerWallet() {
             </DashSubmitButton>
           </div>
         )}
-      </div>
+      </div> */}
 
       <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
         <h3 className="font-syne text-heading font-semibold">

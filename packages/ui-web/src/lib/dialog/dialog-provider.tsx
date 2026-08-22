@@ -222,7 +222,7 @@ function DialogPanel({
       />
 
       <div
-        className="pointer-events-none fixed inset-0 flex items-end justify-center md:items-center"
+        className="px-section-px sm:px-section-px-sm lg:px-section-px-lg pointer-events-none fixed inset-0 flex items-end justify-center md:items-center"
         style={{ zIndex: 50 + stackIndex * 10 }}
       >
         <motion.div
@@ -238,7 +238,7 @@ function DialogPanel({
            * namespace - so max-w-md compiled to 12px and the panel collapsed to
            * the width of its padding. Numeric widths cannot be shadowed.
            */
-          className="border-gray-border pointer-events-auto max-h-[90vh] w-full max-w-112 overflow-y-auto rounded-t-2xl border bg-white p-6 outline-none md:rounded-xl"
+          className="border-gray-border pointer-events-auto max-h-[90vh] w-full max-w-150 overflow-y-auto rounded-t-2xl border bg-white p-6 outline-none md:rounded-xl"
           variants={dialogPanelVariants}
           initial="initial"
           animate="animate"

@@ -5,6 +5,7 @@ import { drizzle, NodePgDatabase } from "drizzle-orm/node-postgres";
 import { count, eq, inArray, sql } from "drizzle-orm";
 import * as bcrypt from "bcryptjs";
 import * as schema from "../persistence/index";
+import { TAXONOMY, PRODUCT_LEAF_PATHS, type TaxonomyNodeSeed } from "./catalog";
 
 /*
  * Development-only dataset. `seeder.ts` stays the production baseline (admin,
@@ -44,11 +45,6 @@ type CommissionStatus = "pending" | "confirmed" | "paid";
 type WithdrawalStatus = "pending" | "approved" | "rejected" | "paid";
 type StockRequestStatus = "pending" | "fulfilled" | "cancelled";
 
-interface TaxonomyNodeSeed {
-  name: string;
-  children?: TaxonomyNodeSeed[];
-}
-
 interface AgentSeed {
   first_name: string;
   last_name: string;
@@ -80,39 +76,6 @@ interface BuyerSeed {
  * hardcoded literal (finding F1). Seeding the real rows is what lets that
  * literal be deleted in favour of the DB-backed query.
  */
-const TAXONOMY: TaxonomyNodeSeed[] = [
-  {
-    name: "Grains",
-    children: [
-      {
-        name: "Rice",
-        children: [
-          { name: "Local White" },
-          { name: "Ofada" },
-          { name: "Tuwo" },
-          { name: "Long Grain" },
-        ],
-      },
-      {
-        name: "Beans",
-        children: [
-          { name: "Wake Gida" },
-          { name: "Cowpea" },
-          { name: "Soya Beans" },
-          { name: "Ameria" },
-          { name: "Honey Beans" },
-        ],
-      },
-      {
-        name: "Garri",
-        children: [{ name: "White" }, { name: "Yellow" }, { name: "Ijebu" }],
-      },
-    ],
-  },
-  { name: "Oil", children: [{ name: "Palm Oil" }, { name: "Groundnut Oil" }] },
-  { name: "Tubers", children: [{ name: "Yam" }, { name: "Irish Potato" }] },
-];
-
 const AGENTS: AgentSeed[] = [
   {
     first_name: "Musa",
@@ -419,33 +382,22 @@ async function attachProductsToLeaves(
   db: Db,
   leafIds: Map<string, number>,
 ): Promise<number> {
-  const byProductName: Record<string, string> = {
-    "Local White Rice": "Grains > Rice > Local White",
-    "Ofada Rice": "Grains > Rice > Ofada",
-    "Tuwo Rice": "Grains > Rice > Tuwo",
-    "Wake Gida (Honey Beans)": "Grains > Beans > Wake Gida",
-    "Cowpea (White Beans)": "Grains > Beans > Cowpea",
-    "White Garri": "Grains > Garri > White",
-    "Yellow Garri (Toasted)": "Grains > Garri > Yellow",
-    "Palm Oil": "Oil > Palm Oil",
-    "Groundnut Oil": "Oil > Groundnut Oil",
-    Yam: "Tubers > Yam",
-    "Irish Potato": "Tubers > Irish Potato",
-  };
-
   let attached = 0;
 
-  for (const [productName, leafPath] of Object.entries(byProductName)) {
+  for (const [productName, leafPath] of Object.entries(PRODUCT_LEAF_PATHS)) {
     const leafId = leafIds.get(leafPath);
     if (leafId === undefined) continue;
 
-    const leafName = leafPath.split(" > ").pop() as string;
-
+    /*
+     * `category` is deliberately not written. Setting it to the leaf name here
+     * is what put "Wake Gida" and "Local White" on the product card where a
+     * category belongs. The label is derived from the tree on read instead, so
+     * there is one place it can come from.
+     */
     const result = await db
       .update(schema.productsTable)
       .set({
         category_id: leafId,
-        category: leafName,
         measure_value: 1,
         measure_unit: productName.includes("Oil") ? "litre" : "kg",
       })
