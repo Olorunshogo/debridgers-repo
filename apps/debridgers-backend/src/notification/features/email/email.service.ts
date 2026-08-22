@@ -336,6 +336,97 @@ export class EmailService {
     });
   }
 
+  // === Agent KYC Approved
+
+  async sendAgentKycApproved(to: string, name: string): Promise<void> {
+    const html = layout({
+      headerBg: BRAND_GREEN,
+      outerBg: "#f6f9f7",
+      title: "KYC Verification Approved",
+      preheader: `Good news ${name}, your KYC verification has been approved.`,
+      body: `
+        <tr>
+          <td style="padding:32px 32px 8px 32px;">
+            <h2 style="margin:0 0 12px 0;font-size:22px;font-weight:700;color:#111827;">You're verified, ${name}</h2>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              Your identity and bank details have been <strong style="color:${BRAND_GREEN};">verified</strong>. You can now request stock from the warehouse and start selling.
+            </p>
+            <p style="margin:0 0 20px 0;font-size:15px;line-height:1.7;color:#374151;">
+              Head to your dashboard to place your first stock request.
+            </p>
+            ${button("Go to Agent Dashboard", `${process.env.APP_URL}/agent/login`, BRAND_GREEN)}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 32px 28px 32px;">
+            <p style="margin:0;font-size:14px;line-height:1.7;color:#6b7280;">
+              Let's get you selling.<br/>
+              <strong>The Debridgers Team</strong>
+            </p>
+          </td>
+        </tr>
+      `,
+    });
+
+    await this.core.send({
+      to,
+      toName: name,
+      subject: "Your KYC Verification is Approved - Debridgers",
+      html,
+    });
+  }
+
+  // === Agent KYC Rejected
+
+  async sendAgentKycRejected(
+    to: string,
+    name: string,
+    reason?: string,
+  ): Promise<void> {
+    const html = layout({
+      headerBg: "#4b5563",
+      outerBg: "#f4f6f8",
+      title: "KYC Verification Update",
+      preheader: "An update regarding your Debridgers KYC verification.",
+      body: `
+        <tr>
+          <td style="padding:32px 32px 8px 32px;">
+            <h2 style="margin:0 0 12px 0;font-size:22px;font-weight:700;color:#111827;">Verification Update, ${name}</h2>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              We reviewed the documents you submitted for KYC verification and could not approve them at this time.
+            </p>
+            ${
+              reason
+                ? `<div style="padding:14px 16px;border-left:4px solid #d1d5db;background:#f9fafb;border-radius:0 8px 8px 0;margin-bottom:16px;">
+                   <p style="margin:0;font-size:13px;color:#374151;"><strong>Reason:</strong> ${reason}</p>
+                 </div>`
+                : ""
+            }
+            <p style="margin:0 0 20px 0;font-size:15px;line-height:1.7;color:#374151;">
+              Please log in to your dashboard and resubmit your documents to continue.
+            </p>
+            ${button("Resubmit KYC", `${process.env.APP_URL}/agent/login`, "#4b5563")}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 32px 28px 32px;">
+            <p style="margin:0;font-size:14px;line-height:1.7;color:#6b7280;">
+              We're happy to review again once resubmitted.<br/>
+              <strong>The Debridgers Team</strong>
+            </p>
+          </td>
+        </tr>
+      `,
+    });
+
+    await this.core.send({
+      to,
+      toName: name,
+      subject: "KYC Verification Update - Debridgers",
+      html,
+    });
+  }
+
   // === Contact Confirmation
 
   async sendContactConfirmation(to: string, name: string): Promise<void> {

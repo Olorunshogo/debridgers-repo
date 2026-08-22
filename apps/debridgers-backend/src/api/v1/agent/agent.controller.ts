@@ -31,6 +31,7 @@ import { StockService } from "./stock.service";
 import { KycService } from "./kyc.service";
 import { BankDetailsService } from "./bank-details.service";
 import { CloudinaryService } from "../../../infrastructure/cloudinary/cloudinary.service";
+import { FileValidationPipe } from "../../../infrastructure/file/file-validation.pipe";
 import { ZodValidationPipe } from "../../../infrastructure/pipeline/validation.pipeline";
 import { applyAgentSchema, ApplyAgentDto } from "./dto/apply-agent.dto";
 import {
@@ -136,11 +137,22 @@ export class AgentController {
     description: "Validation failed / passwords don't match",
   })
   @ApiResponse({ status: 409, description: "Email already registered" })
-  @UseInterceptors(FileInterceptor("cv"))
+  @UseInterceptors(
+    FileInterceptor("cv", { limits: { fileSize: 5 * 1024 * 1024 } }),
+  )
   async apply(@Body() body: unknown, @UploadedFile() cv?: Express.Multer.File) {
     const dto = new ZodValidationPipe(applyAgentSchema).transform(body);
-    const cvUrl = (cv as (Express.Multer.File & { path?: string }) | undefined)
-      ?.path;
+
+    /* CV is optional at apply time, so only validate/upload when supplied. */
+    let cvUrl: string | undefined;
+    if (cv) {
+      new FileValidationPipe().transform(cv);
+      cvUrl = await this.cloudinaryService.uploadBuffer(
+        cv.buffer,
+        "debridgers/agent-cvs",
+      );
+    }
+
     return this.agentService.apply(dto as ApplyAgentDto, cvUrl);
   }
 
@@ -585,10 +597,13 @@ export class AgentController {
     description: "Application not approved / already submitted / missing files",
   })
   @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: "id_front", maxCount: 1 },
-      { name: "id_selfie", maxCount: 1 },
-    ]),
+    FileFieldsInterceptor(
+      [
+        { name: "id_front", maxCount: 1 },
+        { name: "id_selfie", maxCount: 1 },
+      ],
+      { limits: { fileSize: 5 * 1024 * 1024 } },
+    ),
   )
   async submitKyc(
     @Body() body: unknown,
@@ -602,18 +617,34 @@ export class AgentController {
     const dto = new ZodValidationPipe(submitKycSchema).transform(
       body,
     ) as SubmitKycDto;
-    return this.kycService.submitKyc(dto, user, {
-      id_front: (
-        files.id_front?.[0] as
-          | (Express.Multer.File & { path?: string })
-          | undefined
-      )?.path,
-      id_selfie: (
-        files.id_selfie?.[0] as
-          | (Express.Multer.File & { path?: string })
-          | undefined
-      )?.path,
-    });
+
+    const idFrontFile = files.id_front?.[0];
+    const idSelfieFile = files.id_selfie?.[0];
+    const validator = new FileValidationPipe();
+    if (idFrontFile) validator.transform(idFrontFile);
+    if (idSelfieFile) validator.transform(idSelfieFile);
+
+    /*
+     * kycService still enforces that both are present (business rule); this
+     * only uploads whichever files actually arrived so that check is not
+     * duplicated here.
+     */
+    const [id_front, id_selfie] = await Promise.all([
+      idFrontFile
+        ? this.cloudinaryService.uploadBuffer(
+            idFrontFile.buffer,
+            "debridgers/kyc",
+          )
+        : Promise.resolve(undefined),
+      idSelfieFile
+        ? this.cloudinaryService.uploadBuffer(
+            idSelfieFile.buffer,
+            "debridgers/kyc",
+          )
+        : Promise.resolve(undefined),
+    ]);
+
+    return this.kycService.submitKyc(dto, user, { id_front, id_selfie });
   }
 
   @Get("kyc")

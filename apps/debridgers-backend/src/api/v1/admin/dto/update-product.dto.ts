@@ -28,6 +28,7 @@ export const updateProductSchema = z.object({
     .nullable(),
   is_active: z.boolean().optional(),
   sort_order: z.number().int().min(0).optional(),
+  stock_quantity: z.number().int().min(0).optional(),
 });
 
 export type UpdateProductDto = z.infer<typeof updateProductSchema>;

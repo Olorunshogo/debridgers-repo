@@ -4,6 +4,8 @@ export const USER_EVENTS = {
   AGENT_APPLIED: "agent.applied",
   AGENT_APPROVED: "agent.approved",
   AGENT_REJECTED: "agent.rejected",
+  AGENT_KYC_APPROVED: "agent.kyc.approved",
+  AGENT_KYC_REJECTED: "agent.kyc.rejected",
   PASSWORD_RESET_REQUESTED: "password.reset.requested",
   PASSWORD_RESET_COMPLETED: "password.reset.completed",
   EMAIL_VERIFICATION_REQUESTED: "email.verification.requested",
@@ -33,6 +35,17 @@ export interface AgentApprovedPayload {
 }
 
 export interface AgentRejectedPayload {
+  name: string;
+  email: string;
+  reason?: string;
+}
+
+export interface AgentKycApprovedPayload {
+  name: string;
+  email: string;
+}
+
+export interface AgentKycRejectedPayload {
   name: string;
   email: string;
   reason?: string;

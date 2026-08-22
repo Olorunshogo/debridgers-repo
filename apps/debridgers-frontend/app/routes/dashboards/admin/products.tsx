@@ -57,6 +57,7 @@ interface Product {
   weight_grams: number | null;
   is_active: boolean;
   sort_order: number;
+  stock_quantity: number;
 }
 
 interface ProductForm {
@@ -75,6 +76,7 @@ interface ProductForm {
   measure_value: string;
   measure_unit: MeasureUnit;
   weight_grams: string;
+  stock_quantity: string;
 }
 
 interface BundledImage {
@@ -92,6 +94,7 @@ const emptyForm: ProductForm = {
   measure_value: "",
   measure_unit: "kg",
   weight_grams: "",
+  stock_quantity: "",
 };
 
 const measureUnitOptions: { value: MeasureUnit; label: string }[] = [
@@ -191,6 +194,7 @@ export default function AdminProductsPage() {
       measure_value: p.measure_value === null ? "" : String(p.measure_value),
       measure_unit: p.measure_unit ?? "kg",
       weight_grams: p.weight_grams === null ? "" : String(p.weight_grams),
+      stock_quantity: String(p.stock_quantity),
     });
     setError(null);
     setShowForm(true);
@@ -247,6 +251,7 @@ export default function AdminProductsPage() {
     };
     const measure_value = toOptionalInt(form.measure_value);
     const weight_grams = toOptionalInt(form.weight_grams);
+    const stock_quantity = toOptionalInt(form.stock_quantity);
     setSaving(true);
     setError(null);
     try {
@@ -263,6 +268,7 @@ export default function AdminProductsPage() {
             measure_value,
             measure_unit: form.measure_unit,
             weight_grams,
+            stock_quantity,
           }),
         });
       } else {
@@ -280,6 +286,7 @@ export default function AdminProductsPage() {
             measure_value,
             measure_unit: form.measure_unit,
             weight_grams,
+            stock_quantity,
           }),
         });
       }
@@ -437,6 +444,21 @@ export default function AdminProductsPage() {
                 value={form.price}
                 onChange={(e) =>
                   setForm((p) => ({ ...p, price: e.target.value }))
+                }
+              />
+              {/*
+                Warehouse stock. Agent stock requests are rejected once this
+                hits 0 and are never auto-restocked, so this is the only lever
+                admin has to make a product orderable again.
+              */}
+              <DashNumberInput
+                label="Warehouse Stock"
+                id="stock-quantity"
+                min={0}
+                placeholder="e.g. 200"
+                value={form.stock_quantity}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, stock_quantity: e.target.value }))
                 }
               />
               <DashTextInput
@@ -670,16 +692,21 @@ export default function AdminProductsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-gray-border border-b">
-                {["Product", "Unit / Size", "Price", "Status", "Actions"].map(
-                  (h) => (
-                    <th
-                      key={h}
-                      className="text-text px-5 py-3 text-left text-xs font-semibold tracking-wide uppercase"
-                    >
-                      {h}
-                    </th>
-                  ),
-                )}
+                {[
+                  "Product",
+                  "Unit / Size",
+                  "Price",
+                  "Stock",
+                  "Status",
+                  "Actions",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className="text-text px-5 py-3 text-left text-xs font-semibold tracking-wide uppercase"
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -719,6 +746,17 @@ export default function AdminProductsPage() {
                   <td className="text-text px-5 py-4">{p.unit}</td>
                   <td className="text-heading px-5 py-4 font-semibold">
                     {formatFromKobo(p.price_kobo)}
+                  </td>
+                  <td className="px-5 py-4">
+                    <span
+                      className={`font-semibold ${
+                        p.stock_quantity === 0
+                          ? "text-status-cancelled-text"
+                          : "text-heading"
+                      }`}
+                    >
+                      {p.stock_quantity}
+                    </span>
                   </td>
                   <td className="px-5 py-4">
                     <button

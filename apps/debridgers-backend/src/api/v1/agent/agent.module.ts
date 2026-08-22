@@ -17,7 +17,14 @@ import { CloudinaryService } from "../../../infrastructure/cloudinary/cloudinary
     AuthModule,
     /* For SafeHavenService: bank list and account name resolution. */
     PaymentModule,
-    MulterModule.register({ dest: "/tmp/uploads" }),
+    /*
+     * No `dest`/`storage` option: Multer defaults to memory storage, so
+     * uploaded files arrive with `.buffer` populated for CloudinaryService to
+     * stream - matching buyer.module.ts. A `dest` here previously forced disk
+     * storage, which left `.buffer` undefined and saved files to local paths
+     * with no route serving them (unreachable, and gone on container restart).
+     */
+    MulterModule.register(),
   ],
   controllers: [AgentController],
   providers: [

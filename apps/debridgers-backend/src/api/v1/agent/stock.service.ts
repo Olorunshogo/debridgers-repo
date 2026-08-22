@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";
@@ -30,6 +30,7 @@ export class StockService {
         name: schema.productsTable.name,
         unit: schema.productsTable.unit,
         price_kobo: schema.productsTable.price_kobo,
+        stock_quantity: schema.productsTable.stock_quantity,
         category: schema.productsTable.category,
         category_id: schema.productsTable.category_id,
         category_name: schema.product_categories.name,
@@ -85,6 +86,19 @@ export class StockService {
     if (!product)
       throw new BadRequestException("Product not found or inactive");
 
+    /*
+     * Informative only - the authoritative guard against overselling is the
+     * atomic decrement in admin.service#fulfilStockRequest, which runs against
+     * whatever stock remains at fulfillment time. This just gives the agent an
+     * immediate, friendly rejection instead of a request that can never be
+     * fulfilled.
+     */
+    if (product.stock_quantity < dto.quantity) {
+      throw new BadRequestException(
+        `Insufficient warehouse stock. Available: ${product.stock_quantity}, requested: ${dto.quantity}`,
+      );
+    }
+
     const amountToRemit = dto.quantity * product.price_kobo;
 
     const [request] = await this.db
@@ -131,26 +145,46 @@ export class StockService {
       );
     }
 
-    const newAmountRemitted = request.amount_remitted + dto.amount_remitted;
-
-    if (newAmountRemitted > request.amount_to_remit) {
+    if (
+      request.amount_remitted + dto.amount_remitted >
+      request.amount_to_remit
+    ) {
       throw new BadRequestException(
         "Remittance exceeds the amount owed for this request",
       );
     }
 
-    await this.db
+    /*
+     * The checks above are informative; this UPDATE is the actual guard, so
+     * two concurrent remittances cannot both read the same amount_remitted
+     * and have one silently overwrite the other (or together push the total
+     * past what is owed).
+     */
+    const [updated] = await this.db
       .update(schema.stock_requests)
-      .set({ amount_remitted: newAmountRemitted })
-      .where(eq(schema.stock_requests.id, dto.stock_request_id));
+      .set({
+        amount_remitted: sql`${schema.stock_requests.amount_remitted} + ${dto.amount_remitted}`,
+      })
+      .where(
+        sql`${schema.stock_requests.id} = ${dto.stock_request_id}
+            AND ${schema.stock_requests.status} = 'fulfilled'
+            AND ${schema.stock_requests.amount_remitted} + ${dto.amount_remitted} <= ${schema.stock_requests.amount_to_remit}`,
+      )
+      .returning();
+
+    if (!updated) {
+      throw new BadRequestException(
+        "Remittance exceeds the amount owed for this request",
+      );
+    }
 
     return {
       message: "Remittance recorded",
       data: {
         stock_request_id: dto.stock_request_id,
-        amount_remitted: newAmountRemitted,
-        amount_to_remit: request.amount_to_remit,
-        outstanding: request.amount_to_remit - newAmountRemitted,
+        amount_remitted: updated.amount_remitted,
+        amount_to_remit: updated.amount_to_remit,
+        outstanding: updated.amount_to_remit - updated.amount_remitted,
       },
     };
   }

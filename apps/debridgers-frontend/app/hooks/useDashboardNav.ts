@@ -14,6 +14,7 @@ import {
   Package,
   MapPin,
   Banknote,
+  ShieldCheck,
 } from "lucide-react";
 import { supportWhatsAppHref } from "@debridgers/ui-web";
 
@@ -139,6 +140,11 @@ const adminNavGroups: NavGroup[] = [
     items: [
       { label: "Overview", icon: LayoutDashboard, href: "/admin-dashboard" },
       { label: "Agents", icon: User, href: "/admin-dashboard/agents" },
+      {
+        label: "KYC Review",
+        icon: ShieldCheck,
+        href: "/admin-dashboard/kyc",
+      },
       { label: "Buyers", icon: ShoppingCart, href: "/admin-dashboard/buyers" },
       { label: "Products", icon: Package, href: "/admin-dashboard/products" },
       { label: "Outreach", icon: MapPin, href: "/admin-dashboard/outreach" },

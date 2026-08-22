@@ -13,6 +13,8 @@ import {
   AgentAppliedPayload,
   AgentApprovedPayload,
   AgentRejectedPayload,
+  AgentKycApprovedPayload,
+  AgentKycRejectedPayload,
   PasswordResetRequestedPayload,
   PasswordResetCompletedPayload,
   EmailVerificationRequestedPayload,
@@ -138,6 +140,30 @@ export class UserListeners {
       );
     } catch (error) {
       this.logger.warn(`Agent rejection email failed for ${payload.email}`);
+      this.logger.debug(error);
+    }
+  }
+
+  @OnEvent(USER_EVENTS.AGENT_KYC_APPROVED)
+  async onAgentKycApproved(payload: AgentKycApprovedPayload): Promise<void> {
+    try {
+      await this.emailService.sendAgentKycApproved(payload.email, payload.name);
+    } catch (error) {
+      this.logger.warn(`Agent KYC approval email failed for ${payload.email}`);
+      this.logger.debug(error);
+    }
+  }
+
+  @OnEvent(USER_EVENTS.AGENT_KYC_REJECTED)
+  async onAgentKycRejected(payload: AgentKycRejectedPayload): Promise<void> {
+    try {
+      await this.emailService.sendAgentKycRejected(
+        payload.email,
+        payload.name,
+        payload.reason,
+      );
+    } catch (error) {
+      this.logger.warn(`Agent KYC rejection email failed for ${payload.email}`);
       this.logger.debug(error);
     }
   }

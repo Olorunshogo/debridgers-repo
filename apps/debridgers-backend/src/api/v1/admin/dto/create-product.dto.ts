@@ -30,6 +30,7 @@ export const createProductSchema = z.object({
     )
     .optional(),
   sort_order: z.number().int().min(0).optional(),
+  stock_quantity: z.number().int().min(0).optional(),
 });
 
 export type CreateProductDto = z.infer<typeof createProductSchema>;

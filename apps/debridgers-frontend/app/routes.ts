@@ -72,6 +72,7 @@ export default [
   layout("routes/dashboards/admin/layout.tsx", [
     route("admin-dashboard", "routes/dashboards/admin/overview.tsx"),
     route("admin-dashboard/agents", "routes/dashboards/admin/agents.tsx"),
+    route("admin-dashboard/kyc", "routes/dashboards/admin/kyc.tsx"),
     route("admin-dashboard/buyers", "routes/dashboards/admin/buyers.tsx"),
     route("admin-dashboard/settings", "routes/dashboards/admin/settings.tsx"),
     route("admin-dashboard/products", "routes/dashboards/admin/products.tsx"),

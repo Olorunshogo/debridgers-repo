@@ -480,6 +480,27 @@ export class AdminService {
       })
       .where(eq(schema.agent_profiles.user_id, agentId));
 
+    const [user] = await this.db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.id, agentId))
+      .limit(1);
+
+    const name = `${user.first_name} ${user.last_name}`;
+
+    if (action === "approved") {
+      this.eventEmitter.emit(USER_EVENTS.AGENT_KYC_APPROVED, {
+        name,
+        email: user.email,
+      });
+    } else {
+      this.eventEmitter.emit(USER_EVENTS.AGENT_KYC_REJECTED, {
+        name,
+        email: user.email,
+        reason,
+      });
+    }
+
     return {
       message: `KYC ${action} successfully`,
       data: null,
@@ -916,24 +937,58 @@ export class AdminService {
   }
 
   async fulfilStockRequest(requestId: number, _adminId: number) {
-    const [request] = await this.db
-      .select()
-      .from(schema.stock_requests)
-      .where(eq(schema.stock_requests.id, requestId))
-      .limit(1);
+    return this.db.transaction(async (tx) => {
+      const [request] = await tx
+        .select()
+        .from(schema.stock_requests)
+        .where(eq(schema.stock_requests.id, requestId))
+        .limit(1);
 
-    if (!request) throw new NotFoundException("Stock request not found");
+      if (!request) throw new NotFoundException("Stock request not found");
 
-    if (request.status !== "pending") {
-      throw new BadRequestException("Only pending requests can be fulfilled");
-    }
+      /*
+       * The status flip is itself guarded (WHERE status = 'pending'), so two
+       * concurrent fulfil calls for the same request cannot both pass and
+       * both decrement warehouse stock below.
+       */
+      const [fulfilled] = await tx
+        .update(schema.stock_requests)
+        .set({ status: "fulfilled", fulfilled_at: new Date() })
+        .where(
+          sql`${schema.stock_requests.id} = ${requestId} AND ${schema.stock_requests.status} = 'pending'`,
+        )
+        .returning();
 
-    await this.db
-      .update(schema.stock_requests)
-      .set({ status: "fulfilled", fulfilled_at: new Date() })
-      .where(eq(schema.stock_requests.id, requestId));
+      if (!fulfilled) {
+        throw new BadRequestException("Only pending requests can be fulfilled");
+      }
 
-    return { message: "Stock request fulfilled", data: null };
+      /*
+       * Warehouse stock is only checked (not reserved) when the agent places
+       * the order, so this is the real decrement - guarded the same way as
+       * the status flip, and inside the same transaction, so a request never
+       * ends up marked fulfilled while stock silently goes negative.
+       */
+      if (request.product_id) {
+        const [decremented] = await tx
+          .update(schema.productsTable)
+          .set({
+            stock_quantity: sql`${schema.productsTable.stock_quantity} - ${request.quantity}`,
+          })
+          .where(
+            sql`${schema.productsTable.id} = ${request.product_id} AND ${schema.productsTable.stock_quantity} >= ${request.quantity}`,
+          )
+          .returning();
+
+        if (!decremented) {
+          throw new BadRequestException(
+            "Insufficient warehouse stock to fulfill this request",
+          );
+        }
+      }
+
+      return { message: "Stock request fulfilled", data: null };
+    });
   }
 
   async recordInventoryReceived(
@@ -1111,6 +1166,7 @@ export class AdminService {
         description: dto.description ?? null,
         image_url: dto.image_url ?? null,
         sort_order: dto.sort_order ?? 0,
+        stock_quantity: dto.stock_quantity ?? 0,
         is_active: true,
       })
       .returning();
@@ -1168,6 +1224,8 @@ export class AdminService {
     if (dto.image_url !== undefined) updates.image_url = dto.image_url;
     if (dto.is_active !== undefined) updates.is_active = dto.is_active;
     if (dto.sort_order !== undefined) updates.sort_order = dto.sort_order;
+    if (dto.stock_quantity !== undefined)
+      updates.stock_quantity = dto.stock_quantity;
 
     if (Object.keys(updates).length === 0) {
       throw new BadRequestException("No fields to update");

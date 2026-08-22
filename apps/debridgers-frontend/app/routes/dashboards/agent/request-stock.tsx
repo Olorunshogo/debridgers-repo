@@ -1,6 +1,13 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Minus, Plus, CheckCircle2, Package, Trash2 } from "lucide-react";
+import {
+  Minus,
+  Plus,
+  CheckCircle2,
+  Package,
+  Trash2,
+  Banknote,
+} from "lucide-react";
 import { apiFetch, ApiError } from "@debridgers/api-client";
 import {
   formatFromKobo,
@@ -101,6 +108,12 @@ export default function AgentRequestStockPage() {
   const [pastRequests, setPastRequests] = useState<StockRequest[]>([]);
   const [loadingRequests, setLoadingRequests] = useState<boolean>(true);
   const [productMap, setProductMap] = useState<Record<number, Product>>({});
+
+  /* Which fulfilled request has its remit box open, and the typed amount. */
+  const [remittingId, setRemittingId] = useState<string | null>(null);
+  const [remitAmount, setRemitAmount] = useState<string>("");
+  const [remitSubmitting, setRemitSubmitting] = useState<boolean>(false);
+  const [remitError, setRemitError] = useState<string | null>(null);
 
   useEffect(() => {
     /*
@@ -224,6 +237,36 @@ export default function AgentRequestStockPage() {
     }
   }
 
+  async function handleRemit(requestId: string) {
+    const naira = parseFloat(remitAmount);
+    if (isNaN(naira) || naira <= 0) {
+      setRemitError("Enter a valid amount.");
+      return;
+    }
+    setRemitError(null);
+    setRemitSubmitting(true);
+    try {
+      await apiFetch("/agent/stock/remit", {
+        method: "POST",
+        body: JSON.stringify({
+          stock_request_id: Number(requestId),
+          amount_remitted: Math.round(naira * 100),
+        }),
+      });
+      setRemittingId(null);
+      setRemitAmount("");
+      await loadRequests();
+    } catch (err) {
+      setRemitError(
+        err instanceof ApiError
+          ? err.message
+          : "Failed to record payment. Please try again.",
+      );
+    } finally {
+      setRemitSubmitting(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       {/* Success banner */}
@@ -310,32 +353,91 @@ export default function AgentRequestStockPage() {
             <div className="flex flex-col gap-2">
               {pastRequests.map((req, i) => {
                 const s = statusStyles[req.status] ?? statusStyles.pending;
+                const outstanding = req.amount_to_remit - req.amount_remitted;
+                const canRemit = req.status === "fulfilled" && outstanding > 0;
                 return (
                   <motion.div
                     key={req.id}
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.06 }}
-                    className="border-gray-border bg-bg-light flex items-center justify-between rounded-xl border px-4 py-3"
+                    className="border-gray-border bg-bg-light flex flex-col gap-2 rounded-xl border px-4 py-3"
                   >
-                    <div className="flex flex-col gap-0.5">
-                      <p className="text-heading text-sm font-semibold">
-                        {req.product_name} × {req.quantity}
-                      </p>
-                      <p className="text-text text-xs">
-                        {new Date(req.created_at).toLocaleDateString("en-NG", {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                        {" · "}
-                        {fmt(req.amount_to_remit)}
-                      </p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-0.5">
+                        <p className="text-heading text-sm font-semibold">
+                          {req.product_name} × {req.quantity}
+                        </p>
+                        <p className="text-text text-xs">
+                          {new Date(req.created_at).toLocaleDateString(
+                            "en-NG",
+                            { month: "short", day: "numeric" },
+                          )}
+                          {" · "}
+                          {req.status === "fulfilled"
+                            ? outstanding > 0
+                              ? `${fmt(outstanding)} outstanding`
+                              : "Fully paid"
+                            : fmt(req.amount_to_remit)}
+                        </p>
+                      </div>
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${s.bgClass} ${s.textClass}`}
+                      >
+                        {s.label}
+                      </span>
                     </div>
-                    <span
-                      className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${s.bgClass} ${s.textClass}`}
-                    >
-                      {s.label}
-                    </span>
+
+                    {canRemit && (
+                      <div className="flex flex-col gap-2">
+                        {remittingId === req.id ? (
+                          <div className="flex flex-col gap-2">
+                            {remitError && (
+                              <p className="text-status-cancelled-text text-xs">
+                                {remitError}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                min={1}
+                                placeholder="Amount (₦)"
+                                value={remitAmount}
+                                onChange={(e) => setRemitAmount(e.target.value)}
+                                className="border-gray-border w-full rounded-lg border bg-white px-2.5 py-1.5 text-xs"
+                              />
+                              <button
+                                onClick={() => void handleRemit(req.id)}
+                                disabled={remitSubmitting}
+                                className="bg-primary shrink-0 cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                              >
+                                {remitSubmitting ? "..." : "Submit"}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setRemittingId(null);
+                                  setRemitError(null);
+                                }}
+                                className="border-gray-border shrink-0 cursor-pointer rounded-lg border bg-white px-3 py-1.5 text-xs font-semibold"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setRemittingId(req.id);
+                              setRemitAmount("");
+                              setRemitError(null);
+                            }}
+                            className="border-gray-border text-heading flex w-fit cursor-pointer items-center gap-1.5 rounded-full border bg-white px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-black/5"
+                          >
+                            <Banknote size={12} /> Remit Payment
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </motion.div>
                 );
               })}
