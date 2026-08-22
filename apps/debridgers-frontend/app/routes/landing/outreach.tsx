@@ -169,7 +169,7 @@ export default function OutreachPage() {
         aria-label="Page header"
         className="bg-primary py-section-py sm:py-section-py-sm lg:py-section-py-lg relative w-full"
       >
-        <div className="landing-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
+        <div className="section-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
           <div className="mx-auto max-w-300 text-center">
             <p className="font-open-sans mb-3 text-sm font-semibold tracking-widest text-white/70 uppercase">
               We come to you
@@ -190,7 +190,7 @@ export default function OutreachPage() {
         aria-label="Interest registration form"
         className="py-section-py sm:py-section-py-sm lg:py-section-py-lg relative w-full bg-[#F6F3F3]"
       >
-        <div className="landing-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
+        <div className="section-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto">
           <div className="grid gap-10 lg:grid-cols-[1fr_340px]">
             {/* Form */}
             <div className="rounded-2xl bg-white p-6 shadow-sm sm:p-8">

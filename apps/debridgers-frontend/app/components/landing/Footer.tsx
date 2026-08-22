@@ -54,9 +54,16 @@ export default function Footer() {
       <FooterWordmark position="bottom" />
 
       {/* Main footer content */}
-      <div className="landing-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex flex-col gap-8">
+      <div className="section-max-width px-section-px sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex flex-col gap-8">
         {/* Top section: tagline + columns */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[repeat(auto-fit,minmax(280px,1fr))] lg:items-start">
+        {/*
+          Three explicit tracks, side by side from lg.
+
+          minmax(0,…) on each: the email addresses are long unbreakable strings,
+          and a bare fr floors at min-content, so the middle track would push the
+          headline narrower than its share until it wrapped.
+        */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)_minmax(0,1.2fr)] lg:items-start">
           {/* Tagline */}
           <h1 className="font-syne flex flex-col text-4xl leading-tight font-medium text-white sm:text-5xl lg:text-6xl">
             <span>Market Prices.</span>
@@ -76,7 +83,7 @@ export default function Footer() {
           </h1>
 
           {/* Support and Need help */}
-          <div className="grid grid-cols-2 items-center gap-8">
+          <div className="grid grid-cols-2 items-start gap-8">
             {/* Support */}
             <div className="font-open-sans flex flex-col gap-8">
               <h2 className="font-open-sans text-sm font-semibold tracking-widest text-white uppercase">

@@ -60,6 +60,18 @@
   --status-pending-bg: #fef9c3;
   --status-pending-text: #854d0e;
 
+  /*
+   * Soft amber for ordinary emphasis - numbered steps, counters, quiet badges.
+   *
+   * Same values as status-pending on purpose, but a separate name: a status
+   * token means "this record is pending", and decoration that borrows it moves
+   * whenever pending states are restyled. The pairing is kept because #854d0e
+   * on #fef9c3 clears 7:1, which the brand gold (#ef9e0b) does not come close
+   * to at small bold sizes.
+   */
+  --accent-soft-bg: #fef9c3;
+  --accent-soft-text: #854d0e;
+
   /* ── Dashboard UI ── */
   --dash-quick-action-hover: #e8f5e9;
   --dash-sidebar-bg: #1e5925;

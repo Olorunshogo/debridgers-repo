@@ -1,0 +1,20 @@
+{
+  /*
+   * Type-checking only, for the test suites the build excludes.
+   *
+   * Vitest runs them through esbuild, which allows top-level await regardless;
+   * this exists so `tsc` agrees, and so the tests do not silently go unchecked
+   * just because they are out of the build.
+   */
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "noEmit": true,
+    "types": ["node", "vitest/globals"]
+  },
+  "include": ["src/**/*.spec.ts", "src/test/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -35,8 +35,14 @@ type ActiveCategory = HelpCategory | "all";
 
 // === FAQ row
 
-function FaqRow({ item, index }: { item: FaqItem; index: number }) {
-  const [open, setOpen] = useState<boolean>(false);
+interface FaqRowProps {
+  item: FaqItem;
+  index: number;
+  open: boolean;
+  onToggle: () => void;
+}
+
+function FaqRow({ item, index, open, onToggle }: FaqRowProps) {
   const panelId = useId();
   const buttonId = useId();
 
@@ -53,7 +59,7 @@ function FaqRow({ item, index }: { item: FaqItem; index: number }) {
           id={buttonId}
           aria-expanded={open}
           aria-controls={panelId}
-          onClick={() => setOpen((p) => !p)}
+          onClick={onToggle}
           className="flex w-full cursor-pointer items-center justify-between gap-3 px-5 py-4 text-left"
         >
           <span className="font-syne text-heading text-sm font-semibold sm:text-base">
@@ -144,11 +150,31 @@ export function HelpCenter({
   const { triggerDialog } = useDialog();
   const [query, setQuery] = useState<string>("");
   const [category, setCategory] = useState<ActiveCategory>("all");
+  /* Question text, not an index: the list is filtered, so an index would point
+     at a different row once a search narrows it. */
+  const [openFaq, setOpenFaq] = useState<string | null>(null);
+
+  /*
+   * Display order comes from the tabs, not from the array.
+   *
+   * faqs is a single flat list that can be authored in any order - append a new
+   * question wherever it is convenient - and the rendered grouping stays put,
+   * because a question's position is derived from where its category sits in
+   * the tab row. Reorder the tabs and every view follows; reorder the array and
+   * nothing moves.
+   */
+  const categoryRank = useMemo<Map<string, number>>(() => {
+    const ranks = new Map<string, number>();
+    content.categories
+      .filter((tab) => tab.key !== "all")
+      .forEach((tab, i) => ranks.set(tab.key, i));
+    return ranks;
+  }, [content.categories]);
 
   const filtered = useMemo<FaqItem[]>(() => {
     const term = query.trim().toLowerCase();
 
-    return content.faqs.filter((faq) => {
+    const matches = content.faqs.filter((faq) => {
       const inCategory = category === "all" || faq.category === category;
       if (!inCategory) return false;
       if (!term) return true;
@@ -158,7 +184,20 @@ export function HelpCenter({
         faq.answer.toLowerCase().includes(term)
       );
     });
-  }, [content.faqs, query, category]);
+
+    /*
+     * filter() already returned a copy, so this does not mutate the source.
+     * Array.sort is stable, which is what preserves the authored order of
+     * questions inside a category while the categories themselves are ordered.
+     * A category with no tab sorts last rather than throwing.
+     */
+    const LAST = Number.MAX_SAFE_INTEGER;
+    return matches.sort(
+      (a, b) =>
+        (categoryRank.get(a.category) ?? LAST) -
+        (categoryRank.get(b.category) ?? LAST),
+    );
+  }, [content.faqs, query, category, categoryRank]);
 
   function openGuide(): void {
     triggerDialog("HELP_GUIDE", {
@@ -288,7 +327,17 @@ export function HelpCenter({
           </div>
         ) : (
           filtered.map((item, i) => (
-            <FaqRow key={item.question} item={item} index={i} />
+            <FaqRow
+              key={item.question}
+              item={item}
+              index={i}
+              open={openFaq === item.question}
+              onToggle={() =>
+                setOpenFaq((current) =>
+                  current === item.question ? null : item.question,
+                )
+              }
+            />
           ))
         )}
       </div>

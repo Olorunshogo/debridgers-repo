@@ -84,6 +84,10 @@
   --color-status-pending-bg: var(--status-pending-bg);
   --color-status-pending-text: var(--status-pending-text);
 
+  /* Non-status emphasis - see the note in tokens.css */
+  --color-accent-soft-bg: var(--accent-soft-bg);
+  --color-accent-soft-text: var(--accent-soft-text);
+
   /* Dashboard UI */
   --color-dash-quick-action-hover: var(--dash-quick-action-hover);
   --color-dash-sidebar-bg: var(--dash-sidebar-bg);
@@ -102,7 +106,14 @@
   --text-body-lg: clamp(1rem, 1vw + 0.125rem, 1.25rem); /* 16px → 20px */
   --text-body-sm: 0.875rem; /* 14px fixed  */
 
-  /* Spacing scale → gap-xs, p-sm, mt-base, gap-4xl … */
+  /*
+   * Spacing scale → gap-xs, p-sm, mt-base, gap-4xl …
+   *
+   * Careful: these names also shadow Tailwind's container scale, because
+   * max-w-* resolves against the spacing namespace too. max-w-md therefore
+   * means 0.75rem here, not 28rem. Use numeric widths (max-w-112) for
+   * max-width; the named scale is for spacing only.
+   */
   --spacing-xs: 0.25rem; /* 4px  */
   --spacing-sm: 0.5rem; /* 8px  */
   --spacing-md: 0.75rem; /* 12px */
@@ -124,12 +135,6 @@
   --spacing-section-py-lg: var(--section-py-lg);
 }
 
-/* Width tokens → generates max-w-* and w-* utilities */
-@theme {
-  --width-layout-max-width: 100rem; /* 1600px */
-  --width-section-max-width: 90rem; /* 1600px */
-}
-
 @layer utilities {
   .font-openSans {
     font-family: "Open Sans", sans-serif !important;
@@ -144,20 +149,22 @@
 }
 
 @layer components {
-  .landing-max-width {
-    @apply mx-auto w-full max-w-350;
-  }
+  /*
+   * Two container measures, one job each. They share a value deliberately -
+   * a shell and a section should line up, not sit 120px apart - so change
+   * both together or the surfaces drift.
+   */
 
+  /* App shells: the auth pages and the dashboard, which bound everything once
+     and then divide the space internally. */
   .layout-max-width {
-    @apply mx-auto w-full max-w-420;
+    @apply mx-auto w-full max-w-450;
   }
 
+  /* Landing sections: a full-bleed band whose content is pulled back to the
+     page's measure. */
   .section-max-width {
-    @apply mx-auto w-full max-w-400;
-  }
-
-  .dashboard-max-width {
-    @apply mx-auto w-full max-w-355;
+    @apply mx-auto w-full max-w-450;
   }
 }
 
@@ -202,6 +209,22 @@
   }
   100% {
     transform: scaleX(1);
+  }
+}
+
+/* Interactive elements get a pointer. Browsers default <button> to an arrow,
+   unlike <a href>, so without this every button needs the class by hand and
+   some inevitably miss it. Base layer, so a cursor-* utility still wins. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  label:has(> input[type="radio"]),
+  label:has(> input[type="checkbox"]) {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
   }
 }
 

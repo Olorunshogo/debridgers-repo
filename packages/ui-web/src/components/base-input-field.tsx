@@ -64,5 +64,11 @@ export function getInputStateClass(error?: string): string {
 }
 
 /** Shared className for input/select elements */
+/*
+ * read-only:* rather than a prop: any field that sets readOnly gets the muted
+ * treatment and the not-allowed cursor automatically, so the affordance cannot
+ * drift from the behaviour. focus:cursor-text is overridden for the same reason
+ * - a read-only field still takes focus, and a caret there invites typing.
+ */
 export const BASE_INPUT_CLASS =
-  "placeholder:text-text-placeholder bg-input-bg text-heading font-syne h-11 w-full cursor-pointer rounded-full border px-4 text-sm transition-all duration-300 ease-in-out outline-none focus:cursor-text";
+  "placeholder:text-text-placeholder bg-input-bg text-heading font-syne h-11 w-full cursor-pointer rounded-full border px-4 text-sm transition-all duration-300 ease-in-out outline-none focus:cursor-text read-only:bg-bg-light read-only:text-text read-only:cursor-not-allowed read-only:focus:cursor-not-allowed";

@@ -6,7 +6,7 @@ import {
   DIALOG_SUCCESS_CLOSE_DELAY_MS,
   type BuyerPaymentMethod,
 } from "@debridgers/ui-web";
-import { apiFetch } from "@debridgers/api-client";
+import { apiFetch, ApiError } from "@debridgers/api-client";
 
 /*
  * Glue between the dialog engine and the API. Registered as PAYMENT_METHOD in
@@ -83,16 +83,29 @@ export default function PaymentMethodDialog({
         setPendingMethod(method);
 
         return run(async () => {
-          const res = await apiFetch<PayResponse>(
-            `/buyer/orders/${orderId}/pay`,
-            {
+          let res: PayResponse;
+          try {
+            res = await apiFetch<PayResponse>(`/buyer/orders/${orderId}/pay`, {
               method: "POST",
               body: JSON.stringify({
                 payment_method: method,
                 amount_kobo: totalKobo,
               }),
-            },
-          );
+            });
+          } catch (err) {
+            /*
+             * The payment rate limiter exists to stop an order being charged
+             * twice, so hitting it usually means an attempt is already in
+             * flight. "Too many payment attempts. Try again in 47 seconds"
+             * reads as a fault; this says what actually happened.
+             */
+            if (err instanceof ApiError && err.status === 429) {
+              throw new Error(
+                "We are still processing your last attempt on this order. Give it a moment before trying again.",
+              );
+            }
+            throw err;
+          }
 
           /*
            * Paystack finishes off-site, so this never reaches the success

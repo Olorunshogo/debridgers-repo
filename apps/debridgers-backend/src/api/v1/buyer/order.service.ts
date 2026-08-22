@@ -5,7 +5,7 @@ import {
 } from "@nestjs/common";
 import { Inject } from "@nestjs/common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, desc, and, count, inArray } from "drizzle-orm";
+import { eq, desc, and, count, inArray, gte } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
 
@@ -22,6 +22,15 @@ export interface CartItem {
   unit?: string;
   qty: number;
 }
+
+/*
+ * How long a freshly created, still-unpaid order stays reusable.
+ *
+ * Long enough to absorb a double click, a retried request, a second tab, or a
+ * buyer who went back and resubmitted; short enough that someone deliberately
+ * ordering the same basket again shortly after gets a genuinely new order.
+ */
+const ORDER_DEDUPE_WINDOW_MS = 5 * 60 * 1000;
 
 export interface CreateOrderDto {
   delivery_address: string;
@@ -141,6 +150,67 @@ export class OrderService {
     const handlingFee = 10000;
     const total = subtotal + deliveryFee + handlingFee;
 
+    /*
+     * Idempotency, keyed on what the order actually is rather than on a token
+     * the client has to remember to send.
+     *
+     * A repeat of the same basket, to the same address and zone, for the same
+     * total, while an identical order is still sitting pending and unpaid, is a
+     * duplicate submission - not a second order. Returning the existing one
+     * keeps a retry, a second tab, or a double-submitted form from leaving the
+     * buyer with two orders to pay for.
+     *
+     * Derived from columns that already exist, so there is no new key to
+     * migrate or to keep in step with the cart.
+     */
+    const since = new Date(Date.now() - ORDER_DEDUPE_WINDOW_MS);
+
+    const recentCandidates = await this.db
+      .select()
+      .from(schema.orders)
+      .where(
+        and(
+          eq(schema.orders.buyer_id, userId),
+          eq(schema.orders.status, "pending"),
+          eq(schema.orders.payment_status, "unpaid"),
+          eq(schema.orders.zone_id, zoneId),
+          eq(schema.orders.total_amount, total),
+          eq(schema.orders.delivery_address, dto.delivery_address),
+          gte(schema.orders.created_at, since),
+        ),
+      )
+      .orderBy(desc(schema.orders.created_at));
+
+    for (const candidate of recentCandidates) {
+      const existingItems = await this.db
+        .select()
+        .from(schema.order_items)
+        .where(eq(schema.order_items.order_id, candidate.id));
+
+      if (this.sameBasket(existingItems, items)) {
+        return {
+          order: {
+            id: candidate.id,
+            status: candidate.status,
+            items: items.map((item) => ({
+              product_id: item.product_id,
+              name: item.name,
+              qty: item.qty,
+              unit_price: item.price_kobo,
+              subtotal: item.subtotal,
+            })),
+            subtotal_kobo: subtotal,
+            delivery_fee_kobo: deliveryFee,
+            handling_fee_kobo: handlingFee,
+            total_kobo: total,
+            delivery_address: candidate.delivery_address,
+            zone_id: candidate.zone_id,
+            created_at: candidate.created_at,
+          },
+        };
+      }
+    }
+
     // Create order
     const [order] = await this.db
       .insert(schema.orders)
@@ -190,6 +260,37 @@ export class OrderService {
         created_at: order.created_at,
       },
     };
+  }
+
+  /*
+   * Same products, same quantities, same prices - order-independent.
+   *
+   * Prices are compared too: if a product was repriced between the two
+   * submissions the totals would differ anyway, but comparing explicitly means
+   * this never quietly hands back an order priced at yesterday's rate.
+   */
+  private sameBasket(
+    existing: {
+      product_id: number;
+      quantity: number;
+      unit_price_kobo: number;
+    }[],
+    incoming: { product_id: number; qty: number; price_kobo: number }[],
+  ): boolean {
+    if (existing.length !== incoming.length) return false;
+
+    const key = (productId: number, qty: number, price: number): string =>
+      `${productId}:${qty}:${price}`;
+
+    const existingKeys = new Set(
+      existing.map((row) =>
+        key(row.product_id, row.quantity, row.unit_price_kobo),
+      ),
+    );
+
+    return incoming.every((item) =>
+      existingKeys.has(key(item.product_id, item.qty, item.price_kobo)),
+    );
   }
 
   /**

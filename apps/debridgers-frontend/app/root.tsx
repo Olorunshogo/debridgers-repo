@@ -69,22 +69,24 @@ export default function App() {
       {/* Outermost of the data providers: the commission rate is read by the
           public agents page as well as the dashboards, signed in or not. */}
       <PlatformConfigProvider>
-        {/* Inside AuthProvider so a dialog can read the session */}
-        <DialogProvider registry={DIALOG_REGISTRY}>
-          {/* Inside the router and AuthProvider - the adapter needs both */}
-          <AppAuthAdapterProvider>
-            {/* Supplies transport to the shared payment hooks, as the auth
-                adapter does for the auth hooks. Inside AppAuthAdapterProvider
-                so its requests carry a session. */}
-            <AppPaymentAdapterProvider>
-              {/* One cart for every page - landing shop, buyer shop, checkout */}
-              <CartProvider>
+        {/* Inside the router and AuthProvider - the adapter needs both */}
+        <AppAuthAdapterProvider>
+          {/* Supplies transport to the shared payment hooks, as the auth
+              adapter does for the auth hooks. Inside AppAuthAdapterProvider
+              so its requests carry a session. */}
+          <AppPaymentAdapterProvider>
+            {/* One cart for every page - landing shop, buyer shop, checkout */}
+            <CartProvider>
+              {/* Innermost, because the engine renders dialogs at its own
+                  position in the tree rather than at the caller's. Any provider
+                  above it here is a context its dialogs could not reach. */}
+              <DialogProvider registry={DIALOG_REGISTRY}>
                 <IntroAnimation />
                 <Outlet />
-              </CartProvider>
-            </AppPaymentAdapterProvider>
-          </AppAuthAdapterProvider>
-        </DialogProvider>
+              </DialogProvider>
+            </CartProvider>
+          </AppPaymentAdapterProvider>
+        </AppAuthAdapterProvider>
       </PlatformConfigProvider>
     </AuthProvider>
   );

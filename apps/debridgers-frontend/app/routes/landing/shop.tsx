@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -10,11 +10,26 @@ import {
   Package,
   CheckCircle2,
   ArrowLeft,
+  AlertCircle,
+  Loader2,
+  ArrowRight,
 } from "lucide-react";
 import { Header } from "../../components/landing/Header";
 import { useAuth } from "../../contexts/AuthContext";
-import { BASE_BACKEND_URL, apiFetch } from "@debridgers/api-client";
-import { useCart, type CartItem } from "../../features/cart";
+import {
+  setPostAuthRedirect,
+  clearPostAuthRedirect,
+} from "../../utils/auth-redirect";
+import {
+  BASE_BACKEND_URL,
+  apiFetch,
+  publicRequest,
+} from "@debridgers/api-client";
+import {
+  useCart,
+  LAST_ORDER_STORAGE_KEY,
+  type CartItem,
+} from "../../features/cart";
 import {
   Pagination,
   ProductCard,
@@ -24,6 +39,11 @@ import {
   useDialog,
   DashTextareaInput,
   DashSearchInput,
+  DashSelectInput,
+  formatFromKobo,
+  defaultStateName,
+  stateSelectOptions,
+  lgaSelectOptions,
 } from "@debridgers/ui-web";
 
 export function meta() {
@@ -93,6 +113,33 @@ interface ApiProduct {
 
 const ITEMS_PER_PAGE = 12;
 
+/* Checkout lives in the dashboard. Paystack returns every buyer here too - see
+   payment.service.ts on the backend - so this is the one checkout there is. */
+const CHECKOUT_PATH = "/buyer-dashboard/checkout";
+
+interface DeliveryZone {
+  id: number;
+  name: string;
+  delivery_fee: number;
+  free_delivery: boolean;
+  areas: string[];
+}
+
+/* Mirrors the quote endpoint's response - see delivery-fee.ts on the backend. */
+interface OrderQuote {
+  itemsTotalKobo: number;
+  deliveryFeeKobo: number;
+  deliveryFeeBeforePromoKobo: number;
+  handlingFeeKobo: number;
+  totalKobo: number;
+  freeDelivery: boolean;
+  extraPackages: number;
+  package_count: number;
+}
+
+/* Long enough that changing zone or quantity a few times is one request. */
+const QUOTE_DEBOUNCE_MS = 400;
+
 // === CheckoutView
 type CheckoutStep = "delivery" | "confirmed";
 
@@ -103,9 +150,11 @@ interface CheckoutViewProps {
 }
 
 function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { triggerDialog } = useDialog();
   const [step, setStep] = useState<CheckoutStep>("delivery");
+  /* Verifying the Paystack return, distinct from submitting a new order. */
+  const [confirming, setConfirming] = useState<boolean>(false);
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryTime, setDeliveryTime] = useState<"today" | "tomorrow">(
     "today",
@@ -113,14 +162,155 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [zones, setZones] = useState<DeliveryZone[]>([]);
+  /* State is fixed to the launch state by default; LGA narrows the zone list. */
+  const [stateName, setStateName] = useState<string>(defaultStateName);
+  const [lga, setLga] = useState<string>("");
+  const [zoneId, setZoneId] = useState<string>("");
+  /* Kept while a new quote is in flight so the totals never flash empty. */
+  const [quote, setQuote] = useState<OrderQuote | null>(null);
+  const [quoting, setQuoting] = useState<boolean>(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
 
+  /* Read inside the confirmation effect, which must not re-run as the cart
+     changes or it would fire a second confirmation mid-flight. */
+  const cartItemsRef = useRef<CartItem[]>(cartItems);
+  cartItemsRef.current = cartItems;
+
+  /* References already sent for confirmation. Guards against a second POST if
+     the effect is re-armed before the URL is cleaned up. */
+  const handledRefs = useRef<Set<string>>(new Set());
+
+  /*
+   * Return leg from Paystack. Arriving here proves the buyer came back, not
+   * that they paid - Paystack sends the same callback when a card is declined
+   * or the page is abandoned. So the reference is confirmed with the server
+   * before anything is treated as bought, and the cart survives a failure.
+   */
   useEffect(() => {
     const ref = searchParams.get("trxref") ?? searchParams.get("reference");
-    if (ref) {
-      onConfirmed();
-      setStep("confirmed");
+    if (!ref || handledRefs.current.has(ref)) return;
+    handledRefs.current.add(ref);
+
+    let cancelled = false;
+    setConfirming(true);
+
+    apiFetch<{ order_id: number; payment_status: string }>(
+      "/buyer/orders/confirm-payment",
+      { method: "POST", body: JSON.stringify({ reference: ref }) },
+    )
+      .then(() => {
+        if (cancelled) return;
+        /* Snapshot before clearing so "repeat last order" has something to
+           restore. Taken from the shared cart rather than re-reading storage. */
+        if (cartItemsRef.current.length > 0) {
+          localStorage.setItem(
+            LAST_ORDER_STORAGE_KEY,
+            JSON.stringify(cartItemsRef.current),
+          );
+        }
+        onConfirmed();
+        setStep("confirmed");
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setError(
+          err instanceof Error && err.message
+            ? err.message
+            : "We could not confirm that payment. Your cart has been kept.",
+        );
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setConfirming(false);
+        /* Drop the reference so a refresh cannot replay this confirmation. */
+        setSearchParams(
+          (params) => {
+            params.delete("trxref");
+            params.delete("reference");
+            return params;
+          },
+          { replace: true },
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, setSearchParams, onConfirmed]);
+
+  // === Delivery zones
+  useEffect(() => {
+    publicRequest<DeliveryZone[]>("/zones")
+      .then(setZones)
+      .catch(() => setZones([]));
+  }, []);
+
+  /*
+   * Zones that serve the chosen LGA. The seeded zones are named after LGAs
+   * ("Kaduna South") and also list their areas, so match on either - the same
+   * rule the backend uses to resolve a zone, kept in step deliberately.
+   */
+  const zonesForLga = useMemo(() => {
+    if (!lga) return [];
+    const target = lga.trim().toLowerCase();
+    return zones.filter(
+      (zone) =>
+        zone.name.trim().toLowerCase() === target ||
+        zone.areas.some((area) => area.trim().toLowerCase() === target),
+    );
+  }, [zones, lga]);
+
+  /* Auto-select the only serving zone, and drop a stale one when LGA changes. */
+  useEffect(() => {
+    if (zonesForLga.length === 1) {
+      setZoneId(String(zonesForLga[0].id));
+      return;
     }
-  }, [searchParams, onConfirmed]);
+    setZoneId((current) =>
+      zonesForLga.some((z) => String(z.id) === current) ? current : "",
+    );
+  }, [zonesForLga]);
+
+  /*
+   * Live quote. The server owns the pricing - delivery is a zone base plus a
+   * per-package charge, and a promo can zero it - so the summary asks rather
+   * than recomputing it here and risking a number that differs from the charge.
+   */
+  useEffect(() => {
+    if (!zoneId || cartItems.length === 0) {
+      setQuote(null);
+      return;
+    }
+
+    setQuoting(true);
+    const timer = window.setTimeout(() => {
+      apiFetch<OrderQuote>("/buyer/cart/quote", {
+        method: "POST",
+        body: JSON.stringify({
+          zone_id: Number(zoneId),
+          cart: cartItems.map((i) => ({
+            product_id: Number(i.id),
+            qty: i.qty,
+          })),
+        }),
+      })
+        .then((next) => {
+          setQuote(next);
+          setQuoteError(null);
+        })
+        .catch((err: unknown) => {
+          setQuoteError(
+            err instanceof Error
+              ? err.message
+              : "Could not price this order right now.",
+          );
+        })
+        .finally(() => setQuoting(false));
+    }, QUOTE_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [zoneId, cartItems]);
 
   const subtotal = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
 
@@ -130,7 +320,7 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (cartItems.length === 0 || !deliveryAddress.trim()) return;
+    if (cartItems.length === 0 || !deliveryAddress.trim() || !zoneId) return;
     setError(null);
     setLoading(true);
     try {
@@ -151,6 +341,7 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
         method: "POST",
         body: JSON.stringify({
           delivery_address: deliveryAddress.trim(),
+          zone_id: Number(zoneId),
           delivery_time: deliveryTime,
           notes: note.trim() || undefined,
           cart: cartItems.map((i) => ({
@@ -197,6 +388,15 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
       );
       setLoading(false);
     }
+  }
+
+  if (confirming) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 p-8 text-center">
+        <Loader2 size={40} className="text-primary animate-spin" />
+        <p className="text-text text-sm">Confirming your payment...</p>
+      </div>
+    );
   }
 
   if (step === "confirmed") {
@@ -246,6 +446,60 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
               <h3 className="font-syne text-heading font-semibold">
                 Delivery Address
               </h3>
+
+              {/* State -> LGA -> Zone, narrowing at each step for a precise address */}
+              <div className="grid gap-4 lg:grid-cols-2">
+                <DashSelectInput
+                  label="State"
+                  required
+                  value={stateName}
+                  options={stateSelectOptions()}
+                  onChange={(e) => {
+                    setStateName(e.target.value);
+                    /* LGAs are state-specific, so a stale one must not survive. */
+                    setLga("");
+                    setZoneId("");
+                  }}
+                />
+
+                <DashSelectInput
+                  label="LGA"
+                  required
+                  value={lga}
+                  placeholder="Choose your LGA"
+                  options={lgaSelectOptions(stateName)}
+                  onChange={(e) => setLga(e.target.value)}
+                />
+              </div>
+
+              <DashSelectInput
+                label="Delivery area"
+                required
+                value={zoneId}
+                placeholder={
+                  !lga
+                    ? "Choose an LGA first"
+                    : zonesForLga.length === 0
+                      ? "We do not deliver here yet"
+                      : "Choose your area"
+                }
+                disabled={!lga || zonesForLga.length === 0}
+                options={zonesForLga.map((zone) => ({
+                  value: String(zone.id),
+                  label: zone.free_delivery
+                    ? `${zone.name} - free delivery`
+                    : `${zone.name} - ${formatFromKobo(zone.delivery_fee)}`,
+                }))}
+                onChange={(e) => setZoneId(e.target.value)}
+              />
+
+              {lga && zonesForLga.length === 0 && (
+                <p className="text-status-cancelled-text text-xs">
+                  We do not deliver to {lga} yet. Pick another LGA or contact
+                  support.
+                </p>
+              )}
+
               <DashTextareaInput
                 label="Full delivery address"
                 required
@@ -348,16 +602,69 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
               <div className="border-gray-border flex flex-col gap-2 border-t pt-3">
                 <div className="text-text flex justify-between text-sm">
                   <span>Subtotal</span>
-                  <span>{formatNaira(subtotal)}</span>
+                  <span>
+                    {quote
+                      ? formatFromKobo(quote.itemsTotalKobo)
+                      : formatNaira(subtotal)}
+                  </span>
                 </div>
-                <div className="text-text flex justify-between text-sm">
-                  <span>Delivery</span>
-                  <span className="text-status-delivered-text">Free</span>
+
+                {/*
+                  Delivery is priced server-side and only known once an area is
+                  chosen. Saying "Free" before then, as this used to, showed a
+                  total that was not what the buyer went on to be charged.
+                */}
+                <div className="text-text flex justify-between gap-3 text-sm">
+                  <span>
+                    Delivery
+                    {quote && quote.extraPackages > 0 && (
+                      <span className="text-text-placeholder">
+                        {" "}
+                        ({quote.package_count} packages)
+                      </span>
+                    )}
+                  </span>
+                  {!zoneId ? (
+                    <span className="text-text-placeholder">
+                      Choose an area
+                    </span>
+                  ) : quote?.freeDelivery ? (
+                    <span className="flex items-center gap-1.5">
+                      <s className="text-text-placeholder">
+                        {formatFromKobo(quote.deliveryFeeBeforePromoKobo)}
+                      </s>
+                      <span className="text-status-delivered-text font-semibold">
+                        FREE
+                      </span>
+                    </span>
+                  ) : quote ? (
+                    <span>{formatFromKobo(quote.deliveryFeeKobo)}</span>
+                  ) : (
+                    <span className="text-text-placeholder">...</span>
+                  )}
                 </div>
+
+                {quote && (
+                  <div className="text-text flex justify-between text-sm">
+                    <span>Handling</span>
+                    <span>{formatFromKobo(quote.handlingFeeKobo)}</span>
+                  </div>
+                )}
+
                 <div className="font-syne text-heading flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span>{formatNaira(subtotal)}</span>
+                  <span className={quoting ? "opacity-50" : undefined}>
+                    {quote
+                      ? formatFromKobo(quote.totalKobo)
+                      : formatNaira(subtotal)}
+                  </span>
                 </div>
+
+                {quoteError && (
+                  <p className="text-status-cancelled-text text-xs">
+                    {quoteError}
+                  </p>
+                )}
               </div>
             )}
 
@@ -370,15 +677,19 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
             <button
               type="submit"
               disabled={
-                loading || cartItems.length === 0 || !deliveryAddress.trim()
+                loading ||
+                cartItems.length === 0 ||
+                !deliveryAddress.trim() ||
+                !zoneId
               }
               className="bg-primary flex items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
             >
-              {loading ? "Initializing payment..." : "Pay with Paystack →"}
+              {loading ? "Reserving your order..." : "Continue to payment"}
+              {!loading && <ArrowRight size={16} />}
             </button>
             <p className="text-text text-center text-xs">
-              You&apos;ll be redirected to Paystack to complete payment
-              securely.
+              You&apos;ll choose wallet or card on the next step. Nothing is
+              charged until then.
             </p>
           </div>
         </form>
@@ -416,6 +727,7 @@ export default function PublicShop() {
 
   const [products, setProducts] = useState<ApiProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [search, setSearch] = useState<string>("");
@@ -429,16 +741,28 @@ export default function PublicShop() {
   }, [searchParams]);
 
   // Load products from public endpoint (no auth required)
-  useEffect(() => {
-    fetch(`${BASE_BACKEND_URL}/api/v1/products`)
-      .then((r) => r.json())
-      .then((json) => {
-        const rows: ApiProduct[] = (json.data ?? json) as ApiProduct[];
-        setProducts(rows);
+  const loadProducts = useCallback((): void => {
+    setLoading(true);
+    setLoadError(null);
+    fetch(`${BASE_BACKEND_URL}/products`)
+      .then((r) => {
+        if (!r.ok) throw new Error(`Products request failed: ${r.status}`);
+        return r.json();
       })
-      .catch(() => {})
+      .then((json) => {
+        const rows: unknown = json?.data ?? json;
+        setProducts(Array.isArray(rows) ? (rows as ApiProduct[]) : []);
+      })
+      .catch(() => {
+        setProducts([]);
+        setLoadError("We could not load the shop. Check your connection.");
+      })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
 
   const categories = useMemo(
     () => categoryFilterChips(products.map((p) => p.category ?? null)),
@@ -473,28 +797,47 @@ export default function PublicShop() {
     }
   }, [currentPage, totalPages]);
 
-  function handleCheckout() {
-    if (!isLoading && isAuthenticated) {
-      setCartOpen(false);
-      setCheckoutOpen(true);
-    } else {
-      /* Auth gate runs through the dialog engine - see dialog-registry.ts. */
-      triggerDialog("AUTH_GATE", {
-        onAuthenticated: () => {
-          setCartOpen(false);
-          setCheckoutOpen(true);
-        },
-      });
-    }
-  }
-
+  /*
+   * Checkout lives in the dashboard, and only there.
+   *
+   * The landing shop is browse-and-collect: it fills the cart, gates on auth,
+   * and hands over. Paystack already returns every buyer to
+   * /buyer-dashboard/checkout (see payment.service.ts), so a second checkout
+   * out here could take a payment it could never confirm.
+   *
+   * The cart travels by itself - CartProvider persists it and merges it with
+   * the server copy once the session exists.
+   */
   function handleCheckoutBack() {
     setCheckoutOpen(false);
     navigate("/shop", { replace: true });
   }
 
-  function handleCheckoutConfirmed() {
+  /* Stable identity: it is a dependency of the confirmation effect, and a new
+     function each render would re-arm that effect mid-flight. */
+  const handleCheckoutConfirmed = useCallback((): void => {
     clear();
+  }, [clear]);
+
+  function handleCheckout() {
+    setCartOpen(false);
+
+    if (!isLoading && isAuthenticated) {
+      navigate(CHECKOUT_PATH);
+      return;
+    }
+
+    /* Recorded before the gate opens: email verification comes back through a
+       different route than login does, and both read this on the way out. */
+    setPostAuthRedirect(CHECKOUT_PATH);
+
+    /* Auth gate runs through the dialog engine - see dialog-registry.ts. */
+    triggerDialog("AUTH_GATE", {
+      onAuthenticated: () => {
+        clearPostAuthRedirect();
+        navigate(CHECKOUT_PATH);
+      },
+    });
   }
 
   return (
@@ -506,7 +849,7 @@ export default function PublicShop() {
             navLinks={[
               { label: "Home", href: "/" },
               { label: "Shop", href: "/shop" },
-              { label: "Agents", href: "/agents" },
+              // { label: "Agents", href: "/agents" },
               { label: "Contact Us", href: "/contact" },
             ]}
             signUpHref="/signup"
@@ -517,12 +860,12 @@ export default function PublicShop() {
 
         <section
           aria-label="Product catalog"
-          className="relative w-full flex-1 bg-white"
+          className="relative flex w-full flex-1 bg-white"
         >
-          <div className="landing-max-width relative mx-auto h-full w-full">
-            {/* Scrollable content */}
-            <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg h-full overflow-y-auto pt-8 pb-28">
-              <div className="mb-6 flex flex-col gap-2">
+          <div className="section-max-width relative mx-auto flex w-full flex-1 flex-col">
+            {/* Page content - grows with the catalogue, no inner scroller */}
+            <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg flex flex-1 flex-col gap-6 pt-8 pb-8">
+              <div className="flex flex-col gap-2">
                 <h1 className="font-syne text-primary text-2xl font-bold sm:text-3xl">
                   Browse our products
                 </h1>
@@ -534,7 +877,7 @@ export default function PublicShop() {
 
               {/* Search */}
               <DashSearchInput
-                className="mb-4 w-full"
+                className="w-full"
                 placeholder="Search products..."
                 value={search}
                 onChange={(e) => {
@@ -566,49 +909,63 @@ export default function PublicShop() {
               )}
 
               {/* Product grid */}
-              {loading ? (
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="bg-gray-border h-64 animate-pulse rounded-2xl"
-                    />
-                  ))}
-                </div>
-              ) : products.length === 0 ? (
-                <div className="flex flex-col items-center gap-3 py-20">
-                  <Package size={48} className="text-text opacity-20" />
-                  <p className="text-text text-sm">
-                    No products available yet.
-                  </p>
-                </div>
-              ) : filtered.length === 0 ? (
-                <p className="text-text py-10 text-center text-sm">
-                  No products match &quot;{search}&quot;
-                </p>
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="grid h-full w-full grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-6"
-                >
-                  {paginatedProducts.map((product, i) => {
-                    const priceNaira = product.price_kobo / 100;
-                    return (
-                      <ProductCard
-                        key={product.id}
-                        product={product}
-                        quantityInCart={quantityOf(String(product.id))}
-                        formattedPrice={formatCurrency(priceNaira)}
-                        animationIndex={i}
-                        onAddToCart={() => addToCart(product)}
-                        onIncrement={() => updateQty(String(product.id), 1)}
-                        onDecrement={() => updateQty(String(product.id), -1)}
+              <div className="w-full flex-1">
+                {loading ? (
+                  <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="bg-gray-border h-64 animate-pulse rounded-2xl"
                       />
-                    );
-                  })}
-                </motion.div>
-              )}
+                    ))}
+                  </div>
+                ) : loadError ? (
+                  <div className="flex flex-col items-center gap-3 py-20">
+                    <AlertCircle size={48} className="text-text opacity-30" />
+                    <p className="text-text text-sm">{loadError}</p>
+                    <button
+                      type="button"
+                      onClick={loadProducts}
+                      className="bg-primary rounded-full px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                ) : products.length === 0 ? (
+                  <div className="flex flex-col items-center gap-3 py-20">
+                    <Package size={48} className="text-text opacity-20" />
+                    <p className="text-text text-sm">
+                      No products available yet.
+                    </p>
+                  </div>
+                ) : filtered.length === 0 ? (
+                  <p className="text-text py-10 text-center text-sm">
+                    No products match &quot;{search}&quot;
+                  </p>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="grid w-full grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6"
+                  >
+                    {paginatedProducts.map((product, i) => {
+                      const priceNaira = product.price_kobo / 100;
+                      return (
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          quantityInCart={quantityOf(String(product.id))}
+                          formattedPrice={formatCurrency(priceNaira)}
+                          animationIndex={i}
+                          onAddToCart={() => addToCart(product)}
+                          onIncrement={() => updateQty(String(product.id), 1)}
+                          onDecrement={() => updateQty(String(product.id), -1)}
+                        />
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </div>
 
               {!loading && filtered.length > 0 && totalPages > 1 && (
                 <div className="mt-10 flex justify-center">
@@ -620,39 +977,42 @@ export default function PublicShop() {
                 </div>
               )}
             </div>
-            {/* end scrollable content */}
+            {/* end content */}
 
-            {/* Bottom cart bar */}
+            {/* Cart bar - in flow, directly under the catalogue rather than
+                pinned to the viewport, so it reads as part of the same panel */}
             <AnimatePresence>
               {cartProductCount > 0 && (
                 <motion.div
-                  initial={{ y: 80, opacity: 0 }}
+                  initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: 80, opacity: 0 }}
-                  className="border-gray-border absolute right-0 bottom-0 left-0 z-30 flex items-center justify-between border-t bg-white px-6 py-4 shadow-lg"
+                  exit={{ y: 20, opacity: 0 }}
+                  className="border-gray-border relative z-30 w-full border-t bg-white"
                 >
-                  <div>
-                    <p className="text-text text-sm">
-                      {cartProductCount} item{cartProductCount !== 1 ? "s" : ""}{" "}
-                      in cart
-                    </p>
-                    <p className="font-syne text-primary font-bold">
-                      Total: {formatCurrency(cartTotal)}
-                    </p>
-                  </div>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setCartOpen(true)}
-                      className="border-gray-border text-heading flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
-                    >
-                      <ShoppingCart size={16} /> View Cart
-                    </button>
-                    <button
-                      onClick={handleCheckout}
-                      className="bg-primary rounded-full px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                    >
-                      Checkout
-                    </button>
+                  <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto flex w-full items-center justify-between py-4">
+                    <div>
+                      <p className="text-text text-sm">
+                        {cartProductCount} item
+                        {cartProductCount !== 1 ? "s" : ""} in cart
+                      </p>
+                      <p className="font-syne text-primary font-bold">
+                        Total: {formatCurrency(cartTotal)}
+                      </p>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setCartOpen(true)}
+                        className="border-gray-border text-heading flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
+                      >
+                        <ShoppingCart size={16} /> View Cart
+                      </button>
+                      <button
+                        onClick={handleCheckout}
+                        className="bg-primary rounded-full px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                      >
+                        Checkout
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -667,18 +1027,22 @@ export default function PublicShop() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="absolute inset-0 z-40 cursor-pointer bg-black/40"
+                    className="fixed inset-0 z-40 cursor-pointer bg-black/40"
                     onClick={() => setCartOpen(false)}
                   />
+                  {/* Fixed, not absolute: the wrapper is now taller than the
+                      viewport, so an absolute drawer scrolled away with the page.
+                      h-dvh over h-screen because on mobile 100vh exceeds what is
+                      actually visible, which pushes the checkout button off. */}
                   <motion.div
                     key="panel"
                     initial={{ x: "100%" }}
                     animate={{ x: 0 }}
                     exit={{ x: "100%" }}
                     transition={{ type: "tween", duration: 0.28 }}
-                    className="absolute top-0 right-0 z-50 flex h-full w-full max-w-110 flex-col bg-white shadow-2xl"
+                    className="fixed top-0 right-0 z-50 flex h-dvh w-full max-w-110 flex-col bg-white shadow-2xl"
                   >
-                    <div className="border-gray-border flex items-center justify-between border-b px-5 py-4">
+                    <div className="border-gray-border flex shrink-0 items-center justify-between border-b px-5 py-4">
                       <h3 className="font-syne text-heading font-bold">
                         Your cart ({cartProductCount})
                       </h3>
@@ -690,7 +1054,7 @@ export default function PublicShop() {
                       </button>
                     </div>
 
-                    <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-5">
+                    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-5">
                       {cart.map((item) => (
                         <div
                           key={item.id}
@@ -747,7 +1111,7 @@ export default function PublicShop() {
                       ))}
                     </div>
 
-                    <div className="border-gray-border flex flex-col gap-3 border-t p-5">
+                    <div className="border-gray-border flex shrink-0 flex-col gap-3 border-t p-5">
                       <div className="flex justify-between">
                         <span className="text-text text-sm">Total</span>
                         <span className="font-syne text-heading font-bold">
@@ -789,7 +1153,7 @@ export default function PublicShop() {
               )}
             </AnimatePresence>
           </div>
-          {/* end landing-max-width wrapper */}
+          {/* end section-max-width wrapper */}
         </section>
       </div>
       {/* end flex h-screen flex-col */}

@@ -59,7 +59,9 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    console.warn("🔵 [REGISTER] 1. Starting register for:", dto.email);
+    /* Debug, not warn, and no email: registration is not a warning, and these
+       lines shipped a user's address to every log sink on the hot path. */
+    this.logger.debug("Register: start");
 
     // Run email check, referrer lookup, and password hash concurrently
     const [existing, referredByAgentId, hashed] = await Promise.all([
@@ -71,11 +73,10 @@ export class AuthService {
       this.resolveBuyerReferrerId(dto.referred_by_agent_code),
       bcrypt.hash(dto.password, 12),
     ]);
-    console.warn(
-      "🔵 [REGISTER] 2. Promise.all complete. Email exists:",
-      existing.length > 0,
-      "Referrer:",
-      referredByAgentId,
+    this.logger.debug(
+      `Register: precheck done (existing=${existing.length > 0}, referrer=${
+        referredByAgentId ?? "none"
+      })`,
     );
 
     if (existing.length > 0) {
@@ -104,7 +105,7 @@ export class AuthService {
 
     const role = dto.role as SelfRegisterableRole;
 
-    console.warn("🔵 [REGISTER] 3. About to start transaction...");
+    this.logger.debug("Register: opening transaction");
     const [user] = await this.db.transaction(async (tx) => {
       const [createdUser] = await tx
         .insert(schema.users)
@@ -131,7 +132,7 @@ export class AuthService {
         })
         .returning();
 
-      console.warn("🔵 [REGISTER] 4. User inserted, ID:", createdUser.id);
+      this.logger.debug(`Register: user inserted (id=${createdUser.id})`);
 
       /*
        * Per-role setup. Kept as an explicit switch on a narrow union rather than
@@ -174,11 +175,11 @@ export class AuthService {
         });
       }
 
-      console.warn("🔵 [REGISTER] 5. Transaction complete, returning user");
+      this.logger.debug("Register: transaction complete");
       return [createdUser];
     });
 
-    console.warn("🔵 [REGISTER] 6. Register finished, returning response");
+    this.logger.debug("Register: finished");
 
     if (role === USER_ROLES.BUYER && !isTestMode) {
       try {
@@ -188,18 +189,17 @@ export class AuthService {
           lastName: user.last_name,
           phone: user.phone || "",
         });
-        console.warn(
-          "🔵 [REGISTER] 7. DVA created successfully for user:",
-          user.id,
-        );
+        this.logger.debug(`Register: DVA created (user=${user.id})`);
       } catch (error) {
         /*
          * Deliberately non-fatal: a Paystack outage must not block signup. The
          * buyer lands with no account number, which blocks withdrawals, so the
          * wallet page can repair it later via ensureDvaForUser.
          */
+        /* Id only. The user is findable from it, and the address does not
+           need to sit in the log to make this actionable. */
         this.logger.error(
-          `Failed to create DVA for buyer ${user.id} (${user.email}): ${
+          `Failed to create DVA for buyer ${user.id}: ${
             error instanceof Error ? error.message : String(error)
           }`,
         );

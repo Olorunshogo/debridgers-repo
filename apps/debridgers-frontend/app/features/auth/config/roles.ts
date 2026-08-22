@@ -79,12 +79,18 @@ export const ROLE_SIGNUP_CONFIG: Record<
     }),
     fields: [
       ...BASE_FIELDS,
-      {
-        name: "referredByAgentCode",
-        label: "Agent referral code",
-        type: "text",
-        optional: true,
-      },
+      /*
+       * Referral code hidden for now, not removed. The schema field above stays
+       * optional so the form still validates and the register payload still
+       * carries referred_by_agent_code when something else supplies it - a
+       * referral link, for instance. Uncomment to put the input back.
+       */
+      // {
+      //   name: "referredByAgentCode",
+      //   label: "Agent referral code",
+      //   type: "text",
+      //   optional: true,
+      // },
     ],
     redirectTo: "/buyer-dashboard",
     successTitle: "Account Created",

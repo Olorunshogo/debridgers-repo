@@ -18,5 +18,13 @@
     "sourceMap": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  /*
+   * Tests are excluded from the build, not merely from the error list.
+   *
+   * `nest build` compiles everything under src, so specs and the test harness
+   * were being emitted into dist and shipped. The harness opens an admin
+   * connection and issues DROP DATABASE; that has no business in a deployed
+   * artifact. They are still type-checked - see tsconfig.spec.json.
+   */
+  "exclude": ["node_modules", "dist", "src/**/*.spec.ts", "src/test/**"]
 }

@@ -24,3 +24,6 @@ Notes on what's deliberately excluded from `docs/jottings/CTO-KPI-SUMMARY.md`
 2. Partnership
    What we did that work,
    What we did that did not work and how to improve our sales?
+3. Go the normal route of sourcing for farmers and keeping them
+4. Google Development Kubernetes Platform
+5. After payment, redirect to the overview page

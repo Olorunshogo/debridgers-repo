@@ -268,6 +268,14 @@ export class BuyerService {
         ),
       );
 
+    /* Read, never create. A wallet row is made on first deposit; the overview
+       showing a zero balance for a buyer who has never funded one is correct. */
+    const [walletRow] = await this.db
+      .select({ available_balance: schema.buyerWallets.available_balance })
+      .from(schema.buyerWallets)
+      .where(eq(schema.buyerWallets.user_id, user.sub))
+      .limit(1);
+
     const recentOrders = await this.db
       .select()
       .from(schema.orders)
@@ -308,6 +316,7 @@ export class BuyerService {
           active_orders: activeOrdersRow?.total ?? 0,
           total_spent_kobo: totalSpentKobo,
           total_spent_naira: totalSpentKobo / 100,
+          wallet_balance_kobo: Number(walletRow?.available_balance ?? 0),
         },
         recent_orders: recentOrders,
         next_delivery: nextDelivery ?? null,

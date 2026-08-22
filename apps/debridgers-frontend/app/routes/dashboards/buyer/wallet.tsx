@@ -1,12 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSearchParams } from "react-router";
+import { useSearchParams, useNavigate } from "react-router";
 import {
   ArrowUpRight,
   ArrowDownLeft,
   Plus,
   Landmark,
   Pencil,
+  Copy,
+  Check,
+  Loader2,
 } from "lucide-react";
 import { apiFetch, ApiError } from "@debridgers/api-client";
 import {
@@ -32,6 +35,74 @@ export function meta() {
 }
 
 type TransactionType = "deposit" | "withdraw" | "refund";
+
+/* The buyer's own Debridgers account number, issued by Paystack at signup. Not
+   supplied by the buyer - money in. Distinct from the payout account, which the
+   buyer does supply, and which is money out. */
+interface DedicatedAccount {
+  account_number: string;
+  bank_name: string;
+  account_name: string;
+}
+
+/*
+ * A transfer that has been shown to the buyer but not yet seen to settle.
+ *
+ * Kept in sessionStorage, not component state: settlement is observed by
+ * comparing the balance against what it was when the buyer was given the
+ * account details, and that baseline has to survive the refresh they will
+ * inevitably do while waiting for a bank transfer to land.
+ */
+const PENDING_TRANSFER_KEY = "debridgers_pending_transfer";
+
+interface PendingTransfer {
+  /* available_balance in kobo at the moment the details were shown. */
+  baselineKobo: number;
+  startedAt: number;
+}
+
+/* Stop watching eventually. A transfer can outlive any session, and at that
+   point the webhook plus the transactions list are the record, not a spinner. */
+const TRANSFER_WATCH_TIMEOUT_MS = 10 * 60 * 1000;
+const TRANSFER_POLL_MS = 4000;
+/* Long enough to read "it landed" before the page changes under them. */
+const SETTLED_REDIRECT_DELAY_MS = 3000;
+
+function readPendingTransfer(): PendingTransfer | null {
+  try {
+    const raw = sessionStorage.getItem(PENDING_TRANSFER_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PendingTransfer;
+    if (typeof parsed?.baselineKobo !== "number") return null;
+    if (Date.now() - parsed.startedAt > TRANSFER_WATCH_TIMEOUT_MS) {
+      sessionStorage.removeItem(PENDING_TRANSFER_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writePendingTransfer(baselineKobo: number): void {
+  try {
+    sessionStorage.setItem(
+      PENDING_TRANSFER_KEY,
+      JSON.stringify({ baselineKobo, startedAt: Date.now() }),
+    );
+  } catch {
+    /* Without storage the watcher simply does not arm. The webhook still
+       credits the wallet; the buyer just has to refresh to see it. */
+  }
+}
+
+function clearPendingTransfer(): void {
+  try {
+    sessionStorage.removeItem(PENDING_TRANSFER_KEY);
+  } catch {
+    /* Nothing to clear. */
+  }
+}
 type TransactionStatus = "pending" | "completed" | "failed";
 
 interface Transaction {
@@ -126,6 +197,7 @@ function fmt(n: number) {
 
 export default function BuyerWallet() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [data, setData] = useState<WalletData | null>(null);
   const [loading, setLoading] = useState(true);
   const [showFundModal, setShowFundModal] = useState<boolean>(false);
@@ -134,6 +206,19 @@ export default function BuyerWallet() {
   const [depositSuccess, setDepositSuccess] = useState<boolean>(false);
   const [confirmingDeposit, setConfirmingDeposit] = useState<boolean>(false);
   const [depositError, setDepositError] = useState<string | null>(null);
+  const [dva, setDva] = useState<DedicatedAccount | null>(null);
+  const [dvaLoading, setDvaLoading] = useState<boolean>(true);
+  const [dvaRepairing, setDvaRepairing] = useState<boolean>(false);
+  const [dvaRepairFailed, setDvaRepairFailed] = useState<boolean>(false);
+  /* One automatic repair attempt per mount. Creating a virtual account calls
+     Paystack, so it must not fire on every render or modal reopen. */
+  const dvaRepairTried = useRef<boolean>(false);
+  const [copied, setCopied] = useState<boolean>(false);
+  /* Set only once the balance has actually been observed to rise. */
+  const [transferSettled, setTransferSettled] = useState<boolean>(false);
+  const [watchingTransfer, setWatchingTransfer] = useState<boolean>(
+    () => readPendingTransfer() !== null,
+  );
 
   // === Payout account state
   const [payoutAccount, setPayoutAccount] = useState<PayoutAccount | null>(
@@ -174,6 +259,31 @@ export default function BuyerWallet() {
       .finally(() => setLoading(false));
   };
 
+  const fetchDva = () => {
+    apiFetch<DedicatedAccount | null>("/buyer/wallet/dva")
+      .then(setDva)
+      .catch(() => setDva(null))
+      .finally(() => setDvaLoading(false));
+  };
+
+  /*
+   * Recreates the virtual account when signup could not.
+   *
+   * Registration deliberately swallows a Paystack outage rather than blocking
+   * the buyer, which leaves some accounts unmade. Without this the panel above
+   * would read "still being set up" forever, because nothing else ever retries.
+   */
+  const repairDva = () => {
+    if (dvaRepairing) return;
+    setDvaRepairing(true);
+    setDvaRepairFailed(false);
+
+    apiFetch<DedicatedAccount>("/buyer/wallet/dva", { method: "POST" })
+      .then((created) => setDva(created))
+      .catch(() => setDvaRepairFailed(true))
+      .finally(() => setDvaRepairing(false));
+  };
+
   const fetchPayoutAccount = () => {
     setPayoutAccountLoading(true);
     apiFetch<PayoutAccount | null>("/buyer/wallet/payout-account")
@@ -185,7 +295,101 @@ export default function BuyerWallet() {
   useEffect(() => {
     fetchWalletData();
     fetchPayoutAccount();
+    fetchDva();
   }, []);
+
+  /*
+   * Watches for a bank transfer to land.
+   *
+   * Settlement is decided by one thing only: the wallet balance, read back from
+   * our own ledger, being higher than it was when the buyer was shown the
+   * account details. Not a timer, not the fact that a poll happened to fire,
+   * not anything Paystack's widget reports - the webhook credits the wallet and
+   * this observes the result.
+   *
+   * That makes it idempotent by construction. The baseline lives in
+   * sessionStorage, so a refresh mid-transfer re-reads the balance, compares it
+   * to the same baseline, and reaches the same conclusion. Nothing about the
+   * outcome depends on this component having stayed mounted.
+   */
+  useEffect(() => {
+    if (!watchingTransfer) return;
+
+    let cancelled = false;
+
+    function check(): void {
+      const pending = readPendingTransfer();
+      if (!pending) {
+        /* Timed out or cleared elsewhere - stop, and leave the balance alone. */
+        if (!cancelled) setWatchingTransfer(false);
+        return;
+      }
+
+      apiFetch<ApiWalletResponse>("/buyer/wallet")
+        .then((walletData) => {
+          if (cancelled) return;
+          setData(buildWalletData(walletData));
+
+          if (walletData.wallet.available_balance > pending.baselineKobo) {
+            /* Consume the baseline first: settlement is now recorded in the
+               balance itself, and must not be re-detected on a later mount. */
+            clearPendingTransfer();
+            setWatchingTransfer(false);
+            setTransferSettled(true);
+          }
+        })
+        .catch(() => {
+          /* A failed poll is not a failed transfer. Leave the baseline in place
+             and try again on the next tick. */
+        });
+    }
+
+    /* Immediately, so a refresh after settlement resolves on first paint
+       rather than after a poll interval. */
+    check();
+    const timer = window.setInterval(check, TRANSFER_POLL_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [watchingTransfer]);
+
+  /* The pause is a courtesy so the buyer can read the outcome. It runs after
+     settlement was observed, and is never what decides that it settled. */
+  useEffect(() => {
+    if (!transferSettled) return;
+    const timer = window.setTimeout(() => {
+      navigate("/buyer-dashboard");
+    }, SETTLED_REDIRECT_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [transferSettled, navigate]);
+
+  /* Arms the watcher when the buyer is shown where to transfer to. */
+  function beginTransferWatch(): void {
+    if (!data) return;
+    writePendingTransfer(Math.round(data.availableBalance * 100));
+    setWatchingTransfer(true);
+  }
+
+  async function copyAccountNumber(): Promise<void> {
+    if (!dva) return;
+    try {
+      await navigator.clipboard.writeText(dva.account_number);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* Clipboard blocked - the number is on screen to be typed. */
+    }
+  }
+
+  useEffect(() => {
+    if (!showFundModal || dvaLoading || dva || dvaRepairTried.current) return;
+    dvaRepairTried.current = true;
+    repairDva();
+    /* repairDva is stable enough for this one-shot; the ref is the real guard. */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showFundModal, dvaLoading, dva]);
 
   /* Banks are a large, slow-to-fetch list, so they load only when the form
      that needs them is actually opened. */
@@ -401,6 +605,21 @@ export default function BuyerWallet() {
           {depositError}
         </div>
       )}
+
+      {/* Transfer outcome, also at page level: the buyer can close the modal
+          and wander off, and the watcher keeps running either way. */}
+      {watchingTransfer && (
+        <div className="border-gray-border text-text flex items-center gap-2 rounded-xl border bg-white px-4 py-3 text-sm">
+          <Loader2 size={16} className="animate-spin" />
+          Waiting for your transfer to land. You do not need to stay on this
+          page.
+        </div>
+      )}
+      {transferSettled && (
+        <div className="text-status-delivered-text border-gray-border rounded-xl border bg-white px-4 py-3 text-sm font-medium">
+          Transfer received. Taking you to your overview...
+        </div>
+      )}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -601,12 +820,114 @@ export default function BuyerWallet() {
               <h3 className="font-syne text-heading mb-4 text-lg font-bold">
                 Add Funds
               </h3>
-              {depositSuccess ? (
+
+              {/* === Transfer to your own Debridgers account
+                  Issued at signup, so there is nothing for the buyer to set up.
+                  Shown before the card form because a transfer costs them
+                  nothing and settles into the same wallet. */}
+              {!depositSuccess && !transferSettled && (
+                <div className="border-gray-border mb-4 flex flex-col gap-3 rounded-xl border p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col gap-0.5">
+                      <p className="text-heading text-sm font-semibold">
+                        Transfer to your account
+                      </p>
+                      <p className="text-text text-xs">
+                        Money sent here lands in your wallet automatically.
+                      </p>
+                    </div>
+                    <Landmark
+                      size={18}
+                      className="text-text mt-0.5 shrink-0 opacity-60"
+                    />
+                  </div>
+
+                  {dvaLoading ? (
+                    <div className="bg-gray-border h-16 animate-pulse rounded-lg" />
+                  ) : dva ? (
+                    <>
+                      <div className="bg-bg-light flex flex-col gap-1 rounded-lg px-3 py-2.5">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="font-syne text-heading text-lg font-bold tracking-wide">
+                            {dva.account_number}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={copyAccountNumber}
+                            aria-label="Copy account number"
+                            className="text-text hover:text-heading flex items-center gap-1 text-xs transition-colors"
+                          >
+                            {copied ? (
+                              <>
+                                <Check size={14} /> Copied
+                              </>
+                            ) : (
+                              <>
+                                <Copy size={14} /> Copy
+                              </>
+                            )}
+                          </button>
+                        </div>
+                        <p className="text-text text-xs">
+                          {dva.bank_name} - {dva.account_name}
+                        </p>
+                      </div>
+
+                      {watchingTransfer ? (
+                        <p className="text-text flex items-center gap-2 text-xs">
+                          <Loader2 size={14} className="animate-spin" />
+                          Waiting for your transfer. This page updates itself.
+                        </p>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={beginTransferWatch}
+                          className="text-primary self-start text-xs font-medium underline underline-offset-2"
+                        >
+                          I have sent the transfer
+                        </button>
+                      )}
+                    </>
+                  ) : dvaRepairing ? (
+                    <p className="text-text flex items-center gap-2 text-xs">
+                      <Loader2 size={14} className="animate-spin" />
+                      Setting up your account number...
+                    </p>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-text text-xs">
+                        {dvaRepairFailed
+                          ? "We could not set up your account number just now. Use the card option below, or try again."
+                          : "Your account number is still being set up. Use the card option below."}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={repairDva}
+                        className="text-primary self-start text-xs font-medium underline underline-offset-2"
+                      >
+                        Try again
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {transferSettled ? (
+                <div className="flex flex-col gap-2">
+                  <p className="text-status-delivered-text text-sm font-medium">
+                    Transfer received. Your wallet has been credited.
+                  </p>
+                  <p className="text-text text-xs">
+                    Taking you to your overview...
+                  </p>
+                </div>
+              ) : depositSuccess ? (
                 <p className="text-status-delivered-text text-sm font-medium">
                   Funds added successfully!
                 </p>
               ) : (
                 <form onSubmit={handleFund} className="flex flex-col gap-4">
+                  <p className="text-text text-xs">Or pay with a card:</p>
                   <DashNumberInput
                     label="Amount"
                     min={100}

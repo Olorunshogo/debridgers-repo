@@ -99,6 +99,18 @@ export default function BuyerCheckout() {
   const cartItemsRef = useRef(cartItems);
   cartItemsRef.current = cartItems;
 
+  /* setLoading does not take effect until the next render, so two fast clicks
+     can both get past the loading check and create two orders. A ref flips
+     synchronously. */
+  const submittingRef = useRef<boolean>(false);
+
+  /* Release both together - a cleared loading flag with the ref still set would
+     lock the button for the rest of the session. */
+  function stopSubmitting(): void {
+    submittingRef.current = false;
+    setLoading(false);
+  }
+
   // === Delivery zones
   useEffect(() => {
     publicRequest<DeliveryZone[]>("/zones")
@@ -244,11 +256,43 @@ export default function BuyerCheckout() {
   async function handleContinue(e: React.SyntheticEvent) {
     e.preventDefault();
     if (cartItems.length === 0 || !deliveryAddress.trim() || !zoneId) return;
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setError(null);
     setLoading(true);
 
     try {
       if (paymentMethod === "wallet") {
+        /*
+         * Balance is checked before the order exists, not after.
+         *
+         * Creating first and bailing on a shortfall left a pending, unpayable
+         * order behind on every failed attempt. The quote is the same figure
+         * the server will charge, so it is enough to decide this up front.
+         */
+        const expectedKobo = quote?.totalKobo;
+
+        if (!wallet) {
+          setError("Wallet not loaded. Please refresh and try again.");
+          stopSubmitting();
+          return;
+        }
+
+        if (
+          expectedKobo !== undefined &&
+          wallet.wallet.available_balance < expectedKobo
+        ) {
+          setError(
+            `Insufficient wallet balance. This order is ${formatFromKobo(
+              expectedKobo,
+            )} and your balance is ${formatFromKobo(
+              wallet.wallet.available_balance,
+            )}.`,
+          );
+          stopSubmitting();
+          return;
+        }
+
         // Wallet payment: create order then deduct from wallet
         const orderRes = await apiFetch<{
           order_id: number;
@@ -272,13 +316,28 @@ export default function BuyerCheckout() {
         const orderId = orderRes.order_id;
         const amount = orderRes.total_kobo;
 
-        // Check if wallet has enough balance
-        if (!wallet || wallet.wallet.available_balance < amount) {
-          const errorMsg = !wallet
-            ? "Wallet not loaded. Please refresh and try again."
-            : `Insufficient wallet balance. Need ₦${Math.round(amount / 100)}, have ₦${Math.round(wallet.wallet.available_balance / 100)}`;
-          setError(errorMsg);
-          setLoading(false);
+        /*
+         * Re-checked against the server's own total. The pre-flight check used
+         * the quote; this catches the case where the two disagree, and cancels
+         * the order rather than leaving it pending and unpayable.
+         */
+        if (wallet.wallet.available_balance < amount) {
+          await apiFetch(`/buyer/orders/${orderId}/cancel`, {
+            method: "POST",
+            body: JSON.stringify({ reason: "Insufficient wallet balance" }),
+          }).catch(() => {
+            /* Best effort. An uncancelled order is recoverable; a misleading
+               success message is not. */
+          });
+
+          setError(
+            `Insufficient wallet balance. This order is ${formatFromKobo(
+              amount,
+            )} and your balance is ${formatFromKobo(
+              wallet.wallet.available_balance,
+            )}.`,
+          );
+          stopSubmitting();
           return;
         }
 
@@ -332,7 +391,7 @@ export default function BuyerCheckout() {
           ? err.message
           : "Failed to process payment. Please try again.",
       );
-      setLoading(false);
+      stopSubmitting();
     }
   }
 

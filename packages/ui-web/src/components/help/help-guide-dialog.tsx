@@ -44,8 +44,11 @@ export function HelpGuideDialog({
               className="border-gray-border flex flex-col gap-3 rounded-xl border p-4"
             >
               <div className="flex items-center gap-3">
-                <span className="bg-status-pending-bg flex h-7 w-7 shrink-0 items-center justify-center rounded-full">
-                  <Icon className="text-status-pending-text h-4 w-4" />
+                {/* Green marks the section; amber below marks the steps within
+                    it. They shared one colour before, which flattened the two
+                    levels into one. */}
+                <span className="bg-primary/10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full">
+                  <Icon className="text-primary h-4 w-4" />
                 </span>
                 <h3 className="font-syne text-heading text-sm font-semibold">
                   {section.title}
@@ -55,7 +58,7 @@ export function HelpGuideDialog({
               <ol className="flex flex-col gap-2">
                 {section.steps.map((step, j) => (
                   <li key={step} className="flex items-start gap-3">
-                    <span className="text-status-pending-text bg-status-pending-bg mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold">
+                    <span className="text-accent-soft-text bg-accent-soft-bg mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold">
                       {j + 1}
                     </span>
                     <p className="text-text text-sm leading-relaxed">{step}</p>

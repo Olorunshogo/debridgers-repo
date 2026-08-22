@@ -19,6 +19,9 @@ import {
   Headphones,
   ArrowUpRight,
   ArrowRight,
+  TrendingUp,
+  TrendingDown,
+  Minus,
 } from "lucide-react";
 import { HeroGreetingCard } from "../shared/HeroGreetingCard";
 import { apiFetch } from "@debridgers/api-client";
@@ -99,8 +102,21 @@ interface DashboardData {
     thisWeek: string;
     thisMonth: string;
     avgPerWeek: string;
+    trend: SpendingTrend;
   };
 }
+
+/*
+ * This week against last week. "flat" covers both an exact match and the case
+ * where there is no previous week to compare against - with one week of data
+ * there is no direction to claim, and an arrow would be inventing one.
+ */
+type SpendingTrend = {
+  direction: "up" | "down" | "flat";
+  /* Whole percent change from the previous week. 0 when direction is flat, and
+     null when the previous week was zero, since that has no percentage. */
+  percent: number | null;
+};
 
 interface ApiDashboard {
   user_name: string;
@@ -110,6 +126,7 @@ interface ApiDashboard {
     active_orders: number;
     total_spent_kobo: number;
     total_spent_naira: number;
+    wallet_balance_kobo: number;
   };
   recent_orders: Array<{
     id: number;
@@ -147,6 +164,26 @@ interface LastOrderItem {
   unit_price: number;
 }
 
+function buildSpendingTrend(
+  thisWeek: number,
+  lastWeek: number | null,
+): SpendingTrend {
+  if (lastWeek === null || thisWeek === lastWeek) {
+    return { direction: "flat", percent: 0 };
+  }
+
+  const direction = thisWeek > lastWeek ? "up" : "down";
+
+  /* Coming off a zero week is an increase with no meaningful percentage - the
+     arrow says what happened and a "∞%" would not help. */
+  if (lastWeek === 0) return { direction, percent: null };
+
+  return {
+    direction,
+    percent: Math.round(Math.abs((thisWeek - lastWeek) / lastWeek) * 100),
+  };
+}
+
 function buildSpending(rows: ApiSpendingWeek[]): DashboardData["spending"] {
   const weeks: SpendingWeek[] = rows.map((row) => ({
     week: row.week,
@@ -154,7 +191,13 @@ function buildSpending(rows: ApiSpendingWeek[]): DashboardData["spending"] {
   }));
 
   if (weeks.length === 0) {
-    return { weeks, thisWeek: "N/A", thisMonth: "N/A", avgPerWeek: "N/A" };
+    return {
+      weeks,
+      thisWeek: "N/A",
+      thisMonth: "N/A",
+      avgPerWeek: "N/A",
+      trend: { direction: "flat", percent: 0 },
+    };
   }
 
   const total = weeks.reduce((sum, w) => sum + w.amount, 0);
@@ -166,11 +209,14 @@ function buildSpending(rows: ApiSpendingWeek[]): DashboardData["spending"] {
    */
   const thisMonth = weeks.slice(-4).reduce((sum, w) => sum + w.amount, 0);
 
+  const lastWeek = weeks.length > 1 ? weeks[weeks.length - 2].amount : null;
+
   return {
     weeks,
     thisWeek: formatCurrency(thisWeek),
     thisMonth: formatCurrency(thisMonth),
     avgPerWeek: formatCurrency(Math.round(total / weeks.length)),
+    trend: buildSpendingTrend(thisWeek, lastWeek),
   };
 }
 
@@ -251,11 +297,23 @@ function mapApiToDashboard(
         trend: `${api.stats.active_orders} in progress`,
         icon: "lucide:refresh-cw",
       },
+      /*
+       * Money Saved needs the referral system finished end to end before it can
+       * show a real figure, and a card reading "-" teaches the buyer nothing.
+       * Wallet balance is money they can act on today, and the Add Funds quick
+       * action right below it is the action. Restore this when referrals land.
+       */
+      // {
+      //   label: "Money Saved",
+      //   value: "-",
+      //   trend: "Coming soon",
+      //   icon: "lucide:piggy-bank",
+      // },
       {
-        label: "Money Saved",
-        value: "-",
-        trend: "Coming soon",
-        icon: "lucide:piggy-bank",
+        label: "Wallet Balance",
+        value: formatFromKobo(api.stats.wallet_balance_kobo ?? 0),
+        trend: "Available to spend",
+        icon: "lucide:wallet",
       },
     ],
     recentOrders,
@@ -268,6 +326,42 @@ function mapApiToDashboard(
     },
     spending: buildSpending(spendingRows),
   };
+}
+
+/*
+ * Direction of this week's spend against last week's.
+ *
+ * Up is green and down is red, as asked. Worth knowing this is the inverse of
+ * the usual reading for a spending figure - for a buyer, spending less is
+ * normally the good news - so if it ever looks wrong on screen, this is the
+ * line to flip, not the data.
+ */
+function SpendingTrendChip({ trend }: { trend: SpendingTrend }) {
+  if (trend.direction === "flat") {
+    return (
+      <span className="bg-bg-light text-text flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium">
+        <Minus size={13} aria-hidden="true" />
+        This week level
+      </span>
+    );
+  }
+
+  const isUp = trend.direction === "up";
+  const Icon = isUp ? TrendingUp : TrendingDown;
+
+  return (
+    <span
+      className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${
+        isUp
+          ? "bg-status-delivered-bg text-status-delivered-text"
+          : "bg-status-cancelled-bg text-status-cancelled-text"
+      }`}
+    >
+      <Icon size={13} aria-hidden="true" />
+      This week {isUp ? "up" : "down"}
+      {trend.percent !== null && ` ${trend.percent}%`}
+    </span>
+  );
 }
 
 const staticQuickActions: QuickAction[] = [
@@ -639,9 +733,7 @@ export default function BuyerOverview() {
           <h3 className="font-syne text-heading font-semibold">
             Spending - Last 6 Weeks
           </h3>
-          <span className="bg-bg-light text-text rounded-full px-3 py-1 text-xs font-medium">
-            This week ↑
-          </span>
+          <SpendingTrendChip trend={data.spending.trend} />
         </div>
 
         <ResponsiveContainer width="100%" height={140}>

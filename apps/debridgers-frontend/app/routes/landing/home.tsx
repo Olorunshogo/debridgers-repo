@@ -484,7 +484,7 @@ export default function Home() {
           navLinks={[
             { label: "Home", href: "/" },
             { label: "Shop", href: "/shop" },
-            { label: "Agents", href: "/agents" },
+            // { label: "Agents", href: "/agents" },
             { label: "Contact Us", href: "/contact" },
           ]}
           signUpHref="/signup"

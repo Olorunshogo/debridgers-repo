@@ -52,13 +52,14 @@ export default function AuthDialog({ onAuthenticated }: AuthDialogProps) {
   /* Both hooks are always called - hooks cannot be conditional - and only the
      active tab's form is rendered. */
   const login = useLogin({ onSuccess: finish });
-  const signup = useSignup({
-    config: ROLE_SIGNUP_CONFIG.buyer,
-    /* Registration needs email verification, so it cannot resume checkout
-       directly; useSignup navigates to /verify-email and the dialog closes with
-       the route change. */
-    onRequiresVerification: () => closeDialog(),
-  });
+  /*
+   * No onRequiresVerification callback on purpose. Supplying one makes useSignup
+   * return early instead of navigating, which left a new buyer with a dialog
+   * that simply closed and no verification step at all. Omitting it lets the
+   * hook navigate to /verify-email, and the dialog engine closes itself on the
+   * route change.
+   */
+  const signup = useSignup({ config: ROLE_SIGNUP_CONFIG.buyer });
 
   return (
     <AuthTabPanel

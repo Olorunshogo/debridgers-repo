@@ -132,14 +132,26 @@ export function SupportTicketDialog({
         error={fieldErrors.fullName}
       />
 
+      {/*
+        Locked when the session supplied it. The reply goes to the account's
+        address whatever is typed here, so an editable box would be inviting the
+        buyer to enter an address we are not going to write to.
+      */}
       <DashEmailInput
         label="Email"
         name="email"
         required
+        readOnly={Boolean(defaultEmail)}
+        aria-describedby={defaultEmail ? "support-email-hint" : undefined}
         value={values.email}
         onChange={handleChange("email")}
         error={fieldErrors.email}
       />
+      {defaultEmail && (
+        <p id="support-email-hint" className="text-text -mt-2 text-xs">
+          We will reply to this address, taken from your account.
+        </p>
+      )}
 
       <DashTextareaInput
         label="How can we help?"
