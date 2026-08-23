@@ -287,21 +287,37 @@ export class AgentService {
       rate * 100,
     );
 
-    const [report] = await this.db
-      .insert(schema.sales_reports)
-      .values({
-        agent_id: user.sub,
-        pages_sold: dto.pages_sold,
-        amount: String(dto.amount),
-        notes: dto.notes,
-      })
-      .returning();
+    const report = await this.db.transaction(async (tx) => {
+      const [report] = await tx
+        .insert(schema.sales_reports)
+        .values({
+          agent_id: user.sub,
+          pages_sold: dto.pages_sold,
+          amount: String(dto.amount),
+          notes: dto.notes,
+        })
+        .returning();
 
-    await this.db.insert(schema.commissions).values({
-      agent_id: user.sub,
-      type: "direct",
-      amount_kobo: commissionKobo,
-      status: "pending",
+      await tx.insert(schema.commissions).values({
+        agent_id: user.sub,
+        type: "direct",
+        amount_kobo: commissionKobo,
+        status: "pending",
+      });
+
+      /*
+       * The commission row alone doesn't move the needle on what the agent
+       * sees - the wallet's pending_balance is what the dashboard reads, so
+       * without this a submitted report never showed as pending earnings.
+       */
+      await this.walletService.credit(
+        user.sub,
+        commissionKobo,
+        { pending: true },
+        tx,
+      );
+
+      return report;
     });
 
     return {

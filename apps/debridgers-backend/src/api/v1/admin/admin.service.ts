@@ -1111,22 +1111,47 @@ export class AdminService {
   }
 
   async markCommissionPaid(commissionId: number, adminId: number) {
-    const [commission] = await this.db
-      .select()
-      .from(schema.commissions)
-      .where(eq(schema.commissions.id, commissionId))
-      .limit(1);
+    const updated = await this.db.transaction(async (tx) => {
+      const [exists] = await tx
+        .select({ id: schema.commissions.id })
+        .from(schema.commissions)
+        .where(eq(schema.commissions.id, commissionId))
+        .limit(1);
 
-    if (!commission) throw new NotFoundException("Commission not found");
-    if (commission.status === "paid") {
-      throw new BadRequestException("That commission is already paid.");
-    }
+      if (!exists) throw new NotFoundException("Commission not found");
 
-    const [updated] = await this.db
-      .update(schema.commissions)
-      .set({ status: "paid", paid_at: new Date() })
-      .where(eq(schema.commissions.id, commissionId))
-      .returning();
+      /*
+       * The status guard is the UPDATE's own predicate, so two concurrent
+       * "mark paid" clicks cannot both pass and both credit the wallet -
+       * only the first gets a row back.
+       */
+      const [updated] = await tx
+        .update(schema.commissions)
+        .set({ status: "paid", paid_at: new Date() })
+        .where(
+          sql`${schema.commissions.id} = ${commissionId} AND ${schema.commissions.status} != 'paid'`,
+        )
+        .returning();
+
+      if (!updated) {
+        throw new BadRequestException("That commission is already paid.");
+      }
+
+      /*
+       * Mirrors the credit in submitReport: the commission row moving to
+       * "paid" is not itself what the agent sees, the wallet balance is. This
+       * is the only place pending_balance ever moves to available for a
+       * direct commission, so without it "paid" commissions stayed stuck in
+       * pending forever.
+       */
+      await this.wallet.confirmPending(
+        updated.agent_id,
+        updated.amount_kobo,
+        tx,
+      );
+
+      return updated;
+    });
 
     await this.audit.record({
       admin_id: adminId,
