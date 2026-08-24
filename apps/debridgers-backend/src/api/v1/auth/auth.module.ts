@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
@@ -10,8 +10,12 @@ import { DatabaseModule } from "../../../infrastructure/database/database.module
 import { RedisModule } from "../../../infrastructure/redis/core/redis.module";
 import { AnalyticsModule } from "../../../infrastructure/analytics/analytics.module";
 import { PaymentModule } from "../payment/payment.module";
+import { EmailModule } from "../../../notification/features/email/email.module";
 import { accessJwtConfig } from "./config/access-jwt";
 import { refreshJwtConfig } from "./config/refresh-jwt";
+import { AdminRegisterController } from "./admin-register/admin-register.controller";
+import { AdminRegisterService } from "./admin-register/admin-register.service";
+import { AdminInviteService } from "../admin/admin-invite/admin-invite.service";
 
 @Module({
   imports: [
@@ -19,15 +23,19 @@ import { refreshJwtConfig } from "./config/refresh-jwt";
     JwtModule.register({}),
     RedisModule,
     AnalyticsModule,
-    PaymentModule,
+    forwardRef(() => PaymentModule),
+    EmailModule, // ← Import EmailModule instead
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, AdminRegisterController],
   providers: [
     AuthService,
     AuthAttemptService,
     AuthGuard,
     RolesGuard,
     RefreshGuard,
+    AdminRegisterService,
+    AdminInviteService,
+    // Remove EmailService from here
   ],
   exports: [
     AuthGuard,

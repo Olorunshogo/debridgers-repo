@@ -155,6 +155,32 @@ export class PaystackDvaService {
     };
   }
 
+  /*
+   * Pure API path: create customer and DVA without DB writes. Returns both
+   * account details and customer code for the caller to persist.
+   */
+  async createDva(dto: CreateCustomerDto): Promise<{
+    account_number: string;
+    bank_name: string;
+    account_name: string;
+    customer_code: string;
+  }> {
+    const customer = await this.createPaystackCustomer(dto);
+    this.logger.log(`Created Paystack customer ${customer.customer_code}`);
+
+    const dva = await this.createDvaForCustomer(customer.customer_code);
+    this.logger.log(
+      `Created DVA ${dva.account_number} for customer ${customer.customer_code}`,
+    );
+
+    return {
+      account_number: dva.account_number,
+      bank_name: dva.bank_name,
+      account_name: dva.account_name,
+      customer_code: customer.customer_code,
+    };
+  }
+
   async createDvaForUser(
     userId: number,
     dto: CreateCustomerDto,
@@ -163,32 +189,25 @@ export class PaystackDvaService {
     bank_name: string;
     account_name: string;
   }> {
-    // Step 1: Create Paystack customer
-    const customer = await this.createPaystackCustomer(dto);
-    this.logger.log(
-      `Created Paystack customer ${customer.customer_code} for user ${userId}`,
-    );
+    const dvaWithCustomer = await this.createDva(dto);
 
-    // Step 2: Create the dedicated account against that customer
-    const dva = await this.createDvaForCustomer(customer.customer_code);
-    this.logger.log(
-      `Created DVA ${dva.account_number} for customer ${customer.customer_code}`,
-    );
-
-    // Step 3: Update buyer wallet with DVA details
     await this.db
       .update(schema.buyerWallets)
       .set({
-        paystack_customer_code: customer.customer_code,
-        account_number: dva.account_number,
-        bank_name: dva.bank_name,
-        account_name: dva.account_name,
+        paystack_customer_code: dvaWithCustomer.customer_code,
+        account_number: dvaWithCustomer.account_number,
+        bank_name: dvaWithCustomer.bank_name,
+        account_name: dvaWithCustomer.account_name,
       })
       .where(eq(schema.buyerWallets.user_id, userId));
 
     this.logger.log(`Updated wallet for user ${userId} with DVA details`);
 
-    return dva;
+    return {
+      account_number: dvaWithCustomer.account_number,
+      bank_name: dvaWithCustomer.bank_name,
+      account_name: dvaWithCustomer.account_name,
+    };
   }
 
   /*

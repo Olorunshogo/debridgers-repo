@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { Inject } from "@nestjs/common";
+import { randomBytes } from "crypto";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq, desc, and, count, inArray, gte } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
@@ -215,6 +216,7 @@ export class OrderService {
     const [order] = await this.db
       .insert(schema.orders)
       .values({
+        order_reference: `ord_${randomBytes(6).toString("hex")}`,
         buyer_id: userId,
         zone_id: zoneId,
         quantity: items.reduce((sum, item) => sum + item.qty, 0),

@@ -31,6 +31,7 @@ import { BankDetailsService } from "../agent/bank-details.service";
 import { TaxonomyService } from "../catalog/taxonomy.service";
 import { AuthGuard } from "../../shared/guards/auth.guard";
 import { RolesGuard } from "../../shared/guards/roles.guard";
+import { AdminKeyGuard } from "../../shared/guards/admin-key.guard";
 import { AdminId } from "../../shared/decorators/admin-id.decorator";
 import { CurrentUser } from "../../shared/decorators/current-user.decorator";
 import { Roles } from "../../shared/decorators/roles.decorator";
@@ -59,6 +60,10 @@ import {
   UpdateProductDto,
 } from "./dto/update-product.dto";
 import { createCategorySchema, updateCategorySchema } from "./dto/category.dto";
+import {
+  adminChangePasswordSchema,
+  AdminChangePasswordDto,
+} from "./dto/change-password.dto";
 import { z } from "zod";
 import {
   parseOptionalBoolean,
@@ -117,7 +122,7 @@ type CreateOutreachDto = z.infer<typeof createOutreachSchema>;
 @ApiTags("Admin")
 @ApiBearerAuth("access-token")
 @Controller("admin")
-@UseGuards(AuthGuard, RolesGuard)
+@UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
 @Roles("admin")
 export class AdminController {
   constructor(
@@ -1238,5 +1243,44 @@ export class AdminController {
     @AdminId() adminId: number,
   ) {
     return this.adminApiKeysService.deactivateApiKey(keyId, adminId);
+  }
+
+  @Patch("password/change")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Change admin password" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["current_password", "new_password"],
+      properties: {
+        current_password: {
+          type: "string",
+          example: "TempPass123!",
+          description: "Current password (temporary or existing)",
+        },
+        new_password: {
+          type: "string",
+          example: "NewPass456!",
+          description: "New permanent password",
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    schema: {
+      example: {
+        statusCode: 200,
+        message: "Password changed successfully",
+        data: null,
+      },
+    },
+  })
+  changePassword(
+    @Body(new ZodValidationPipe(adminChangePasswordSchema))
+    dto: AdminChangePasswordDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.adminService.changePassword(dto, user.sub);
   }
 }

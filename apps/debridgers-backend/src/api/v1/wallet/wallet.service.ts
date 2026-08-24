@@ -8,7 +8,7 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq, desc, count, sum, and, sql } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
-import { NotificationsService } from "./notifications.service";
+import { NotificationsService } from "../buyer/notifications.service";
 import { LedgerService } from "../payment/ledger.service";
 
 @Injectable()

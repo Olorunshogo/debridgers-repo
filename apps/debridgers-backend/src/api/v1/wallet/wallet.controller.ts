@@ -13,7 +13,7 @@ import { ConfigService } from "@nestjs/config";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { IsNumber, IsPositive, IsString, MinLength } from "class-validator";
 import { WalletService } from "./wallet.service";
-import { BuyerRateLimitService } from "./buyer-rate-limit.service";
+import { BuyerRateLimitService } from "../buyer/buyer-rate-limit.service";
 import { EmailService } from "../../../notification/features/email/email.service";
 import { AuthGuard } from "../../shared/guards/auth.guard";
 import { RolesGuard } from "../../shared/guards/roles.guard";
@@ -167,6 +167,10 @@ export class WalletController {
     );
 
     // Call Paystack API to generate checkout URL
+    const frontendUrl =
+      this.config.get<string>("FRONTEND_URL") ?? "http://localhost:3000";
+    const callbackUrl = `${frontendUrl}/buyer-dashboard/wallet`;
+
     const paystackResponse = await fetch(
       `${this.baseUrl}/transaction/initialize`,
       {
@@ -178,6 +182,7 @@ export class WalletController {
         body: JSON.stringify({
           email: user.email,
           amount: dto.amount_kobo,
+          callback_url: callbackUrl,
           metadata: {
             type: "wallet_deposit",
             user_id: user.sub,

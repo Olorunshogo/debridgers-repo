@@ -231,12 +231,16 @@ function DialogPanel({
           aria-modal={isTop}
           tabIndex={-1}
           /*
-           * max-w-112 (28rem), not max-w-md.
+           * max-w-150 (37.5rem), not max-w-md.
            *
            * The app theme defines a named spacing scale including
            * --spacing-md: 0.75rem, and in Tailwind v4 max-w-* reads the spacing
            * namespace - so max-w-md compiled to 12px and the panel collapsed to
            * the width of its padding. Numeric widths cannot be shadowed.
+           *
+           * The admin branch independently reached for max-w-160; this keeps the
+           * narrower value already chosen here. Widen if an admin dialog needs
+           * the extra room.
            */
           className="border-gray-border pointer-events-auto max-h-[90vh] w-full max-w-150 overflow-y-auto rounded-t-2xl border bg-white p-6 outline-none md:rounded-xl"
           variants={dialogPanelVariants}

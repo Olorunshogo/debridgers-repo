@@ -12,7 +12,7 @@ import {
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { OrderService } from "./order.service";
-import { PaymentService } from "./payment.service";
+import { BuyerPaymentService } from "../payment/buyer-payment.service";
 import { BuyerRateLimitService } from "./buyer-rate-limit.service";
 import { EmailService } from "../../../notification/features/email/email.service";
 import { AuthGuard } from "../../shared/guards/auth.guard";
@@ -54,7 +54,7 @@ const mobileMoneyPaymentSchema = z.object({
 export class OrderController {
   constructor(
     private readonly orderService: OrderService,
-    private readonly paymentService: PaymentService,
+    private readonly paymentService: BuyerPaymentService,
     private readonly rateLimitService: BuyerRateLimitService,
     private readonly emailService: EmailService,
   ) {}

@@ -4,7 +4,7 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq, and, gte, lt, sum, inArray, sql } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
-import { WalletService } from "../agent/wallet.service";
+import { AgentWalletService } from "../wallet/agent-wallet.service";
 import { SystemSettingsService } from "../settings/system-settings.service";
 import { percentOfKobo } from "../../shared/money";
 
@@ -32,7 +32,7 @@ export class CommissionService {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
-    private readonly walletService: WalletService,
+    private readonly walletService: AgentWalletService,
     private readonly settings: SystemSettingsService,
   ) {}
 

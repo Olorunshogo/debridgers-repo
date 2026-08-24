@@ -27,6 +27,7 @@ export default [
      * URL so the entry point is not advertised on the public login page.
      */
     route("auth/admin/login", "routes/auth/admin-login.tsx"),
+    route("auth/admin/register", "routes/auth/admin-register.tsx"),
   ]),
 
   // === Buyer Dashboard
@@ -73,9 +74,32 @@ export default [
     route("admin-dashboard", "routes/dashboards/admin/overview.tsx"),
     route("admin-dashboard/agents", "routes/dashboards/admin/agents.tsx"),
     route("admin-dashboard/buyers", "routes/dashboards/admin/buyers.tsx"),
+    route(
+      "admin-dashboard/admin-invites",
+      "routes/dashboards/admin/admin.invites.tsx",
+    ),
     route("admin-dashboard/settings", "routes/dashboards/admin/settings.tsx"),
     route("admin-dashboard/products", "routes/dashboards/admin/products.tsx"),
     route("admin-dashboard/outreach", "routes/dashboards/admin/outreach.tsx"),
     route("admin-dashboard/payouts", "routes/dashboards/admin/payouts.tsx"),
+  ]),
+  // === Buyer Admin Dashboard
+  layout("routes/dashboards/buyer-admin/layout.tsx", [
+    route(
+      "buyer-admin-dashboard",
+      "routes/dashboards/buyer-admin/overview.tsx",
+    ),
+    route(
+      "buyer-admin-dashboard/buyers",
+      "routes/dashboards/buyer-admin/buyers.tsx",
+    ),
+    route(
+      "buyer-admin-dashboard/deliveries",
+      "routes/dashboards/buyer-admin/deliveries.tsx",
+    ),
+    route(
+      "buyer-admin-dashboard/settings",
+      "routes/dashboards/buyer-admin/settings.tsx",
+    ),
   ]),
 ] satisfies RouteConfig;

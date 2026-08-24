@@ -23,7 +23,7 @@ export type WalletExecutor =
  * amount, or withdraw twice and be debited once.
  */
 @Injectable()
-export class WalletService {
+export class AgentWalletService {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: Database,

@@ -6,6 +6,7 @@ import {
   text,
   timestamp,
   varchar,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { timestamps } from "../../helper/column.helper";
 import { users } from "./users.schema";
@@ -35,6 +36,9 @@ export const paymentStatusEnum = pgEnum("payment_status", [
 
 export const orders = pgTable("orders", {
   id: serial().primaryKey().notNull(),
+  order_reference: varchar("order_reference", { length: 30 })
+    .unique()
+    .notNull(), // ord_xxxxx format
   buyer_id: integer()
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
@@ -54,6 +58,8 @@ export const orders = pgTable("orders", {
   cancellation_reason: text(),
   notes: text(),
   delivered_at: timestamp(),
+  // Paystack invoice tracking
+  paystack_invoice_code: varchar("paystack_invoice_code", { length: 100 }),
   // SafeHaven payment
   payment_status: paymentStatusEnum().notNull().default("unpaid"),
   payment_reference: varchar("payment_reference", { length: 100 }),
@@ -62,6 +68,13 @@ export const orders = pgTable("orders", {
   virtual_account_account_name: text(),
   virtual_account_expires_at: timestamp(),
   paid_at: timestamp(),
+  // Delivery verification by buyer admin
+  delivery_verified_at: timestamp(),
+  delivery_verified_by_admin_id: integer().references(() => users.id, {
+    onDelete: "set null",
+  }),
+  delivery_proof_photos: jsonb(), // array of {url, caption}
+  delivery_notes: text(),
   ...timestamps,
 });
 

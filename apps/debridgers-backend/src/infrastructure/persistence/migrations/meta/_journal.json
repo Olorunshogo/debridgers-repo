@@ -82,8 +82,15 @@
     {
       "idx": 11,
       "version": "7",
-      "when": 1786275085994,
-      "tag": "0011_recompute_product_category",
+      "when": 1787250997689,
+      "tag": "0011_early_epoch",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1787250998689,
+      "tag": "0012_recompute_product_category",
       "breakpoints": true
     }
   ]

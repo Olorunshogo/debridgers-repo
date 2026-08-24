@@ -39,6 +39,7 @@ interface Order {
 
 interface ApiOrder {
   id: number;
+  order_reference: string;
   status: string;
   payment_status: string;
   total_amount: number;
@@ -65,7 +66,7 @@ function mapApiOrder(o: ApiOrder): Order {
   };
   return {
     id: String(o.id),
-    orderId: `#DBR-${String(o.id).padStart(4, "0")}`,
+    orderId: o.order_reference,
     items: `${o.quantity} pack${o.quantity !== 1 ? "s" : ""}`,
     date: new Date(o.created_at).toLocaleDateString("en-NG", {
       month: "short",
