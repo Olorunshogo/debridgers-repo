@@ -82,6 +82,20 @@ export default [
     route("admin-dashboard/products", "routes/dashboards/admin/products.tsx"),
     route("admin-dashboard/outreach", "routes/dashboards/admin/outreach.tsx"),
     route("admin-dashboard/payouts", "routes/dashboards/admin/payouts.tsx"),
+    /* These pages existed on disk but were never routed, so the sub-admin work
+       they belong to was unreachable. */
+    route(
+      "admin-dashboard/deliveries",
+      "routes/dashboards/admin/deliveries.tsx",
+    ),
+    route(
+      "admin-dashboard/deliveries/:orderId/verify",
+      "routes/dashboards/admin/deliveries.orderId.verify.tsx",
+    ),
+    route(
+      "admin-dashboard/buyer-management",
+      "routes/dashboards/admin/buyer-management.tsx",
+    ),
   ]),
   // === Buyer Admin Dashboard
   layout("routes/dashboards/buyer-admin/layout.tsx", [

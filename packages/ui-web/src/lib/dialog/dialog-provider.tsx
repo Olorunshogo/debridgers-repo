@@ -49,6 +49,8 @@ export interface DialogProviderProps {
 export function DialogProvider({ registry, children }: DialogProviderProps) {
   const [openDialogs, setOpenDialogs] = useState<OpenDialog[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  /* A dialog that gates the dashboard behind it opts out of dismissal. */
+  const [isDismissible, setIsDismissible] = useState<boolean>(true);
   const nextId = useRef<number>(0);
   const location = useLocation();
 
@@ -99,11 +101,13 @@ export function DialogProvider({ registry, children }: DialogProviderProps) {
 
   const closeDialog = useCallback((): void => {
     setIsLoading(false);
+    setIsDismissible(true);
     setOpenDialogs((current) => current.slice(0, -1));
   }, []);
 
   const closeAllDialogs = useCallback((): void => {
     setIsLoading(false);
+    setIsDismissible(true);
     setOpenDialogs([]);
   }, []);
 
@@ -112,17 +116,18 @@ export function DialogProvider({ registry, children }: DialogProviderProps) {
     closeAllDialogs();
   }, [location.pathname, closeAllDialogs]);
 
-  // Escape closes the topmost dialog, unless a blocking action is running
+  /* Escape closes the topmost dialog, unless a blocking action is running or
+     the dialog has opted out of dismissal. */
   useEffect(() => {
     if (openDialogs.length === 0) return;
 
     function handleKeyDown(event: KeyboardEvent): void {
-      if (event.key === "Escape" && !isLoading) closeDialog();
+      if (event.key === "Escape" && !isLoading && isDismissible) closeDialog();
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [openDialogs.length, isLoading, closeDialog]);
+  }, [openDialogs.length, isLoading, isDismissible, closeDialog]);
 
   // Lock body scroll while anything is open
   useEffect(() => {
@@ -140,6 +145,7 @@ export function DialogProvider({ registry, children }: DialogProviderProps) {
       closeDialog,
       closeAllDialogs,
       setDialogLoading: setIsLoading,
+      setDialogDismissible: setIsDismissible,
       openDialogs,
     }),
     [triggerDialog, closeDialog, closeAllDialogs, openDialogs],
@@ -159,7 +165,7 @@ export function DialogProvider({ registry, children }: DialogProviderProps) {
               key={dialog.id}
               isTop={index === openDialogs.length - 1}
               stackIndex={index}
-              onDismiss={isLoading ? undefined : closeDialog}
+              onDismiss={isLoading || !isDismissible ? undefined : closeDialog}
             >
               <Suspense fallback={<DialogLoaderOverlay inline />}>
                 {/* Props are app-defined; the engine passes them through untouched. */}
@@ -178,7 +184,8 @@ export function DialogProvider({ registry, children }: DialogProviderProps) {
 interface DialogPanelProps {
   isTop: boolean;
   stackIndex: number;
-  /** Undefined while a blocking action runs, which disables dismissal. */
+  /** Undefined while a blocking action runs, or while the dialog is a gate,
+      either of which disables dismissal. */
   onDismiss?: () => void;
   children: ReactNode;
 }
@@ -210,7 +217,9 @@ function DialogPanel({
   return (
     <>
       <motion.div
-        className="fixed inset-0 cursor-pointer bg-black/50 backdrop-blur-sm"
+        className={`fixed inset-0 bg-black/50 backdrop-blur-sm ${
+          onDismiss ? "cursor-pointer" : ""
+        }`}
         style={{ zIndex: 40 + stackIndex * 10 }}
         variants={backdropVariants}
         initial="initial"

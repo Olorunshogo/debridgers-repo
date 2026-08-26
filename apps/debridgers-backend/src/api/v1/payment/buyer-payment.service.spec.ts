@@ -9,11 +9,11 @@ import {
 } from "vitest";
 import { eq } from "drizzle-orm";
 import { ConfigService } from "@nestjs/config";
-import { PaymentService } from "./payment.service";
-import { WalletService } from "./wallet.service";
-import { OrderService } from "./order.service";
-import { NotificationsService } from "./notifications.service";
-import { LedgerService } from "../payment/ledger.service";
+import { BuyerPaymentService } from "./buyer-payment.service";
+import { WalletService } from "../wallet/wallet.service";
+import { OrderService } from "../buyer/order.service";
+import { NotificationsService } from "../buyer/notifications.service";
+import { LedgerService } from "./ledger.service";
 import * as schema from "../../../infrastructure/persistence/index";
 import {
   createTestDatabase,
@@ -33,9 +33,9 @@ import {
 
 const hasDb = await databaseAvailable();
 
-describe.skipIf(!hasDb)("PaymentService", () => {
+describe.skipIf(!hasDb)("BuyerPaymentService", () => {
   let t: TestDb;
-  let payments: PaymentService;
+  let payments: BuyerPaymentService;
   let wallets: WalletService;
   let orderService: OrderService;
   let userId: number;
@@ -54,13 +54,29 @@ describe.skipIf(!hasDb)("PaymentService", () => {
         key === "PAYSTACK_SECRET_KEY" ? "sk_test_stub" : "http://localhost",
     } as unknown as ConfigService;
 
-    payments = new PaymentService(
+    /*
+     * The payment module gained an admin ledger and a Paystack invoice client
+     * after this suite was written. Both are stubbed: they are side effects of
+     * a successful payment, not part of the settlement rules under test, and a
+     * real invoice client would reach for the network.
+     */
+    const adminAccount = {
+      creditPlatformAccount: async () => undefined,
+    } as unknown as ConstructorParameters<typeof BuyerPaymentService>[6];
+
+    const invoice = {
+      markInvoiceAsPaid: async () => undefined,
+    } as unknown as ConstructorParameters<typeof BuyerPaymentService>[7];
+
+    payments = new BuyerPaymentService(
       t.db,
       wallets,
       orderService,
       notifications,
       config,
       ledger,
+      adminAccount,
+      invoice,
     );
   }, 120000);
 

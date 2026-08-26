@@ -1,4 +1,5 @@
 import { useLocation } from "react-router";
+import { useAuth } from "../contexts/AuthContext";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -19,10 +20,20 @@ import {
 } from "lucide-react";
 import { supportWhatsAppHref } from "@debridgers/ui-web";
 
+export type AdminTier = "super" | "sub";
+
 export interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
+  /*
+   * Which admin tiers may see this item. Omitted means every tier.
+   *
+   * There is one admin dashboard, not two: a sub-admin gets a narrower nav
+   * rather than a separate set of routes. Splitting them produced two copies of
+   * overview, buyers and settings that had to be kept in step by hand.
+   */
+  tiers?: readonly AdminTier[];
 }
 
 export interface NavGroup {
@@ -140,15 +151,37 @@ const adminNavGroups: NavGroup[] = [
     label: "MAIN",
     items: [
       { label: "Overview", icon: LayoutDashboard, href: "/admin-dashboard" },
-      { label: "Agents", icon: User, href: "/admin-dashboard/agents" },
+      {
+        label: "Agents",
+        icon: User,
+        href: "/admin-dashboard/agents",
+        tiers: ["super"],
+      },
       { label: "Buyers", icon: ShoppingCart, href: "/admin-dashboard/buyers" },
-      { label: "Products", icon: Package, href: "/admin-dashboard/products" },
-      { label: "Outreach", icon: MapPin, href: "/admin-dashboard/outreach" },
-      { label: "Payouts", icon: Banknote, href: "/admin-dashboard/payouts" },
+      { label: "Deliveries", icon: Truck, href: "/admin-dashboard/deliveries" },
+      {
+        label: "Products",
+        icon: Package,
+        href: "/admin-dashboard/products",
+        tiers: ["super"],
+      },
+      {
+        label: "Outreach",
+        icon: MapPin,
+        href: "/admin-dashboard/outreach",
+        tiers: ["super"],
+      },
+      {
+        label: "Payouts",
+        icon: Banknote,
+        href: "/admin-dashboard/payouts",
+        tiers: ["super"],
+      },
       {
         label: "Admin Invites",
         icon: Mail,
         href: "/admin-dashboard/admin-invites",
+        tiers: ["super"],
       },
     ],
   },
@@ -213,16 +246,39 @@ const buyerAdminNavGroups: NavGroup[] = [
   },
 ];
 
+/* Drops what this tier may not see, and any group left empty by that. */
+function navForTier(groups: NavGroup[], tier: AdminTier): NavGroup[] {
+  return groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) => !item.tiers || item.tiers.includes(tier),
+      ),
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
 export function useDashboardNav() {
   const { pathname } = useLocation();
+  const { user } = useAuth();
 
   const isBuyer = pathname.startsWith("/buyer-dashboard");
   const isAgent = pathname.startsWith("/agent-dashboard");
   const isAdmin = pathname.startsWith("/admin-dashboard");
   const isBuyerAdmin = pathname.startsWith("/buyer-admin-dashboard");
 
+  /*
+   * Tier comes from the session, not the URL.
+   *
+   * Nav used to be chosen purely by path, so what an admin saw depended on
+   * where they happened to be rather than on what they are allowed to do.
+   * Defaults to the narrower tier: showing a sub-admin links they cannot use is
+   * worse than hiding one from a super admin until the token loads.
+   */
+  const tier: AdminTier = user?.admin_tier === "super" ? "super" : "sub";
+
   const groups = isAdmin
-    ? adminNavGroups
+    ? navForTier(adminNavGroups, tier)
     : isAgent
       ? agentNavGroups
       : isBuyerAdmin

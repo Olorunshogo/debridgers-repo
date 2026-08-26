@@ -606,3 +606,15 @@ The "Repeat Last" quick action on the buyer overview currently reads from `debri
 - The localStorage snapshot at checkout (`checkout.tsx`) remains as an immediate fallback for the session in which the order was just placed, before the next app load.
 - If the API call fails, silently skip - the localStorage snapshot (if present) still works.
 - The `order_items` table must exist and be populated when orders are created. Verify the backend's `POST /buyer/orders` is writing line items, not just the order header.
+
+## Others
+
+### Buyers
+
+- Transfer to your account
+
+Money sent here lands in your wallet automatically.
+
+We could not set up your account number just now. Use the card option below, or try again.
+
+> Try again. This ccount should exist already

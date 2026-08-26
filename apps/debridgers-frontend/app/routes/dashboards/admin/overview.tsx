@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { motion } from "framer-motion";
 import { Users, UserCheck, ShoppingBag, TrendingUp } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
-import { formatFromKobo } from "@debridgers/ui-web";
-import { InviteVerificationModal } from "../../../components/admin/InviteVerificationModal";
+import { formatFromKobo, useDialog } from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -48,15 +47,23 @@ function mapStats(api: ApiAdminStats): AdminStats {
 export default function AdminOverview() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showInviteModal, setShowInviteModal] = useState<boolean>(false);
+  const { triggerDialog } = useDialog();
+  /* Opened once per mount; the dialog is dismissable and re-triggering on every
+     render would trap the admin behind it. */
+  const promptedRef = useRef<boolean>(false);
 
   useEffect(() => {
     // Check if admin needs to verify invite code
     const inviteVerified = localStorage.getItem("admin_invite_verified");
-    if (!inviteVerified) {
-      setShowInviteModal(true);
+    if (!inviteVerified && !promptedRef.current) {
+      promptedRef.current = true;
+      triggerDialog("VERIFY_INVITE", {
+        onVerified: () => {
+          localStorage.setItem("admin_invite_verified", "true");
+        },
+      });
     }
-  }, []);
+  }, [triggerDialog]);
 
   useEffect(() => {
     apiFetch<ApiAdminStats>("/admin/dashboard")
@@ -159,14 +166,6 @@ export default function AdminOverview() {
           </Link>
         </div>
       </div>
-
-      <InviteVerificationModal
-        isOpen={showInviteModal}
-        onVerified={() => {
-          localStorage.setItem("admin_invite_verified", "true");
-          setShowInviteModal(false);
-        }}
-      />
     </div>
   );
 }

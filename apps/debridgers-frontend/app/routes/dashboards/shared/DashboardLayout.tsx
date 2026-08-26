@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useDialog } from "@debridgers/ui-web";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Bell, LogOut } from "lucide-react";
@@ -11,7 +12,6 @@ import {
   decodeJwtPayload,
 } from "@debridgers/api-client";
 import { useAuth } from "../../../contexts/AuthContext";
-import { ChangePasswordModal } from "../../../components/admin/ChangePasswordModal";
 
 const titleMaps: Record<string, Record<string, string>> = {
   "/agent-dashboard": {
@@ -60,6 +60,9 @@ function getInitials(name: string): string {
   ).toUpperCase();
 }
 
+/* Long enough that the admin has landed and looked around before being asked. */
+const PASSWORD_PROMPT_DELAY_MS = 120_000;
+
 export default function DashboardLayout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -86,8 +89,10 @@ export default function DashboardLayout() {
     sub: string;
     avatar_url?: string | null;
   } | null>(null);
-  const [isChangePasswordOpen, setIsChangePasswordOpen] =
-    useState<boolean>(false);
+  /* Asked once per mount. The dialog is dismissable, so without this an admin
+     who closed it would be re-prompted on every re-render. */
+  const promptedForPasswordRef = useRef<boolean>(false);
+  const { triggerDialog } = useDialog();
 
   // Route guard: verify user can access this dashboard
   useEffect(() => {
@@ -103,21 +108,30 @@ export default function DashboardLayout() {
     }
   }, [isLoading, user, dashboardPath, basePath, navigate]);
 
-  // Trigger password change modal for admins (TODO: uncomment setTimeout for 120s delay in prod)
+  /*
+   * Nudge admins still on their invite password to set a real one.
+   *
+   * The delay was commented out for testing and shipped that way, so the prompt
+   * opened the instant the dashboard mounted - and because the old modal could
+   * not be dismissed, it made the dashboard unusable. Restored here, and the
+   * dialog it opens is now dismissable.
+   */
   useEffect(() => {
     if (isLoading || !user) return;
     if (!isAdmin && !isBuyerAdmin) return;
+    if (promptedForPasswordRef.current) return;
 
-    // TODO: Uncomment for production - show modal after 120 seconds
-    // const timer = setTimeout(() => {
-    //   setIsChangePasswordOpen(true);
-    // }, 120000);
+    const timer = window.setTimeout(() => {
+      promptedForPasswordRef.current = true;
+      triggerDialog("CHANGE_PASSWORD", {
+        onChanged: () => {
+          promptedForPasswordRef.current = true;
+        },
+      });
+    }, PASSWORD_PROMPT_DELAY_MS);
 
-    // For testing: trigger immediately
-    setIsChangePasswordOpen(true);
-
-    // return () => clearTimeout(timer);
-  }, [isLoading, user, isAdmin, isBuyerAdmin]);
+    return () => window.clearTimeout(timer);
+  }, [isLoading, user, isAdmin, isBuyerAdmin, triggerDialog]);
 
   useEffect(() => {
     if (isAdmin || isBuyerAdmin) {
@@ -173,10 +187,6 @@ export default function DashboardLayout() {
   async function handleLogout(): Promise<void> {
     await logout();
     navigate("/login");
-  }
-
-  function handlePasswordChangeSuccess(): void {
-    setIsChangePasswordOpen(false);
   }
 
   function Sidebar({ onNavClick }: { onNavClick?: () => void }) {
@@ -376,12 +386,6 @@ export default function DashboardLayout() {
             </main>
           </div>
         </div>
-
-        {/* Password change modal for admin users */}
-        <ChangePasswordModal
-          isOpen={isChangePasswordOpen}
-          onSuccess={handlePasswordChangeSuccess}
-        />
       </div>
     </div>
   );

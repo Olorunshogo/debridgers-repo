@@ -43,5 +43,11 @@ export interface DialogContextValue {
   closeAllDialogs: () => void;
   /** Shows or hides the engine-level blocking overlay. */
   setDialogLoading: (loading: boolean) => void;
+  /*
+   * Turns backdrop and Escape dismissal off for a dialog that gates the page
+   * behind it. Resets to true whenever a dialog closes, so a gate cannot leak
+   * onto the next one.
+   */
+  setDialogDismissible: (dismissible: boolean) => void;
   openDialogs: readonly OpenDialog[];
 }

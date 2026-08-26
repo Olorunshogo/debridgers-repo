@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { eq } from "drizzle-orm";
 import { WalletService } from "./wallet.service";
-import { NotificationsService } from "./notifications.service";
+import { NotificationsService } from "../buyer/notifications.service";
 import { LedgerService } from "../payment/ledger.service";
 import * as schema from "../../../infrastructure/persistence/index";
 import {

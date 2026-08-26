@@ -20,7 +20,8 @@ export function meta() {
 
 interface DeliveryOrder {
   id: number;
-  order_reference: string;
+  /* Nullable until migration 0016 backfills the rows that predate 0011. */
+  order_reference: string | null;
   buyer_name: string;
   buyer_phone: string;
   delivery_address: string;
@@ -46,16 +47,15 @@ export default function Deliveries() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = useMemo(
-    () =>
-      orders.filter(
-        (o) =>
-          o.order_reference.toLowerCase().includes(search.toLowerCase()) ||
-          o.buyer_name.toLowerCase().includes(search.toLowerCase()) ||
-          o.delivery_address.toLowerCase().includes(search.toLowerCase()),
-      ),
-    [orders, search],
-  );
+  const filtered = useMemo(() => {
+    const query = search.toLowerCase();
+    return orders.filter(
+      (o) =>
+        (o.order_reference?.toLowerCase().includes(query) ?? false) ||
+        o.buyer_name.toLowerCase().includes(query) ||
+        o.delivery_address.toLowerCase().includes(query),
+    );
+  }, [orders, search]);
 
   const stats = {
     pending: orders.length,

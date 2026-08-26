@@ -92,6 +92,34 @@
       "when": 1787250998689,
       "tag": "0012_recompute_product_category",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1787643634143,
+      "tag": "0013_easy_talos",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1787643635143,
+      "tag": "0014_users_suspension_and_deposits",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1787643636143,
+      "tag": "0015_backfill_admin_tier",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1787643637143,
+      "tag": "0016_order_reference_not_null",
+      "breakpoints": true
     }
   ]
 }

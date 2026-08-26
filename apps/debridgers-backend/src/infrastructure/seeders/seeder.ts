@@ -183,13 +183,19 @@ async function seed() {
       password: hashed,
       role: "admin",
       is_email_verified: true,
+      /*
+       * Explicit, because AdminKeyGuard reads this column rather than the JWT
+       * claim. The token signer defaults a null tier to "super", so a seeded
+       * admin looked fine at login and then got 401 on every admin endpoint.
+       */
+      admin_tier: "super",
     });
     console.warn(`✓ Admin created: ${adminEmail}`);
   } else {
-    // Update existing admin password
+    // Update existing admin password, and repair a missing tier
     await db
       .update(schema.users)
-      .set({ password: hashed })
+      .set({ password: hashed, admin_tier: existing[0].admin_tier ?? "super" })
       .where(eq(schema.users.id, existing[0].id));
     console.warn(`✓ Admin password updated: ${adminEmail}`);
   }
