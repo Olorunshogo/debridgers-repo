@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Banknote,
@@ -9,14 +9,28 @@ import {
   PlayCircle,
   Loader2,
 } from "lucide-react";
-import { apiFetch, ApiError } from "@debridgers/api-client";
+import {
+  apiFetch,
+  apiFetchPaged,
+  ApiError,
+  type PaginationMeta,
+} from "@debridgers/api-client";
 import {
   formatFromKobo,
   fadeDownVariants,
-  staggerItemVariants,
-  staggerDelay,
   transitionBase,
-  DashTextInput,
+  useDialog,
+  DataTable,
+  TablePrimaryCell,
+  TableAmountCell,
+  TableDateCell,
+  TableTextCell,
+  TableStatusBadge,
+  TableEmptyState,
+  type RowAction,
+  type StatusTone,
+  type TableColumn,
+  type TableStateSnapshot,
 } from "@debridgers/ui-web";
 
 export function meta() {
@@ -59,6 +73,13 @@ interface Withdrawal {
   created_at: string;
 }
 
+/* The queue's own sums, counted server-side over every row rather than the
+   visible page, which the two totals cards read. */
+interface WithdrawalListMeta extends PaginationMeta {
+  pending_total: number;
+  approved_total: number;
+}
+
 interface PayoutRunResult {
   attempted: number;
   paid: number;
@@ -67,28 +88,12 @@ interface PayoutRunResult {
 
 const STATUS_BADGE: Record<
   WithdrawalStatus,
-  { bgClass: string; textClass: string; label: string }
+  { tone: StatusTone; label: string }
 > = {
-  pending: {
-    bgClass: "bg-amber-100",
-    textClass: "text-amber-800",
-    label: "Pending review",
-  },
-  approved: {
-    bgClass: "bg-status-pending-bg",
-    textClass: "text-status-pending-text",
-    label: "Approved - awaiting payout",
-  },
-  paid: {
-    bgClass: "bg-status-delivered-bg",
-    textClass: "text-status-delivered-text",
-    label: "Paid",
-  },
-  rejected: {
-    bgClass: "bg-status-cancelled-bg",
-    textClass: "text-status-cancelled-text",
-    label: "Rejected",
-  },
+  pending: { tone: "warning", label: "Pending review" },
+  approved: { tone: "info", label: "Approved - awaiting payout" },
+  paid: { tone: "success", label: "Paid" },
+  rejected: { tone: "danger", label: "Rejected" },
 };
 
 const FILTERS: { value: string; label: string }[] = [
@@ -107,105 +112,132 @@ function agentName(w: Withdrawal): string {
   return name || w.agent_email || `Agent #${w.agent_id}`;
 }
 
-function formatDate(value: string): string {
-  return new Date(value).toLocaleDateString("en-NG", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
 export default function AdminPayoutsPage() {
   const [rows, setRows] = useState<Withdrawal[]>([]);
   const [filter, setFilter] = useState<string>("pending");
   const [loading, setLoading] = useState<boolean>(true);
   const [actionError, setActionError] = useState<string | null>(null);
+  /* The list's own failure. An empty table would read as "no payout
+     requests", which is a different story. */
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [runningSweep, setRunningSweep] = useState<boolean>(false);
+  const [pageCount, setPageCount] = useState<number>(1);
+  const [total, setTotal] = useState<number>(0);
+  const [totals, setTotals] = useState<{
+    pendingKobo: number;
+    approvedKobo: number;
+  }>({ pendingKobo: 0, approvedKobo: 0 });
+  /* The engine's last emitted state, so an action can reload the same page. */
+  const [snapshot, setSnapshot] = useState<TableStateSnapshot | null>(null);
+  const { triggerDialog } = useDialog();
 
-  /* Which row has its reject box open, and what reason has been typed. */
-  const [rejectingId, setRejectingId] = useState<number | null>(null);
-  const [rejectReason, setRejectReason] = useState<string>("");
+  /*
+   * Server mode: the endpoint paginates, sorts and searches. Sort keys below
+   * are its own allowlist, so an unknown one is a 400 rather than a silent
+   * full-table sort.
+   */
+  const load = useCallback(
+    async (state: TableStateSnapshot, status: string): Promise<void> => {
+      setLoading(true);
+      try {
+        const { data, meta } = await apiFetchPaged<
+          Withdrawal,
+          WithdrawalListMeta
+        >("/admin/withdrawals", {
+          page: state.page,
+          limit: state.pageSize,
+          search: state.search,
+          sort: state.sort?.key,
+          order: state.sort?.direction,
+          status: status || undefined,
+        });
+        setRows(data);
+        setPageCount(meta.pages);
+        setTotal(meta.total);
+        setTotals({
+          pendingKobo: meta.pending_total,
+          approvedKobo: meta.approved_total,
+        });
+        setLoadError(null);
+      } catch (err) {
+        setRows([]);
+        setLoadError(
+          err instanceof ApiError
+            ? err.message
+            : "Could not load payout requests. Check your connection and retry.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
-  async function load(status: string) {
-    setLoading(true);
-    try {
-      const query = status ? `?status=${status}` : "";
-      const data = await apiFetch<Withdrawal[]>(`/admin/withdrawals${query}`);
-      setRows(data);
+  const handleStateChange = useCallback(
+    (state: TableStateSnapshot): void => {
+      setSnapshot(state);
+      void load(state, filter);
+    },
+    [load, filter],
+  );
+
+  /* Reloads whatever page the admin is on, after an approve or a reject. */
+  const reload = useCallback((): void => {
+    if (snapshot) void load(snapshot, filter);
+  }, [snapshot, filter, load]);
+
+  /* Both throw rather than swallowing: the confirming dialog shows the failure
+     and stays open, instead of closing over a decision that never landed. */
+  const handleApprove = useCallback(
+    async (id: number): Promise<void> => {
+      setBusyId(id);
       setActionError(null);
-    } catch (err) {
-      /* An empty table would read as "no payout requests", which is different. */
-      setRows([]);
-      setActionError(
-        err instanceof ApiError
-          ? err.message
-          : "Could not load payout requests. Check your connection and retry.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+      setNotice(null);
+      try {
+        await apiFetch(`/admin/withdrawals/${id}/approve`, { method: "PATCH" });
+        setNotice(
+          "Payout approved. It will be sent on the next Friday run, or you can run the sweep now.",
+        );
+        reload();
+      } catch (err) {
+        throw new Error(
+          err instanceof ApiError
+            ? err.message
+            : "Could not approve that payout. Please try again.",
+        );
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [reload],
+  );
 
-  useEffect(() => {
-    void load(filter);
-  }, [filter]);
-
-  const totals = useMemo(() => {
-    const pendingKobo = rows
-      .filter((r) => r.status === "pending")
-      .reduce((sum, r) => sum + r.amount, 0);
-    const approvedKobo = rows
-      .filter((r) => r.status === "approved")
-      .reduce((sum, r) => sum + r.amount, 0);
-    return { pendingKobo, approvedKobo };
-  }, [rows]);
-
-  async function handleApprove(id: number) {
-    setBusyId(id);
-    setActionError(null);
-    setNotice(null);
-    try {
-      await apiFetch(`/admin/withdrawals/${id}/approve`, { method: "PATCH" });
-      setNotice(
-        "Payout approved. It will be sent on the next Friday run, or you can run the sweep now.",
-      );
-      await load(filter);
-    } catch (err) {
-      setActionError(
-        err instanceof ApiError
-          ? err.message
-          : "Could not approve that payout. Please try again.",
-      );
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  async function handleReject(id: number) {
-    setBusyId(id);
-    setActionError(null);
-    setNotice(null);
-    try {
-      await apiFetch(`/admin/withdrawals/${id}/reject`, {
-        method: "PATCH",
-        body: JSON.stringify({ reason: rejectReason.trim() || undefined }),
-      });
-      setNotice("Payout rejected. The amount was returned to the agent.");
-      setRejectingId(null);
-      setRejectReason("");
-      await load(filter);
-    } catch (err) {
-      setActionError(
-        err instanceof ApiError
-          ? err.message
-          : "Could not reject that payout. Please try again.",
-      );
-    } finally {
-      setBusyId(null);
-    }
-  }
+  const handleReject = useCallback(
+    async (id: number, reason: string): Promise<void> => {
+      setBusyId(id);
+      setActionError(null);
+      setNotice(null);
+      try {
+        await apiFetch(`/admin/withdrawals/${id}/reject`, {
+          method: "PATCH",
+          body: JSON.stringify({ reason: reason || undefined }),
+        });
+        setNotice("Payout rejected. The amount was returned to the agent.");
+        reload();
+      } catch (err) {
+        throw new Error(
+          err instanceof ApiError
+            ? err.message
+            : "Could not reject that payout. Please try again.",
+        );
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [reload],
+  );
 
   async function handleRunSweep() {
     setRunningSweep(true);
@@ -222,7 +254,7 @@ export default function AdminPayoutsPage() {
             ? `, ${result.failed.length} failed and can be retried.`
             : "."),
       );
-      await load(filter);
+      reload();
     } catch (err) {
       setActionError(
         err instanceof ApiError
@@ -234,6 +266,123 @@ export default function AdminPayoutsPage() {
     }
   }
 
+  const columns = useMemo<TableColumn<Withdrawal>[]>(
+    () => [
+      /* Column ids double as the endpoint's sort keys in server mode, so they
+         are its allowlist verbatim, not names chosen here. */
+      {
+        id: "agent_name",
+        header: "Agent",
+        priority: "primary",
+        minWidth: "16rem",
+        sortable: true,
+        cell: (w) => <TablePrimaryCell title={agentName(w)} />,
+      },
+      {
+        id: "bank",
+        header: "Bank details",
+        priority: "secondary",
+        minWidth: "18rem",
+        cell: (w) => (
+          <span className="text-body flex flex-wrap items-center gap-1.5 text-xs">
+            <Landmark size={12} />
+            {w.bank_name} - {w.bank_account_number} - {w.bank_account_name}
+          </span>
+        ),
+      },
+      {
+        id: "amount",
+        header: "Amount",
+        align: "right",
+        priority: "trailing",
+        sortable: true,
+        cell: (w) => <TableAmountCell kobo={w.amount} />,
+      },
+      {
+        id: "status",
+        header: "Status",
+        priority: "trailing",
+        sortable: true,
+        cell: (w) => (
+          <TableStatusBadge
+            label={STATUS_BADGE[w.status].label}
+            tone={STATUS_BADGE[w.status].tone}
+          />
+        ),
+      },
+      {
+        id: "created_at",
+        header: "Requested",
+        priority: "detail",
+        sortable: true,
+        cell: (w) => <TableDateCell value={w.created_at} />,
+      },
+      {
+        id: "payout_reference",
+        header: "Reference",
+        priority: "detail",
+        cell: (w) => <TableTextCell value={w.payout_reference} />,
+      },
+      {
+        id: "rejection_reason",
+        header: "Rejection reason",
+        priority: "detail",
+        cell: (w) => (
+          <TableTextCell
+            value={w.rejection_reason}
+            className="text-status-cancelled-fg"
+          />
+        ),
+      },
+    ],
+    [],
+  );
+
+  const rowActions = useMemo<RowAction<Withdrawal>[]>(
+    () => [
+      {
+        id: "approve",
+        label: "Approve",
+        icon: Check,
+        tone: "primary",
+        /* Only a pending request can be acted on. */
+        hidden: (w) => w.status !== "pending",
+        isBusy: (w) => busyId === w.id,
+        onSelect: (w) => handleApprove(w.id),
+        confirm: {
+          dialogKey: "CONFIRM",
+          props: (w) => ({
+            title: `Approve ${formatFromKobo(w.amount)} to ${agentName(w)}?`,
+            description:
+              "Approved payouts are sent on the next Friday run, or by the sweep.",
+            confirmLabel: "Approve payout",
+            tone: "primary",
+          }),
+        },
+      },
+      {
+        id: "reject",
+        label: "Reject",
+        icon: X,
+        tone: "danger",
+        hidden: (w) => w.status !== "pending",
+        isBusy: (w) => busyId === w.id,
+        /*
+         * Opened directly rather than through `confirm`, because the rejection
+         * carries a reason back and the engine's confirm contract passes no
+         * arguments.
+         */
+        onSelect: (w) =>
+          triggerDialog("REJECT_PAYOUT", {
+            agentName: agentName(w),
+            amountLabel: formatFromKobo(w.amount),
+            onReject: (reason: string) => handleReject(w.id, reason),
+          }),
+      },
+    ],
+    [busyId, handleApprove, handleReject, triggerDialog],
+  );
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
@@ -244,7 +393,7 @@ export default function AdminPayoutsPage() {
             <h2 className="font-syne text-heading text-xl font-bold">
               Payouts
             </h2>
-            <p className="text-text text-sm">
+            <p className="text-body text-sm">
               Approve agent payout requests. Approved payouts are sent every
               Friday at 9am.
             </p>
@@ -276,7 +425,7 @@ export default function AdminPayoutsPage() {
             animate="animate"
             exit="exit"
             transition={transitionBase}
-            className="bg-status-delivered-bg text-status-delivered-text flex items-start justify-between gap-3 rounded-xl px-4 py-3 text-sm"
+            className="bg-status-delivered text-status-delivered-fg flex items-start justify-between gap-3 rounded-xl px-4 py-3 text-sm"
           >
             <span>{notice}</span>
             <button
@@ -296,7 +445,7 @@ export default function AdminPayoutsPage() {
             animate="animate"
             exit="exit"
             transition={transitionBase}
-            className="bg-status-cancelled-bg text-status-cancelled-text flex items-start justify-between gap-3 rounded-xl px-4 py-3 text-sm"
+            className="bg-status-cancelled text-status-cancelled-fg flex items-start justify-between gap-3 rounded-xl px-4 py-3 text-sm"
           >
             <span>{actionError}</span>
             <button
@@ -313,23 +462,23 @@ export default function AdminPayoutsPage() {
 
       {/* Totals for the current view */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="border-gray-border flex items-center gap-3 rounded-2xl border bg-white p-5">
+        <div className="border-line flex items-center gap-3 rounded-2xl border bg-white p-5">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100">
             <Clock size={18} className="text-amber-800" />
           </span>
           <div className="flex min-w-0 flex-col">
-            <span className="text-text text-xs">Awaiting review</span>
+            <span className="text-body text-xs">Awaiting review</span>
             <span className="font-syne text-heading truncate text-lg font-bold">
               {formatFromKobo(totals.pendingKobo)}
             </span>
           </div>
         </div>
-        <div className="border-gray-border flex items-center gap-3 rounded-2xl border bg-white p-5">
-          <span className="bg-status-pending-bg flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
-            <Banknote size={18} className="text-status-pending-text" />
+        <div className="border-line flex items-center gap-3 rounded-2xl border bg-white p-5">
+          <span className="bg-status-pending flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+            <Banknote size={18} className="text-status-pending-fg" />
           </span>
           <div className="flex min-w-0 flex-col">
-            <span className="text-text text-xs">Approved, due Friday</span>
+            <span className="text-body text-xs">Approved, due Friday</span>
             <span className="font-syne text-heading truncate text-lg font-bold">
               {formatFromKobo(totals.approvedKobo)}
             </span>
@@ -337,9 +486,28 @@ export default function AdminPayoutsPage() {
         </div>
       </div>
 
-      {/* Filter chips: scroll rather than wrap so the list stays visible */}
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-        {FILTERS.map((f) => (
+      <DataTable
+        rows={rows}
+        columns={columns}
+        actions={rowActions}
+        mode="cards"
+        dataMode="server"
+        total={total}
+        pageCount={pageCount}
+        onStateChange={handleStateChange}
+        initialSort={{ key: "created_at", direction: "desc" }}
+        caption="Payout requests"
+        showSearch
+        searchPlaceholder="Search by agent, bank or reference"
+        loading={loading}
+        error={loadError}
+        onRetry={reload}
+        pageSize={10}
+        pageSizeOptions={[10, 25, 50]}
+        /* The filter lives on the page, so the engine has to be told when it
+           changes or the viewer stays on a page that no longer exists. */
+        resetKey={filter}
+        toolbar={FILTERS.map((f) => (
           <button
             key={f.value || "all"}
             type="button"
@@ -347,152 +515,20 @@ export default function AdminPayoutsPage() {
             className={`shrink-0 cursor-pointer rounded-full border px-4 py-2 text-sm font-semibold transition-all ${
               filter === f.value
                 ? "border-primary bg-primary text-white"
-                : "border-gray-border text-heading hover:border-primary bg-white"
+                : "border-line text-heading hover:border-primary bg-white"
             }`}
           >
             {f.label}
           </button>
         ))}
-      </div>
-
-      {/* List */}
-      <div className="border-gray-border flex flex-col gap-3 rounded-2xl border bg-white p-5">
-        {loading ? (
-          <div className="flex flex-col gap-3">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="bg-bg-light h-24 animate-pulse rounded-xl"
-              />
-            ))}
-          </div>
-        ) : rows.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-10">
-            <Banknote size={36} className="text-text opacity-30" />
-            <p className="text-text text-sm">
-              No payout requests in this view.
-            </p>
-          </div>
-        ) : (
-          rows.map((w, i) => {
-            const badge = STATUS_BADGE[w.status];
-            const isBusy = busyId === w.id;
-            return (
-              <motion.div
-                key={w.id}
-                variants={staggerItemVariants}
-                initial="initial"
-                animate="animate"
-                transition={staggerDelay(i)}
-                className="border-gray-border flex flex-col gap-3 rounded-xl border p-4"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="flex min-w-0 flex-col gap-0.5">
-                    <span className="text-heading text-sm font-semibold">
-                      {agentName(w)}
-                    </span>
-                    <span className="text-text flex flex-wrap items-center gap-1.5 text-xs">
-                      <Landmark size={12} />
-                      {w.bank_name} - {w.bank_account_number} -{" "}
-                      {w.bank_account_name}
-                    </span>
-                    <span className="text-text text-xs">
-                      Requested {formatDate(w.created_at)}
-                      {w.payout_reference ? ` - ref ${w.payout_reference}` : ""}
-                    </span>
-                    {w.rejection_reason && (
-                      <span className="text-status-cancelled-text text-xs">
-                        Reason: {w.rejection_reason}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1.5">
-                    <span className="font-syne text-heading text-lg font-bold">
-                      {formatFromKobo(w.amount)}
-                    </span>
-                    <span
-                      className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.bgClass} ${badge.textClass}`}
-                    >
-                      {badge.label}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Only a pending request can be acted on. */}
-                {w.status === "pending" && (
-                  <div className="flex flex-col gap-3">
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => void handleApprove(w.id)}
-                        disabled={isBusy}
-                        className="bg-primary flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        <Check size={14} /> Approve
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setRejectingId((prev) =>
-                            prev === w.id ? null : w.id,
-                          );
-                          setRejectReason("");
-                        }}
-                        disabled={isBusy}
-                        className="border-gray-border text-text cursor-pointer rounded-full border px-4 py-2 text-sm font-semibold transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        Reject
-                      </button>
-                    </div>
-
-                    <AnimatePresence>
-                      {rejectingId === w.id && (
-                        <motion.div
-                          variants={fadeDownVariants}
-                          initial="initial"
-                          animate="animate"
-                          exit="exit"
-                          transition={transitionBase}
-                          className="bg-bg-light flex flex-col gap-2 rounded-xl p-3"
-                        >
-                          <DashTextInput
-                            label="Reason (shown to the agent)"
-                            id={`reason-${w.id}`}
-                            value={rejectReason}
-                            onChange={(e) => setRejectReason(e.target.value)}
-                            placeholder="e.g. Bank details do not match KYC"
-                          />
-                          <p className="text-text text-xs">
-                            Rejecting returns {formatFromKobo(w.amount)} to the
-                            agent&apos;s available balance.
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() => void handleReject(w.id)}
-                              disabled={isBusy}
-                              className="bg-status-cancelled-text flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              <X size={14} /> Confirm rejection
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setRejectingId(null)}
-                              className="border-gray-border text-text cursor-pointer rounded-full border bg-white px-4 py-2 text-sm font-semibold transition-colors hover:bg-black/5"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                )}
-              </motion.div>
-            );
-          })
-        )}
-      </div>
+        emptyState={
+          <TableEmptyState
+            icon={Banknote}
+            title="No payout requests in this view"
+            description="Requests matching this filter will appear here."
+          />
+        }
+      />
     </div>
   );
 }

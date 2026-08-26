@@ -67,21 +67,21 @@ export function BuyerPaymentMethodDialog({
 
       {error && <DialogErrorBanner message={error} />}
 
-      <dl className="bg-bg-light flex flex-col gap-2 rounded-xl px-4 py-3">
+      <dl className="bg-light-bg flex flex-col gap-2 rounded-xl px-4 py-3">
         <div className="flex items-center justify-between gap-3">
-          <dt className="text-text text-sm">Items</dt>
+          <dt className="text-body text-sm">Items</dt>
           <dd className="text-heading font-syne text-sm font-medium">
             {formatFromKobo(itemsTotalKobo)}
           </dd>
         </div>
         <div className="flex items-center justify-between gap-3">
-          <dt className="text-text text-sm">Delivery</dt>
+          <dt className="text-body text-sm">Delivery</dt>
           <dd className="text-heading font-syne text-sm font-medium">
             {deliveryFeeKobo === 0 ? "Free" : formatFromKobo(deliveryFeeKobo)}
           </dd>
         </div>
         <div className="flex items-center justify-between gap-3">
-          <dt className="text-text text-sm">Handling</dt>
+          <dt className="text-body text-sm">Handling</dt>
           <dd className="text-heading font-syne text-sm font-medium">
             {formatFromKobo(handlingFeeKobo)}
           </dd>
@@ -104,14 +104,14 @@ export function BuyerPaymentMethodDialog({
           type="button"
           disabled={!walletCovers || isSubmitting}
           onClick={() => onSelectMethod("wallet")}
-          className="border-input-border hover:border-input-border-focus flex w-full cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60"
+          className="border-input-border hover:border-input-border-focus flex w-full cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all duration-300 ease-in-out disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Wallet className="text-heading size-5 shrink-0" aria-hidden="true" />
           <span className="flex flex-col">
             <span className="text-heading font-syne font-medium">
               {pendingMethod === "wallet" ? "Paying..." : "Pay from wallet"}
             </span>
-            <span className="text-text text-sm">
+            <span className="text-body text-sm">
               {walletCovers
                 ? `Balance ${formatFromKobo(walletBalanceKobo)}`
                 : `Short by ${formatFromKobo(shortfallKobo)}. Balance ${formatFromKobo(walletBalanceKobo)}.`}
@@ -123,7 +123,7 @@ export function BuyerPaymentMethodDialog({
           type="button"
           disabled={isSubmitting}
           onClick={() => onSelectMethod("paystack")}
-          className="border-input-border hover:border-input-border-focus flex w-full cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60"
+          className="border-input-border hover:border-input-border-focus flex w-full cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all duration-300 ease-in-out disabled:cursor-not-allowed disabled:opacity-60"
         >
           <CreditCard
             className="text-heading size-5 shrink-0"
@@ -135,7 +135,7 @@ export function BuyerPaymentMethodDialog({
                 ? "Opening Paystack..."
                 : "Pay with card or transfer"}
             </span>
-            <span className="text-text text-sm">
+            <span className="text-body text-sm">
               Secured by Paystack. You will be taken there to finish.
             </span>
           </span>

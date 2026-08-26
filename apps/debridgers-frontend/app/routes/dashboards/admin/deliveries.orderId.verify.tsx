@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
-import { apiFetch, apiMutate } from "@debridgers/api-client";
+import { apiFetch, apiMutate, ApiError } from "@debridgers/api-client";
 import {
   Camera,
   CheckCircle,
@@ -66,8 +66,12 @@ export default function VerifyDelivery() {
           `/admin/deliveries/${orderId}`,
         );
         setOrder(data);
-      } catch (_err) {
-        setError("Failed to load order details");
+      } catch (err) {
+        setError(
+          err instanceof ApiError
+            ? err.message
+            : "Could not load these order details. Check your connection and retry.",
+        );
       } finally {
         setLoading(false);
       }
@@ -134,7 +138,7 @@ export default function VerifyDelivery() {
       <div className="flex h-96 items-center justify-center">
         <div className="text-center">
           <div className="border-t-primary mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-gray-200" />
-          <p className="text-text">Loading order details...</p>
+          <p className="text-body">Loading order details...</p>
         </div>
       </div>
     );
@@ -145,7 +149,7 @@ export default function VerifyDelivery() {
       <div className="flex h-96 items-center justify-center">
         <div className="text-center">
           <AlertCircle size={48} className="mx-auto mb-3 text-red-500" />
-          <p className="text-text font-semibold">Order not found</p>
+          <p className="text-body font-semibold">Order not found</p>
           <button
             onClick={() => navigate("/dashboards/admin/deliveries")}
             className="text-primary mt-2 text-sm hover:underline"
@@ -162,8 +166,8 @@ export default function VerifyDelivery() {
       <div className="flex h-96 items-center justify-center">
         <div className="text-center">
           <CheckCircle size={48} className="mx-auto mb-3 text-green-500" />
-          <p className="text-text font-semibold">Delivery already verified</p>
-          <p className="text-text mt-1 text-sm">
+          <p className="text-body font-semibold">Delivery already verified</p>
+          <p className="text-body mt-1 text-sm">
             Verified on{" "}
             {new Date(order.delivery_verified_at).toLocaleDateString("en-NG")}
           </p>
@@ -219,7 +223,7 @@ export default function VerifyDelivery() {
       )}
 
       {/* Order Summary */}
-      <div className="border-gray-border mb-6 rounded-2xl border bg-white p-6">
+      <div className="border-line mb-6 rounded-2xl border bg-white p-6">
         <h2 className="font-syne text-heading mb-4 text-lg font-bold">
           Order {order.order_reference}
         </h2>
@@ -228,9 +232,9 @@ export default function VerifyDelivery() {
           <div className="flex items-start gap-3">
             <User size={18} className="text-primary mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-text text-xs font-semibold uppercase">Buyer</p>
+              <p className="text-body text-xs font-semibold uppercase">Buyer</p>
               <p className="text-heading font-semibold">{order.buyer_name}</p>
-              <p className="text-text mt-1 flex items-center gap-1 text-sm">
+              <p className="text-body mt-1 flex items-center gap-1 text-sm">
                 <Phone size={14} />
                 {order.buyer_phone}
               </p>
@@ -243,13 +247,13 @@ export default function VerifyDelivery() {
               className="text-primary mt-0.5 flex-shrink-0"
             />
             <div>
-              <p className="text-text text-xs font-semibold uppercase">
+              <p className="text-body text-xs font-semibold uppercase">
                 Amount
               </p>
               <p className="text-heading font-semibold">
                 ₦{(order.amount / 100).toLocaleString()}
               </p>
-              <p className="text-text mt-1 text-sm">
+              <p className="text-body mt-1 text-sm">
                 Status:{" "}
                 <span
                   className={`font-semibold ${
@@ -267,7 +271,7 @@ export default function VerifyDelivery() {
           <div className="flex items-start gap-3 sm:col-span-2">
             <MapPin size={18} className="text-primary mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-text text-xs font-semibold uppercase">
+              <p className="text-body text-xs font-semibold uppercase">
                 Delivery Address
               </p>
               <p className="text-heading font-semibold">
@@ -281,7 +285,7 @@ export default function VerifyDelivery() {
       {/* Verification Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Photo Upload */}
-        <div className="border-gray-border rounded-2xl border bg-white p-6">
+        <div className="border-line rounded-2xl border bg-white p-6">
           <h3 className="font-syne text-heading mb-4 font-bold">
             Upload Proof of Delivery
           </h3>
@@ -294,7 +298,7 @@ export default function VerifyDelivery() {
             <p className="text-heading mb-1 font-semibold">
               Click to upload photos
             </p>
-            <p className="text-text text-sm">
+            <p className="text-body text-sm">
               Drag and drop or click to select images
             </p>
             <input
@@ -310,7 +314,7 @@ export default function VerifyDelivery() {
           {/* Photo Gallery */}
           {photoUrls.length > 0 && (
             <div className="mt-4">
-              <p className="text-text mb-2 text-sm font-semibold">
+              <p className="text-body mb-2 text-sm font-semibold">
                 {photoUrls.length} photo{photoUrls.length !== 1 ? "s" : ""}{" "}
                 selected
               </p>
@@ -318,7 +322,7 @@ export default function VerifyDelivery() {
                 {photoUrls.map((url, i) => (
                   <div
                     key={i}
-                    className="border-gray-border bg-bg-light group relative aspect-square overflow-hidden rounded-lg border"
+                    className="border-line bg-light-bg group relative aspect-square overflow-hidden rounded-lg border"
                   >
                     <img
                       src={url}
@@ -342,7 +346,7 @@ export default function VerifyDelivery() {
         </div>
 
         {/* Notes */}
-        <div className="border-gray-border rounded-2xl border bg-white p-6">
+        <div className="border-line rounded-2xl border bg-white p-6">
           <h3 className="font-syne text-heading mb-4 font-bold">
             Delivery Notes
           </h3>
@@ -350,7 +354,7 @@ export default function VerifyDelivery() {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Add any notes about the delivery (e.g., 'Left with security guard', 'Partial delivery', etc.)"
-            className="border-gray-border focus:ring-primary w-full resize-none rounded-lg border px-4 py-3 focus:border-transparent focus:ring-2 focus:outline-none"
+            className="border-line focus:ring-primary w-full resize-none rounded-lg border px-4 py-3 focus:border-transparent focus:ring-2 focus:outline-none"
             rows={4}
           />
         </div>
@@ -360,7 +364,7 @@ export default function VerifyDelivery() {
           <button
             type="button"
             onClick={() => navigate("/dashboards/admin/deliveries")}
-            className="border-gray-border text-heading hover:bg-bg-light flex-1 rounded-lg border px-4 py-3 font-semibold transition-colors"
+            className="border-line text-heading hover:bg-light-bg flex-1 rounded-lg border px-4 py-3 font-semibold transition-colors"
           >
             Cancel
           </button>

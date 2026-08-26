@@ -48,14 +48,14 @@ const STATUS_BADGE: Record<
   { bgClass: string; textClass: string; label: string; icon: string }
 > = {
   active: {
-    bgClass: "bg-status-active-bg",
-    textClass: "text-status-active-text",
+    bgClass: "bg-status-active",
+    textClass: "text-status-active-fg",
     label: "Active",
     icon: "✓",
   },
   suspended: {
-    bgClass: "bg-status-cancelled-bg",
-    textClass: "text-status-cancelled-text",
+    bgClass: "bg-status-cancelled",
+    textClass: "text-status-cancelled-fg",
     label: "Suspended",
     icon: "⊘",
   },
@@ -112,7 +112,7 @@ export default function BuyerManagement() {
             <h2 className="font-syne text-heading text-xl font-bold">
               Buyer Management
             </h2>
-            <p className="text-text text-sm">
+            <p className="text-body text-sm">
               {loading ? "Loading..." : `${buyers.length} total buyers`}
             </p>
           </div>
@@ -155,11 +155,11 @@ export default function BuyerManagement() {
         ].map((stat, i) => (
           <div
             key={i}
-            className="border-gray-border flex items-start gap-3 rounded-2xl border bg-white p-4"
+            className="border-line flex items-start gap-3 rounded-2xl border bg-white p-4"
           >
             <stat.icon size={20} className={`${stat.color} mt-1`} />
             <div className="flex-1">
-              <p className="text-text text-xs font-semibold tracking-wider uppercase">
+              <p className="text-body text-xs font-semibold tracking-wider uppercase">
                 {stat.label}
               </p>
               <p className="font-syne text-heading text-lg font-bold">
@@ -179,7 +179,7 @@ export default function BuyerManagement() {
             className={`rounded-full px-4 py-1.5 text-xs font-semibold tracking-wider uppercase transition-all ${
               statusFilter === filter
                 ? "bg-primary text-white"
-                : "border-gray-border text-text hover:bg-bg-light border bg-white"
+                : "border-line text-body hover:bg-light-bg border bg-white"
             }`}
           >
             {filter === "all"
@@ -192,8 +192,8 @@ export default function BuyerManagement() {
       </div>
 
       {/* Table */}
-      <div className="border-gray-border overflow-hidden rounded-2xl border bg-white">
-        <div className="border-gray-border text-text grid grid-cols-[1fr_1.2fr_100px_80px_80px] gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase">
+      <div className="border-line overflow-hidden rounded-2xl border bg-white">
+        <div className="border-line text-body grid grid-cols-[1fr_1.2fr_100px_80px_80px] gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase">
           <span>Buyer</span>
           <span>Email</span>
           <span>Deposited</span>
@@ -206,14 +206,14 @@ export default function BuyerManagement() {
             {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
-                className={`border-gray-border h-14 animate-pulse border-b ${
-                  i % 2 === 0 ? "bg-bg-light" : "bg-white"
+                className={`border-line h-14 animate-pulse border-b ${
+                  i % 2 === 0 ? "bg-light-bg" : "bg-white"
                 }`}
               />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <p className="text-text px-5 py-8 text-center text-sm">
+          <p className="text-body px-5 py-8 text-center text-sm">
             {search
               ? "No buyers match your search."
               : "No buyers in this category."}
@@ -236,22 +236,22 @@ export default function BuyerManagement() {
                   initial={{ opacity: 0, x: -6 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.04 }}
-                  className="border-gray-border hover:bg-bg-light grid cursor-pointer grid-cols-[1fr_1.2fr_100px_80px_80px] gap-4 border-b px-5 py-4 text-sm transition-colors last:border-0"
+                  className="border-line hover:bg-light-bg grid cursor-pointer grid-cols-[1fr_1.2fr_100px_80px_80px] gap-4 border-b px-5 py-4 text-sm transition-colors last:border-0"
                   onClick={() =>
                     navigate(`/dashboards/admin/buyers/${buyer.id}`)
                   }
                 >
                   <div className="flex flex-col gap-0.5">
                     <p className="text-heading font-semibold">{buyer.name}</p>
-                    <p className="text-text text-xs">ID: {buyer.id}</p>
+                    <p className="text-body text-xs">ID: {buyer.id}</p>
                   </div>
-                  <span className="text-text truncate text-xs">
+                  <span className="text-body truncate text-xs">
                     {buyer.email}
                   </span>
                   <span className="text-heading font-semibold">
                     ₦{(buyer.total_deposited / 100).toLocaleString()}
                   </span>
-                  <span className="text-text text-xs">{joinedDate}</span>
+                  <span className="text-body text-xs">{joinedDate}</span>
                   <span
                     className={`flex w-fit items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.bgClass} ${badge.textClass}`}
                   >

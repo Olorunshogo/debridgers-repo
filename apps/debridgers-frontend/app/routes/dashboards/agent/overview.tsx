@@ -213,23 +213,23 @@ const checklistStyles: Record<
   { bgClass: string; labelClass: string; strikethrough: boolean }
 > = {
   done: {
-    bgClass: "bg-status-delivered-bg",
-    labelClass: "text-status-delivered-text",
+    bgClass: "bg-status-delivered",
+    labelClass: "text-status-delivered-fg",
     strikethrough: true,
   },
   action: {
-    bgClass: "bg-status-pending-bg",
-    labelClass: "text-status-pending-text",
+    bgClass: "bg-status-pending",
+    labelClass: "text-status-pending-fg",
     strikethrough: false,
   },
   pending: {
-    bgClass: "bg-bg-light",
-    labelClass: "text-text",
+    bgClass: "bg-light-bg",
+    labelClass: "text-body",
     strikethrough: false,
   },
   request: {
-    bgClass: "bg-bg-light",
-    labelClass: "text-text",
+    bgClass: "bg-light-bg",
+    labelClass: "text-body",
     strikethrough: false,
   },
 };
@@ -247,11 +247,11 @@ function StatCard({ stat, index }: { stat: AgentStatCard; index: number }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: index * 0.07 }}
-      className="border-gray-border flex flex-col gap-3 rounded-2xl border bg-white p-4"
+      className="border-line flex flex-col gap-3 rounded-2xl border bg-white p-4"
     >
       <div className="flex items-center justify-between">
-        <span className="text-text text-sm">{stat.label}</span>
-        <span className="bg-bg-light flex h-8 w-8 items-center justify-center rounded-full">
+        <span className="text-body text-sm">{stat.label}</span>
+        <span className="bg-light-bg flex h-8 w-8 items-center justify-center rounded-full">
           <Icon icon={stat.icon} className="text-primary h-4 w-4" />
         </span>
       </div>
@@ -285,10 +285,10 @@ export default function AgentOverviewPage() {
   if (loading || !data) {
     return (
       <div className="flex animate-pulse flex-col gap-6">
-        <div className="bg-gray-border h-40 rounded-2xl" />
+        <div className="bg-line h-40 rounded-2xl" />
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-gray-border h-28 rounded-2xl" />
+            <div key={i} className="bg-line h-28 rounded-2xl" />
           ))}
         </div>
       </div>
@@ -305,7 +305,7 @@ export default function AgentOverviewPage() {
           <div className="flex flex-wrap items-center gap-2">
             <span>📍 {data.location}</span>
             {data.ninVerified && (
-              <span className="bg-status-active-bg text-status-active-text rounded-full px-2 py-0.5 text-xs font-semibold">
+              <span className="bg-status-active text-status-active-fg rounded-full px-2 py-0.5 text-xs font-semibold">
                 NIN Verified ✓
               </span>
             )}
@@ -360,7 +360,7 @@ export default function AgentOverviewPage() {
       {/* Checklist + Leaderboard */}
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
         {/* Checklist */}
-        <div className="border-gray-border flex flex-col gap-3 rounded-2xl border bg-white p-5">
+        <div className="border-line flex flex-col gap-3 rounded-2xl border bg-white p-5">
           <h3 className="font-syne text-heading font-semibold">
             Today&apos;s checklist
           </h3>
@@ -390,7 +390,7 @@ export default function AgentOverviewPage() {
         </div>
 
         {/* Leaderboard preview */}
-        <div className="border-gray-border flex flex-col gap-3 rounded-2xl border bg-white p-5">
+        <div className="border-line flex flex-col gap-3 rounded-2xl border bg-white p-5">
           <div className="flex items-center justify-between">
             <h3 className="font-syne text-heading font-semibold">
               Today&apos;s checklist
@@ -405,13 +405,13 @@ export default function AgentOverviewPage() {
           <div className="flex flex-col gap-2">
             {data.leaderboard.map((entry) => {
               const badge = rankBadge[entry.rank] ?? {
-                bgClass: "bg-bg-light",
-                colorClass: "text-text",
+                bgClass: "bg-light-bg",
+                colorClass: "text-body",
               };
               return (
                 <div
                   key={entry.rank}
-                  className="bg-bg-light flex items-center gap-3 rounded-xl px-3 py-3"
+                  className="bg-light-bg flex items-center gap-3 rounded-xl px-3 py-3"
                 >
                   <span
                     className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${badge.bgClass} ${badge.colorClass}`}
@@ -422,7 +422,7 @@ export default function AgentOverviewPage() {
                     <p className="text-heading truncate text-sm font-semibold">
                       {entry.name}
                     </p>
-                    <p className="text-text truncate text-xs">
+                    <p className="text-body truncate text-xs">
                       {entry.location}
                     </p>
                   </div>
@@ -439,7 +439,7 @@ export default function AgentOverviewPage() {
       {/* Chart + Next payout */}
       <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
         {/* Bags sold chart */}
-        <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
+        <div className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5">
           <h3 className="font-syne text-heading font-semibold">
             Bag sold - this week
           </h3>

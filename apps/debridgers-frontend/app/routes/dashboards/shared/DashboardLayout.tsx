@@ -213,7 +213,7 @@ export default function DashboardLayout() {
                   const isExternal = item.href.startsWith("http");
                   const cls = active
                     ? "flex cursor-pointer items-center gap-3 rounded-2xl bg-primary p-3 font-open-sans text-base text-white transition-all duration-300 ease-in-out"
-                    : "text-text flex cursor-pointer items-center gap-3 rounded-2xl p-3 font-open-sans text-base transition-all duration-300 ease-in-out hover:bg-primary hover:text-white";
+                    : "text-body flex cursor-pointer items-center gap-3 rounded-2xl p-3 font-open-sans text-base transition-all duration-300 ease-in-out hover:bg-primary hover:text-white";
 
                   if (isExternal) {
                     return (
@@ -266,7 +266,7 @@ export default function DashboardLayout() {
               <span className="text-heading truncate text-sm font-semibold">
                 {userProfile?.name ?? "…"}
               </span>
-              <span className="text-text truncate text-xs">
+              <span className="text-body truncate text-xs">
                 {userProfile?.sub ?? ""}
               </span>
             </div>
@@ -276,7 +276,7 @@ export default function DashboardLayout() {
         {/* Logout */}
         <button
           onClick={handleLogout}
-          className="font-open-sans text-text z-10 flex w-full shrink-0 cursor-pointer items-center gap-3 rounded-2xl p-4 text-base transition-all duration-300 ease-in-out hover:bg-red-100 hover:text-red-600"
+          className="font-open-sans text-body z-10 flex w-full shrink-0 cursor-pointer items-center gap-3 rounded-2xl p-4 text-base transition-all duration-300 ease-in-out hover:bg-red-100 hover:text-red-600"
         >
           <LogOut size={18} className="text-error-red" />
           Logout
@@ -319,7 +319,7 @@ export default function DashboardLayout() {
                     className="absolute top-4 right-4 cursor-pointer rounded-full p-1.5 hover:bg-black/10"
                     aria-label="Close menu"
                   >
-                    <X size={20} className="text-text" />
+                    <X size={20} className="text-body" />
                   </button>
                   <Sidebar onNavClick={() => setMobileOpen(false)} />
                 </motion.aside>
@@ -330,10 +330,10 @@ export default function DashboardLayout() {
           {/* Main area */}
           <div className="flex h-screen min-w-0 flex-1 flex-col overflow-y-auto">
             {/* Topbar */}
-            <header className="border-gray-border bg-dash-topbar-bg mb-6 flex h-16 shrink-0 items-center justify-between gap-4 border-b px-4 lg:px-6">
+            <header className="border-line bg-dash-topbar-bg mb-6 flex h-16 shrink-0 items-center justify-between gap-4 border-b px-4 lg:px-6">
               <div className="flex items-center gap-3">
                 <button
-                  className="text-text shrink-0 cursor-pointer transition-colors lg:hidden"
+                  className="text-body shrink-0 cursor-pointer transition-colors lg:hidden"
                   onClick={() => setMobileOpen(true)}
                   aria-label="Open menu"
                 >

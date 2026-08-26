@@ -394,7 +394,7 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-8 text-center">
         <Loader2 size={40} className="text-primary animate-spin" />
-        <p className="text-text text-sm">Confirming your payment...</p>
+        <p className="text-body text-sm">Confirming your payment...</p>
       </div>
     );
   }
@@ -406,7 +406,7 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
         <h2 className="font-syne text-heading text-2xl font-bold">
           Order Confirmed!
         </h2>
-        <p className="text-text max-w-80 text-sm">
+        <p className="text-body max-w-80 text-sm">
           Your payment was received. We&apos;ll notify you when your order is
           picked up.
         </p>
@@ -423,11 +423,11 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
   return (
     <div className="flex h-full flex-col">
       {/* Top bar */}
-      <div className="border-gray-border flex shrink-0 items-center gap-3 border-b px-6 py-4">
+      <div className="border-line flex shrink-0 items-center gap-3 border-b px-6 py-4">
         <button
           type="button"
           onClick={onBack}
-          className="text-text flex cursor-pointer items-center gap-1.5 text-sm hover:opacity-70"
+          className="text-body flex cursor-pointer items-center gap-1.5 text-sm hover:opacity-70"
         >
           <ArrowLeft size={16} /> Back
         </button>
@@ -442,7 +442,7 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
         >
           {/* Left: delivery fields */}
           <div className="flex flex-col gap-5">
-            <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
+            <div className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5">
               <h3 className="font-syne text-heading font-semibold">
                 Delivery Address
               </h3>
@@ -494,7 +494,7 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
               />
 
               {lga && zonesForLga.length === 0 && (
-                <p className="text-status-cancelled-text text-xs">
+                <p className="text-status-cancelled-fg text-xs">
                   We do not deliver to {lga} yet. Pick another LGA or contact
                   support.
                 </p>
@@ -510,7 +510,7 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
               />
             </div>
 
-            <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
+            <div className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5">
               <h3 className="font-syne text-heading font-semibold">
                 Delivery Time
               </h3>
@@ -532,7 +532,7 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
                     className={`flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-3 transition-colors ${
                       deliveryTime === opt.key
                         ? "border-primary bg-dash-quick-action-hover"
-                        : "border-gray-border bg-transparent"
+                        : "border-line bg-transparent"
                     }`}
                   >
                     <input
@@ -547,7 +547,7 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
                       <p className="text-heading text-sm font-medium">
                         {opt.label}
                       </p>
-                      <p className="text-text text-xs">{opt.sub}</p>
+                      <p className="text-body text-xs">{opt.sub}</p>
                     </div>
                   </label>
                 ))}
@@ -564,14 +564,14 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
           </div>
 
           {/* Right: order summary */}
-          <div className="border-gray-border flex h-fit flex-col gap-4 rounded-2xl border bg-white p-5">
+          <div className="border-line flex h-fit flex-col gap-4 rounded-2xl border bg-white p-5">
             <h3 className="font-syne text-heading font-semibold">
               Order Summary
             </h3>
 
             <div className="flex flex-col gap-3">
               {cartItems.length === 0 ? (
-                <p className="text-text text-sm">
+                <p className="text-body text-sm">
                   Your cart is empty.{" "}
                   <button
                     type="button"
@@ -587,7 +587,7 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
                     key={item.id}
                     className="flex items-center justify-between text-sm"
                   >
-                    <span className="text-text">
+                    <span className="text-body">
                       {item.name} x{item.qty} {item.unit}
                     </span>
                     <span className="text-heading">
@@ -599,8 +599,8 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
             </div>
 
             {cartItems.length > 0 && (
-              <div className="border-gray-border flex flex-col gap-2 border-t pt-3">
-                <div className="text-text flex justify-between text-sm">
+              <div className="border-line flex flex-col gap-2 border-t pt-3">
+                <div className="text-body flex justify-between text-sm">
                   <span>Subtotal</span>
                   <span>
                     {quote
@@ -614,38 +614,38 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
                   chosen. Saying "Free" before then, as this used to, showed a
                   total that was not what the buyer went on to be charged.
                 */}
-                <div className="text-text flex justify-between gap-3 text-sm">
+                <div className="text-body flex justify-between gap-3 text-sm">
                   <span>
                     Delivery
                     {quote && quote.extraPackages > 0 && (
-                      <span className="text-text-placeholder">
+                      <span className="text-placeholder-text">
                         {" "}
                         ({quote.package_count} packages)
                       </span>
                     )}
                   </span>
                   {!zoneId ? (
-                    <span className="text-text-placeholder">
+                    <span className="text-placeholder-text">
                       Choose an area
                     </span>
                   ) : quote?.freeDelivery ? (
                     <span className="flex items-center gap-1.5">
-                      <s className="text-text-placeholder">
+                      <s className="text-placeholder-text">
                         {formatFromKobo(quote.deliveryFeeBeforePromoKobo)}
                       </s>
-                      <span className="text-status-delivered-text font-semibold">
+                      <span className="text-status-delivered-fg font-semibold">
                         FREE
                       </span>
                     </span>
                   ) : quote ? (
                     <span>{formatFromKobo(quote.deliveryFeeKobo)}</span>
                   ) : (
-                    <span className="text-text-placeholder">...</span>
+                    <span className="text-placeholder-text">...</span>
                   )}
                 </div>
 
                 {quote && (
-                  <div className="text-text flex justify-between text-sm">
+                  <div className="text-body flex justify-between text-sm">
                     <span>Handling</span>
                     <span>{formatFromKobo(quote.handlingFeeKobo)}</span>
                   </div>
@@ -661,7 +661,7 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
                 </div>
 
                 {quoteError && (
-                  <p className="text-status-cancelled-text text-xs">
+                  <p className="text-status-cancelled-fg text-xs">
                     {quoteError}
                   </p>
                 )}
@@ -669,7 +669,7 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
             )}
 
             {error && (
-              <p className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm">
+              <p className="bg-status-cancelled text-status-cancelled-fg rounded-xl px-4 py-3 text-sm">
                 {error}
               </p>
             )}
@@ -687,7 +687,7 @@ function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
               {loading ? "Reserving your order..." : "Continue to payment"}
               {!loading && <ArrowRight size={16} />}
             </button>
-            <p className="text-text text-center text-xs">
+            <p className="text-body text-center text-xs">
               You&apos;ll choose wallet or card on the next step. Nothing is
               charged until then.
             </p>
@@ -869,7 +869,7 @@ export default function PublicShop() {
                 <h1 className="font-syne text-primary text-2xl font-bold sm:text-3xl">
                   Browse our products
                 </h1>
-                <p className="text-text text-sm">
+                <p className="text-body text-sm">
                   Add items to cart, you only need an account when you&apos;re
                   ready to checkout.
                 </p>
@@ -899,7 +899,7 @@ export default function PublicShop() {
                       className={`cursor-pointer rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
                         cat === activeCategory
                           ? "border-primary bg-primary text-white"
-                          : "border-gray-border text-heading bg-white"
+                          : "border-line text-heading bg-white"
                       }`}
                     >
                       {cat}
@@ -915,14 +915,14 @@ export default function PublicShop() {
                     {Array.from({ length: 8 }).map((_, i) => (
                       <div
                         key={i}
-                        className="bg-gray-border h-64 animate-pulse rounded-2xl"
+                        className="bg-line h-64 animate-pulse rounded-2xl"
                       />
                     ))}
                   </div>
                 ) : loadError ? (
                   <div className="flex flex-col items-center gap-3 py-20">
-                    <AlertCircle size={48} className="text-text opacity-30" />
-                    <p className="text-text text-sm">{loadError}</p>
+                    <AlertCircle size={48} className="text-body opacity-30" />
+                    <p className="text-body text-sm">{loadError}</p>
                     <button
                       type="button"
                       onClick={loadProducts}
@@ -933,13 +933,13 @@ export default function PublicShop() {
                   </div>
                 ) : products.length === 0 ? (
                   <div className="flex flex-col items-center gap-3 py-20">
-                    <Package size={48} className="text-text opacity-20" />
-                    <p className="text-text text-sm">
+                    <Package size={48} className="text-body opacity-20" />
+                    <p className="text-body text-sm">
                       No products available yet.
                     </p>
                   </div>
                 ) : filtered.length === 0 ? (
-                  <p className="text-text py-10 text-center text-sm">
+                  <p className="text-body py-10 text-center text-sm">
                     No products match &quot;{search}&quot;
                   </p>
                 ) : (
@@ -987,11 +987,11 @@ export default function PublicShop() {
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: 20, opacity: 0 }}
-                  className="border-gray-border relative z-30 w-full border-t bg-white"
+                  className="border-line relative z-30 w-full border-t bg-white"
                 >
                   <div className="px-section-px sm:px-section-px-sm lg:px-section-px-lg mx-auto flex w-full items-center justify-between py-4">
                     <div>
-                      <p className="text-text text-sm">
+                      <p className="text-body text-sm">
                         {cartProductCount} item
                         {cartProductCount !== 1 ? "s" : ""} in cart
                       </p>
@@ -1002,7 +1002,7 @@ export default function PublicShop() {
                     <div className="flex gap-3">
                       <button
                         onClick={() => setCartOpen(true)}
-                        className="border-gray-border text-heading flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
+                        className="border-line text-heading flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
                       >
                         <ShoppingCart size={16} /> View Cart
                       </button>
@@ -1042,7 +1042,7 @@ export default function PublicShop() {
                     transition={{ type: "tween", duration: 0.28 }}
                     className="fixed top-0 right-0 z-50 flex h-dvh w-full max-w-110 flex-col bg-white shadow-2xl"
                   >
-                    <div className="border-gray-border flex shrink-0 items-center justify-between border-b px-5 py-4">
+                    <div className="border-line flex shrink-0 items-center justify-between border-b px-5 py-4">
                       <h3 className="font-syne text-heading font-bold">
                         Your cart ({cartProductCount})
                       </h3>
@@ -1050,7 +1050,7 @@ export default function PublicShop() {
                         onClick={() => setCartOpen(false)}
                         className="cursor-pointer rounded-full p-1.5 hover:bg-black/5"
                       >
-                        <X size={18} className="text-text" />
+                        <X size={18} className="text-body" />
                       </button>
                     </div>
 
@@ -1058,9 +1058,9 @@ export default function PublicShop() {
                       {cart.map((item) => (
                         <div
                           key={item.id}
-                          className="border-gray-border flex items-center gap-3 rounded-xl border p-3"
+                          className="border-line flex items-center gap-3 rounded-xl border p-3"
                         >
-                          <div className="bg-bg-light h-12 w-12 shrink-0 overflow-hidden rounded-lg">
+                          <div className="bg-light-bg h-12 w-12 shrink-0 overflow-hidden rounded-lg">
                             {item.image_url ? (
                               <img
                                 src={item.image_url}
@@ -1071,7 +1071,7 @@ export default function PublicShop() {
                               <div className="flex h-full items-center justify-center">
                                 <Package
                                   size={18}
-                                  className="text-text opacity-20"
+                                  className="text-body opacity-20"
                                 />
                               </div>
                             )}
@@ -1080,14 +1080,14 @@ export default function PublicShop() {
                             <p className="text-heading truncate text-sm font-medium">
                               {item.name}
                             </p>
-                            <p className="text-text text-xs">
+                            <p className="text-body text-xs">
                               {item.unit} · {formatCurrency(item.price)} each
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => updateQty(item.id, -1)}
-                              className="border-gray-border flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border text-xs"
+                              className="border-line flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border text-xs"
                             >
                               <Minus size={10} />
                             </button>
@@ -1096,7 +1096,7 @@ export default function PublicShop() {
                             </span>
                             <button
                               onClick={() => updateQty(item.id, 1)}
-                              className="border-gray-border flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border text-xs"
+                              className="border-line flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border text-xs"
                             >
                               <Plus size={10} />
                             </button>
@@ -1111,9 +1111,9 @@ export default function PublicShop() {
                       ))}
                     </div>
 
-                    <div className="border-gray-border flex shrink-0 flex-col gap-3 border-t p-5">
+                    <div className="border-line flex shrink-0 flex-col gap-3 border-t p-5">
                       <div className="flex justify-between">
-                        <span className="text-text text-sm">Total</span>
+                        <span className="text-body text-sm">Total</span>
                         <span className="font-syne text-heading font-bold">
                           {formatCurrency(cartTotal)}
                         </span>

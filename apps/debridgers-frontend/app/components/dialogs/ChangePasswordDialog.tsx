@@ -165,7 +165,7 @@ export default function ChangePasswordDialog({
         </DashSubmitButton>
       </form>
 
-      <p className="text-text text-center text-xs">
+      <p className="text-body text-center text-xs">
         At least 8 characters, with an uppercase letter, a number and a special
         character.
       </p>

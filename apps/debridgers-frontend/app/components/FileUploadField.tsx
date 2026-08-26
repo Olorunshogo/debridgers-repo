@@ -76,7 +76,7 @@ export function FileUploadField({
       <label className="flex cursor-pointer items-center gap-1">
         <span className="text-heading font-syne font-medium">{label}</span>
         {!required && (
-          <span className="text-text font-open-sans text-sm">(optional)</span>
+          <span className="text-body font-open-sans text-sm">(optional)</span>
         )}
       </label>
 
@@ -96,8 +96,8 @@ export function FileUploadField({
             <span className="text-heading font-syne truncate text-sm font-medium">
               {file.name}
             </span>
-            <Dot className="text-text" />
-            <span className="text-text font-syne shrink-0 text-xs">
+            <Dot className="text-body" />
+            <span className="text-body font-syne shrink-0 text-xs">
               {formatSize(file.size)}
             </span>
             <CheckCircle2
@@ -111,7 +111,7 @@ export function FileUploadField({
           <button
             type="button"
             onClick={reset}
-            className="text-text hover:text-input-error-red ml-2 shrink-0 cursor-pointer transition-all duration-300 ease-in-out"
+            className="text-body hover:text-input-error-red ml-2 shrink-0 cursor-pointer transition-all duration-300 ease-in-out"
           >
             <Trash2 size={16} />
           </button>
@@ -130,7 +130,7 @@ export function FileUploadField({
           )}
         >
           <div className="flex items-center justify-between">
-            <span className="text-text-placeholder font-syne text-sm">
+            <span className="text-placeholder-text font-syne text-sm">
               {formattedTypes}: up to {maxSizeMB}MB
             </span>
             <div className="border-input-border text-heading flex items-center gap-1.5 rounded-full border bg-white px-3 py-1 text-sm font-semibold transition-all duration-300 ease-in-out">

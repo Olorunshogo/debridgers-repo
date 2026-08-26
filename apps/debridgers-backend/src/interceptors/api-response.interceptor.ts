@@ -13,6 +13,10 @@ export interface PaginationMeta {
   page: number;
   limit: number;
   pages: number;
+  /* Echoed back by endpoints that sort, so the client can reflect the applied
+     sort rather than assuming its request was honoured. */
+  sort?: string;
+  order?: "asc" | "desc";
 }
 
 export interface ApiResponse<T> {

@@ -22,6 +22,9 @@ export * from "./lib/motion";
 // === Dialog engine
 export * from "./lib/dialog";
 
+// === Table engine
+export * from "./lib/table";
+
 // === Auth hooks
 export * from "./hooks";
 
@@ -64,6 +67,9 @@ export * from "./components/email-input";
 export * from "./components/textarea-input";
 export * from "./components/dash-select";
 export * from "./components/dash-submit-button";
+
+// === Confirmation
+export * from "./components/confirm-dialog-panel";
 
 // === Other components
 export * from "./components/app-logo";

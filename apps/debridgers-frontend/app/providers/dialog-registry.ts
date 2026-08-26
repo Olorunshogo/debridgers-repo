@@ -18,7 +18,10 @@ import type { DialogRegistry } from "@debridgers/ui-web";
  * at a time. See docs/frontend/Context.md rule 12.
  */
 export const DIALOG_REGISTRY: DialogRegistry = {
+  /* Opened by the table engine for any row action declaring `confirm`. */
+  CONFIRM: () => import("../components/dialogs/ConfirmDialog"),
   REQUEST_PAYOUT: () => import("../components/dialogs/RequestPayoutDialog"),
+  REJECT_PAYOUT: () => import("../components/dialogs/RejectPayoutDialog"),
   AUTH_GATE: () => import("../components/dialogs/AuthDialog"),
   PAYMENT_METHOD: () => import("../components/dialogs/PaymentMethodDialog"),
   HELP_GUIDE: () => import("../components/dialogs/HelpGuideDialog"),

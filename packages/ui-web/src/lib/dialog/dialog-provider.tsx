@@ -251,7 +251,7 @@ function DialogPanel({
            * narrower value already chosen here. Widen if an admin dialog needs
            * the extra room.
            */
-          className="border-gray-border pointer-events-auto max-h-[90vh] w-full max-w-150 overflow-y-auto rounded-t-2xl border bg-white p-6 outline-none md:rounded-xl"
+          className="border-line pointer-events-auto max-h-[90vh] w-full max-w-150 overflow-y-auto rounded-t-2xl border bg-white p-6 outline-none md:rounded-xl"
           variants={dialogPanelVariants}
           initial="initial"
           animate="animate"
@@ -263,6 +263,15 @@ function DialogPanel({
       </div>
     </>
   );
+}
+
+/*
+ * The context without the throw, for engines that can work without a provider.
+ * The table engine uses this: a DataTable with no confirm action must render
+ * fine outside a DialogProvider, and only a confirm action needs one.
+ */
+export function useOptionalDialog(): DialogContextValue | null {
+  return useContext(DialogContext);
 }
 
 export function useDialog(): DialogContextValue {

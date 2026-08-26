@@ -311,7 +311,7 @@ export default function ContactPage() {
             <h2 className="font-open-sans text-2xl font-semibold sm:text-3xl lg:text-4xl">
               Contact Debridgers
             </h2>
-            <p className="text-text text-2.5 text-xl lg:text-2xl">
+            <p className="text-body text-2.5 text-xl lg:text-2xl">
               We&apos;re here to help you reach out with any question or
               partnership inquires{" "}
             </p>
@@ -414,15 +414,15 @@ export default function ContactPage() {
               <div className="flex flex-col gap-3">
                 {contactItems.map(({ icon: Icon, label, value, href }) => {
                   const inner = (
-                    <div className="border-gray-border flex w-full items-center gap-3 rounded-2xl border p-5 lg:border-0">
+                    <div className="border-line flex w-full items-center gap-3 rounded-2xl border p-5 lg:border-0">
                       <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-[#A7E8BF]">
                         <Icon className="text-primary h-8 w-8" />
                       </span>
                       <div className="flex flex-col gap-1">
-                        <span className="text-text text-xl font-bold tracking-widest capitalize">
+                        <span className="text-body text-xl font-bold tracking-widest capitalize">
                           {label}
                         </span>
-                        <span className="text-text text-base lg:text-lg">
+                        <span className="text-body text-base lg:text-lg">
                           {value}
                         </span>
                       </div>
@@ -442,7 +442,7 @@ export default function ContactPage() {
               </div>
 
               {/* Map */}
-              <div className="border-gray-border relative h-96 overflow-hidden rounded-2xl border shadow-sm lg:h-auto lg:min-h-84 lg:flex-1">
+              <div className="border-line relative h-96 overflow-hidden rounded-2xl border shadow-sm lg:h-auto lg:min-h-84 lg:flex-1">
                 <ContactMap lat={10.4831} lng={7.4324} zoom={15} />
                 <div className="absolute right-2 bottom-2 z-2 rounded bg-white/90 px-2 py-1 text-xs text-gray-500 shadow">
                   © OpenStreetMap

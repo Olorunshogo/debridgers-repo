@@ -67,8 +67,8 @@ const statusStyles: Record<
   { bgClass: string; textClass: string; label: string }
 > = {
   fulfilled: {
-    bgClass: "bg-status-delivered-bg",
-    textClass: "text-status-delivered-text",
+    bgClass: "bg-status-delivered",
+    textClass: "text-status-delivered-fg",
     label: "Fulfilled",
   },
   pending: {
@@ -77,8 +77,8 @@ const statusStyles: Record<
     label: "Pending",
   },
   cancelled: {
-    bgClass: "bg-status-cancelled-bg",
-    textClass: "text-status-cancelled-text",
+    bgClass: "bg-status-cancelled",
+    textClass: "text-status-cancelled-fg",
     label: "Cancelled",
   },
 };
@@ -235,7 +235,7 @@ export default function AgentRequestStockPage() {
             animate="animate"
             exit="exit"
             transition={transitionBase}
-            className="bg-status-delivered-bg text-status-delivered-text flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium"
+            className="bg-status-delivered text-status-delivered-fg flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium"
           >
             <CheckCircle2 size={16} /> Stock request submitted! Admin will
             review shortly.
@@ -248,7 +248,7 @@ export default function AgentRequestStockPage() {
             animate="animate"
             exit="exit"
             transition={transitionBase}
-            className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
+            className="bg-status-cancelled text-status-cancelled-fg rounded-xl px-4 py-3 text-sm"
           >
             {submitError}
           </motion.div>
@@ -257,7 +257,7 @@ export default function AgentRequestStockPage() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
         {/* Left: hierarchical picker */}
-        <div className="border-gray-border flex flex-col gap-5 rounded-2xl border bg-white p-6">
+        <div className="border-line flex flex-col gap-5 rounded-2xl border bg-white p-6">
           <h3 className="font-syne text-heading text-lg font-semibold">
             Request new stock
           </h3>
@@ -267,14 +267,14 @@ export default function AgentRequestStockPage() {
               {[0, 1, 2].map((i) => (
                 <div
                   key={i}
-                  className="bg-bg-light h-12 animate-pulse rounded-xl"
+                  className="bg-light-bg h-12 animate-pulse rounded-xl"
                 />
               ))}
             </div>
           ) : products.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-10">
-              <Package size={36} className="text-text opacity-30" />
-              <p className="text-text text-sm">
+              <Package size={36} className="text-body opacity-30" />
+              <p className="text-body text-sm">
                 No products available. Admin needs to add products first.
               </p>
             </div>
@@ -289,7 +289,7 @@ export default function AgentRequestStockPage() {
         </div>
 
         {/* Right: past requests */}
-        <div className="border-gray-border flex flex-col gap-3 rounded-2xl border bg-white p-5">
+        <div className="border-line flex flex-col gap-3 rounded-2xl border bg-white p-5">
           <h3 className="font-syne text-heading font-semibold">
             Past Requests
           </h3>
@@ -298,12 +298,12 @@ export default function AgentRequestStockPage() {
               {[0, 1, 2].map((i) => (
                 <div
                   key={i}
-                  className="bg-bg-light h-16 animate-pulse rounded-xl"
+                  className="bg-light-bg h-16 animate-pulse rounded-xl"
                 />
               ))}
             </div>
           ) : pastRequests.length === 0 ? (
-            <p className="text-text py-4 text-center text-sm">
+            <p className="text-body py-4 text-center text-sm">
               No stock requests yet.
             </p>
           ) : (
@@ -316,13 +316,13 @@ export default function AgentRequestStockPage() {
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.06 }}
-                    className="border-gray-border bg-bg-light flex items-center justify-between rounded-xl border px-4 py-3"
+                    className="border-line bg-light-bg flex items-center justify-between rounded-xl border px-4 py-3"
                   >
                     <div className="flex flex-col gap-0.5">
                       <p className="text-heading text-sm font-semibold">
                         {req.product_name} × {req.quantity}
                       </p>
-                      <p className="text-text text-xs">
+                      <p className="text-body text-xs">
                         {new Date(req.created_at).toLocaleDateString("en-NG", {
                           month: "short",
                           day: "numeric",
@@ -351,7 +351,7 @@ export default function AgentRequestStockPage() {
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="border-gray-border fixed right-4 bottom-0 left-4 z-30 rounded-t-2xl border bg-white shadow-xl lg:left-80"
+            className="border-line fixed right-4 bottom-0 left-4 z-30 rounded-t-2xl border bg-white shadow-xl lg:left-80"
           >
             <div className="px-4 py-4">
               <div className="flex flex-col gap-3">
@@ -360,7 +360,7 @@ export default function AgentRequestStockPage() {
                   {requestItems.map((item) => (
                     <div
                       key={item.product.id}
-                      className="border-gray-border bg-bg-light flex items-center gap-2 rounded-xl border px-3 py-2 text-xs"
+                      className="border-line bg-light-bg flex items-center gap-2 rounded-xl border px-3 py-2 text-xs"
                     >
                       <span className="text-heading font-semibold">
                         {item.product.name}
@@ -368,7 +368,7 @@ export default function AgentRequestStockPage() {
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => updateRequestQty(item.product.id, -1)}
-                          className="border-gray-border flex h-5 w-5 cursor-pointer items-center justify-center rounded-full border bg-white text-xs"
+                          className="border-line flex h-5 w-5 cursor-pointer items-center justify-center rounded-full border bg-white text-xs"
                         >
                           <Minus size={9} />
                         </button>
@@ -377,7 +377,7 @@ export default function AgentRequestStockPage() {
                         </span>
                         <button
                           onClick={() => updateRequestQty(item.product.id, 1)}
-                          className="border-gray-border flex h-5 w-5 cursor-pointer items-center justify-center rounded-full border bg-white text-xs"
+                          className="border-line flex h-5 w-5 cursor-pointer items-center justify-center rounded-full border bg-white text-xs"
                         >
                           <Plus size={9} />
                         </button>
@@ -395,7 +395,7 @@ export default function AgentRequestStockPage() {
                 {/* Total + submit */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-text text-xs">
+                    <p className="text-body text-xs">
                       {requestItems.length} product
                       {requestItems.length !== 1 ? "s" : ""}
                     </p>

@@ -100,7 +100,7 @@ export function AuthOtpInput({
   return (
     <div className="flex flex-col gap-2">
       <fieldset className="flex flex-col gap-2" disabled={disabled}>
-        <legend className="text-text mb-2 text-sm font-medium">{label}</legend>
+        <legend className="text-body mb-2 text-sm font-medium">{label}</legend>
 
         <div className="flex justify-between gap-2">
           {digits.map((digit, index) => (

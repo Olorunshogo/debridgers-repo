@@ -118,7 +118,7 @@ export default function Footer() {
                   </p>
                   <a
                     href={supportTelHref}
-                    className="text-white/90 transition-colors duration-200 hover:text-white"
+                    className="text-white/90 transition-all duration-300 ease-in-out hover:text-white"
                   >
                     {SUPPORT.phoneDisplay}
                   </a>

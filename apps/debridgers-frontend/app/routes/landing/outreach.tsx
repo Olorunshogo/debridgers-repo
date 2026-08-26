@@ -202,16 +202,16 @@ export default function OutreachPage() {
                     animate={{ opacity: 1, scale: 1 }}
                     className="flex flex-col items-center gap-5 py-12 text-center"
                   >
-                    <div className="bg-status-delivered-bg flex h-16 w-16 items-center justify-center rounded-full">
+                    <div className="bg-status-delivered flex h-16 w-16 items-center justify-center rounded-full">
                       <CheckCircle2
                         size={32}
-                        className="text-status-delivered-text"
+                        className="text-status-delivered-fg"
                       />
                     </div>
                     <h2 className="font-syne text-heading text-2xl font-bold">
                       We&apos;ve got your details!
                     </h2>
-                    <p className="text-text max-w-96 text-sm leading-relaxed">
+                    <p className="text-body max-w-96 text-sm leading-relaxed">
                       An agent will reach out to you within 24 hours. Want to
                       speed things up?
                     </p>
@@ -237,7 +237,7 @@ export default function OutreachPage() {
                       <motion.p
                         initial={{ opacity: 0, y: -4 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
+                        className="bg-status-cancelled text-status-cancelled-fg rounded-xl px-4 py-3 text-sm"
                       >
                         {apiError}
                       </motion.p>
@@ -375,7 +375,7 @@ export default function OutreachPage() {
                         size={16}
                         className="text-primary mt-0.5 shrink-0"
                       />
-                      <span className="text-text text-sm">{item}</span>
+                      <span className="text-body text-sm">{item}</span>
                     </li>
                   ))}
                 </ul>
@@ -383,7 +383,7 @@ export default function OutreachPage() {
 
               {/* WhatsApp CTA */}
               <div className="rounded-2xl bg-white p-6 shadow-sm">
-                <p className="text-text mb-3 text-sm">
+                <p className="text-body mb-3 text-sm">
                   Prefer to chat directly? Send us a message on WhatsApp.
                   We&apos;re always available.
                 </p>

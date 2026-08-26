@@ -76,8 +76,8 @@ export function AgentRequestPayoutDialog({
         onClose={onClose}
       />
 
-      <div className="bg-bg-light flex items-center justify-between gap-3 rounded-xl px-4 py-3">
-        <span className="text-text flex items-center gap-2 text-sm">
+      <div className="bg-light-bg flex items-center justify-between gap-3 rounded-xl px-4 py-3">
+        <span className="text-body flex items-center gap-2 text-sm">
           <Wallet size={15} /> Available
         </span>
         <span className="font-syne text-heading text-base font-bold">
@@ -125,7 +125,7 @@ export function AgentRequestPayoutDialog({
         </SubmitButton>
 
         {availableBalanceKobo <= 0 && (
-          <p className="text-text text-center text-xs">
+          <p className="text-body text-center text-xs">
             You have no available balance to withdraw yet.
           </p>
         )}

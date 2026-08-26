@@ -67,13 +67,13 @@ const STATUS_BADGE: Record<
   { bgClass: string; textClass: string; label: string }
 > = {
   active: {
-    bgClass: "bg-status-active-bg",
-    textClass: "text-status-active-text",
+    bgClass: "bg-status-active",
+    textClass: "text-status-active-fg",
     label: "Active",
   },
   pending: {
-    bgClass: "bg-status-pending-bg",
-    textClass: "text-status-pending-text",
+    bgClass: "bg-status-pending",
+    textClass: "text-status-pending-fg",
     label: "Pending",
   },
   suspended: {
@@ -82,8 +82,8 @@ const STATUS_BADGE: Record<
     label: "Suspended",
   },
   rejected: {
-    bgClass: "bg-status-cancelled-bg",
-    textClass: "text-status-cancelled-text",
+    bgClass: "bg-status-cancelled",
+    textClass: "text-status-cancelled-fg",
     label: "Rejected",
   },
 };
@@ -196,7 +196,7 @@ export default function AdminAgents() {
           <UserCheck size={24} className="text-primary" />
           <div>
             <h2 className="font-syne text-heading text-xl font-bold">Agents</h2>
-            <p className="text-text text-sm">
+            <p className="text-body text-sm">
               {loading ? "Loading..." : `${agents.length} registered agents`}
             </p>
           </div>
@@ -208,8 +208,8 @@ export default function AdminAgents() {
         />
       </div>
 
-      <div className="border-gray-border overflow-hidden rounded-2xl border bg-white">
-        <div className="border-gray-border text-text grid grid-cols-[2fr_1fr_1fr_110px_200px] gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase">
+      <div className="border-line overflow-hidden rounded-2xl border bg-white">
+        <div className="border-line text-body grid grid-cols-[2fr_1fr_1fr_110px_200px] gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase">
           <span>Agent</span>
           <span>Area (LGA)</span>
           <span>Phone</span>
@@ -222,12 +222,12 @@ export default function AdminAgents() {
             {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
-                className={`border-gray-border h-14 animate-pulse border-b ${i % 2 === 0 ? "bg-bg-light" : "bg-white"}`}
+                className={`border-line h-14 animate-pulse border-b ${i % 2 === 0 ? "bg-light-bg" : "bg-white"}`}
               />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <p className="text-text px-5 py-8 text-center text-sm">
+          <p className="text-body px-5 py-8 text-center text-sm">
             {search
               ? "No agents match your search."
               : "No agents registered yet."}
@@ -244,17 +244,17 @@ export default function AdminAgents() {
                   initial={{ opacity: 0, x: -6 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.04 }}
-                  className="border-gray-border grid grid-cols-[2fr_1fr_1fr_110px_200px] items-center gap-4 border-b px-5 py-4 text-sm last:border-0"
+                  className="border-line grid grid-cols-[2fr_1fr_1fr_110px_200px] items-center gap-4 border-b px-5 py-4 text-sm last:border-0"
                 >
                   <div className="flex flex-col gap-0.5">
                     <p className="text-heading font-semibold">{agent.name}</p>
-                    <p className="text-text text-xs">{agent.email}</p>
-                    <p className="text-text text-xs">
+                    <p className="text-body text-xs">{agent.email}</p>
+                    <p className="text-body text-xs">
                       Applied {agent.joinedDate}
                     </p>
                   </div>
-                  <span className="text-text">{agent.location}</span>
-                  <span className="text-text">{agent.phone}</span>
+                  <span className="text-body">{agent.location}</span>
+                  <span className="text-body">{agent.phone}</span>
                   <span
                     className={`inline-flex w-fit items-center rounded-md px-3 py-1 text-xs font-semibold ${badge.bgClass} ${badge.textClass}`}
                   >
@@ -274,7 +274,7 @@ export default function AdminAgents() {
                         <button
                           onClick={() => void handleReject(agent.id)}
                           disabled={isActioning}
-                          className="border-status-cancelled-text text-status-cancelled-text flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
+                          className="border-status-cancelled-fg text-status-cancelled-fg flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
                         >
                           <XCircle size={12} />
                           {isActioning ? "…" : "Reject"}

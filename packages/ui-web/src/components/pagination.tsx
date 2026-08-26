@@ -63,7 +63,7 @@ export function Pagination({
         onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
         aria-label="Previous page"
-        className="border-gray-border text-heading hover:bg-bg-light cursor-pointer rounded-lg border bg-white p-2 transition-all duration-300 ease-in-out disabled:cursor-not-allowed disabled:opacity-40"
+        className="border-line text-heading hover:bg-light-bg cursor-pointer rounded-lg border bg-white p-2 transition-all duration-300 ease-in-out disabled:cursor-not-allowed disabled:opacity-40"
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
@@ -73,7 +73,7 @@ export function Pagination({
           page === "..." ? (
             <span
               key={`ellipsis-${index}`}
-              className="text-text px-2 py-2 text-sm"
+              className="text-body px-2 py-2 text-sm"
               aria-hidden="true"
             >
               ...
@@ -88,7 +88,7 @@ export function Pagination({
               className={`cursor-pointer rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300 ease-in-out ${
                 currentPage === page
                   ? "bg-primary text-white"
-                  : "border-gray-border text-heading hover:bg-bg-light border bg-white"
+                  : "border-line text-heading hover:bg-light-bg border bg-white"
               }`}
             >
               {page}
@@ -104,7 +104,7 @@ export function Pagination({
         }
         disabled={currentPage === totalPages}
         aria-label="Next page"
-        className="border-gray-border text-heading hover:bg-bg-light cursor-pointer rounded-lg border bg-white p-2 transition-all duration-300 ease-in-out disabled:cursor-not-allowed disabled:opacity-40"
+        className="border-line text-heading hover:bg-light-bg cursor-pointer rounded-lg border bg-white p-2 transition-all duration-300 ease-in-out disabled:cursor-not-allowed disabled:opacity-40"
       >
         <ChevronRight className="h-4 w-4" />
       </button>

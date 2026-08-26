@@ -69,8 +69,8 @@ const STATUS_STYLES: Record<
   ReportStatus,
   { colorClass: string; icon: string }
 > = {
-  approved: { colorClass: "text-status-active-text", icon: "✓" },
-  pending: { colorClass: "text-status-pending-text", icon: "…" },
+  approved: { colorClass: "text-status-active-fg", icon: "✓" },
+  pending: { colorClass: "text-status-pending-fg", icon: "…" },
   rejected: { colorClass: "text-red-600", icon: "✗" },
   missed: { colorClass: "text-red-600", icon: "–" },
 };
@@ -79,8 +79,8 @@ const STATUS_STYLES: Record<
 function ReportHistoryCard({ entries }: { entries: ReportHistoryEntry[] }) {
   const latest = entries.slice(0, 10);
   return (
-    <div className="border-gray-border flex flex-col overflow-hidden rounded-2xl border bg-white">
-      <div className="border-gray-border border-b px-5 py-4">
+    <div className="border-line flex flex-col overflow-hidden rounded-2xl border bg-white">
+      <div className="border-line border-b px-5 py-4">
         <h3 className="font-syne text-heading font-semibold">Report History</h3>
       </div>
       <div className="flex flex-col">
@@ -93,12 +93,12 @@ function ReportHistoryCard({ entries }: { entries: ReportHistoryEntry[] }) {
               initial={{ opacity: 0, x: 8 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.04 }}
-              className="border-gray-border flex items-center justify-between border-b px-5 py-3.5 last:border-0"
+              className="border-line flex items-center justify-between border-b px-5 py-3.5 last:border-0"
             >
               <div className="flex flex-col gap-0.5">
-                <p className="text-text text-xs">{entry.dayLabel}</p>
+                <p className="text-body text-xs">{entry.dayLabel}</p>
                 <p
-                  className={`text-sm font-semibold ${isMissed ? "text-text" : "text-heading"}`}
+                  className={`text-sm font-semibold ${isMissed ? "text-body" : "text-heading"}`}
                 >
                   {isMissed
                     ? `${entry.bagsSold} bag  Day off`
@@ -232,7 +232,7 @@ export default function AgentDailyReportPage() {
   return (
     <div className="py-section-py grid gap-6 lg:grid-cols-[1fr_453px]">
       {/* Left: Submit form */}
-      <div className="border-gray-border flex flex-col gap-5 rounded-2xl border bg-white p-6">
+      <div className="border-line flex flex-col gap-5 rounded-2xl border bg-white p-6">
         <h3 className="font-syne text-heading text-lg font-semibold">
           Submit Today&apos;s Report
         </h3>
@@ -244,7 +244,7 @@ export default function AgentDailyReportPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
-              className="bg-status-delivered-bg text-status-delivered-text flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium"
+              className="bg-status-delivered text-status-delivered-fg flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium"
             >
               <CheckCircle2 size={18} />
               Report submitted successfully!
@@ -258,7 +258,7 @@ export default function AgentDailyReportPage() {
               className="flex flex-col gap-6"
             >
               {submitError && (
-                <p className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm">
+                <p className="bg-status-cancelled text-status-cancelled-fg rounded-xl px-4 py-3 text-sm">
                   {submitError}
                 </p>
               )}
@@ -348,11 +348,11 @@ export default function AgentDailyReportPage() {
 
       {/* Right: History */}
       {historyLoading ? (
-        <div className="border-gray-border flex flex-col gap-3 overflow-hidden rounded-2xl border bg-white p-5">
+        <div className="border-line flex flex-col gap-3 overflow-hidden rounded-2xl border bg-white p-5">
           {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className="bg-bg-light h-12 animate-pulse rounded-xl"
+              className="bg-light-bg h-12 animate-pulse rounded-xl"
             />
           ))}
         </div>

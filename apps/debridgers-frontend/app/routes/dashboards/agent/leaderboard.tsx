@@ -58,7 +58,7 @@ export default function AgentLeaderboard() {
           <h2 className="font-syne text-heading text-xl font-bold">
             Leaderboard
           </h2>
-          <p className="text-text text-sm">Top performing agents - all time</p>
+          <p className="text-body text-sm">Top performing agents - all time</p>
         </div>
       </div>
 
@@ -66,7 +66,7 @@ export default function AgentLeaderboard() {
         <div className="flex animate-pulse flex-col gap-4">
           <div className="grid grid-cols-3 gap-4">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="bg-gray-border h-32 rounded-2xl" />
+              <div key={i} className="bg-line h-32 rounded-2xl" />
             ))}
           </div>
         </div>
@@ -84,23 +84,23 @@ export default function AgentLeaderboard() {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.1 }}
-                  className="border-gray-border flex flex-col items-center gap-2 rounded-2xl border bg-white p-4 text-center"
+                  className="border-line flex flex-col items-center gap-2 rounded-2xl border bg-white p-4 text-center"
                   style={{ order: agent.rank === 1 ? -1 : agent.rank }}
                 >
                   <Medal size={28} color={badgeColors[badge]} />
                   <p className="font-syne text-heading font-semibold">
                     {agent.name}
                   </p>
-                  <p className="text-text text-xs">{agent.bags_sold} bags</p>
-                  <p className="text-text text-xs">{agent.location}</p>
+                  <p className="text-body text-xs">{agent.bags_sold} bags</p>
+                  <p className="text-body text-xs">{agent.location}</p>
                 </motion.div>
               );
             })}
           </div>
 
           {/* Full table */}
-          <div className="border-gray-border overflow-hidden rounded-2xl border bg-white">
-            <div className="border-gray-border text-text grid grid-cols-4 gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase">
+          <div className="border-line overflow-hidden rounded-2xl border bg-white">
+            <div className="border-line text-body grid grid-cols-4 gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase">
               <span>Rank</span>
               <span>Agent</span>
               <span>Location</span>
@@ -114,7 +114,7 @@ export default function AgentLeaderboard() {
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.04 }}
-                  className="border-gray-border grid grid-cols-4 gap-4 border-b px-5 py-4 text-sm last:border-0"
+                  className="border-line grid grid-cols-4 gap-4 border-b px-5 py-4 text-sm last:border-0"
                 >
                   <span className="text-heading flex items-center gap-1 font-bold">
                     {badge ? (
@@ -127,7 +127,7 @@ export default function AgentLeaderboard() {
                     #{agent.rank}
                   </span>
                   <span className="text-heading">{agent.name}</span>
-                  <span className="text-text">{agent.location}</span>
+                  <span className="text-body">{agent.location}</span>
                   <span className="text-primary font-semibold">
                     {agent.bags_sold}
                   </span>
@@ -139,7 +139,7 @@ export default function AgentLeaderboard() {
       )}
 
       {!loading && leaders.length === 0 && (
-        <p className="text-text py-12 text-center text-sm">
+        <p className="text-body py-12 text-center text-sm">
           No leaderboard data yet.
         </p>
       )}

@@ -259,7 +259,7 @@ export function DashSelectInput({
               <Landmark size={15} className="text-primary shrink-0" />
             )}
             <span
-              className={`truncate text-left ${selectedLabel ? "text-heading" : "text-text-placeholder"}`}
+              className={`truncate text-left ${selectedLabel ? "text-heading" : "text-placeholder-text"}`}
             >
               {selectedLabel ?? placeholder ?? `Select ${label}`}
             </span>
@@ -281,10 +281,10 @@ export function DashSelectInput({
               transition={selectMenuTransition}
               role="listbox"
               aria-label={label}
-              className="border-gray-border absolute top-[calc(100%+4px)] left-0 z-50 flex w-full origin-top flex-col overflow-hidden rounded-2xl border bg-white shadow-lg"
+              className="border-line absolute top-[calc(100%+4px)] left-0 z-50 flex w-full origin-top flex-col overflow-hidden rounded-2xl border bg-white shadow-lg"
             >
               {showSearch && (
-                <div className="border-gray-border flex items-center gap-2 border-b px-3 py-2">
+                <div className="border-line flex items-center gap-2 border-b px-3 py-2">
                   <Search size={15} className="text-icon-secondary shrink-0" />
                   <input
                     ref={searchRef}
@@ -296,14 +296,14 @@ export function DashSelectInput({
                     }}
                     onKeyDown={handleKeyDown}
                     placeholder={isBank ? "Search banks" : "Search"}
-                    className="text-heading placeholder:text-text-placeholder w-full bg-transparent text-sm outline-none"
+                    className="text-heading placeholder:text-placeholder-text w-full bg-transparent text-sm outline-none"
                   />
                 </div>
               )}
 
               <div ref={listRef} className="max-h-64 overflow-y-auto py-1">
                 {filtered.length === 0 ? (
-                  <p className="text-text px-4 py-3 text-sm">
+                  <p className="text-body px-4 py-3 text-sm">
                     {isBank ? "No bank matches that." : "No matches."}
                   </p>
                 ) : (
@@ -322,7 +322,7 @@ export function DashSelectInput({
                           isSelected
                             ? "bg-dash-quick-action-hover text-primary font-semibold"
                             : isActive
-                              ? "bg-bg-light text-heading font-normal"
+                              ? "bg-light-bg text-heading font-normal"
                               : "text-heading font-normal"
                         }`}
                       >

@@ -48,7 +48,7 @@ export function BaseInputField({
           </span>
         )}
         {!required && !hideLabel && (
-          <span className="font-open-sans text-text text-sm">(optional)</span>
+          <span className="font-open-sans text-body text-sm">(optional)</span>
         )}
       </label>
       {children}
@@ -71,4 +71,4 @@ export function getInputStateClass(error?: string): string {
  * - a read-only field still takes focus, and a caret there invites typing.
  */
 export const BASE_INPUT_CLASS =
-  "placeholder:text-text-placeholder bg-input-bg text-heading font-syne h-11 w-full cursor-pointer rounded-full border px-4 text-sm transition-all duration-300 ease-in-out outline-none focus:cursor-text read-only:bg-bg-light read-only:text-text read-only:cursor-not-allowed read-only:focus:cursor-not-allowed";
+  "placeholder:text-placeholder-text bg-input-bg text-heading font-syne h-11 w-full cursor-pointer rounded-full border px-4 text-sm transition-all duration-300 ease-in-out outline-none focus:cursor-text read-only:bg-light-bg read-only:text-body read-only:cursor-not-allowed read-only:focus:cursor-not-allowed";

@@ -58,7 +58,7 @@ export function AuthFormShell({
             <h1 className="font-syne text-heading text-2xl font-bold">
               {heading}
             </h1>
-            {subheading && <p className="text-text text-sm">{subheading}</p>}
+            {subheading && <p className="text-body text-sm">{subheading}</p>}
           </div>
 
           <AnimatePresence>
@@ -69,7 +69,7 @@ export function AuthFormShell({
                 animate="animate"
                 exit="exit"
                 transition={transitionBase}
-                className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
+                className="bg-status-cancelled text-status-cancelled-fg rounded-xl px-4 py-3 text-sm"
               >
                 {apiError}
               </motion.div>

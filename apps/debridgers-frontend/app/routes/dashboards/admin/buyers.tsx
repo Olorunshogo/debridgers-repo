@@ -61,13 +61,13 @@ const STATUS_BADGE: Record<
   { bgClass: string; textClass: string; label: string }
 > = {
   active: {
-    bgClass: "bg-status-active-bg",
-    textClass: "text-status-active-text",
+    bgClass: "bg-status-active",
+    textClass: "text-status-active-fg",
     label: "Active",
   },
   inactive: {
-    bgClass: "bg-status-cancelled-bg",
-    textClass: "text-status-cancelled-text",
+    bgClass: "bg-status-cancelled",
+    textClass: "text-status-cancelled-fg",
     label: "Blocked",
   },
 };
@@ -101,7 +101,7 @@ export default function AdminBuyers() {
           <ShoppingBag size={24} className="text-primary" />
           <div>
             <h2 className="font-syne text-heading text-xl font-bold">Buyers</h2>
-            <p className="text-text text-sm">
+            <p className="text-body text-sm">
               {loading ? "Loading..." : `${buyers.length} registered buyers`}
             </p>
           </div>
@@ -114,8 +114,8 @@ export default function AdminBuyers() {
         />
       </div>
 
-      <div className="border-gray-border overflow-hidden rounded-2xl border bg-white">
-        <div className="border-gray-border text-text grid grid-cols-[1fr_1fr_1fr_90px_80px] gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase">
+      <div className="border-line overflow-hidden rounded-2xl border bg-white">
+        <div className="border-line text-body grid grid-cols-[1fr_1fr_1fr_90px_80px] gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase">
           <span>Buyer</span>
           <span>Email</span>
           <span>Phone</span>
@@ -128,12 +128,12 @@ export default function AdminBuyers() {
             {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
-                className={`border-gray-border h-14 animate-pulse border-b ${i % 2 === 0 ? "bg-bg-light" : "bg-white"}`}
+                className={`border-line h-14 animate-pulse border-b ${i % 2 === 0 ? "bg-light-bg" : "bg-white"}`}
               />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <p className="text-text px-5 py-8 text-center text-sm">
+          <p className="text-body px-5 py-8 text-center text-sm">
             {search
               ? "No buyers match your search."
               : "No buyers registered yet."}
@@ -148,21 +148,21 @@ export default function AdminBuyers() {
                   initial={{ opacity: 0, x: -6 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.04 }}
-                  className="border-gray-border grid grid-cols-[1fr_1fr_1fr_90px_80px] gap-4 border-b px-5 py-4 text-sm last:border-0"
+                  className="border-line grid grid-cols-[1fr_1fr_1fr_90px_80px] gap-4 border-b px-5 py-4 text-sm last:border-0"
                 >
                   <div className="flex flex-col gap-0.5">
                     <p className="text-heading font-semibold">{buyer.name}</p>
                     {buyer.verified && (
-                      <p className="text-status-active-text text-xs">
+                      <p className="text-status-active-fg text-xs">
                         ✓ Verified
                       </p>
                     )}
                   </div>
-                  <span className="text-text truncate text-xs">
+                  <span className="text-body truncate text-xs">
                     {buyer.email}
                   </span>
-                  <span className="text-text">{buyer.phone}</span>
-                  <span className="text-text text-xs">{buyer.joinedDate}</span>
+                  <span className="text-body">{buyer.phone}</span>
+                  <span className="text-body text-xs">{buyer.joinedDate}</span>
                   <span
                     className={`flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.bgClass} ${badge.textClass}`}
                   >

@@ -41,7 +41,7 @@ export function HelpGuideDialog({
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className="border-gray-border flex flex-col gap-3 rounded-xl border p-4"
+              className="border-line flex flex-col gap-3 rounded-xl border p-4"
             >
               <div className="flex items-center gap-3">
                 {/* Green marks the section; amber below marks the steps within
@@ -58,10 +58,10 @@ export function HelpGuideDialog({
               <ol className="flex flex-col gap-2">
                 {section.steps.map((step, j) => (
                   <li key={step} className="flex items-start gap-3">
-                    <span className="text-accent-soft-text bg-accent-soft-bg mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold">
+                    <span className="text-accent-soft-fg bg-accent-soft mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold">
                       {j + 1}
                     </span>
-                    <p className="text-text text-sm leading-relaxed">{step}</p>
+                    <p className="text-body text-sm leading-relaxed">{step}</p>
                   </li>
                 ))}
               </ol>

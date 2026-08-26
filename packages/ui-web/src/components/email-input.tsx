@@ -42,7 +42,7 @@ export function EmailInput({
         required={required}
         value={value}
         onChange={onChange}
-        className={`placeholder:text-text-placeholder bg-input-bg text-text font-syne h-13 w-full rounded-3xl border p-6 text-base transition-all duration-300 ease-in-out outline-none ${error ? "border-input-error-red focus:border-input-error-red" : "border-input-border focus:border-input-border-focus"}`}
+        className={`placeholder:text-placeholder-text bg-input-bg text-body font-syne h-13 w-full rounded-3xl border p-6 text-base transition-all duration-300 ease-in-out outline-none ${error ? "border-input-error-red focus:border-input-error-red" : "border-input-border focus:border-input-border-focus"}`}
       />
       {error && errorMessage && (
         <p className="text-input-error-red text-xs">{errorMessage}</p>

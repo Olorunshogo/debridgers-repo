@@ -307,16 +307,16 @@ export default function AgentsPage() {
                   viewport={{ once: true }}
                   custom={i + 1}
                   variants={fadeUp}
-                  className="border-gray-border flex flex-col gap-4 rounded-2xl border p-6 transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-md"
+                  className="border-line flex flex-col gap-4 rounded-2xl border p-6 transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-md"
                 >
-                  <span className="bg-bg-light flex h-12 w-12 items-center justify-center rounded-xl">
+                  <span className="bg-light-bg flex h-12 w-12 items-center justify-center rounded-xl">
                     <Icon icon={card.icon} className="text-primary h-6 w-6" />
                   </span>
                   <div className="flex flex-col gap-2">
                     <h3 className="font-syne text-heading text-lg font-bold">
                       {card.title}
                     </h3>
-                    <p className="font-open-sans text-text text-base leading-relaxed">
+                    <p className="font-open-sans text-body text-base leading-relaxed">
                       {card.description}
                     </p>
                   </div>
@@ -328,7 +328,7 @@ export default function AgentsPage() {
       </section>
 
       {/* Why Join Us / Benefits */}
-      <section id="benefits" className="bg-bg-light w-full">
+      <section id="benefits" className="bg-light-bg w-full">
         <div className="default-max-width px-section-px py-section-py sm:px-section-px-sm sm:py-section-py-sm lg:px-section-px-lg lg:py-section-py-lg mx-auto">
           <div className="flex flex-col gap-8">
             {/* Why Join Us Title */}
@@ -367,7 +367,7 @@ export default function AgentsPage() {
                     <h3 className="font-syne text-heading text-base font-bold">
                       {b.title}
                     </h3>
-                    <p className="font-open-sans text-text text-sm leading-relaxed">
+                    <p className="font-open-sans text-body text-sm leading-relaxed">
                       {b.description}
                     </p>
                   </div>
@@ -413,12 +413,12 @@ export default function AgentsPage() {
                   className={`relative flex flex-col gap-4 rounded-2xl border-2 p-8 transition-all duration-300 ${
                     activeStep === i
                       ? "border-primary bg-dash-quick-action-hover"
-                      : "border-gray-border bg-white"
+                      : "border-line bg-white"
                   }`}
                 >
                   <span
                     className={`font-syne text-5xl leading-none font-extrabold ${
-                      activeStep === i ? "text-primary" : "text-gray-border"
+                      activeStep === i ? "text-primary" : "text-line"
                     }`}
                   >
                     {step.number}
@@ -427,7 +427,7 @@ export default function AgentsPage() {
                     <h3 className="font-syne text-heading text-xl font-bold">
                       {step.title}
                     </h3>
-                    <p className="font-open-sans text-text text-base leading-relaxed">
+                    <p className="font-open-sans text-body text-base leading-relaxed">
                       {step.description}
                     </p>
                   </div>
@@ -535,7 +535,7 @@ export default function AgentsPage() {
             <h2 className="font-syne text-primary mx-auto max-w-182.5 text-3xl font-extrabold sm:text-4xl lg:text-5xl">
               Apply in under 3 minutes.
             </h2>
-            <p className="font-open-sans text-text mx-auto max-w-137.5 text-lg leading-relaxed">
+            <p className="font-open-sans text-body mx-auto max-w-137.5 text-lg leading-relaxed">
               No experience required. Just bring your hustle - we&apos;ll handle
               the rest.
             </p>

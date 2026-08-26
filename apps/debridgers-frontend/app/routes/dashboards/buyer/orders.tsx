@@ -91,13 +91,13 @@ const statusStyles: Record<
   { bgClass: string; textClass: string; label: string }
 > = {
   active: {
-    bgClass: "bg-status-on-the-way-bg",
-    textClass: "text-status-on-the-way-text",
+    bgClass: "bg-status-on-the-way",
+    textClass: "text-status-on-the-way-fg",
     label: "On the way",
   },
   pending: {
-    bgClass: "bg-status-pending-bg",
-    textClass: "text-status-pending-text",
+    bgClass: "bg-status-pending",
+    textClass: "text-status-pending-fg",
     label: "Pending",
   },
   confirmed: {
@@ -106,13 +106,13 @@ const statusStyles: Record<
     label: "Paid",
   },
   delivered: {
-    bgClass: "bg-status-delivered-bg",
-    textClass: "text-status-delivered-text",
+    bgClass: "bg-status-delivered",
+    textClass: "text-status-delivered-fg",
     label: "✓ Delivered",
   },
   cancelled: {
-    bgClass: "bg-status-cancelled-bg",
-    textClass: "text-status-cancelled-text",
+    bgClass: "bg-status-cancelled",
+    textClass: "text-status-cancelled-fg",
     label: "✕ Cancelled",
   },
 };
@@ -194,7 +194,7 @@ export default function BuyerOrders() {
             className={`cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 ${
               activeTab === tab.key
                 ? "bg-primary text-white"
-                : "bg-bg-light text-text"
+                : "bg-light-bg text-body"
             }`}
           >
             {tab.label}
@@ -203,8 +203,8 @@ export default function BuyerOrders() {
       </div>
 
       {/* Table */}
-      <div className="border-gray-border overflow-hidden rounded-2xl border bg-white">
-        <div className="border-gray-border text-text grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-4 border-b px-6 py-3 text-xs font-semibold tracking-wider uppercase">
+      <div className="border-line overflow-hidden rounded-2xl border bg-white">
+        <div className="border-line text-body grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-4 border-b px-6 py-3 text-xs font-semibold tracking-wider uppercase">
           <span>Order ID</span>
           <span>Items</span>
           <span>Date</span>
@@ -217,12 +217,12 @@ export default function BuyerOrders() {
             {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
-                className={`border-gray-border h-14 animate-pulse border-b ${i % 2 === 0 ? "bg-bg-light" : "bg-white"}`}
+                className={`border-line h-14 animate-pulse border-b ${i % 2 === 0 ? "bg-light-bg" : "bg-white"}`}
               />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <p className="text-text py-12 text-center text-sm">
+          <p className="text-body py-12 text-center text-sm">
             No orders found.
           </p>
         ) : (
@@ -243,13 +243,13 @@ export default function BuyerOrders() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.04 }}
                     onClick={() => setSelected(order)}
-                    className="border-gray-border hover:bg-dash-quick-action-hover grid cursor-pointer grid-cols-[1fr_1fr_1fr_1fr_auto] items-center gap-4 border-b px-6 py-4 text-sm transition-colors last:border-0"
+                    className="border-line hover:bg-dash-quick-action-hover grid cursor-pointer grid-cols-[1fr_1fr_1fr_1fr_auto] items-center gap-4 border-b px-6 py-4 text-sm transition-colors last:border-0"
                   >
                     <span className="text-heading font-mono text-xs">
                       {order.orderId}
                     </span>
-                    <span className="text-text">{order.items}</span>
-                    <span className="text-text">{order.date}</span>
+                    <span className="text-body">{order.items}</span>
+                    <span className="text-body">{order.date}</span>
                     <span className="text-heading font-semibold">
                       {order.amount}
                     </span>
@@ -304,8 +304,8 @@ export default function BuyerOrders() {
                   <p className="text-heading font-mono text-sm font-semibold">
                     {selected.orderId}
                   </p>
-                  <p className="text-text text-sm">{selected.items}</p>
-                  <p className="text-text text-sm">{selected.date}</p>
+                  <p className="text-body text-sm">{selected.items}</p>
+                  <p className="text-body text-sm">{selected.date}</p>
                   <p className="font-syne text-heading mt-2 text-2xl font-bold">
                     {selected.amount}
                   </p>
@@ -337,7 +337,7 @@ export default function BuyerOrders() {
               </div>
 
               {selected.status === "pending" && (
-                <div className="border-gray-border mt-5 flex flex-col gap-3 border-t pt-5">
+                <div className="border-line mt-5 flex flex-col gap-3 border-t pt-5">
                   {confirmingCancel ? (
                     <>
                       <DashTextareaInput
@@ -382,7 +382,7 @@ export default function BuyerOrders() {
                       >
                         Cancel order
                       </DashSubmitButton>
-                      <p className="text-text text-xs">
+                      <p className="text-body text-xs">
                         Only unpaid orders can be cancelled here. Once an order
                         is paid, contact support to request a refund.
                       </p>

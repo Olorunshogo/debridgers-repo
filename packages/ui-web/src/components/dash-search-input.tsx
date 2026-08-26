@@ -12,7 +12,7 @@ export const DashSearchInput = forwardRef<
 >(({ className = "", onFilterClick, loading = false, ...props }, ref) => {
   return (
     <div
-      className={`border-gray-border bg-input-bg focus-within:border-primary focus-within:ring-primary/30 font-syne flex items-center gap-2 rounded-full border px-4 py-2 transition-all duration-300 ease-in-out focus-within:ring-1 ${className}`}
+      className={`border-line bg-input-bg focus-within:border-primary focus-within:ring-primary/30 font-syne flex items-center gap-2 rounded-full border px-4 py-2 transition-all duration-300 ease-in-out focus-within:ring-1 ${className}`}
     >
       {loading ? (
         <Loader2
@@ -25,7 +25,7 @@ export const DashSearchInput = forwardRef<
       <input
         ref={ref}
         type="search"
-        className="placeholder:text-text-placeholder text-heading w-full bg-transparent text-sm outline-none"
+        className="placeholder:text-placeholder-text text-heading w-full bg-transparent text-sm outline-none"
         {...props}
       />
       <button

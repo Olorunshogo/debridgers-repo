@@ -66,7 +66,7 @@ export function AuthTabPanel({
               className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-colors ${
                 isActive
                   ? "text-heading cursor-default bg-white shadow-sm"
-                  : "text-text cursor-pointer"
+                  : "text-body cursor-pointer"
               }`}
             >
               {tab.label}

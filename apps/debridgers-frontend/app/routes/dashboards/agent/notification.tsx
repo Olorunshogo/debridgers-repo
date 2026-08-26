@@ -102,18 +102,18 @@ export default function AgentNotificationPage() {
         )}
       </div>
 
-      <div className="border-gray-border overflow-hidden rounded-2xl border bg-white">
+      <div className="border-line overflow-hidden rounded-2xl border bg-white">
         {loading ? (
           <div className="flex flex-col gap-0">
             {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className="border-gray-border h-20 animate-pulse border-b"
+                className="border-line h-20 animate-pulse border-b"
               />
             ))}
           </div>
         ) : notifications.length === 0 ? (
-          <p className="text-text py-12 text-center text-sm">
+          <p className="text-body py-12 text-center text-sm">
             No notifications yet. You&apos;ll be notified about your activity
             here.
           </p>
@@ -126,7 +126,7 @@ export default function AgentNotificationPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.05 }}
                 onClick={() => markOneRead(n.id)}
-                className={`border-gray-border flex cursor-pointer gap-4 border-b px-6 py-5 last:border-0 ${
+                className={`border-line flex cursor-pointer gap-4 border-b px-6 py-5 last:border-0 ${
                   n.read ? "bg-transparent" : "bg-dash-quick-action-hover"
                 }`}
               >
@@ -142,7 +142,7 @@ export default function AgentNotificationPage() {
                   >
                     {n.title}
                   </p>
-                  <p className="text-text text-sm leading-relaxed">
+                  <p className="text-body text-sm leading-relaxed">
                     {n.description}
                   </p>
                   <p className="text-icon-secondary text-xs">{n.timestamp}</p>

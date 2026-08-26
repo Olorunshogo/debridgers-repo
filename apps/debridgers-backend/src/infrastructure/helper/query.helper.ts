@@ -61,3 +61,52 @@ export function parsePagination(
     offset: (parsedPage - 1) * safeLimit,
   };
 }
+
+/*
+ * Sorting, without a column name ever reaching SQL.
+ *
+ * Each endpoint declares its own map of a public sort key to the Drizzle column
+ * it sorts by, so adding a sortable column is one entry in that map rather than
+ * a new branch here. An unknown key is a 400, not a 500 from Postgres, and a
+ * client cannot sort by a column the endpoint never meant to expose.
+ */
+export type SortDirection = "asc" | "desc";
+
+export interface ParsedSort<TColumn> {
+  column: TColumn;
+  direction: SortDirection;
+  /** The public key that was applied, echoed back so the client can reflect it. */
+  key: string;
+}
+
+export function parseSort<TMap extends Record<string, unknown>>(
+  sort: string | undefined,
+  order: string | undefined,
+  allowed: TMap,
+  fallbackKey: keyof TMap & string,
+  fallbackDirection: SortDirection = "desc",
+): ParsedSort<TMap[keyof TMap]> {
+  const keys = Object.keys(allowed);
+
+  let key: string = fallbackKey;
+  if (sort !== undefined && sort !== "") {
+    if (!keys.includes(sort)) {
+      throw new BadRequestException(
+        `sort must be one of ${keys.join(", ")}, received "${sort}".`,
+      );
+    }
+    key = sort;
+  }
+
+  let direction: SortDirection = fallbackDirection;
+  if (order !== undefined && order !== "") {
+    if (order !== "asc" && order !== "desc") {
+      throw new BadRequestException(
+        `order must be "asc" or "desc", received "${order}".`,
+      );
+    }
+    direction = order;
+  }
+
+  return { column: allowed[key] as TMap[keyof TMap], direction, key };
+}

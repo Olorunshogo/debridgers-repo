@@ -19,6 +19,7 @@ export * from "./services/auth";
 
 // === Shared types
 export * from "./types/auth";
+export * from "./types/pagination";
 
 // === Buyer cart
 export * from "./services/buyer/cart";

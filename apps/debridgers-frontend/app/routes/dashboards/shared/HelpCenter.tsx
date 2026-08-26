@@ -51,7 +51,7 @@ function FaqRow({ item, index, open, onToggle }: FaqRowProps) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index, 8) * 0.03 }}
-      className="border-gray-border rounded-xl border bg-white"
+      className="border-line rounded-xl border bg-white"
     >
       <h3>
         <button
@@ -68,7 +68,7 @@ function FaqRow({ item, index, open, onToggle }: FaqRowProps) {
           <motion.span
             animate={{ rotate: open ? 180 : 0 }}
             transition={{ duration: 0.2 }}
-            className="text-text shrink-0"
+            className="text-body shrink-0"
           >
             <ChevronDown size={18} />
           </motion.span>
@@ -88,7 +88,7 @@ function FaqRow({ item, index, open, onToggle }: FaqRowProps) {
             transition={{ duration: 0.22, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <p className="text-text px-5 pb-4 text-sm leading-relaxed">
+            <p className="text-body px-5 pb-4 text-sm leading-relaxed">
               {item.answer}
             </p>
           </motion.div>
@@ -125,14 +125,14 @@ function ContactCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
       {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-      className="border-gray-border flex items-center gap-4 rounded-2xl border bg-white p-5 transition-all duration-300 ease-in-out hover:shadow-md"
+      className="border-line flex items-center gap-4 rounded-2xl border bg-white p-5 transition-all duration-300 ease-in-out hover:shadow-md"
     >
-      <span className="bg-status-active-bg flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
-        <Icon size={20} className="text-status-active-text" />
+      <span className="bg-status-active flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+        <Icon size={20} className="text-status-active-fg" />
       </span>
       <div className="min-w-0">
         <p className="font-syne text-heading font-semibold">{title}</p>
-        <p className="text-text truncate text-sm">{detail}</p>
+        <p className="text-body truncate text-sm">{detail}</p>
       </div>
     </motion.a>
   );
@@ -220,7 +220,7 @@ export function HelpCenter({
           <h2 className="font-syne text-heading text-xl font-bold">
             {heading}
           </h2>
-          <p className="text-text text-sm">{subheading}</p>
+          <p className="text-body text-sm">{subheading}</p>
         </div>
       </div>
 
@@ -256,21 +256,21 @@ export function HelpCenter({
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="border-gray-border flex cursor-pointer items-center gap-4 rounded-2xl border bg-white p-5 text-left transition-all duration-300 ease-in-out hover:shadow-md"
+            className="border-line flex cursor-pointer items-center gap-4 rounded-2xl border bg-white p-5 text-left transition-all duration-300 ease-in-out hover:shadow-md"
           >
-            <span className="bg-status-pending-bg flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
-              <BookOpen size={20} className="text-status-pending-text" />
+            <span className="bg-status-pending flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+              <BookOpen size={20} className="text-status-pending-fg" />
             </span>
             <div>
               <p className="font-syne text-heading font-semibold">
                 {content.guideTitle}
               </p>
-              <p className="text-text text-sm">{content.guideSubtitle}</p>
+              <p className="text-body text-sm">{content.guideSubtitle}</p>
             </div>
           </motion.button>
         </div>
 
-        <p className="text-text text-xs">
+        <p className="text-body text-xs">
           Phone and WhatsApp support is available {SUPPORT.hours}. Email us any
           time and we will reply during those hours.
         </p>
@@ -299,7 +299,7 @@ export function HelpCenter({
               className={`cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 ${
                 category === tab.key
                   ? "bg-primary text-white"
-                  : "bg-bg-light text-text"
+                  : "bg-light-bg text-body"
               }`}
             >
               {tab.label}
@@ -311,13 +311,13 @@ export function HelpCenter({
       {/* Results */}
       <div className="flex flex-col gap-3" aria-live="polite">
         {filtered.length === 0 ? (
-          <div className="border-gray-border flex flex-col items-center gap-3 rounded-2xl border border-dashed bg-white px-6 py-12 text-center">
+          <div className="border-line flex flex-col items-center gap-3 rounded-2xl border border-dashed bg-white px-6 py-12 text-center">
             <SearchX size={28} className="text-icon-secondary" />
             <div>
               <p className="font-syne text-heading font-semibold">
                 No answers matched that
               </p>
-              <p className="text-text text-sm">
+              <p className="text-body text-sm">
                 Try a different word, or send us the question directly.
               </p>
             </div>
@@ -344,12 +344,12 @@ export function HelpCenter({
 
       {/* Ticket fallback */}
       {filtered.length > 0 && (
-        <div className="border-gray-border flex flex-col items-start gap-3 rounded-2xl border bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="border-line flex flex-col items-start gap-3 rounded-2xl border bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="font-syne text-heading font-semibold">
               Still need help?
             </p>
-            <p className="text-text text-sm">
+            <p className="text-body text-sm">
               Send us a message and we will reply by email.
             </p>
           </div>

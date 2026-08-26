@@ -1,4 +1,10 @@
-import React, { forwardRef, useState, useRef, useEffect } from "react";
+import React, {
+  forwardRef,
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+} from "react";
 import { ChevronDown } from "lucide-react";
 
 interface Option {
@@ -6,8 +12,12 @@ interface Option {
   label: string;
 }
 
+/*
+ * Extends div attributes, not input attributes: this renders a button-and-list
+ * combobox, so an input's props were never spreadable onto anything here.
+ */
 interface DashSelectProps extends Omit<
-  React.InputHTMLAttributes<HTMLInputElement>,
+  React.HTMLAttributes<HTMLDivElement>,
   "onChange"
 > {
   label: string;
@@ -38,6 +48,17 @@ export const DashSelect = forwardRef<HTMLDivElement, DashSelectProps>(
     const [isOpen, setIsOpen] = useState<boolean>(false);
     const [selectedLabel, setSelectedLabel] = useState<string>("");
     const containerRef = useRef<HTMLDivElement>(null);
+
+    /* The outside-click guard needs the node, and so does the caller. Both get
+       it: the forwarded ref used to be declared and then dropped. */
+    const setRefs = useCallback(
+      (node: HTMLDivElement | null): void => {
+        containerRef.current = node;
+        if (typeof ref === "function") ref(node);
+        else if (ref) ref.current = node;
+      },
+      [ref],
+    );
 
     // Find the label for the current value
     useEffect(() => {
@@ -73,7 +94,11 @@ export const DashSelect = forwardRef<HTMLDivElement, DashSelectProps>(
     const currentDisplay = selectedLabel || placeholder;
 
     return (
-      <div ref={containerRef} className={`font-syne relative ${className}`}>
+      <div
+        ref={setRefs}
+        className={`font-syne relative ${className}`}
+        {...props}
+      >
         {/* Trigger - styled like DashTextInput */}
         <div className="flex flex-col gap-1.5">
           <label className="flex cursor-pointer items-center gap-1">
@@ -84,7 +109,7 @@ export const DashSelect = forwardRef<HTMLDivElement, DashSelectProps>(
               </span>
             )}
             {!required && (
-              <span className="font-open-sans text-text text-sm">
+              <span className="font-open-sans text-body text-sm">
                 (optional)
               </span>
             )}
@@ -104,7 +129,7 @@ export const DashSelect = forwardRef<HTMLDivElement, DashSelectProps>(
 
             <ChevronDown
               size={18}
-              className={`text-text ml-2 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
+              className={`text-body ml-2 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
             />
           </div>
 
@@ -125,7 +150,7 @@ export const DashSelect = forwardRef<HTMLDivElement, DashSelectProps>(
                 </div>
               ))
             ) : (
-              <div className="text-text px-4 py-3 text-sm">
+              <div className="text-body px-4 py-3 text-sm">
                 No options available
               </div>
             )}

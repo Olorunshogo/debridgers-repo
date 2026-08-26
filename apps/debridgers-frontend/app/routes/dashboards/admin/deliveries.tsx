@@ -1,9 +1,15 @@
 import { useState, useEffect, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Truck, Calendar, MapPin, User } from "lucide-react";
-import { apiFetch } from "@debridgers/api-client";
+import { apiFetch, ApiError } from "@debridgers/api-client";
 import { useNavigate } from "react-router";
-import { DashSearchInput } from "@debridgers/ui-web";
+import {
+  DataTable,
+  TablePrimaryCell,
+  TableAmountCell,
+  TableDateCell,
+  TableEmptyState,
+  type TableColumn,
+} from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -37,30 +43,106 @@ interface ApiDeliveriesResponse {
 export default function Deliveries() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<DeliveryOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState<boolean>(true);
+  /* A failed load must not read as "no pending deliveries". */
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  function load(): void {
+    setLoading(true);
+    apiFetch<ApiDeliveriesResponse>("/admin/deliveries/pending")
+      .then((data) => {
+        setOrders(data.orders);
+        setLoadError(null);
+      })
+      .catch((err: unknown) => {
+        setOrders([]);
+        setLoadError(
+          err instanceof ApiError
+            ? err.message
+            : "Could not load deliveries. Check your connection and retry.",
+        );
+      })
+      .finally(() => setLoading(false));
+  }
 
   useEffect(() => {
-    apiFetch<ApiDeliveriesResponse>("/admin/deliveries/pending")
-      .then((data) => setOrders(data.orders))
-      .catch(() => setOrders([]))
-      .finally(() => setLoading(false));
+    load();
   }, []);
-
-  const filtered = useMemo(() => {
-    const query = search.toLowerCase();
-    return orders.filter(
-      (o) =>
-        (o.order_reference?.toLowerCase().includes(query) ?? false) ||
-        o.buyer_name.toLowerCase().includes(query) ||
-        o.delivery_address.toLowerCase().includes(query),
-    );
-  }, [orders, search]);
 
   const stats = {
     pending: orders.length,
     totalAmount: orders.reduce((sum, o) => sum + o.amount, 0),
   };
+
+  const columns = useMemo<TableColumn<DeliveryOrder>[]>(
+    () => [
+      {
+        id: "order_reference",
+        header: "Order",
+        priority: "primary",
+        minWidth: "8rem",
+        sortable: true,
+        sortValue: (o) => o.order_reference ?? "",
+        searchValue: (o) => o.order_reference ?? String(o.id),
+        cell: (o) => (
+          <span className="text-heading font-semibold">
+            {o.order_reference ?? `#${o.id}`}
+          </span>
+        ),
+      },
+      {
+        id: "buyer_name",
+        header: "Buyer",
+        priority: "primary",
+        minWidth: "12rem",
+        sortable: true,
+        sortValue: (o) => o.buyer_name,
+        searchValue: (o) => `${o.buyer_name} ${o.buyer_phone}`,
+        cell: (o) => (
+          <TablePrimaryCell
+            title={o.buyer_name}
+            subtitle={
+              <span className="flex items-center gap-1">
+                <User size={12} />
+                {o.buyer_phone}
+              </span>
+            }
+          />
+        ),
+      },
+      {
+        id: "delivery_address",
+        header: "Delivery Address",
+        priority: "secondary",
+        minWidth: "16rem",
+        searchValue: (o) => o.delivery_address,
+        cell: (o) => (
+          <span className="text-body flex items-start gap-1 text-xs">
+            <MapPin size={14} className="mt-0.5 shrink-0" />
+            <span className="truncate">{o.delivery_address}</span>
+          </span>
+        ),
+      },
+      {
+        id: "amount",
+        header: "Amount",
+        align: "right",
+        priority: "trailing",
+        sortable: true,
+        sortValue: (o) => o.amount,
+        cell: (o) => <TableAmountCell kobo={o.amount} />,
+      },
+      {
+        id: "created_at",
+        header: "Created",
+        priority: "detail",
+        sortable: true,
+        sortValue: (o) => o.created_at,
+        cell: (o) => <TableDateCell value={o.created_at} />,
+      },
+    ],
+    [],
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -72,25 +154,19 @@ export default function Deliveries() {
             <h2 className="font-syne text-heading text-xl font-bold">
               Delivery Verification
             </h2>
-            <p className="text-text text-sm">
+            <p className="text-body text-sm">
               {loading ? "Loading..." : `${orders.length} pending deliveries`}
             </p>
           </div>
         </div>
-
-        <DashSearchInput
-          placeholder="Search by order or buyer…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="border-gray-border flex items-start gap-3 rounded-2xl border bg-white p-4">
+        <div className="border-line flex items-start gap-3 rounded-2xl border bg-white p-4">
           <Truck size={20} className="mt-1 text-amber-500" />
           <div className="flex-1">
-            <p className="text-text text-xs font-semibold tracking-wider uppercase">
+            <p className="text-body text-xs font-semibold tracking-wider uppercase">
               Pending Verification
             </p>
             <p className="font-syne text-heading text-lg font-bold">
@@ -98,10 +174,10 @@ export default function Deliveries() {
             </p>
           </div>
         </div>
-        <div className="border-gray-border flex items-start gap-3 rounded-2xl border bg-white p-4">
+        <div className="border-line flex items-start gap-3 rounded-2xl border bg-white p-4">
           <Calendar size={20} className="mt-1 text-blue-500" />
           <div className="flex-1">
-            <p className="text-text text-xs font-semibold tracking-wider uppercase">
+            <p className="text-body text-xs font-semibold tracking-wider uppercase">
               Total Amount
             </p>
             <p className="font-syne text-heading text-lg font-bold">
@@ -112,85 +188,28 @@ export default function Deliveries() {
       </div>
 
       {/* Table */}
-      <div className="border-gray-border overflow-hidden rounded-2xl border bg-white">
-        <div className="border-gray-border text-text grid grid-cols-[100px_1fr_1.2fr_100px_80px] gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase">
-          <span>Order</span>
-          <span>Buyer</span>
-          <span>Delivery Address</span>
-          <span>Amount</span>
-          <span>Created</span>
-        </div>
-
-        {loading ? (
-          <div className="flex flex-col gap-0">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div
-                key={i}
-                className={`border-gray-border h-14 animate-pulse border-b ${
-                  i % 2 === 0 ? "bg-bg-light" : "bg-white"
-                }`}
-              />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <p className="text-text px-5 py-8 text-center text-sm">
-            {search
-              ? "No deliveries match your search."
-              : "No pending deliveries."}
-          </p>
-        ) : (
-          <AnimatePresence>
-            {filtered.map((order, i) => {
-              const createdDate = new Date(order.created_at).toLocaleDateString(
-                "en-NG",
-                {
-                  month: "short",
-                  day: "numeric",
-                },
-              );
-              return (
-                <motion.div
-                  key={order.id}
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.04 }}
-                  className="border-gray-border hover:bg-bg-light grid cursor-pointer grid-cols-[100px_1fr_1.2fr_100px_80px] gap-4 border-b px-5 py-4 text-sm transition-colors last:border-0"
-                  onClick={() =>
-                    navigate(`/dashboards/admin/deliveries/${order.id}/verify`)
-                  }
-                >
-                  <div>
-                    <p className="text-heading font-semibold">
-                      {order.order_reference}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <p className="text-heading font-semibold">
-                      {order.buyer_name}
-                    </p>
-                    <div className="text-text flex items-center gap-1 text-xs">
-                      <User size={12} />
-                      {order.buyer_phone}
-                    </div>
-                  </div>
-
-                  <div className="text-text flex items-start gap-1 truncate text-xs">
-                    <MapPin size={14} className="mt-0.5 flex-shrink-0" />
-                    <span className="truncate">{order.delivery_address}</span>
-                  </div>
-
-                  <span className="text-heading font-semibold">
-                    ₦{(order.amount / 100).toLocaleString()}
-                  </span>
-
-                  <span className="text-text text-xs">{createdDate}</span>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-        )}
-      </div>
+      <DataTable
+        rows={orders}
+        columns={columns}
+        caption="Pending deliveries"
+        showSearch
+        searchPlaceholder="Search by order, buyer or address"
+        loading={loading}
+        error={loadError}
+        onRetry={load}
+        pageSize={10}
+        pageSizeOptions={[10, 25, 50]}
+        onRowClick={(order) =>
+          navigate(`/dashboards/admin/deliveries/${order.id}/verify`)
+        }
+        emptyState={
+          <TableEmptyState
+            icon={Truck}
+            title="No pending deliveries"
+            description="Deliveries awaiting verification will appear here."
+          />
+        }
+      />
     </div>
   );
 }

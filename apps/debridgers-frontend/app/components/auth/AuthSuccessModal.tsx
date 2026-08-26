@@ -39,7 +39,7 @@ export default function AuthSuccessModal({
 
         <div className="flex flex-col gap-2">
           <h2 className="font-syne text-heading text-2xl font-bold">{title}</h2>
-          <p className="text-text font-open-sans text-sm leading-relaxed">
+          <p className="text-body font-open-sans text-sm leading-relaxed">
             {description}
           </p>
         </div>

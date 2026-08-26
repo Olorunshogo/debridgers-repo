@@ -116,7 +116,7 @@ export default function VerifyEmailPage() {
                 )}
 
                 {maxResendsReached ? (
-                  <p className="text-text text-xs">
+                  <p className="text-body text-xs">
                     Resend limit reached. Please contact support.
                   </p>
                 ) : (
@@ -127,7 +127,7 @@ export default function VerifyEmailPage() {
                     className={`text-xs font-medium underline underline-offset-2 ${
                       canResend && !isResending
                         ? "text-primary cursor-pointer"
-                        : "text-text-placeholder cursor-not-allowed"
+                        : "text-placeholder-text cursor-not-allowed"
                     }`}
                   >
                     {isResending
@@ -140,7 +140,7 @@ export default function VerifyEmailPage() {
 
                 <Link
                   to="/login"
-                  className="text-text-placeholder cursor-pointer text-xs underline underline-offset-2"
+                  className="text-placeholder-text cursor-pointer text-xs underline underline-offset-2"
                 >
                   Back to login
                 </Link>

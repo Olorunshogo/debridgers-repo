@@ -191,7 +191,7 @@ export function StockTaxonomyPicker({
                   className={`shrink-0 cursor-pointer rounded-full border px-4 py-2 text-sm font-semibold transition-all ${
                     isActive
                       ? "border-primary bg-primary text-white"
-                      : "border-gray-border text-heading hover:border-primary bg-white"
+                      : "border-line text-heading hover:border-primary bg-white"
                   }`}
                 >
                   {node.name}
@@ -231,7 +231,7 @@ export function StockTaxonomyPicker({
                             ? "border-primary bg-dash-quick-action-hover rounded-b-none"
                             : added
                               ? "border-primary/30 bg-green-50"
-                              : "border-gray-border bg-bg-light"
+                              : "border-line bg-light-bg"
                         }`}
                       >
                         <span className="flex min-w-0 items-center gap-3">
@@ -246,7 +246,7 @@ export function StockTaxonomyPicker({
                               <span className="flex h-full items-center justify-center">
                                 <Package
                                   size={18}
-                                  className="text-text opacity-25"
+                                  className="text-body opacity-25"
                                 />
                               </span>
                             )}
@@ -255,7 +255,7 @@ export function StockTaxonomyPicker({
                             <span className="text-heading truncate text-sm font-semibold">
                               {product.name}
                             </span>
-                            <span className="text-text text-xs">
+                            <span className="text-body text-xs">
                               {product.unit} -{" "}
                               {formatFromKobo(product.price_kobo)} to remit
                             </span>
@@ -269,7 +269,7 @@ export function StockTaxonomyPicker({
                           )}
                           <ChevronDown
                             size={14}
-                            className={`text-text transition-transform ${isActive ? "rotate-180" : ""}`}
+                            className={`text-body transition-transform ${isActive ? "rotate-180" : ""}`}
                           />
                         </span>
                       </button>
@@ -284,8 +284,8 @@ export function StockTaxonomyPicker({
                             transition={transitionBase}
                             className="overflow-hidden"
                           >
-                            <div className="border-gray-border bg-bg-light flex flex-wrap items-center gap-3 rounded-b-xl border border-t-0 px-4 py-3">
-                              <div className="border-gray-border flex items-center gap-1 rounded-full border bg-white">
+                            <div className="border-line bg-light-bg flex flex-wrap items-center gap-3 rounded-b-xl border border-t-0 px-4 py-3">
+                              <div className="border-line flex items-center gap-1 rounded-full border bg-white">
                                 <button
                                   type="button"
                                   aria-label="Decrease quantity"
@@ -331,7 +331,7 @@ export function StockTaxonomyPicker({
       {deepestSelected &&
         drillableChildren.length === 0 &&
         visibleProducts.length === 0 && (
-          <p className="text-text py-4 text-center text-sm">
+          <p className="text-body py-4 text-center text-sm">
             No products stocked under {deepestSelected.name} yet.
           </p>
         )}

@@ -403,7 +403,7 @@ export default function BuyerCheckout() {
         <h2 className="font-syne text-heading text-xl font-bold">
           Confirming your payment
         </h2>
-        <p className="text-text max-w-87.5 text-sm">
+        <p className="text-body max-w-87.5 text-sm">
           This only takes a moment. Please do not close this page.
         </p>
       </div>
@@ -421,7 +421,7 @@ export default function BuyerCheckout() {
         <h2 className="font-syne text-heading text-2xl font-bold">
           Order Confirmed!
         </h2>
-        <p className="text-text max-w-87.5 text-sm">
+        <p className="text-body max-w-87.5 text-sm">
           Your payment was received. We&apos;ll notify you when your order is
           picked up.
         </p>
@@ -445,15 +445,13 @@ export default function BuyerCheckout() {
               className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold transition-all duration-300 ${
                 step === s.key
                   ? "bg-primary text-white"
-                  : "bg-bg-light text-text"
+                  : "bg-light-bg text-body"
               }`}
             >
               {i + 1}
             </div>
-            <span className="text-text text-sm">{s.label}</span>
-            {i < steps.length - 1 && (
-              <div className="bg-gray-border h-px w-8" />
-            )}
+            <span className="text-body text-sm">{s.label}</span>
+            {i < steps.length - 1 && <div className="bg-line h-px w-8" />}
           </div>
         ))}
       </div>
@@ -464,7 +462,7 @@ export default function BuyerCheckout() {
       >
         {/* Left: Delivery form */}
         <div className="flex flex-col gap-5">
-          <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
+          <div className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5">
             <h3 className="font-syne text-heading font-semibold">
               Delivery Address
             </h3>
@@ -516,7 +514,7 @@ export default function BuyerCheckout() {
             />
 
             {lga && zonesForLga.length === 0 && (
-              <p className="text-status-cancelled-text text-xs">
+              <p className="text-status-cancelled-fg text-xs">
                 We do not deliver to {lga} yet. Pick another LGA or contact
                 support.
               </p>
@@ -532,7 +530,7 @@ export default function BuyerCheckout() {
             />
           </div>
 
-          <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
+          <div className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5">
             <h3 className="font-syne text-heading font-semibold">
               Payment Method
             </h3>
@@ -556,7 +554,7 @@ export default function BuyerCheckout() {
                   className={`flex flex-1 cursor-pointer items-center gap-2 rounded-xl border px-4 py-3 transition-colors ${
                     paymentMethod === opt.key
                       ? "border-primary bg-dash-quick-action-hover"
-                      : "border-gray-border bg-transparent"
+                      : "border-line bg-transparent"
                   } ${
                     opt.key === "wallet" && walletLoading ? "opacity-50" : ""
                   }`}
@@ -574,14 +572,14 @@ export default function BuyerCheckout() {
                     <p className="text-heading text-sm font-medium">
                       {opt.label}
                     </p>
-                    <p className="text-text text-xs">{opt.sub}</p>
+                    <p className="text-body text-xs">{opt.sub}</p>
                   </div>
                 </label>
               ))}
             </div>
           </div>
 
-          <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
+          <div className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5">
             <h3 className="font-syne text-heading font-semibold">
               Delivery Time
             </h3>
@@ -599,7 +597,7 @@ export default function BuyerCheckout() {
                   className={`flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-3 transition-colors ${
                     deliveryTime === opt.key
                       ? "border-primary bg-dash-quick-action-hover"
-                      : "border-gray-border bg-transparent"
+                      : "border-line bg-transparent"
                   }`}
                 >
                   <input
@@ -614,7 +612,7 @@ export default function BuyerCheckout() {
                     <p className="text-heading text-sm font-medium">
                       {opt.label}
                     </p>
-                    <p className="text-text text-xs">{opt.sub}</p>
+                    <p className="text-body text-xs">{opt.sub}</p>
                   </div>
                 </label>
               ))}
@@ -631,14 +629,14 @@ export default function BuyerCheckout() {
         </div>
 
         {/* Right: Order summary */}
-        <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
+        <div className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5">
           <h3 className="font-syne text-heading font-semibold">
             Order Summary
           </h3>
 
           <div className="flex h-full flex-1 flex-col gap-3">
             {cartItems.length === 0 ? (
-              <p className="text-text text-sm">
+              <p className="text-body text-sm">
                 Your cart is empty.{" "}
                 <Link
                   to="/buyer-dashboard/shop"
@@ -653,7 +651,7 @@ export default function BuyerCheckout() {
                   key={item.id}
                   className="flex items-center justify-between text-sm"
                 >
-                  <span className="text-text">
+                  <span className="text-body">
                     {item.name} x{item.qty} {item.unit}
                   </span>
                   <span className="text-heading">
@@ -665,8 +663,8 @@ export default function BuyerCheckout() {
           </div>
 
           {cartItems.length > 0 && (
-            <div className="border-gray-border flex flex-col gap-2 border-t pt-3">
-              <div className="text-text flex justify-between text-sm">
+            <div className="border-line flex flex-col gap-2 border-t pt-3">
+              <div className="text-body flex justify-between text-sm">
                 <span>Subtotal</span>
                 <span>
                   {quote
@@ -680,36 +678,36 @@ export default function BuyerCheckout() {
                 chosen. Saying "Free" before then, as this used to, was simply
                 wrong once per-package pricing landed.
               */}
-              <div className="text-text flex justify-between gap-3 text-sm">
+              <div className="text-body flex justify-between gap-3 text-sm">
                 <span>
                   Delivery
                   {quote && quote.extraPackages > 0 && (
-                    <span className="text-text-placeholder">
+                    <span className="text-placeholder-text">
                       {" "}
                       ({quote.package_count} packages)
                     </span>
                   )}
                 </span>
                 {!zoneId ? (
-                  <span className="text-text-placeholder">Choose an area</span>
+                  <span className="text-placeholder-text">Choose an area</span>
                 ) : quote?.freeDelivery ? (
                   <span className="flex items-center gap-1.5">
-                    <s className="text-text-placeholder">
+                    <s className="text-placeholder-text">
                       {formatFromKobo(quote.deliveryFeeBeforePromoKobo)}
                     </s>
-                    <span className="text-status-delivered-text font-semibold">
+                    <span className="text-status-delivered-fg font-semibold">
                       FREE
                     </span>
                   </span>
                 ) : quote ? (
                   <span>{formatFromKobo(quote.deliveryFeeKobo)}</span>
                 ) : (
-                  <span className="text-text-placeholder">...</span>
+                  <span className="text-placeholder-text">...</span>
                 )}
               </div>
 
               {quote && (
-                <div className="text-text flex justify-between text-sm">
+                <div className="text-body flex justify-between text-sm">
                   <span>Handling</span>
                   <span>{formatFromKobo(quote.handlingFeeKobo)}</span>
                 </div>
@@ -725,15 +723,13 @@ export default function BuyerCheckout() {
               </div>
 
               {quoteError && (
-                <p className="text-status-cancelled-text text-xs">
-                  {quoteError}
-                </p>
+                <p className="text-status-cancelled-fg text-xs">{quoteError}</p>
               )}
             </div>
           )}
 
           {error && (
-            <p className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm">
+            <p className="bg-status-cancelled text-status-cancelled-fg rounded-xl px-4 py-3 text-sm">
               {error}
             </p>
           )}
@@ -753,7 +749,7 @@ export default function BuyerCheckout() {
             {paymentMethod === "wallet" ? "Pay with Wallet" : "Pay with Card"}
             <ArrowRight size={16} />
           </DashSubmitButton>
-          <p className="text-text text-center text-xs">
+          <p className="text-body text-center text-xs">
             {paymentMethod === "wallet"
               ? "Payment will be deducted from your wallet."
               : "You'll be redirected to Paystack to complete payment securely."}

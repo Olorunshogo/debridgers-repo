@@ -18,7 +18,7 @@ export function DialogHeader({
     <div className="flex items-start justify-between gap-4">
       <div className="flex flex-col gap-1">
         <h2 className="font-syne text-heading text-lg font-bold">{title}</h2>
-        {description && <p className="text-text text-sm">{description}</p>}
+        {description && <p className="text-body text-sm">{description}</p>}
       </div>
 
       {showCloser && onClose && (

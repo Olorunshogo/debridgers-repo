@@ -217,7 +217,7 @@ export default function AdminOutreachPage() {
             <h2 className="font-syne text-heading text-xl font-bold">
               Outreach Records
             </h2>
-            <p className="text-text text-sm">
+            <p className="text-body text-sm">
               Offline customer data collected during field visits
             </p>
           </div>
@@ -243,7 +243,7 @@ export default function AdminOutreachPage() {
             animate="animate"
             exit="exit"
             transition={transitionBase}
-            className="bg-status-cancelled-bg text-status-cancelled-text flex items-start justify-between gap-3 rounded-xl px-4 py-3 text-sm"
+            className="bg-status-cancelled text-status-cancelled-fg flex items-start justify-between gap-3 rounded-xl px-4 py-3 text-sm"
           >
             <span>{actionError}</span>
             <button
@@ -271,10 +271,10 @@ export default function AdminOutreachPage() {
         ].map((s) => (
           <div
             key={s.label}
-            className="border-gray-border flex flex-col gap-2 rounded-2xl border bg-white p-4"
+            className="border-line flex flex-col gap-2 rounded-2xl border bg-white p-4"
           >
             <div className="flex items-center justify-between">
-              <span className="text-text text-xs">{s.label}</span>
+              <span className="text-body text-xs">{s.label}</span>
               <s.icon size={16} className="text-primary" />
             </div>
             <p className="font-syne text-heading text-2xl font-bold">
@@ -291,7 +291,7 @@ export default function AdminOutreachPage() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="border-gray-border rounded-2xl border bg-white p-6"
+            className="border-line rounded-2xl border bg-white p-6"
           >
             <div className="mb-5 flex items-center justify-between">
               <h3 className="font-syne text-heading font-semibold">
@@ -301,12 +301,12 @@ export default function AdminOutreachPage() {
                 onClick={() => setShowForm(false)}
                 className="rounded-full p-1 hover:bg-black/5"
               >
-                <X size={18} className="text-text" />
+                <X size={18} className="text-body" />
               </button>
             </div>
 
             {formError && (
-              <p className="bg-status-cancelled-bg text-status-cancelled-text mb-4 rounded-xl px-4 py-3 text-sm">
+              <p className="bg-status-cancelled text-status-cancelled-fg mb-4 rounded-xl px-4 py-3 text-sm">
                 {formError}
               </p>
             )}
@@ -424,7 +424,7 @@ export default function AdminOutreachPage() {
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="border-gray-border text-text rounded-full border px-6 py-2.5 text-sm font-medium transition-colors hover:bg-black/5"
+                  className="border-line text-body rounded-full border px-6 py-2.5 text-sm font-medium transition-colors hover:bg-black/5"
                 >
                   Cancel
                 </button>
@@ -468,8 +468,8 @@ export default function AdminOutreachPage() {
       </div>
 
       {/* Records table */}
-      <div className="border-gray-border overflow-hidden rounded-2xl border bg-white">
-        <div className="border-gray-border text-text grid grid-cols-[1fr_120px_100px_100px_1fr_80px_40px] gap-3 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase">
+      <div className="border-line overflow-hidden rounded-2xl border bg-white">
+        <div className="border-line text-body grid grid-cols-[1fr_120px_100px_100px_1fr_80px_40px] gap-3 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase">
           <span>Shop / Customer</span>
           <span>Phone</span>
           <span>LGA</span>
@@ -484,14 +484,14 @@ export default function AdminOutreachPage() {
             {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
-                className={`border-gray-border h-14 animate-pulse border-b ${i % 2 === 0 ? "bg-bg-light" : "bg-white"}`}
+                className={`border-line h-14 animate-pulse border-b ${i % 2 === 0 ? "bg-light-bg" : "bg-white"}`}
               />
             ))}
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-16">
-            <MapPin size={40} className="text-text opacity-20" />
-            <p className="text-text text-sm">
+            <MapPin size={40} className="text-body opacity-20" />
+            <p className="text-body text-sm">
               {records.length === 0
                 ? 'No outreach records yet. Click "Record Visit" to add your first entry.'
                 : "No records match your search."}
@@ -505,16 +505,16 @@ export default function AdminOutreachPage() {
                 initial={{ opacity: 0, x: -6 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.03 }}
-                className="border-gray-border grid grid-cols-[1fr_120px_100px_100px_1fr_80px_40px] items-center gap-3 border-b px-5 py-4 text-sm last:border-0"
+                className="border-line grid grid-cols-[1fr_120px_100px_100px_1fr_80px_40px] items-center gap-3 border-b px-5 py-4 text-sm last:border-0"
               >
                 {/* Shop */}
                 <div className="flex flex-col gap-0.5">
                   <p className="text-heading font-semibold">{r.shop_name}</p>
                   {r.owner_name && (
-                    <p className="text-text text-xs">{r.owner_name}</p>
+                    <p className="text-body text-xs">{r.owner_name}</p>
                   )}
                   {r.address && (
-                    <p className="text-text text-xs">{r.address}</p>
+                    <p className="text-body text-xs">{r.address}</p>
                   )}
                 </div>
 
@@ -541,7 +541,7 @@ export default function AdminOutreachPage() {
                 </div>
 
                 {/* LGA */}
-                <span className="text-text text-xs">
+                <span className="text-body text-xs">
                   {r.lga
                     ? (kadunaLgas.find((l) => l.value === r.lga)?.label ??
                       r.lga)
@@ -564,14 +564,14 @@ export default function AdminOutreachPage() {
                     <span className="text-xs opacity-40">—</span>
                   )}
                   {r.quantity ? (
-                    <span className="bg-status-active-bg text-status-active-text w-fit rounded-full px-2 py-0.5 text-xs font-semibold">
+                    <span className="bg-status-active text-status-active-fg w-fit rounded-full px-2 py-0.5 text-xs font-semibold">
                       {r.quantity} bag{r.quantity !== 1 ? "s" : ""}
                     </span>
                   ) : null}
                 </div>
 
                 {/* Date */}
-                <span className="text-text text-xs">
+                <span className="text-body text-xs">
                   {new Date(r.visit_date).toLocaleDateString("en-NG", {
                     month: "short",
                     day: "numeric",
@@ -595,7 +595,7 @@ export default function AdminOutreachPage() {
 
       {/* Notes detail drawer hint */}
       {filtered.some((r) => r.notes) && (
-        <p className="text-text text-xs">
+        <p className="text-body text-xs">
           * Hover a row to see full notes in future updates.
         </p>
       )}

@@ -59,7 +59,7 @@ function WhyCard({ card, isActive, onHover }: WhyCardProps) {
       className={`group font-syne flex h-full flex-col gap-4 rounded-3xl px-4 py-4 transition-all duration-300 ease-in-out lg:gap-6 lg:px-10 ${
         isActive
           ? "bg-primary text-white"
-          : "border-gray-border hover:border-primary border bg-white"
+          : "border-line hover:border-primary border bg-white"
       }`}
     >
       {/* Icon */}
@@ -84,7 +84,7 @@ function WhyCard({ card, isActive, onHover }: WhyCardProps) {
         </h3>
         <p
           className={`font-open-sans flex-1 text-base leading-relaxed transition-colors duration-300 lg:text-lg ${
-            isActive ? "text-white" : "text-text group-hover:text-emerald-100"
+            isActive ? "text-white" : "text-body group-hover:text-emerald-100"
           }`}
         >
           {card.description}
@@ -642,7 +642,7 @@ export default function Home() {
             className="flex flex-col gap-10"
           >
             <div className="flex flex-col gap-3">
-              <p className="text-text text-xl font-medium xl:text-2xl">
+              <p className="text-body text-xl font-medium xl:text-2xl">
                 How it works
               </p>
               <h2 className="text-primary text-2xl leading-tight font-bold sm:text-3xl lg:text-5xl xl:text-6xl">
@@ -652,7 +652,7 @@ export default function Home() {
 
             <div className="flex flex-col">
               {/* Step 1 */}
-              <div className="text-text flex gap-6 border-b border-[#E5E7EB] py-4">
+              <div className="text-body flex gap-6 border-b border-[#E5E7EB] py-4">
                 <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl xl:text-2xl">
                   01
                 </div>
@@ -668,7 +668,7 @@ export default function Home() {
               </div>
 
               {/* Step 2 */}
-              <div className="text-text flex gap-6 py-4">
+              <div className="text-body flex gap-6 py-4">
                 <div className="font-syne flex h-9 w-9 shrink-0 items-center justify-center text-lg lg:text-xl xl:text-2xl">
                   02
                 </div>
