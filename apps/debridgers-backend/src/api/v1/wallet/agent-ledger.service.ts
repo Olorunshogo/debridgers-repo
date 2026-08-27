@@ -40,14 +40,14 @@ export class AgentLedgerService {
     const [existing] = await exec
       .select()
       .from(schema.wallets)
-      .where(eq(schema.wallets.agent_id, agentId))
+      .where(eq(schema.wallets.user_id, agentId))
       .limit(1);
 
     if (existing) return existing;
 
     const [created] = await exec
       .insert(schema.wallets)
-      .values({ agent_id: agentId })
+      .values({ user_id: agentId })
       .returning();
 
     return created;
@@ -84,7 +84,7 @@ export class AgentLedgerService {
         total_earned: sql`${schema.wallets.total_earned} + ${amount}`,
         updated_at: new Date(),
       })
-      .where(eq(schema.wallets.agent_id, agentId))
+      .where(eq(schema.wallets.user_id, agentId))
       .returning();
 
     return updated;
@@ -108,7 +108,7 @@ export class AgentLedgerService {
         available_balance: sql`${schema.wallets.available_balance} + ${amount}`,
         updated_at: new Date(),
       })
-      .where(eq(schema.wallets.agent_id, agentId));
+      .where(eq(schema.wallets.user_id, agentId));
   }
 
   /*
@@ -129,7 +129,7 @@ export class AgentLedgerService {
         updated_at: new Date(),
       })
       .where(
-        sql`${schema.wallets.agent_id} = ${agentId} AND ${schema.wallets.available_balance} >= ${amount}`,
+        sql`${schema.wallets.user_id} = ${agentId} AND ${schema.wallets.available_balance} >= ${amount}`,
       )
       .returning();
 
@@ -153,7 +153,7 @@ export class AgentLedgerService {
         available_balance: sql`${schema.wallets.available_balance} + ${amount}`,
         updated_at: new Date(),
       })
-      .where(eq(schema.wallets.agent_id, agentId));
+      .where(eq(schema.wallets.user_id, agentId));
   }
 
   private assertPositive(amount: number): void {

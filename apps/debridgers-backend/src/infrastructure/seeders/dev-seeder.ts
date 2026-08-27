@@ -529,7 +529,7 @@ async function seedDev(): Promise<void> {
       });
 
       await db.insert(schema.wallets).values({
-        agent_id: user.id,
+        user_id: user.id,
         available_balance: naira(5000 * (index + 1)),
         pending_balance: naira(1000 * index),
         total_earned: naira(12000 * (index + 1)),

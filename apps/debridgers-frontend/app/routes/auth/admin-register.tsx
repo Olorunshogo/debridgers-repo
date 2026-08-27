@@ -135,7 +135,7 @@ export default function AdminRegister() {
 
         <form
           onSubmit={handleSubmit}
-          className="space-y-4 rounded-lg bg-white p-8 shadow-sm"
+          className="flex flex-col gap-4 rounded-lg bg-white p-8 shadow-sm"
         >
           {error && (
             <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">

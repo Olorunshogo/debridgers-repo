@@ -213,9 +213,19 @@ export function useTableState<TRow>(
   const onStateChangeRef = useRef(onStateChange);
   onStateChangeRef.current = onStateChange;
 
+  /*
+   * resetKey belongs in this key, not just in the page-reset signature above.
+   *
+   * A page-level filter changes resetKey but usually leaves page/search/sort
+   * untouched - the admin is already on page 1. Without resetKey here the
+   * serialised snapshot is identical, the effect below never re-runs, and a
+   * server-mode table never reloads for the new filter.
+   */
   const snapshotKey = `${snapshot.page}|${snapshot.pageSize}|${
     snapshot.search
-  }|${snapshot.sort?.key ?? ""}|${snapshot.sort?.direction ?? ""}`;
+  }|${snapshot.sort?.key ?? ""}|${snapshot.sort?.direction ?? ""}|${String(
+    resetKey,
+  )}`;
 
   useEffect(() => {
     onStateChangeRef.current?.(snapshot);

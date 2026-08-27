@@ -23,10 +23,9 @@ import {
  * copy of the max-w-md bug. Going through the engine gives it focus trapping,
  * scroll locking and the shared panel width for free.
  *
- * A gate, not a prompt: an admin still on their invite password must set a real
- * one before touching the dashboard, so backdrop, Escape and the X closer are
- * all off until the change succeeds. The engine's setDialogDismissible carries
- * that, and resets on close so no later dialog inherits it.
+ * Dismissable: backdrop, Escape and the X closer all work. It is a prompt, not
+ * a gate. An admin who cannot get past it cannot use the dashboard they just
+ * signed in to.
  *
  * Registered as CHANGE_PASSWORD in app/providers/dialog-registry.ts.
  */
@@ -45,7 +44,7 @@ const EMPTY_FORM: ChangePasswordForm = {
 export default function ChangePasswordDialog({
   onChanged,
 }: ChangePasswordDialogProps) {
-  const { closeDialog, setDialogLoading, setDialogDismissible } = useDialog();
+  const { closeDialog, setDialogLoading } = useDialog();
   const { status, error, run, isSubmitting } = useDialogSubmission<void>();
   const [form, setForm] = useState<ChangePasswordForm>(EMPTY_FORM);
   const [fieldErrors, setFieldErrors] = useState<Partial<ChangePasswordForm>>(
@@ -57,11 +56,6 @@ export default function ChangePasswordDialog({
   useEffect(() => {
     setDialogLoading(isSubmitting);
   }, [isSubmitting, setDialogLoading]);
-
-  /* Only a successful change opens the exit; until then there is no way out. */
-  useEffect(() => {
-    setDialogDismissible(status === "success");
-  }, [status, setDialogDismissible]);
 
   useEffect(() => {
     if (status !== "success") return;
@@ -114,7 +108,7 @@ export default function ChangePasswordDialog({
       <DialogHeader
         title="Secure your account"
         description="You are still on the temporary password you were invited with. Set a permanent one to keep the account yours."
-        showCloser={false}
+        onClose={closeDialog}
       />
 
       {error && <DialogErrorBanner message={error} />}

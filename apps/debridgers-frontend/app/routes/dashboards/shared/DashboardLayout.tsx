@@ -1,9 +1,16 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useDialog } from "@debridgers/ui-web";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Bell, LogOut } from "lucide-react";
-import { AppLogo, DashSearchInput, PrimaryButton } from "@debridgers/ui-web";
+import { NotificationBell } from "@/components/NotificationBell";
+import type { NotificationRole } from "@/hooks/useNotificationsService";
+import {
+  AppLogo,
+  DashSearchInput,
+  PrimaryButton,
+  ActionRequiredChip,
+} from "@debridgers/ui-web";
 import { useDashboardNav } from "../../../hooks/useDashboardNav";
 import {
   logout,
@@ -42,6 +49,9 @@ const titleMaps: Record<string, Record<string, string>> = {
     "/admin-dashboard/outreach": "Outreach Records",
     "/admin-dashboard/payouts": "Payouts",
     "/admin-dashboard/admin-invites": "Admin Invites",
+    "/admin-dashboard/deliveries": "Deliveries",
+    "/admin-dashboard/buyer-management": "Buyer Management",
+    "/admin-dashboard/notifications": "Notifications",
     "/admin-dashboard/settings": "Settings",
   },
   "/buyer-admin-dashboard": {
@@ -84,6 +94,8 @@ export default function DashboardLayout() {
   const [mobileOpen, setMobileOpen] = useState<boolean>(false);
   const [search, setSearch] = useState<string>("");
   const [hasUnread, setHasUnread] = useState<boolean>(false);
+  /* Mirrors users.must_change_password. The server owns it; this is a cache. */
+  const [mustChangePassword, setMustChangePassword] = useState<boolean>(false);
   const [userProfile, setUserProfile] = useState<{
     name: string;
     sub: string;
@@ -108,30 +120,33 @@ export default function DashboardLayout() {
     }
   }, [isLoading, user, dashboardPath, basePath, navigate]);
 
+  const openPasswordDialog = useCallback((): void => {
+    triggerDialog("CHANGE_PASSWORD", {
+      /* The server clears must_change_password in the same write as the
+         password, so the reminder retires on success and nowhere else. */
+      onChanged: () => setMustChangePassword(false),
+    });
+  }, [triggerDialog]);
+
   /*
-   * Nudge admins still on their invite password to set a real one.
+   * Open the prompt once, then leave the chip to do the reminding.
    *
-   * The delay was commented out for testing and shipped that way, so the prompt
-   * opened the instant the dashboard mounted - and because the old modal could
-   * not be dismissed, it made the dashboard unusable. Restored here, and the
-   * dialog it opens is now dismissable.
+   * The obligation itself lives on the server as users.must_change_password;
+   * this only decides when to volunteer the dialog. Closing it stores nothing,
+   * so the chip is still there afterwards and the prompt returns on the next
+   * load - until the password actually changes.
    */
   useEffect(() => {
-    if (isLoading || !user) return;
-    if (!isAdmin && !isBuyerAdmin) return;
+    if (!mustChangePassword) return;
     if (promptedForPasswordRef.current) return;
 
     const timer = window.setTimeout(() => {
       promptedForPasswordRef.current = true;
-      triggerDialog("CHANGE_PASSWORD", {
-        onChanged: () => {
-          promptedForPasswordRef.current = true;
-        },
-      });
+      openPasswordDialog();
     }, PASSWORD_PROMPT_DELAY_MS);
 
     return () => window.clearTimeout(timer);
-  }, [isLoading, user, isAdmin, isBuyerAdmin, triggerDialog]);
+  }, [mustChangePassword, openPasswordDialog]);
 
   useEffect(() => {
     if (isAdmin || isBuyerAdmin) {
@@ -139,6 +154,20 @@ export default function DashboardLayout() {
       const payload = token ? decodeJwtPayload<{ email: string }>(token) : null;
       const name = isBuyerAdmin ? "Buyer Admin" : "Debridgers Admin";
       setUserProfile({ name, sub: payload?.email ?? "" });
+
+      /*
+       * The JWT carries the email but not the password flag, and it would be
+       * stale anyway: a token minted before the change would keep claiming the
+       * password is temporary. Only the row is authoritative.
+       */
+      apiFetch<{ email?: string; must_change_password?: boolean }>("/admin/me")
+        .then((p) => {
+          setMustChangePassword(Boolean(p.must_change_password));
+          if (p.email) setUserProfile({ name, sub: p.email });
+        })
+        .catch(() => {
+          /* A failed profile read must not invent an obligation. */
+        });
       return;
     }
     const endpoint = isAgent ? "/agent/me" : isBuyer ? "/buyer/me" : null;
@@ -158,9 +187,25 @@ export default function DashboardLayout() {
       .catch(() => {});
   }, [isAgent, isBuyer, isAdmin, isBuyerAdmin]);
 
-  const notifPath = isBuyer
-    ? `${basePath}/notifications`
-    : `${basePath}/notification`;
+  /*
+   * Agent is the odd one out with a singular path; buyer and admin both use
+   * the plural. Deriving it beats hardcoding, since the bell renders on every
+   * dashboard and a wrong guess sends the viewer to a 404.
+   */
+  const notifPath =
+    isBuyer || isAdmin
+      ? `${basePath}/notifications`
+      : `${basePath}/notification`;
+
+  /*
+   * Only these two have the shared service behind them. The agent dashboard
+   * still reads its own endpoint, so its bell stays a plain link.
+   */
+  const dropdownRole: NotificationRole | null = isAdmin
+    ? "admin"
+    : isBuyer
+      ? "buyer"
+      : null;
 
   useEffect(() => {
     const stored = localStorage.getItem("debridgers_has_unread");
@@ -367,16 +412,28 @@ export default function DashboardLayout() {
                   </Link>
                 ) : null}
 
-                <Link
-                  to={notifPath}
-                  className="relative rounded-full p-2 transition-colors"
-                  aria-label="Notifications"
-                >
-                  <Bell size={20} className="text-icon-secondary" />
-                  {hasUnread && (
-                    <span className="bg-error-red absolute top-1.5 right-1.5 h-2 w-2 rounded-full" />
-                  )}
-                </Link>
+                {mustChangePassword && (
+                  <ActionRequiredChip
+                    label="Set your password"
+                    title="You are still using the temporary password from your invite. Click to set a permanent one."
+                    onClick={openPasswordDialog}
+                  />
+                )}
+
+                {dropdownRole ? (
+                  <NotificationBell role={dropdownRole} />
+                ) : (
+                  <Link
+                    to={notifPath}
+                    className="relative rounded-full p-2 transition-colors"
+                    aria-label="Notifications"
+                  >
+                    <Bell size={20} className="text-icon-secondary" />
+                    {hasUnread && (
+                      <span className="bg-error-red absolute top-1.5 right-1.5 h-2 w-2 rounded-full" />
+                    )}
+                  </Link>
+                )}
               </div>
             </header>
 

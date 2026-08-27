@@ -2,14 +2,24 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { apiFetch, apiMutate, ApiError } from "@debridgers/api-client";
 import { Copy, Check, Plus, MailPlus } from "lucide-react";
 import {
+  AlertBanner,
   DataTable,
+  DashEmailInput,
+  DashSubmitButton,
   TableTextCell,
   TableDateCell,
   TableStatusBadge,
   TableEmptyState,
+  type AlertTone,
   type StatusTone,
   type TableColumn,
 } from "@debridgers/ui-web";
+import { AnimatePresence } from "framer-motion";
+
+interface InviteMessage {
+  tone: AlertTone;
+  text: string;
+}
 
 interface AdminInvite {
   id: number;
@@ -56,7 +66,9 @@ export default function AdminInvites() {
   const [loading, setLoading] = useState<boolean>(true);
   const [email, setEmail] = useState<string>("");
   const [sending, setSending] = useState<boolean>(false);
-  const [message, setMessage] = useState<string>("");
+  /* Carries its own tone: the same slot reports both a sent invite and a
+     failed one, and they must not look alike. */
+  const [message, setMessage] = useState<InviteMessage | null>(null);
   /* The list's own failure, kept apart from the invite form's message so a
      failed load cannot read as "no invitations yet". */
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -96,13 +108,14 @@ export default function AdminInvites() {
         method: "POST",
         body: JSON.stringify({ email }),
       });
-      setMessage(`Invitation sent to ${email}`);
+      setMessage({ tone: "success", text: `Invitation sent to ${email}.` });
       setEmail("");
       await loadInvites();
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to send invitation";
-      setMessage(errorMessage);
+      setMessage({
+        tone: "danger",
+        text: err instanceof Error ? err.message : "Failed to send invitation.",
+      });
     } finally {
       setSending(false);
     }
@@ -192,25 +205,37 @@ export default function AdminInvites() {
         <h2 className="font-syne text-heading mb-4 text-xl font-semibold">
           Invite New Admin
         </h2>
-        <form onSubmit={handleSendInvite} className="flex gap-3">
-          <input
-            type="email"
+        <form
+          onSubmit={handleSendInvite}
+          className="flex flex-col gap-3 sm:flex-row sm:items-end"
+        >
+          <DashEmailInput
+            label="Email address"
             placeholder="admin@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="border-line flex-1 rounded-lg border px-3 py-2 text-sm"
+            className="flex-1"
             required
           />
-          <button
-            type="submit"
-            disabled={sending}
-            className="bg-primary hover:bg-primary-dark rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          <DashSubmitButton
+            icon={Plus}
+            loading={sending}
+            loadingText="Sending..."
           >
-            <Plus className="mr-1 inline" size={16} />
             Send Invite
-          </button>
+          </DashSubmitButton>
         </form>
-        {message && <p className="text-primary mt-2 text-sm">{message}</p>}
+
+        <AnimatePresence>
+          {message && (
+            <AlertBanner
+              tone={message.tone}
+              title={message.text}
+              onDismiss={() => setMessage(null)}
+              className="mt-4"
+            />
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="flex flex-col gap-3">

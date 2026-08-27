@@ -127,6 +127,14 @@ export class BuyerPaymentService {
       "Your order has been confirmed and will be processed soon.",
     );
 
+    /* A confirmed order is what puts a row on the admin deliveries queue, so
+       the notification is the admin's cue to go and verify it. */
+    await this.notificationsService.notifyAdmins({
+      type: "delivery",
+      title: "Order awaiting delivery",
+      description: `Order #${orderId} was confirmed and is now waiting for delivery verification.`,
+    });
+
     return {
       order_id: orderId,
       payment_method: "wallet",

@@ -10,6 +10,7 @@ import { TableCards } from "./table-cards";
 import { TableToolbar } from "./table-toolbar";
 import { TableEmptyState, TableErrorState } from "./table-states";
 import { useTableState, type UseTableStateOptions } from "./use-table-state";
+import { DashSelectButton } from "../../components/dash-select-button";
 import type {
   BulkAction,
   RowAction,
@@ -177,22 +178,19 @@ export function DataTableView<TRow>({
 
           <div className="flex items-center gap-3">
             {pageSizeOptions && pageSizeOptions.length > 0 && (
-              <label className="text-body flex items-center gap-2 text-xs">
-                Per page
-                <select
-                  value={state.pageSize}
-                  onChange={(event) =>
-                    state.setPageSize(Number(event.target.value))
-                  }
-                  className="border-line text-heading cursor-pointer rounded-lg border bg-white px-2 py-1 text-xs outline-none"
-                >
-                  {pageSizeOptions.map((size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <DashSelectButton
+                label="Per page"
+                showInlineLabel
+                size="sm"
+                /* Sits at the right edge of the footer, so the menu opens leftward. */
+                align="right"
+                value={String(state.pageSize)}
+                options={pageSizeOptions.map((size) => ({
+                  value: String(size),
+                  label: String(size),
+                }))}
+                onChange={(next) => state.setPageSize(Number(next))}
+              />
             )}
 
             <Pagination

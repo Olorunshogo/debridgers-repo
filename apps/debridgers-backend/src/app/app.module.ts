@@ -24,6 +24,7 @@ import { EmailModule } from "../notification/features/email/email.module";
 
 // Events
 import { UserListeners } from "../events/listeners/user-listeners";
+import { NotificationsService } from "../api/v1/buyer/notifications.service";
 
 // API Versions
 import { V1AppModule } from "../api/v1/v1.app.module";
@@ -79,6 +80,8 @@ import { refreshJwtConfig } from "../api/v1/auth/config/refresh-jwt";
   providers: [
     AppService,
     UserListeners,
+    /* UserListeners fans admin-facing events out as in-app notifications. */
+    NotificationsService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })

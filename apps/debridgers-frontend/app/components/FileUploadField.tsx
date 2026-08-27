@@ -105,7 +105,7 @@ export function FileUploadField({
               stroke="white"
               strokeWidth={3}
               size={16}
-              className="shrink-0 text-green-500"
+              className="text-status-delivered-fg shrink-0"
             />
           </div>
           <button

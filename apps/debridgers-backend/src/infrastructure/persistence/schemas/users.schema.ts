@@ -54,6 +54,16 @@ export const users = pgTable(
     email_notifications: boolean().notNull().default(true),
     // Admin tier: super_admin (owner), sub_admin (invited)
     admin_tier: varchar("admin_tier", { length: 20 }),
+    /*
+     * Still on the password the account was issued.
+     *
+     * The invite flow emails a temporary password in plaintext, so this is the
+     * single source of truth behind the dashboard's reminder. The UI renders
+     * it and stores nothing of its own: dismissing the prompt does not clear
+     * the obligation, only changing the password does.
+     */
+    must_change_password: boolean().notNull().default(false),
+    password_changed_at: timestamp("password_changed_at"),
     // Unique API key for admin authentication via header
     admin_api_key: varchar("admin_api_key", { length: 255 }).unique(),
     ...timestamps,

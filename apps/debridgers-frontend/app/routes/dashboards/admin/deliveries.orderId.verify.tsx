@@ -1,16 +1,18 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { apiFetch, apiMutate, ApiError } from "@debridgers/api-client";
+import { CheckCircle, MapPin, User, Phone, DollarSign } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
 import {
-  Camera,
-  CheckCircle,
-  MapPin,
-  User,
-  Phone,
-  DollarSign,
-  AlertCircle,
-} from "lucide-react";
-import { motion } from "framer-motion";
+  AlertBanner,
+  DashTextareaInput,
+  DashSubmitButton,
+  TableStatusBadge,
+} from "@debridgers/ui-web";
+import {
+  PhotoUploadField,
+  type PhotoUpload,
+} from "@/components/PhotoUploadField";
 
 export function meta() {
   return [
@@ -48,16 +50,14 @@ interface ApiOrderDetailsResponse {
 export default function VerifyDelivery() {
   const { orderId } = useParams();
   const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [order, setOrder] = useState<OrderDetails | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [photos, setPhotos] = useState<File[]>([]);
-  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
-  const [notes, setNotes] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [photos, setPhotos] = useState<PhotoUpload[]>([]);
+  const [notes, setNotes] = useState<string>("");
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [success, setSuccess] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -79,25 +79,6 @@ export default function VerifyDelivery() {
     fetchOrder();
   }, [orderId]);
 
-  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setPhotos((prev) => [...prev, ...files]);
-
-    // Create preview URLs
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoUrls((prev) => [...prev, reader.result as string]);
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const removePhoto = (index: number) => {
-    setPhotos((prev) => prev.filter((_, i) => i !== index));
-    setPhotoUrls((prev) => prev.filter((_, i) => i !== index));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (photos.length === 0) {
@@ -112,7 +93,7 @@ export default function VerifyDelivery() {
       await apiMutate(`/admin/deliveries/${orderId}/verify`, {
         method: "POST",
         body: JSON.stringify({
-          photos: photoUrls,
+          photos: photos.map((p) => p.dataUrl),
           notes,
           recipient_name: order?.buyer_name,
         }),
@@ -120,7 +101,7 @@ export default function VerifyDelivery() {
 
       setSuccess(true);
       setTimeout(() => {
-        navigate("/dashboards/admin/deliveries");
+        navigate("/admin-dashboard/deliveries");
       }, 2000);
     } catch (err) {
       setError(
@@ -136,8 +117,8 @@ export default function VerifyDelivery() {
   if (loading) {
     return (
       <div className="flex h-96 items-center justify-center">
-        <div className="text-center">
-          <div className="border-t-primary mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-gray-200" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="border-t-primary border-line h-12 w-12 animate-spin rounded-full border-4" />
           <p className="text-body">Loading order details...</p>
         </div>
       </div>
@@ -146,95 +127,84 @@ export default function VerifyDelivery() {
 
   if (!order) {
     return (
-      <div className="flex h-96 items-center justify-center">
-        <div className="text-center">
-          <AlertCircle size={48} className="mx-auto mb-3 text-red-500" />
-          <p className="text-body font-semibold">Order not found</p>
-          <button
-            onClick={() => navigate("/dashboards/admin/deliveries")}
-            className="text-primary mt-2 text-sm hover:underline"
-          >
-            Back to Deliveries
-          </button>
-        </div>
+      <div className="mx-auto flex max-w-lg flex-col gap-4 py-16">
+        <AlertBanner
+          tone="danger"
+          title="Order not found"
+          description={
+            error ||
+            "This order may have been removed, or the link is out of date."
+          }
+        />
+        <DashSubmitButton
+          type="button"
+          variant="secondary"
+          onClick={() => navigate("/admin-dashboard/deliveries")}
+        >
+          Back to Deliveries
+        </DashSubmitButton>
       </div>
     );
   }
 
   if (order.delivery_verified_at) {
     return (
-      <div className="flex h-96 items-center justify-center">
-        <div className="text-center">
-          <CheckCircle size={48} className="mx-auto mb-3 text-green-500" />
-          <p className="text-body font-semibold">Delivery already verified</p>
-          <p className="text-body mt-1 text-sm">
-            Verified on{" "}
-            {new Date(order.delivery_verified_at).toLocaleDateString("en-NG")}
-          </p>
-          <button
-            onClick={() => navigate("/dashboards/admin/deliveries")}
-            className="text-primary mt-3 text-sm hover:underline"
-          >
-            Back to Deliveries
-          </button>
-        </div>
+      <div className="mx-auto flex max-w-lg flex-col gap-4 py-16">
+        <AlertBanner
+          tone="success"
+          icon={CheckCircle}
+          title="Delivery already verified"
+          description={`Verified on ${new Date(
+            order.delivery_verified_at,
+          ).toLocaleDateString("en-NG")}.`}
+        />
+        <DashSubmitButton
+          type="button"
+          variant="secondary"
+          onClick={() => navigate("/admin-dashboard/deliveries")}
+        >
+          Back to Deliveries
+        </DashSubmitButton>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
-      {success && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 p-4"
-        >
-          <CheckCircle
-            size={20}
-            className="mt-0.5 flex-shrink-0 text-green-600"
+    <div className="mx-auto flex max-w-200 flex-col gap-6">
+      <AnimatePresence>
+        {success && (
+          <AlertBanner
+            key="success"
+            tone="success"
+            title="Delivery verified successfully"
+            description="Redirecting to the deliveries list..."
           />
-          <div>
-            <p className="font-semibold text-green-900">
-              Delivery verified successfully!
-            </p>
-            <p className="text-sm text-green-700">
-              Redirecting to deliveries list...
-            </p>
-          </div>
-        </motion.div>
-      )}
+        )}
 
-      {error && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4"
-        >
-          <AlertCircle
-            size={20}
-            className="mt-0.5 flex-shrink-0 text-red-600"
+        {error && (
+          <AlertBanner
+            key="error"
+            tone="danger"
+            title="Could not verify this delivery"
+            description={error}
+            onDismiss={() => setError("")}
           />
-          <div>
-            <p className="font-semibold text-red-900">Error</p>
-            <p className="text-sm text-red-700">{error}</p>
-          </div>
-        </motion.div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Order Summary */}
-      <div className="border-line mb-6 rounded-2xl border bg-white p-6">
+      <div className="border-line rounded-2xl border bg-white p-6">
         <h2 className="font-syne text-heading mb-4 text-lg font-bold">
           Order {order.order_reference}
         </h2>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex items-start gap-3">
-            <User size={18} className="text-primary mt-0.5 flex-shrink-0" />
-            <div>
+            <User size={18} className="text-primary mt-0.5 shrink-0" />
+            <div className="flex flex-col gap-1">
               <p className="text-body text-xs font-semibold uppercase">Buyer</p>
               <p className="text-heading font-semibold">{order.buyer_name}</p>
-              <p className="text-body mt-1 flex items-center gap-1 text-sm">
+              <p className="text-body flex items-center gap-1 text-sm">
                 <Phone size={14} />
                 {order.buyer_phone}
               </p>
@@ -242,35 +212,25 @@ export default function VerifyDelivery() {
           </div>
 
           <div className="flex items-start gap-3">
-            <DollarSign
-              size={18}
-              className="text-primary mt-0.5 flex-shrink-0"
-            />
-            <div>
+            <DollarSign size={18} className="text-primary mt-0.5 shrink-0" />
+            <div className="flex flex-col items-start gap-1">
               <p className="text-body text-xs font-semibold uppercase">
                 Amount
               </p>
               <p className="text-heading font-semibold">
                 ₦{(order.amount / 100).toLocaleString()}
               </p>
-              <p className="text-body mt-1 text-sm">
-                Status:{" "}
-                <span
-                  className={`font-semibold ${
-                    order.payment_status === "paid"
-                      ? "text-green-600"
-                      : "text-amber-600"
-                  }`}
-                >
-                  {order.payment_status}
-                </span>
-              </p>
+              {/* The badge already owns the status token pairing. */}
+              <TableStatusBadge
+                label={order.payment_status}
+                tone={order.payment_status === "paid" ? "success" : "warning"}
+              />
             </div>
           </div>
 
           <div className="flex items-start gap-3 sm:col-span-2">
-            <MapPin size={18} className="text-primary mt-0.5 flex-shrink-0" />
-            <div>
+            <MapPin size={18} className="text-primary mt-0.5 shrink-0" />
+            <div className="flex flex-col gap-1">
               <p className="text-body text-xs font-semibold uppercase">
                 Delivery Address
               </p>
@@ -283,108 +243,45 @@ export default function VerifyDelivery() {
       </div>
 
       {/* Verification Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Photo Upload */}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <div className="border-line rounded-2xl border bg-white p-6">
-          <h3 className="font-syne text-heading mb-4 font-bold">
-            Upload Proof of Delivery
-          </h3>
-
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            className="border-primary hover:bg-primary hover:bg-opacity-5 cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-colors"
-          >
-            <Camera size={32} className="text-primary mx-auto mb-2" />
-            <p className="text-heading mb-1 font-semibold">
-              Click to upload photos
-            </p>
-            <p className="text-body text-sm">
-              Drag and drop or click to select images
-            </p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={handlePhotoSelect}
-              className="hidden"
-            />
-          </div>
-
-          {/* Photo Gallery */}
-          {photoUrls.length > 0 && (
-            <div className="mt-4">
-              <p className="text-body mb-2 text-sm font-semibold">
-                {photoUrls.length} photo{photoUrls.length !== 1 ? "s" : ""}{" "}
-                selected
-              </p>
-              <div className="grid grid-cols-3 gap-3">
-                {photoUrls.map((url, i) => (
-                  <div
-                    key={i}
-                    className="border-line bg-light-bg group relative aspect-square overflow-hidden rounded-lg border"
-                  >
-                    <img
-                      src={url}
-                      alt={`Photo ${i + 1}`}
-                      className="h-full w-full object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removePhoto(i)}
-                      className="bg-opacity-50 absolute inset-0 flex items-center justify-center bg-black opacity-0 transition-opacity group-hover:opacity-100"
-                    >
-                      <span className="text-sm font-semibold text-white">
-                        Remove
-                      </span>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Notes */}
-        <div className="border-line rounded-2xl border bg-white p-6">
-          <h3 className="font-syne text-heading mb-4 font-bold">
-            Delivery Notes
-          </h3>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Add any notes about the delivery (e.g., 'Left with security guard', 'Partial delivery', etc.)"
-            className="border-line focus:ring-primary w-full resize-none rounded-lg border px-4 py-3 focus:border-transparent focus:ring-2 focus:outline-none"
-            rows={4}
+          <PhotoUploadField
+            label="Upload Proof of Delivery"
+            required
+            photos={photos}
+            onPhotosChange={setPhotos}
+            hint="Drag and drop, or click to browse. At least one photo is required."
           />
         </div>
 
-        {/* Submit Button */}
-        <div className="flex gap-3">
-          <button
+        <div className="border-line rounded-2xl border bg-white p-6">
+          <DashTextareaInput
+            label="Delivery Notes"
+            rows={4}
+            placeholder="Add any notes about the delivery (e.g. 'Left with security guard', 'Partial delivery')."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <DashSubmitButton
             type="button"
-            onClick={() => navigate("/dashboards/admin/deliveries")}
-            className="border-line text-heading hover:bg-light-bg flex-1 rounded-lg border px-4 py-3 font-semibold transition-colors"
+            variant="secondary"
+            fullWidth
+            onClick={() => navigate("/admin-dashboard/deliveries")}
           >
             Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={submitting || photos.length === 0}
-            className="bg-primary hover:bg-opacity-90 flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-3 font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+          </DashSubmitButton>
+          <DashSubmitButton
+            fullWidth
+            icon={CheckCircle}
+            loading={submitting}
+            loadingText="Verifying..."
+            disabled={photos.length === 0}
           >
-            {submitting ? (
-              <>
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                Verifying...
-              </>
-            ) : (
-              <>
-                <CheckCircle size={18} />
-                Confirm Delivery
-              </>
-            )}
-          </button>
+            Confirm Delivery
+          </DashSubmitButton>
         </div>
       </form>
     </div>

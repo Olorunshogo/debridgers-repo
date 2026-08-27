@@ -12,6 +12,7 @@ import { BuyerAdminService } from "./buyer-admin/buyer-admin.service";
 import { DeliveryAdminController } from "./buyer-admin/delivery-admin.controller";
 import { DeliveryAdminService } from "./buyer-admin/delivery-admin.service";
 import { NotificationsService } from "../buyer/notifications.service";
+import { NotificationsAdminController } from "./notifications-admin.controller";
 import { AdminInviteController } from "./admin-invite/admin-invite.controller";
 import { AdminInviteService } from "./admin-invite/admin-invite.service";
 import { EmailModule } from "../../../notification/features/email/email.module";
@@ -29,6 +30,7 @@ import { AgentWalletService } from "../wallet/agent-wallet.service";
     AdminController,
     BuyerAdminController,
     DeliveryAdminController,
+    NotificationsAdminController,
     AdminInviteController,
   ],
   providers: [

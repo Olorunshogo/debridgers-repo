@@ -5,6 +5,12 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq, gte, sum } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
+import {
+  AgentPayoutTargetService,
+  AgentPayoutTargetError,
+} from "./agent-payout-target.service";
+import { NotificationsService } from "../buyer/notifications.service";
+import { toPaystackAmount, formatNaira } from "../../shared/money";
 
 @Injectable()
 export class PayoutSchedulerService {
@@ -17,6 +23,8 @@ export class PayoutSchedulerService {
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
     private readonly config: ConfigService,
+    private readonly payoutTargets: AgentPayoutTargetService,
+    private readonly notificationsService: NotificationsService,
   ) {
     this.secretKey = this.config.get<string>("PaystackConfig.secretKey") ?? "";
     this.minPayoutAmount = parseInt(
@@ -61,28 +69,33 @@ export class PayoutSchedulerService {
         return;
       }
 
-      const [profile] = await this.db
-        .select()
-        .from(schema.agent_profiles)
-        .where(eq(schema.agent_profiles.user_id, agentId))
-        .limit(1);
-
-      if (!profile?.bank_account_number || !profile?.bank_code) {
-        this.logger.warn(`Agent ${agentId} missing bank details`);
-        return;
-      }
-
-      if (!profile.paystack_subaccount_code) {
-        this.logger.warn(`Agent ${agentId} has no Paystack subaccount`);
-        return;
-      }
-
       const totalCommission = await this.getTotalCommission(agentId);
       if (totalCommission < this.minPayoutAmount) {
         this.logger.log(
-          `Agent ${agentId} commission ₦${Math.floor(totalCommission / 100)} below minimum`,
+          `Agent ${agentId} commission ${formatNaira(totalCommission)} below minimum`,
         );
         return;
+      }
+
+      /*
+       * A payout that cannot be sent has to be visible. This used to be a
+       * logger.warn and nothing else, so an agent with no bank details was
+       * skipped every Friday in silence.
+       */
+      let target;
+      try {
+        target = await this.payoutTargets.resolve(agentId);
+      } catch (error) {
+        if (error instanceof AgentPayoutTargetError) {
+          this.logger.warn(`Agent ${agentId} payout skipped: ${error.message}`);
+          await this.notificationsService.notifyAdmins({
+            type: "withdrawal",
+            title: "Agent payout skipped",
+            description: `${agent.email} is owed ${formatNaira(totalCommission)} but could not be paid: ${error.reason.replace(/_/g, " ")}.`,
+          });
+          return;
+        }
+        throw error;
       }
 
       const reference = `PAYOUT_${agentId}_${Date.now()}`;
@@ -95,8 +108,10 @@ export class PayoutSchedulerService {
         },
         body: JSON.stringify({
           source: "balance",
-          amount: Math.round(totalCommission / 100), // Convert from kobo to naira
-          recipient: profile.paystack_subaccount_code,
+          /* Kobo. This divided by 100 first, paying one hundredth of what
+             was owed, and addressed a subaccount that /transfer rejects. */
+          amount: toPaystackAmount(totalCommission),
+          recipient: target.recipientCode,
           reference,
           reason: `Weekly agent commission - ${agent.email}`,
         }),

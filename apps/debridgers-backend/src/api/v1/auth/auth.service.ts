@@ -570,7 +570,16 @@ export class AuthService {
      */
     await this.db
       .update(schema.users)
-      .set({ password: hashed, refresh_token: null })
+      .set({
+        password: hashed,
+        refresh_token: null,
+        /* A reset is a real password change, so it retires the "still on the
+           issued password" flag exactly as the change-password flow does.
+           Without this an invited admin who reset instead of changing would be
+           reminded forever about a password they had already replaced. */
+        must_change_password: false,
+        password_changed_at: new Date(),
+      })
       .where(eq(schema.users.id, reset.user_id));
 
     await this.db

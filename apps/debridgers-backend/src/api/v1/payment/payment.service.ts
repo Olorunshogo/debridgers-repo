@@ -9,12 +9,20 @@ import { ConfigService } from "@nestjs/config";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
-import { percentOfKobo, formatNaira } from "../../shared/money";
+import {
+  percentOfKobo,
+  formatNaira,
+  toPaystackAmount,
+} from "../../shared/money";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
 import { WebhookDeduplicationService } from "../../../infrastructure/webhook/webhook-deduplication.service";
 import { InitializePaymentDto } from "./dto/initialize-payment.dto";
 import { SystemSettingsService } from "../settings/system-settings.service";
 import { RefundService } from "./refund.service";
+import {
+  AgentPayoutTargetService,
+  AgentPayoutTargetError,
+} from "./agent-payout-target.service";
 
 @Injectable()
 export class PaymentService {
@@ -29,6 +37,7 @@ export class PaymentService {
     private readonly settings: SystemSettingsService,
     private readonly webhookDedup: WebhookDeduplicationService,
     private readonly refundService: RefundService,
+    private readonly payoutTargets: AgentPayoutTargetService,
   ) {
     this.secretKey = this.config.get<string>("PaystackConfig.secretKey") ?? "";
   }
@@ -257,23 +266,31 @@ export class PaymentService {
 
     if (!agent) throw new NotFoundException("Agent not found");
 
-    const [profile] = await this.db
-      .select()
-      .from(schema.agent_profiles)
-      .where(eq(schema.agent_profiles.user_id, withdrawal.agent_id))
-      .limit(1);
-
-    if (!profile?.bank_account_number || !profile?.bank_code) {
-      throw new BadRequestException(
-        "Agent has incomplete bank details on file",
-      );
+    /*
+     * One shared lookup. This read agent_profiles itself and addressed the
+     * subaccount code, exactly as the Friday sweep did; the duplicated lookup
+     * is why the same bug existed twice.
+     */
+    let target: Awaited<ReturnType<AgentPayoutTargetService["resolve"]>>;
+    try {
+      target = await this.payoutTargets.resolve(withdrawal.agent_id);
+    } catch (error) {
+      if (error instanceof AgentPayoutTargetError) {
+        throw new BadRequestException(
+          error.reason === "missing_bank_details"
+            ? "Agent has incomplete bank details on file"
+            : "Could not prepare the agent's payout account",
+        );
+      }
+      throw error;
     }
 
-    if (!profile.paystack_subaccount_code) {
-      throw new BadRequestException("Agent has no Paystack subaccount");
-    }
-
-    const amountNaira = Math.round(
+    /*
+     * withdrawal.amount is kobo. This rounded it into naira before sending,
+     * and Paystack reads the field as kobo, so an approved withdrawal paid out
+     * one hundredth of its value.
+     */
+    const amountKobo = Math.round(
       parseFloat(withdrawal.amount as unknown as string),
     );
     const reference = `WITHDRAWAL_${withdrawalId}_${Date.now()}`;
@@ -286,8 +303,8 @@ export class PaymentService {
       },
       body: JSON.stringify({
         source: "balance",
-        amount: amountNaira,
-        recipient: profile.paystack_subaccount_code,
+        amount: toPaystackAmount(amountKobo),
+        recipient: target.recipientCode,
         reference,
         reason: `On-demand withdrawal - ${agent.email}`,
       }),
@@ -325,7 +342,7 @@ export class PaymentService {
       .where(eq(schema.withdrawals.id, withdrawalId));
 
     this.logger.log(
-      `Withdrawal ${withdrawalId} processed for agent ${withdrawal.agent_id}: ₦${amountNaira}`,
+      `Withdrawal ${withdrawalId} processed for agent ${withdrawal.agent_id}: ${formatNaira(amountKobo)}`,
     );
 
     return { message: "Withdrawal processing", data: { reference } };

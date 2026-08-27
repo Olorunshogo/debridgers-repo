@@ -188,6 +188,11 @@ const adminNavGroups: NavGroup[] = [
   {
     label: "ACCOUNT",
     items: [
+      {
+        label: "Notifications",
+        icon: Bell,
+        href: "/admin-dashboard/notifications",
+      },
       { label: "Settings", icon: User, href: "/admin-dashboard/settings" },
     ],
   },

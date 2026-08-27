@@ -59,6 +59,7 @@ export * from "./components/dash-password-input";
 export * from "./components/dash-number-input";
 export * from "./components/dash-date-input";
 export * from "./components/dash-select-input";
+export * from "./components/dash-select-button";
 export * from "./components/dash-switch-input";
 export * from "./components/dash-search-input";
 export * from "./components/dash-textarea-input";
@@ -67,6 +68,13 @@ export * from "./components/email-input";
 export * from "./components/textarea-input";
 export * from "./components/dash-select";
 export * from "./components/dash-submit-button";
+
+// === Feedback
+export * from "./components/alert-banner";
+export * from "./components/action-required-chip";
+
+// === Notifications
+export * from "./components/notifications";
 
 // === Confirmation
 export * from "./components/confirm-dialog-panel";

@@ -164,7 +164,7 @@ export default function Deliveries() {
       {/* Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="border-line flex items-start gap-3 rounded-2xl border bg-white p-4">
-          <Truck size={20} className="mt-1 text-amber-500" />
+          <Truck size={20} className="text-status-pending-fg mt-1" />
           <div className="flex-1">
             <p className="text-body text-xs font-semibold tracking-wider uppercase">
               Pending Verification
@@ -175,7 +175,7 @@ export default function Deliveries() {
           </div>
         </div>
         <div className="border-line flex items-start gap-3 rounded-2xl border bg-white p-4">
-          <Calendar size={20} className="mt-1 text-blue-500" />
+          <Calendar size={20} className="text-status-on-the-way-fg mt-1" />
           <div className="flex-1">
             <p className="text-body text-xs font-semibold tracking-wider uppercase">
               Total Amount
@@ -200,7 +200,7 @@ export default function Deliveries() {
         pageSize={10}
         pageSizeOptions={[10, 25, 50]}
         onRowClick={(order) =>
-          navigate(`/dashboards/admin/deliveries/${order.id}/verify`)
+          navigate(`/admin-dashboard/deliveries/${order.id}/verify`)
         }
         emptyState={
           <TableEmptyState

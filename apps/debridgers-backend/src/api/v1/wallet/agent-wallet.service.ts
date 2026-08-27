@@ -33,7 +33,7 @@ export class AgentWalletService {
     const [wallet] = await this.db
       .select()
       .from(schema.wallets)
-      .where(eq(schema.wallets.agent_id, user.sub))
+      .where(eq(schema.wallets.user_id, user.sub))
       .limit(1);
 
     if (!wallet) {
@@ -76,7 +76,7 @@ export class AgentWalletService {
               updated_at: new Date(),
             },
       )
-      .where(eq(schema.wallets.agent_id, agentId));
+      .where(eq(schema.wallets.user_id, agentId));
   }
 
   // Internal - move amount from pending to available (on delivery confirmation)
@@ -93,7 +93,7 @@ export class AgentWalletService {
         available_balance: sql`${schema.wallets.available_balance} + ${amount}`,
         updated_at: new Date(),
       })
-      .where(eq(schema.wallets.agent_id, agentId));
+      .where(eq(schema.wallets.user_id, agentId));
   }
 
   /*
@@ -114,7 +114,7 @@ export class AgentWalletService {
         available_balance: sql`${schema.wallets.available_balance} + ${amount}`,
         updated_at: new Date(),
       })
-      .where(eq(schema.wallets.agent_id, agentId));
+      .where(eq(schema.wallets.user_id, agentId));
   }
 
   /*
@@ -138,7 +138,7 @@ export class AgentWalletService {
         updated_at: new Date(),
       })
       .where(
-        sql`${schema.wallets.agent_id} = ${agentId} AND ${schema.wallets.available_balance} >= ${amount}`,
+        sql`${schema.wallets.user_id} = ${agentId} AND ${schema.wallets.available_balance} >= ${amount}`,
       )
       .returning();
 

@@ -463,8 +463,8 @@ export default function AdminPayoutsPage() {
       {/* Totals for the current view */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="border-line flex items-center gap-3 rounded-2xl border bg-white p-5">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100">
-            <Clock size={18} className="text-amber-800" />
+          <span className="bg-status-pending flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+            <Clock size={18} className="text-status-pending-fg" />
           </span>
           <div className="flex min-w-0 flex-col">
             <span className="text-body text-xs">Awaiting review</span>

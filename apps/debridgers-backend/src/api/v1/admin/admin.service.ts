@@ -62,6 +62,8 @@ export class AdminService {
         last_name: schema.users.last_name,
         email: schema.users.email,
         role: schema.users.role,
+        admin_tier: schema.users.admin_tier,
+        must_change_password: schema.users.must_change_password,
       })
       .from(schema.users)
       .where(eq(schema.users.id, userId))
@@ -204,7 +206,7 @@ export class AdminService {
     const [walletRow] = await this.db
       .select()
       .from(schema.wallets)
-      .where(eq(schema.wallets.agent_id, agentId))
+      .where(eq(schema.wallets.user_id, agentId))
       .limit(1);
 
     const [commissionTotal] = await this.db
@@ -273,11 +275,11 @@ export class AdminService {
       const [existingWallet] = await this.db
         .select()
         .from(schema.wallets)
-        .where(eq(schema.wallets.agent_id, agentId))
+        .where(eq(schema.wallets.user_id, agentId))
         .limit(1);
 
       if (!existingWallet) {
-        await this.db.insert(schema.wallets).values({ agent_id: agentId });
+        await this.db.insert(schema.wallets).values({ user_id: agentId });
       }
 
       this.eventEmitter.emit(USER_EVENTS.AGENT_APPROVED, {
@@ -1722,9 +1724,15 @@ export class AdminService {
     }
 
     const hashed = await bcrypt.hash(dto.new_password, 12);
+    /* Clearing the flag here is what retires the dashboard reminder. It is set
+       in the same write as the password so the two can never disagree. */
     await this.db
       .update(schema.users)
-      .set({ password: hashed })
+      .set({
+        password: hashed,
+        must_change_password: false,
+        password_changed_at: new Date(),
+      })
       .where(eq(schema.users.id, adminId));
 
     return { message: "Password changed successfully", data: null };

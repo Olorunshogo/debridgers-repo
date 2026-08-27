@@ -69,7 +69,16 @@ export const agent_profiles = pgTable(
     nin: varchar("nin", { length: 20 }),
     cv_url: text(),
     target: integer().notNull().default(0),
+    /* Split-payment destination for money coming IN. Not a payout target. */
     paystack_subaccount_code: varchar("paystack_subaccount_code", {
+      length: 100,
+    }),
+    /*
+     * Transfer recipient (RCP_...) for money going OUT. POST /transfer requires
+     * this; both payout paths previously passed the subaccount code above,
+     * which /transfer does not accept.
+     */
+    paystack_recipient_code: varchar("paystack_recipient_code", {
       length: 100,
     }),
     mailtrap_contact_id: text(),

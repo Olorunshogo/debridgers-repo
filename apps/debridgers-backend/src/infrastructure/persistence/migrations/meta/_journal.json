@@ -120,6 +120,34 @@
       "when": 1787643637143,
       "tag": "0016_order_reference_not_null",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1787643638143,
+      "tag": "0017_notifications_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1787643639143,
+      "tag": "0018_admin_must_change_password",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1787643640143,
+      "tag": "0019_agent_transfer_recipient",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1787643641143,
+      "tag": "0020_wallets_user_id",
+      "breakpoints": true
     }
   ]
 }

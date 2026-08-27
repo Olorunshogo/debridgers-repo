@@ -89,4 +89,20 @@ export class NotificationsController {
       data: null,
     };
   }
+
+  @Patch(":id/done")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Mark notification as done" })
+  async markAsDone(
+    @CurrentUser() user: JwtPayload,
+    @Param("id", ParseIntPipe) notificationId: number,
+  ) {
+    await this.notificationsService.markAsDone(user.sub, notificationId);
+
+    return {
+      statusCode: 200,
+      message: "Notification marked as done",
+      data: null,
+    };
+  }
 }

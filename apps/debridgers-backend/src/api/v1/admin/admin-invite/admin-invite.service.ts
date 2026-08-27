@@ -75,6 +75,9 @@ export class AdminInviteService {
         first_name: email.split("@")[0],
         last_name: "Admin",
         is_email_verified: true,
+        /* The password below is generated here and emailed in plaintext, so
+           the account is flagged from the moment it exists. */
+        must_change_password: true,
       })
       .returning();
 

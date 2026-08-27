@@ -172,6 +172,19 @@ export const selectMenuVariants: Variants = {
   exit: { opacity: 0, scaleY: 0.92, y: -4 },
 };
 
+/*
+ * The same motion for a menu that flipped above its trigger.
+ *
+ * The offset is mirrored so the menu still travels away from the trigger, not
+ * through it. Pair with `origin-bottom`, or it scales from the wrong edge and
+ * the flip reads as a glitch.
+ */
+export const selectMenuUpVariants: Variants = {
+  initial: { opacity: 0, scaleY: 0.92, y: 4 },
+  animate: { opacity: 1, scaleY: 1, y: 0 },
+  exit: { opacity: 0, scaleY: 0.92, y: 4 },
+};
+
 /* Fast on purpose: a menu that takes its time feels broken, not premium. */
 export const selectMenuTransition: Transition = {
   duration: motionDuration.fast,

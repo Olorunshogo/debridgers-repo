@@ -11,6 +11,7 @@ import { eq } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
 import { NotificationsService } from "../buyer/notifications.service";
+import { toPaystackAmount, formatNaira } from "../../shared/money";
 import { PaystackBankService, type BankOption } from "./paystack-bank.service";
 import { LedgerService } from "./ledger.service";
 
@@ -167,7 +168,7 @@ export class WithdrawalService {
 
       if (!debited) {
         throw new BadRequestException(
-          `Insufficient balance. Available: ₦${wallet.available_balance / 100}`,
+          `Insufficient balance. Available: ${formatNaira(wallet.available_balance)}`,
         );
       }
 
@@ -200,7 +201,7 @@ export class WithdrawalService {
         },
         body: JSON.stringify({
           source: "balance",
-          amount: dto.amount_kobo,
+          amount: toPaystackAmount(dto.amount_kobo),
           recipient: wallet.paystack_recipient_code,
           reason: dto.reason ?? "Wallet withdrawal",
           reference,
@@ -234,6 +235,14 @@ export class WithdrawalService {
       dto.amount_kobo,
       "processing",
     );
+
+    /* Money leaving the platform is the one event admins should never have to
+       discover by refreshing the payouts table. */
+    await this.notificationsService.notifyAdmins({
+      type: "withdrawal",
+      title: "Withdrawal initiated",
+      description: `A withdrawal of ${formatNaira(dto.amount_kobo)} was initiated by user #${userId} and is processing.`,
+    });
 
     this.logger.log(
       `Initiated withdrawal for user ${userId}: ₦${dto.amount_kobo / 100}`,

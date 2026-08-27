@@ -78,6 +78,10 @@ export default [
       "admin-dashboard/admin-invites",
       "routes/dashboards/admin/admin.invites.tsx",
     ),
+    route(
+      "admin-dashboard/notifications",
+      "routes/dashboards/admin/notifications.tsx",
+    ),
     route("admin-dashboard/settings", "routes/dashboards/admin/settings.tsx"),
     route("admin-dashboard/products", "routes/dashboards/admin/products.tsx"),
     route("admin-dashboard/outreach", "routes/dashboards/admin/outreach.tsx"),

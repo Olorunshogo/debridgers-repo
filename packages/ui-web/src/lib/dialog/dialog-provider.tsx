@@ -191,9 +191,15 @@ interface DialogPanelProps {
 }
 
 /*
- * Bottom sheet on mobile, centered panel from md up, per the repo's modal
- * convention. The panel wrapper is pointer-events-none so a click lands on the
- * backdrop underneath it rather than the empty space beside the panel.
+ * Centered panel at every breakpoint, vertically and horizontally.
+ *
+ * Was a bottom sheet below md. Centering everywhere is what the admin password
+ * dialog needed to stop reading as clipped, and the wrapper's py-6 is the other
+ * half of it: max-height alone still let a tall panel sit flush against the
+ * viewport edge with nothing to show it was scrollable.
+ *
+ * The wrapper is pointer-events-none so a click lands on the backdrop
+ * underneath it rather than the empty space beside the panel.
  */
 function DialogPanel({
   isTop,
@@ -231,7 +237,7 @@ function DialogPanel({
       />
 
       <div
-        className="px-section-px sm:px-section-px-sm lg:px-section-px-lg pointer-events-none fixed inset-0 flex items-end justify-center md:items-center"
+        className="px-section-px sm:px-section-px-sm lg:px-section-px-lg pointer-events-none fixed inset-0 flex items-center justify-center py-6"
         style={{ zIndex: 50 + stackIndex * 10 }}
       >
         <motion.div
@@ -251,7 +257,7 @@ function DialogPanel({
            * narrower value already chosen here. Widen if an admin dialog needs
            * the extra room.
            */
-          className="border-line pointer-events-auto max-h-[90vh] w-full max-w-150 overflow-y-auto rounded-t-2xl border bg-white p-6 outline-none md:rounded-xl"
+          className="border-line pointer-events-auto max-h-[calc(100dvh-3rem)] w-full max-w-150 overflow-y-auto rounded-2xl border bg-white p-6 outline-none"
           variants={dialogPanelVariants}
           initial="initial"
           animate="animate"
