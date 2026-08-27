@@ -124,7 +124,7 @@ const agentNavGroups: NavGroup[] = [
       {
         label: "Notification",
         icon: Bell,
-        href: "/agent-dashboard/notification",
+        href: "/agent-dashboard/notifications",
       },
       {
         label: "Profile & Address",

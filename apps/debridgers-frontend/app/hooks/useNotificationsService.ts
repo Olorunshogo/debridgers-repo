@@ -15,7 +15,7 @@ import type {
  * two-line route wrapper, not another copy of the page.
  */
 
-export type NotificationRole = "admin" | "buyer";
+export type NotificationRole = "admin" | "buyer" | "agent";
 
 interface RoleConfig {
   /** Collection endpoint. Per-item paths are derived from it. */
@@ -32,6 +32,10 @@ const ROLE_CONFIG: Record<NotificationRole, RoleConfig> = {
   buyer: {
     base: "/buyer/notifications",
     listPath: "/buyer-dashboard/notifications",
+  },
+  agent: {
+    base: "/agent/notifications",
+    listPath: "/agent-dashboard/notifications",
   },
 };
 

@@ -27,7 +27,7 @@ const titleMaps: Record<string, Record<string, string>> = {
     "/agent-dashboard/daily-report": "Daily Report",
     "/agent-dashboard/leaderboard": "Leaderboard",
     "/agent-dashboard/wallet": "Weekly Payout",
-    "/agent-dashboard/notification": "Notification",
+    "/agent-dashboard/notifications": "Notifications",
     "/agent-dashboard/settings": "Settings",
     "/agent-dashboard/help": "Help Center",
   },
@@ -188,24 +188,23 @@ export default function DashboardLayout() {
   }, [isAgent, isBuyer, isAdmin, isBuyerAdmin]);
 
   /*
-   * Agent is the odd one out with a singular path; buyer and admin both use
-   * the plural. Deriving it beats hardcoding, since the bell renders on every
-   * dashboard and a wrong guess sends the viewer to a 404.
+   * Every dashboard now uses the plural path, so this is no longer a per-role
+   * ternary. Agent was the lone exception until its notifications moved onto
+   * the shared service.
    */
-  const notifPath =
-    isBuyer || isAdmin
-      ? `${basePath}/notifications`
-      : `${basePath}/notification`;
+  const notifPath = `${basePath}/notifications`;
 
   /*
-   * Only these two have the shared service behind them. The agent dashboard
-   * still reads its own endpoint, so its bell stays a plain link.
+   * Which role's notifications to load. Buyer-admin has no notification feed
+   * of its own, so it keeps the plain link.
    */
   const dropdownRole: NotificationRole | null = isAdmin
     ? "admin"
     : isBuyer
       ? "buyer"
-      : null;
+      : isAgent
+        ? "agent"
+        : null;
 
   useEffect(() => {
     const stored = localStorage.getItem("debridgers_has_unread");

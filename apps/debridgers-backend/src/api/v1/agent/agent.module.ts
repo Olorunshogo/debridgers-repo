@@ -1,6 +1,8 @@
 import { Module } from "@nestjs/common";
 import { MulterModule } from "@nestjs/platform-express";
 import { AgentController } from "./agent.controller";
+import { NotificationsAgentController } from "./notifications-agent.controller";
+import { NotificationsService } from "../buyer/notifications.service";
 import { AgentService } from "./agent.service";
 import { StockService } from "./stock.service";
 import { KycService } from "./kyc.service";
@@ -20,9 +22,10 @@ import { CloudinaryService } from "../../../infrastructure/cloudinary/cloudinary
     WalletModule,
     MulterModule.register({ dest: "/tmp/uploads" }),
   ],
-  controllers: [AgentController],
+  controllers: [AgentController, NotificationsAgentController],
   providers: [
     AgentService,
+    NotificationsService,
     StockService,
     KycService,
     BankDetailsService,

@@ -62,8 +62,8 @@ export default [
     ),
     route("agent-dashboard/wallet", "routes/dashboards/agent/wallet.tsx"),
     route(
-      "agent-dashboard/notification",
-      "routes/dashboards/agent/notification.tsx",
+      "agent-dashboard/notifications",
+      "routes/dashboards/agent/notifications.tsx",
     ),
     route("agent-dashboard/settings", "routes/dashboards/agent/settings.tsx"),
     route("agent-dashboard/help", "routes/dashboards/agent/help.tsx"),

@@ -63,8 +63,22 @@ export function NotificationBell({ role }: { role: NotificationRole }) {
         className="relative cursor-pointer rounded-full p-2 transition-colors hover:bg-black/5"
       >
         <Bell size={20} className="text-icon-secondary" />
+        {/*
+         * The count, not a dot. A dot says "something happened"; the number
+         * says how much is waiting, which is the thing that decides whether to
+         * open it now. Nothing renders at zero - a badge reading "0" is worse
+         * than no badge, because it still draws the eye.
+         *
+         * min-w with centred text keeps a single digit circular and lets two
+         * or three digits grow into a pill rather than overflow.
+         */}
         {unreadCount > 0 && (
-          <span className="bg-error-red absolute top-1.5 right-1.5 h-2 w-2 rounded-full" />
+          <span
+            aria-hidden="true"
+            className="bg-error-red absolute -top-0.5 -right-0.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full px-1 text-[10px] leading-none font-bold text-white tabular-nums"
+          >
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
         )}
       </button>
 
