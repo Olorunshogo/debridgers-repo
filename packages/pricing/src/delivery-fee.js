@@ -1,3 +1,4 @@
+"use strict";
 /*
  * Order pricing: delivery, the cost-to-serve fee, and the minimum order.
  *
@@ -25,27 +26,38 @@
  *
  * Full derivation in docs/business/BusinessModel.md.
  */
-
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.INDIVIDUAL_QUOTE_SUBTOTAL_KOBO =
+  exports.INDIVIDUAL_QUOTE_PACKAGE_THRESHOLD =
+  exports.MINIMUM_ORDER_PACKAGES =
+  exports.MINIMUM_ORDER_KOBO =
+  exports.SERVICE_FEE_MAX_KOBO =
+  exports.SERVICE_FEE_MIN_KOBO =
+  exports.SERVICE_FEE_RATE =
+  exports.DELIVERY_CAP_OVER_BASE_KOBO =
+  exports.TIER_TWO_PER_PACKAGE_KOBO =
+  exports.TIER_ONE_PER_PACKAGE_KOBO =
+  exports.TIER_ONE_PACKAGE_COUNT =
+  exports.PACKAGES_INCLUDED_IN_BASE =
+    void 0;
+exports.computeDeliveryFee = computeDeliveryFee;
+exports.computeServiceFee = computeServiceFee;
+exports.minimumOrderViolation = minimumOrderViolation;
+exports.computeOrderTotals = computeOrderTotals;
 // === Delivery
-
 /** Packages covered by the zone base fee before extras are charged. */
-export const PACKAGES_INCLUDED_IN_BASE = 2;
-
+exports.PACKAGES_INCLUDED_IN_BASE = 2;
 /** Packages charged at the first taper step, being packages 3 to 6. */
-export const TIER_ONE_PACKAGE_COUNT = 4;
-
+exports.TIER_ONE_PACKAGE_COUNT = 4;
 /*
  * The taper is per zone, because distance changes what a marginal package
  * costs, not just what the trip costs. These are the Kaduna South rates and
  * they are the fallback for a zone whose own rates are not set.
  */
-
 /** Charged per package for packages 3 to 6, in kobo. */
-export const TIER_ONE_PER_PACKAGE_KOBO = 100;
-
+exports.TIER_ONE_PER_PACKAGE_KOBO = 70_000;
 /** Charged per package for package 7 and beyond, in kobo. */
-export const TIER_TWO_PER_PACKAGE_KOBO = 100;
-
+exports.TIER_TWO_PER_PACKAGE_KOBO = 40_000;
 /**
  * Fallback ceiling, as headroom above the zone base, for a zone that carries no
  * explicit cap of its own.
@@ -53,10 +65,8 @@ export const TIER_TWO_PER_PACKAGE_KOBO = 100;
  * The cap deliberately loses money on very large drops. That is what the
  * individual-quote threshold below exists to catch.
  */
-export const DELIVERY_CAP_OVER_BASE_KOBO = 600_000;
-
+exports.DELIVERY_CAP_OVER_BASE_KOBO = 600_000;
 // === Cost-to-serve
-
 /*
  * Formerly the "handling fee", which is why it used to be ₦100 flat. It is not
  * a charge for lifting a bag. It covers the payment rail plus the order admin
@@ -76,125 +86,82 @@ export const DELIVERY_CAP_OVER_BASE_KOBO = 600_000;
  * The floor protects the small order, the cap protects the relationship, and
  * the middle is where the fee does real work.
  */
-
 /** Cost-to-serve rate, as a fraction of the items subtotal. */
-export const SERVICE_FEE_RATE = 0.03;
-
+exports.SERVICE_FEE_RATE = 0.03;
 /*
  * The floor no longer binds on a delivery order: 3% of the ₦25,000 minimum is
  * ₦750. It still matters for anything exempted from that minimum, such as a
  * pickup or a same-zone add-on, which is why it stays.
  */
-
 /** Minimum cost-to-serve fee, in kobo. */
-export const SERVICE_FEE_MIN_KOBO = 10_000;
-
+exports.SERVICE_FEE_MIN_KOBO = 50_000;
 /** Maximum cost-to-serve fee, in kobo. */
-export const SERVICE_FEE_MAX_KOBO = 500_000;
-
+exports.SERVICE_FEE_MAX_KOBO = 500_000;
 // === Order limits
-
 /*
  * Below the minimum, no fee structure covers the trip: a ₦12,000 order against
  * a ₦4,000 vehicle loses money however the fees are arranged. This is a
  * solvency rule, not a policy preference.
  */
-
 /** Smallest items subtotal accepted for delivery, in kobo. */
-export const MINIMUM_ORDER_KOBO = 2_500_000;
-
+exports.MINIMUM_ORDER_KOBO = 2_500_000;
 /** Smallest package count accepted for delivery. */
-export const MINIMUM_ORDER_PACKAGES = 2;
-
+exports.MINIMUM_ORDER_PACKAGES = 2;
 /*
  * Above these, the tapered table stops recovering the vehicle - a 35-package
  * drop needs a truck, and the cap gives up more than the goods margin covers.
  * Flagged rather than blocked, so an admin quotes it instead of checkout
  * silently selling below cost.
  */
-
 /** Package count above which the order should be quoted individually. */
-export const INDIVIDUAL_QUOTE_PACKAGE_THRESHOLD = 20;
-
+exports.INDIVIDUAL_QUOTE_PACKAGE_THRESHOLD = 20;
 /** Items subtotal above which the order should be quoted individually, in kobo. */
-export const INDIVIDUAL_QUOTE_SUBTOTAL_KOBO = 75_000_000;
-
-export interface DeliveryFeeInput {
-  /** Base fee for the delivery zone, in kobo. */
-  zoneFeeKobo: number;
-  /** Total packages in the basket - the sum of every line's quantity. */
-  packageCount: number;
-  /** Set while a free-delivery promotion is running. */
-  freeDelivery?: boolean;
-  /*
-   * The zone's own taper and ceiling. Each falls back to the Kaduna South
-   * figure when absent, so a zone row written before these columns existed
-   * still prices exactly as it did.
-   */
-  /** Charged per package for packages 3 to 6, in kobo. */
-  tierOnePerPackageKobo?: number;
-  /** Charged per package for package 7 and beyond, in kobo. */
-  tierTwoPerPackageKobo?: number;
-  /** Absolute ceiling on the delivery fee for this zone, in kobo. */
-  deliveryCapKobo?: number;
-}
-
-export interface DeliveryFeeBreakdown {
-  zoneFeeKobo: number;
-  extraPackages: number;
-  extraPackagesKobo: number;
-  /** True when the taper was trimmed by the per-drop ceiling. */
-  capped: boolean;
-  /** What the buyer is actually charged, after any promotion. */
-  deliveryFeeKobo: number;
-  /** What it would have cost without the promotion, for "was/now" copy. */
-  deliveryFeeBeforePromoKobo: number;
-  freeDelivery: boolean;
-}
-
-export function computeDeliveryFee(
-  input: DeliveryFeeInput,
-): DeliveryFeeBreakdown {
+exports.INDIVIDUAL_QUOTE_SUBTOTAL_KOBO = 75_000_000;
+function computeDeliveryFee(input) {
   const {
     zoneFeeKobo,
     packageCount,
     freeDelivery = false,
-    tierOnePerPackageKobo = TIER_ONE_PER_PACKAGE_KOBO,
-    tierTwoPerPackageKobo = TIER_TWO_PER_PACKAGE_KOBO,
+    tierOnePerPackageKobo = exports.TIER_ONE_PER_PACKAGE_KOBO,
+    tierTwoPerPackageKobo = exports.TIER_TWO_PER_PACKAGE_KOBO,
     deliveryCapKobo,
   } = input;
-
-  const extraPackages = Math.max(0, packageCount - PACKAGES_INCLUDED_IN_BASE);
-  const tierOnePackages = Math.min(extraPackages, TIER_ONE_PACKAGE_COUNT);
+  const extraPackages = Math.max(
+    0,
+    packageCount - exports.PACKAGES_INCLUDED_IN_BASE,
+  );
+  const tierOnePackages = Math.min(
+    extraPackages,
+    exports.TIER_ONE_PACKAGE_COUNT,
+  );
   const tierTwoPackages = extraPackages - tierOnePackages;
-
   const uncappedExtras =
     tierOnePackages * tierOnePerPackageKobo +
     tierTwoPackages * tierTwoPerPackageKobo;
-
-  const capKobo = deliveryCapKobo ?? zoneFeeKobo + DELIVERY_CAP_OVER_BASE_KOBO;
+  const capKobo =
+    deliveryCapKobo ?? zoneFeeKobo + exports.DELIVERY_CAP_OVER_BASE_KOBO;
   const beforePromo = Math.min(zoneFeeKobo + uncappedExtras, capKobo);
   const capped = zoneFeeKobo + uncappedExtras > capKobo;
-
   return {
     zoneFeeKobo,
     extraPackages,
     extraPackagesKobo: beforePromo - zoneFeeKobo,
     capped,
     /* The full price is still computed during a promo so the UI can show it
-       struck through next to FREE. */
+           struck through next to FREE. */
     deliveryFeeKobo: freeDelivery ? 0 : beforePromo,
     deliveryFeeBeforePromoKobo: beforePromo,
     freeDelivery,
   };
 }
-
 /** Cost-to-serve fee for a basket: a rate on the goods, bounded both ways. */
-export function computeServiceFee(itemsTotalKobo: number): number {
-  const raw = Math.round(itemsTotalKobo * SERVICE_FEE_RATE);
-  return Math.min(Math.max(raw, SERVICE_FEE_MIN_KOBO), SERVICE_FEE_MAX_KOBO);
+function computeServiceFee(itemsTotalKobo) {
+  const raw = Math.round(itemsTotalKobo * exports.SERVICE_FEE_RATE);
+  return Math.min(
+    Math.max(raw, exports.SERVICE_FEE_MIN_KOBO),
+    exports.SERVICE_FEE_MAX_KOBO,
+  );
 }
-
 /**
  * Why a basket is too small to deliver at a positive contribution, or null when
  * it is large enough.
@@ -203,53 +170,25 @@ export function computeServiceFee(itemsTotalKobo: number): number {
  * browser and must not depend on either one's error type. The API wraps this in
  * its own HTTP exception; the client renders the string.
  */
-export function minimumOrderViolation(
-  itemsTotalKobo: number,
-  packageCount: number,
-): string | null {
-  // TODO: Re-enable minimum order validation after testing
+function minimumOrderViolation(itemsTotalKobo, packageCount) {
+  const tooCheap = itemsTotalKobo < exports.MINIMUM_ORDER_KOBO;
+  const tooFew = packageCount < exports.MINIMUM_ORDER_PACKAGES;
+  if (tooCheap && tooFew) {
+    return `Minimum order for delivery is ₦${(exports.MINIMUM_ORDER_KOBO / 100).toLocaleString()} or ${exports.MINIMUM_ORDER_PACKAGES} packages.`;
+  }
   return null;
-
-  // const tooCheap = itemsTotalKobo < MINIMUM_ORDER_KOBO;
-  // const tooFew = packageCount < MINIMUM_ORDER_PACKAGES;
-
-  // if (tooCheap && tooFew) {
-  //   return `Minimum order for delivery is ₦${(MINIMUM_ORDER_KOBO / 100).toLocaleString()} or ${MINIMUM_ORDER_PACKAGES} packages.`;
-  // }
-
-  // return null;
 }
-
-export interface OrderTotals extends DeliveryFeeBreakdown {
-  itemsTotalKobo: number;
-  /** The cost-to-serve fee. */
-  serviceFeeKobo: number;
-  /**
-   * Same value as `serviceFeeKobo`, under the name the orders table still uses.
-   * Kept so the DB column and every existing consumer keep working without a
-   * migration; prefer `serviceFeeKobo` in new code.
-   */
-  handlingFeeKobo: number;
-  /** True when this order is past the tapered table and needs a manual quote. */
-  requiresIndividualQuote: boolean;
-  totalKobo: number;
-}
-
-export function computeOrderTotals(
-  itemsTotalKobo: number,
-  fee: DeliveryFeeBreakdown,
-  packageCount = 0,
-): OrderTotals {
+function computeOrderTotals(itemsTotalKobo, fee, packageCount = 0) {
   const serviceFeeKobo = computeServiceFee(itemsTotalKobo);
-
   return {
     ...fee,
     itemsTotalKobo,
     serviceFeeKobo,
     handlingFeeKobo: serviceFeeKobo,
     requiresIndividualQuote:
-      packageCount > INDIVIDUAL_QUOTE_PACKAGE_THRESHOLD ||
-      itemsTotalKobo > INDIVIDUAL_QUOTE_SUBTOTAL_KOBO,
+      packageCount > exports.INDIVIDUAL_QUOTE_PACKAGE_THRESHOLD ||
+      itemsTotalKobo > exports.INDIVIDUAL_QUOTE_SUBTOTAL_KOBO,
     totalKobo: itemsTotalKobo + fee.deliveryFeeKobo + serviceFeeKobo,
   };
 }
+//# sourceMappingURL=delivery-fee.js.map

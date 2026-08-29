@@ -59,9 +59,9 @@ function readUserFromToken(): AuthUser | null {
 function dashboardForRole(role: string, adminTier?: string): string {
   switch (role) {
     case "admin":
-      /* One admin dashboard for both tiers; the nav narrows for a sub-admin
-         rather than sending them somewhere else. */
-      return "/admin-dashboard";
+      return adminTier === "super"
+        ? "/admin-dashboard"
+        : "/buyer-admin-dashboard";
     case "agent":
       return "/agent-dashboard";
     default:

@@ -30,16 +30,6 @@ export class AdminInviteService {
     temp_password: string;
     expires_at: Date;
   }> {
-    // Check if email already exists as a user
-    const existingUser = await this.db
-      .select()
-      .from(users)
-      .where(eq(users.email, email));
-
-    if (existingUser.length > 0) {
-      throw new BadRequestException("Email already registered as a user");
-    }
-
     // Check if there's an active (unused, non-expired) invite for this email
     const activeInvite = await this.db
       .select()
@@ -58,28 +48,44 @@ export class AdminInviteService {
       );
     }
 
+    // Check if user exists
+    const existingUser = await this.db
+      .select()
+      .from(users)
+      .where(eq(users.email, email));
+
     // Generate 32-character random invite code and temporary password
     const inviteCode = randomBytes(16).toString("hex");
     const tempPassword = this.generateTempPassword();
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
-    // Create admin account with temporary password
-    const [_newAdmin] = await this.db
-      .insert(users)
-      .values({
-        email,
-        password: hashedPassword,
-        role: "admin",
-        admin_tier: "sub",
-        first_name: email.split("@")[0],
-        last_name: "Admin",
-        is_email_verified: true,
-        /* The password below is generated here and emailed in plaintext, so
-           the account is flagged from the moment it exists. */
-        must_change_password: true,
-      })
-      .returning();
+    // Create or update admin account with new password
+    if (existingUser.length === 0) {
+      // Create new admin account
+      await this.db
+        .insert(users)
+        .values({
+          email,
+          password: hashedPassword,
+          role: "admin",
+          admin_tier: "sub",
+          first_name: email.split("@")[0],
+          last_name: "Admin",
+          is_email_verified: true,
+          must_change_password: true,
+        })
+        .returning();
+    } else {
+      // Update password for existing user (allows re-inviting with new temp password)
+      await this.db
+        .update(users)
+        .set({
+          password: hashedPassword,
+          must_change_password: true,
+        })
+        .where(eq(users.email, email));
+    }
 
     // Create the invite record
     const [created] = await this.db

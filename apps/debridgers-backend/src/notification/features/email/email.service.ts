@@ -734,7 +734,7 @@ export class EmailService {
     invite_code: string;
     temp_password?: string;
   }): Promise<void> {
-    const dashboardUrl = emailLinks.adminDashboard();
+    const dashboardUrl = emailLinks.adminLogin();
 
     const html = layout({
       headerBg: BRAND_ORANGE,

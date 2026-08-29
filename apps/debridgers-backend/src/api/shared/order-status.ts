@@ -17,7 +17,7 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 export const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   pending: ["confirmed", "cancelled"],
-  confirmed: ["out_for_delivery", "cancelled"],
+  confirmed: ["out_for_delivery", "delivered", "cancelled"], // TODO: Remove "delivered" after testing
   out_for_delivery: ["delivered", "cancelled"],
   delivered: [],
   cancelled: [],
