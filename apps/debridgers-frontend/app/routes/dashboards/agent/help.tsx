@@ -1,6 +1,5 @@
 import { useAuth } from "../../../contexts/AuthContext";
-import { HelpCenter } from "../shared/HelpCenter";
-import { agentHelpContent } from "../shared/help-content";
+import { HelpCenter, agentHelpContent } from "@debridgers/ui-web";
 
 export function meta() {
   return [

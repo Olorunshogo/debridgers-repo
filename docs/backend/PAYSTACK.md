@@ -100,7 +100,13 @@ PAYSTACK_PREFERRED_BANK=wema-bank   # DVA provider bank
 
 `main.ts` refuses to boot with `PAYMENTS_SIMULATED=true` or an `sk_test_` key under `NODE_ENV=production`.
 
-**Commission rates are no longer environment variables.** They live in `system_settings` and are admin-editable at runtime: `agent_commission_rate` (5), `agent_override_rate_percent` (5), `state_manager_override_rate_percent` (2). `AGENT_COMMISSION_RATE` survives only as a boot fallback, expressed as a percentage. All three superseded documents hardcoded a much higher fixed rate in the environment; that figure is dead.
+**Commission rates are no longer environment variables.** They live in `system_settings` and are admin-editable at runtime: `agent_override_rate_percent` (5) and `state_manager_override_rate_percent` (2), both referral overrides on a recruited agent's earnings, not the agent's own commission. `AGENT_COMMISSION_RATE` survives only as a boot fallback. All three superseded documents hardcoded a much higher fixed rate in the environment; that figure is dead.
+
+> **Correction, 2026-08-29.** Base agent commission is not a percentage rate.
+> It is a flat naira amount per package, keyed to product type: beans ₦1,200,
+> rice ₦1,000, oil ₦700, everything else ₦400, held as bands in
+> `agent-commission.ts`. An `agent_commission_rate` percentage setting
+> described here in earlier revisions of this doc does not reflect that.
 
 > **`TODO:` unit warning on MIN_PAYOUT_AMOUNT.** `.env.example:44` reads `"50000" # Minimum payout in kobo (₦5,000 = 50000 kobo)`. That comment is wrong: 50,000 kobo is **₦500**, not ₦5,000. `PAYSTACK_SIMPLE_PLAN.md` carried the same error and it propagated. Either the value should be `500000` for a ₦5,000 floor, or the comment should say ₦500. Decide which, because right now the code pays out at ₦500 while the documentation promises ₦5,000.
 
@@ -147,16 +153,16 @@ Verified by HMAC-SHA512 of the raw request body against `PAYSTACK_SECRET_KEY`, c
 
 Recorded so no reasoning is lost.
 
-| Question          | `paystack_plan.md`  | `PAYSTACK_IMPLEMENTATION_PLAN.md`   | `PAYSTACK_SIMPLE_PLAN.md`   | Built                         |
-| ----------------- | ------------------- | ----------------------------------- | --------------------------- | ----------------------------- |
-| Subaccount splits | Keep                | **Remove entirely**                 | **Keep**                    | Kept, agent stock orders only |
-| Agent balances    | Paystack wallet     | New `agent_balances` table          | Paystack subaccount balance | `wallets` table               |
-| Virtual accounts  | Via SafeHaven       | Removed                             | Removed                     | **Rebuilt on Paystack DVA**   |
-| Bank name enquiry | Via SafeHaven       | Removed                             | Removed                     | **Rebuilt on Paystack**       |
-| Payout cadence    | Unspecified         | Configurable daily, weekly, monthly | Weekly, Friday 10:00        | Weekly, Friday 10:00 UTC      |
-| Payout floor      | Unspecified         | ₦500                                | "₦5,000" (miscalculated)    | 50,000 kobo, see section 4    |
-| Commission rate   | A fixed rate in env | Same fixed rate                     | Same fixed rate             | **5%, a runtime setting**     |
-| SafeHaven         | Present             | Remove                              | Remove                      | Removed                       |
+| Question          | `paystack_plan.md`  | `PAYSTACK_IMPLEMENTATION_PLAN.md`   | `PAYSTACK_SIMPLE_PLAN.md`   | Built                                              |
+| ----------------- | ------------------- | ----------------------------------- | --------------------------- | -------------------------------------------------- |
+| Subaccount splits | Keep                | **Remove entirely**                 | **Keep**                    | Kept, agent stock orders only                      |
+| Agent balances    | Paystack wallet     | New `agent_balances` table          | Paystack subaccount balance | `wallets` table                                    |
+| Virtual accounts  | Via SafeHaven       | Removed                             | Removed                     | **Rebuilt on Paystack DVA**                        |
+| Bank name enquiry | Via SafeHaven       | Removed                             | Removed                     | **Rebuilt on Paystack**                            |
+| Payout cadence    | Unspecified         | Configurable daily, weekly, monthly | Weekly, Friday 10:00        | Weekly, Friday 10:00 UTC                           |
+| Payout floor      | Unspecified         | ₦500                                | "₦5,000" (miscalculated)    | 50,000 kobo, see section 4                         |
+| Commission rate   | A fixed rate in env | Same fixed rate                     | Same fixed rate             | **Flat naira per package, banded by product type** |
+| SafeHaven         | Present             | Remove                              | Remove                      | Removed                                            |
 
 The middle document proposed a full teardown of subaccount splits in favour of a database-tracked balance, and the third proposed keeping splits and adding a weekly sweep. What shipped is closer to the third, plus the virtual account and bank resolution features that both later documents had written off as SafeHaven-only. Those turned out to be available directly from Paystack, so removing SafeHaven did not mean losing them.
 

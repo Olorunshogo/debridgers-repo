@@ -19,7 +19,17 @@ const ZONES = [
   {
     name: "Kaduna South",
     description: "Narayi, Kakuri, Barnawa, Tudun Wada, Makera",
-    delivery_fee: naira(500),
+    /*
+     * Measured, not estimated: a two-package outbound leg from Central Market
+     * to Mai Gero, near Barnawa, wholly inside this zone. That route is what
+     * the base is priced against, so it is the one to re-time when fuel or
+     * haulage rates move. The other two zones are scaled from it by distance
+     * rather than separately measured, and should be measured in turn.
+     */
+    delivery_fee: naira(4000),
+    tier_one_per_package_kobo: naira(700),
+    tier_two_per_package_kobo: naira(400),
+    delivery_cap_kobo: naira(10000),
     areas: [
       "Narayi",
       "Kakuri",
@@ -33,15 +43,27 @@ const ZONES = [
   {
     name: "Kaduna North",
     description: "Kawo, Tudun Wada North, Rigachikun, Rigasa",
-    delivery_fee: naira(700),
+    delivery_fee: naira(4500),
+    tier_one_per_package_kobo: naira(800),
+    tier_two_per_package_kobo: naira(450),
+    delivery_cap_kobo: naira(11000),
     areas: ["Kawo", "Rigachikun", "Rigasa", "Unguwan Mu'azu"],
     is_active: true,
   },
   {
     name: "Chikun",
-    description: "Chikun LGA areas - Kachia, Kafanchan, Kagoro",
-    delivery_fee: naira(800),
-    areas: ["Kachia", "Kafanchan", "Kagoro", "Jema'a"],
+    description: "Chikun LGA - Kujama, Sabon Sarki, Nasarawa, Ungwan Yero",
+    delivery_fee: naira(6000),
+    tier_one_per_package_kobo: naira(1000),
+    tier_two_per_package_kobo: naira(600),
+    delivery_cap_kobo: naira(14000),
+    /*
+     * Kachia, Kafanchan, Kagoro and Jema'a used to sit here at a ₦800 base.
+     * None of them are in Chikun LGA and all are 80 to 120km out, so a single
+     * drop lost more than the whole margin on the goods. They belong in an
+     * inter-city zone quoted per trip, not in a metro zone.
+     */
+    areas: ["Kujama", "Sabon Sarki", "Nasarawa", "Ungwan Yero"],
     is_active: true,
   },
 ];

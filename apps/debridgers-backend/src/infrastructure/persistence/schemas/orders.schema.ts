@@ -22,6 +22,16 @@ export const orderStatusEnum = pgEnum("order_status", [
   "cancelled",
 ]);
 
+/*
+ * Where the order came from. Recorded rather than derived from which columns
+ * happen to be null, so reporting does not depend on that inference holding.
+ */
+export const orderSourceEnum = pgEnum("order_source", [
+  "self_serve",
+  "assisted",
+  "agent",
+]);
+
 export const orderModeEnum = pgEnum("order_mode", [
   "field", // Mode 1 - agent submits, Debridgers delivers
   "referral", // Mode 3 - buyer ordered via referral link
@@ -48,11 +58,15 @@ export const orders = pgTable("orders", {
     .references(() => zones.id, { onDelete: "restrict" }),
   rider_id: integer().references(() => riders.id, { onDelete: "set null" }),
   quantity: integer().notNull(),
-  unit_price: integer().notNull().default(140000), // ₦1,400 in kobo
-  handling_fee: integer().notNull().default(10000), // ₦100 in kobo
+  /* No default: prices come from the catalogue, per order. The old ₦1,400 and
+     ₦100 defaults predate the current catalogue and silently mispriced any
+     insert that omitted them. */
+  unit_price: integer().notNull(),
+  handling_fee: integer().notNull(),
   delivery_fee: integer().notNull(), // from zone, in kobo
   total_amount: integer().notNull(),
   order_mode: orderModeEnum().notNull(),
+  order_source: orderSourceEnum().notNull().default("self_serve"),
   status: orderStatusEnum().notNull().default("pending"),
   delivery_address: text().notNull(),
   cancellation_reason: text(),

@@ -1,5 +1,5 @@
 import { NotificationsPage } from "@debridgers/ui-web";
-import { useNotificationsService } from "@/hooks/useNotificationsService";
+import { useNotificationsService } from "@debridgers/ui-web";
 
 export function meta() {
   return [

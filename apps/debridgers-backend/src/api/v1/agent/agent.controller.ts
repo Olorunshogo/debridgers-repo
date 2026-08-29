@@ -21,6 +21,7 @@ import {
   ApiConsumes,
   ApiResponse,
 } from "@nestjs/swagger";
+import { memoryStorage } from "multer";
 import {
   FileInterceptor,
   FileFieldsInterceptor,
@@ -136,11 +137,30 @@ export class AgentController {
     description: "Validation failed / passwords don't match",
   })
   @ApiResponse({ status: 409, description: "Email already registered" })
-  @UseInterceptors(FileInterceptor("cv"))
+  /*
+   * Memory storage on this route specifically, not module-wide: the CV goes
+   * straight to Cloudinary and never touches the server's disk. It previously
+   * stored `file.path`, a path under /tmp/uploads, which meant cv_url was not a
+   * URL at all - the file vanished on the next restart and no admin screen
+   * could ever display it.
+   */
+  @UseInterceptors(
+    FileInterceptor("cv", {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
   async apply(@Body() body: unknown, @UploadedFile() cv?: Express.Multer.File) {
     const dto = new ZodValidationPipe(applyAgentSchema).transform(body);
-    const cvUrl = (cv as (Express.Multer.File & { path?: string }) | undefined)
-      ?.path;
+
+    const cvUrl = cv?.buffer
+      ? await this.cloudinaryService.uploadDocument(
+          cv.buffer,
+          "debridgers/agent-cvs",
+          cv.originalname,
+        )
+      : undefined;
+
     return this.agentService.apply(dto as ApplyAgentDto, cvUrl);
   }
 

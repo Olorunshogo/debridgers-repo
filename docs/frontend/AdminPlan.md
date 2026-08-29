@@ -407,9 +407,16 @@ Client code cannot distinguish "your input was wrong" from "the server broke".
 development.")` unless `this.simulated`. A documented TODO for Phase 3 of the
 payments work, but it surfaces to an admin as an opaque `500`.
 
-**Status: fixed and runtime-verified.** `loadBanks` throws
+**Status: superseded and fully fixed.** The 503 below was the interim fix. The
+bank lookup now runs against the live Paystack bank list through the shared
+`PaystackBankService` (`api/v1/payment/paystack-bank.service.ts`), cached for
+six hours and available to every role regardless of `PAYMENTS_SIMULATED`.
+Agents can add bank details, so payouts are no longer silently blocked. The
+interim behaviour is recorded below for history:
+
+`loadBanks` threw
 `ServiceUnavailableException` (`bank-details.service.ts:86`).
-`POST /admin/agents/backfill-bank-codes` returns 503 with
+`POST /admin/agents/backfill-bank-codes` returned 503 with
 `"Bank lookup is not available: the Paystack integration is not implemented yet."`
 The real Paystack lookup is still unimplemented and remains a Phase 3 payments
 item; this finding only ever asked for an honest status code.
@@ -1549,9 +1556,9 @@ There is no Phase 7. Work that surfaced during the audit but sits outside this
 plan's scope is recorded where it belongs rather than appended here:
 
 - **Buyer checkout payment-method modal, abandoned-order recovery, and the
-  "forgotten orders" endpoint** are specified in `docs/frontend/PLAN.md` under
-  "Planned: Checkout payment method selection" and "Abandoned orders". The modal
-  itself is built and verified; the recovery items are not.
+  "forgotten orders" endpoint** are specified in `docs/frontend/TASKS.md` under
+  "Unpaid order recovery". The modal itself is built and verified; the recovery
+  items are not.
 - **Admin tiering, invites, and bootstrapping the first super admin** are
   specified in `docs/frontend/AdminAuthDesign.md`, which carries its own phased
   plan. None of it is built.
@@ -1584,7 +1591,9 @@ file first, then the phase you are starting. Every finding entry carries a
   and it is now up and verified. Findings recorded before that point did not
   exercise cache or throttling on their real path, so re-check any cache-adjacent
   behaviour rather than trusting those observations.
-- `PAYMENTS_SIMULATED` gates the bank lookup, see F6.
+- `PAYMENTS_SIMULATED` no longer gates the bank lookup. `PaystackBankService`
+  now calls the live Paystack bank list for every role, with a 6-hour cache.
+  See F6.
 - Both apps typecheck clean. Nothing here is a compile error; the weaknesses are
   at runtime boundaries, which is precisely why `strict` mode passing is not
   sufficient evidence of correctness.

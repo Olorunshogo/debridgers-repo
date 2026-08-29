@@ -6,13 +6,13 @@ import {
 } from "@react-router/dev/routes";
 
 export default [
-  // === Landing Page Routes
-  layout("routes/landing/layout.tsx", [
-    index("routes/landing/home.tsx"),
-    route("shop", "routes/landing/shop.tsx"),
-    route("outreach", "routes/landing/outreach.tsx"),
-    route("contact", "routes/landing/contact.tsx"),
-    route("agents", "routes/landing/agents.tsx"),
+  // === Marketing Page Routes
+  layout("routes/marketing/layout.tsx", [
+    index("routes/marketing/home.tsx"),
+    route("shop", "routes/marketing/shop.tsx"),
+    route("outreach", "routes/marketing/outreach.tsx"),
+    route("contact", "routes/marketing/contact.tsx"),
+    route("agents", "routes/marketing/agents.tsx"),
   ]),
 
   // === Auth Routes
@@ -86,6 +86,14 @@ export default [
     route("admin-dashboard/products", "routes/dashboards/admin/products.tsx"),
     route("admin-dashboard/outreach", "routes/dashboards/admin/outreach.tsx"),
     route("admin-dashboard/payouts", "routes/dashboards/admin/payouts.tsx"),
+    route(
+      "admin-dashboard/assisted-checkout",
+      "routes/dashboards/admin/assisted-checkout.tsx",
+    ),
+    route(
+      "admin-dashboard/procurement-targets",
+      "routes/dashboards/admin/procurement-targets.tsx",
+    ),
     /* These pages existed on disk but were never routed, so the sub-admin work
        they belong to was unreachable. */
     route(

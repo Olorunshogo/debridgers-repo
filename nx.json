@@ -51,7 +51,14 @@
       "cache": true
     },
     "typecheck": {
+      "dependsOn": ["^build"],
       "cache": true
+    },
+    "serve": {
+      "dependsOn": ["^build"]
+    },
+    "dev": {
+      "dependsOn": ["^build"]
     }
   },
   "generators": {

@@ -19,7 +19,11 @@ import { CreateOrderDto } from "./dto/create-order.dto";
 import { SyncCartDto } from "./dto/sync-cart.dto";
 import { InitializeOrderPaymentDto } from "./dto/initialize-order-payment.dto";
 import { QuoteCartDto } from "./dto/quote-cart.dto";
-import { computeDeliveryFee, computeOrderTotals } from "./delivery-fee";
+import {
+  assertMeetsMinimumOrder,
+  computeDeliveryFee,
+  computeOrderTotals,
+} from "./delivery-fee";
 import { PaymentService } from "../payment/payment.service";
 import { PaystackInvoiceService } from "../payment/paystack-invoice.service";
 import { ConfigService } from "@nestjs/config";
@@ -730,6 +734,9 @@ export class BuyerService {
       .select({
         delivery_fee: schema.zones.delivery_fee,
         free_delivery: schema.zones.free_delivery,
+        tier_one_per_package_kobo: schema.zones.tier_one_per_package_kobo,
+        tier_two_per_package_kobo: schema.zones.tier_two_per_package_kobo,
+        delivery_cap_kobo: schema.zones.delivery_cap_kobo,
       })
       .from(schema.zones)
       .where(eq(schema.zones.id, zoneId))
@@ -744,15 +751,22 @@ export class BuyerService {
     const freeDelivery =
       Boolean(zone?.free_delivery) || (await this.isFreeDeliveryActive());
 
+    /* Refused on the quote as well as the charge, so the buyer learns why
+       before reaching payment rather than after. */
+    assertMeetsMinimumOrder(itemsTotalKobo, packageCount);
+
     const fee = computeDeliveryFee({
       zoneFeeKobo: zone?.delivery_fee ?? 0,
       packageCount,
       freeDelivery,
+      tierOnePerPackageKobo: zone?.tier_one_per_package_kobo,
+      tierTwoPerPackageKobo: zone?.tier_two_per_package_kobo,
+      deliveryCapKobo: zone?.delivery_cap_kobo,
     });
 
     return {
       lines: priced,
-      totals: computeOrderTotals(itemsTotalKobo, fee),
+      totals: computeOrderTotals(itemsTotalKobo, fee, packageCount),
       packageCount,
     };
   }

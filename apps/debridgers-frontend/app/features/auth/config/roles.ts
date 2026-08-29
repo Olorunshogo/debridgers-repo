@@ -2,11 +2,16 @@ import {
   createRoleSignupSchema,
   createRequiredString,
   referralCodeField,
+  lgaField,
+  addressField,
+  cvField,
   type AuthFieldDescriptor,
   type RoleSignupConfig,
   type SignupFormValues,
 } from "@debridgers/ui-web";
 import type { SelfRegisterableRole } from "@debridgers/api-client";
+import { applyAgent } from "@debridgers/api-client";
+import { kadunaLgas } from "@/models/models";
 
 /*
  * The single place a self-registerable role is described.
@@ -65,6 +70,14 @@ const BASE_FIELDS: readonly SignupFieldDescriptor[] = [
   },
 ];
 
+/*
+ * Labels, not slugs: the API stores the LGA as free text and admin screens
+ * display it, so "Kaduna North" is the value worth persisting.
+ */
+const AGENT_LGA_OPTIONS: readonly string[] = (
+  kadunaLgas as { value: string; label: string }[]
+).map((lga) => lga.label);
+
 // === Role table
 
 export const ROLE_SIGNUP_CONFIG: Record<
@@ -98,15 +111,65 @@ export const ROLE_SIGNUP_CONFIG: Record<
   },
 
   /*
-   * Agent no longer collects area/address at signup. Those live on
-   * agent_profiles and are collected in agent settings, so one register
-   * endpoint serves every role. See docs/frontend/AuthPLAN.md phases 3 and 6.
+   * An agent collects an LGA, a home address and optionally a CV at signup, and
+   * posts to /agent/apply rather than /auth/register: the account is created
+   * `pending` for admin approval, not active. That difference lives here, in
+   * the role table, so no page or hook ever branches on the role name.
    */
   agent: {
     role: "agent",
     label: "Agent",
-    schema: createRoleSignupSchema({}),
-    fields: BASE_FIELDS,
+    schema: createRoleSignupSchema({
+      lga: lgaField,
+      address: addressField,
+      cv: cvField,
+    }),
+    fields: [
+      ...BASE_FIELDS,
+      {
+        name: "lga",
+        label: "Local government area",
+        type: "select",
+        placeholder: "Select your LGA",
+        options: AGENT_LGA_OPTIONS,
+      },
+      {
+        name: "address",
+        label: "Home address",
+        type: "text",
+        placeholder: "12 Barnawa Market Road, Kaduna",
+        autoComplete: "street-address",
+      },
+      {
+        name: "cv",
+        label: "CV",
+        type: "file",
+        optional: true,
+        accept: ".pdf,.doc,.docx",
+        hint: "PDF or Word, up to 5MB. You can add this later if you do not have it to hand.",
+      },
+    ],
+    register: async (values, identity) => {
+      const form = new FormData();
+      form.append("first_name", identity.first_name);
+      form.append("last_name", identity.last_name);
+      form.append("email", values.email);
+      form.append("phone", values.phone ?? "");
+      form.append("lga", values.lga ?? "");
+      form.append("address", values.address ?? "");
+      form.append("password", values.password);
+      form.append("confirm_password", values.password);
+
+      if (values.referredByAgentCode) {
+        form.append("referred_by_agent_code", values.referredByAgentCode);
+      }
+
+      if (values.cv) {
+        form.append("cv", values.cv);
+      }
+
+      await applyAgent(form);
+    },
     redirectTo: "/agent-dashboard",
     successTitle: "Application Submitted",
     successDescription:

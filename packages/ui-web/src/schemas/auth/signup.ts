@@ -49,3 +49,23 @@ export function createRoleSignupSchema<T extends z.ZodRawShape>(extension: T) {
 
 /** Buyers may arrive through an agent's referral link. */
 export const referralCodeField = z.string().trim().optional();
+
+/** Local government area, for roles that operate in a named area. */
+export const lgaField = z.string().trim().min(1, "Select your LGA");
+
+/** Home or business address, matching the API's own minimum. */
+export const addressField = z
+  .string()
+  .trim()
+  .min(5, "Enter your address, at least 5 characters");
+
+/*
+ * A CV, optional. Constrained here as well as on the server because a rejected
+ * 5MB upload is a wasted round trip on a phone connection.
+ */
+export const MAX_CV_BYTES = 5 * 1024 * 1024;
+
+export const cvField = z
+  .instanceof(File, { message: "Attach a file" })
+  .refine((file) => file.size <= MAX_CV_BYTES, "CV must be 5MB or smaller")
+  .optional();

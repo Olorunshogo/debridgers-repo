@@ -9,10 +9,7 @@ import {
   DashSubmitButton,
   TableStatusBadge,
 } from "@debridgers/ui-web";
-import {
-  PhotoUploadField,
-  type PhotoUpload,
-} from "@/components/PhotoUploadField";
+import { PhotoUploadField, type PhotoUpload } from "@debridgers/ui-web";
 
 export function meta() {
   return [

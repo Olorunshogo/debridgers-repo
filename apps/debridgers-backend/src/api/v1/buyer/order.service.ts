@@ -9,6 +9,11 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq, desc, and, count, inArray, gte } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
+import {
+  assertMeetsMinimumOrder,
+  computeDeliveryFee,
+  computeServiceFee,
+} from "./delivery-fee";
 
 /*
  * `name`, `price_kobo` and `unit` are accepted for backwards compatibility with
@@ -147,8 +152,21 @@ export class OrderService {
       };
     });
 
-    const deliveryFee = zone.delivery_fee || 0;
-    const handlingFee = 10000;
+    /* Same functions the quote endpoint calls, so this path cannot drift from
+       the price the buyer was shown. */
+    const packageCount = items.reduce(
+      (sum: number, item: { qty: number }) => sum + item.qty,
+      0,
+    );
+    assertMeetsMinimumOrder(subtotal, packageCount);
+    const deliveryFee = computeDeliveryFee({
+      zoneFeeKobo: zone.delivery_fee || 0,
+      packageCount,
+      tierOnePerPackageKobo: zone.tier_one_per_package_kobo,
+      tierTwoPerPackageKobo: zone.tier_two_per_package_kobo,
+      deliveryCapKobo: zone.delivery_cap_kobo,
+    }).deliveryFeeKobo;
+    const handlingFee = computeServiceFee(subtotal);
     const total = subtotal + deliveryFee + handlingFee;
 
     /*

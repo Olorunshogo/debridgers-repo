@@ -23,6 +23,7 @@ import {
   AgentPayoutTargetService,
   AgentPayoutTargetError,
 } from "./agent-payout-target.service";
+import { LedgerService } from "./ledger.service";
 
 @Injectable()
 export class PaymentService {
@@ -38,6 +39,7 @@ export class PaymentService {
     private readonly webhookDedup: WebhookDeduplicationService,
     private readonly refundService: RefundService,
     private readonly payoutTargets: AgentPayoutTargetService,
+    private readonly ledger: LedgerService,
   ) {
     this.secretKey = this.config.get<string>("PaystackConfig.secretKey") ?? "";
   }
@@ -209,6 +211,63 @@ export class PaymentService {
           }
 
           this.logger.log(`Buyer order ${orderId} marked paid`);
+        }
+
+        return { message: "Webhook processed", data: null };
+      }
+
+      /*
+       * Money transferred into a buyer's dedicated virtual account. Paystack
+       * sends these with no metadata at all - the buyer initialised nothing on
+       * our side, they simply moved money - so none of the branches above match
+       * and, until this existed, the transfer was acknowledged and credited to
+       * nobody. The customer code on the charge is the only link back to a
+       * wallet.
+       */
+      if (data.channel === "dedicated_nuban") {
+        const customer = data.customer as
+          | { customer_code?: string }
+          | undefined;
+        const customerCode = customer?.customer_code;
+        const reference = data.reference as string;
+
+        if (!customerCode) {
+          this.logger.warn(
+            `DVA transfer ${reference} arrived without a customer code`,
+          );
+          return { message: "Webhook processed", data: null };
+        }
+
+        const wallet = await this.ledger.getWalletByCustomerCode(customerCode);
+
+        if (!wallet) {
+          this.logger.warn(
+            `DVA transfer ${reference} is for unknown customer ${customerCode}`,
+          );
+          return { message: "Webhook processed", data: null };
+        }
+
+        /*
+         * The transfer always lands in the wallet and is never guessed onto an
+         * open order. A dedicated account is per-customer, not per-order, so
+         * two open orders of the same price are indistinguishable from here.
+         * Paying an order from the balance is a separate, deliberate step.
+         */
+        const credited = await this.ledger.creditOnce(
+          wallet.id,
+          {
+            type: "deposit",
+            amount: data.amount as number,
+            reference,
+            description: "Bank transfer to dedicated account",
+          },
+          true,
+        );
+
+        if (credited) {
+          this.logger.log(
+            `Wallet ${wallet.id} credited ${formatNaira(data.amount as number)} from DVA transfer ${reference}`,
+          );
         }
 
         return { message: "Webhook processed", data: null };

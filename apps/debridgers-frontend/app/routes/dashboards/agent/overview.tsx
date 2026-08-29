@@ -13,7 +13,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { HeroGreetingCard } from "../shared/HeroGreetingCard";
+import { HeroGreetingCard } from "@debridgers/ui-web";
 import { formatCurrency } from "@debridgers/ui-web";
 
 export function meta() {

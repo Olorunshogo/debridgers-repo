@@ -148,6 +148,20 @@
       "when": 1787643641143,
       "tag": "0020_wallets_user_id",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1787643642143,
+      "tag": "0021_catalogue_and_zone_corrections",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1787643643143,
+      "tag": "0022_zone_taper_order_source_millet",
+      "breakpoints": true
     }
   ]
 }

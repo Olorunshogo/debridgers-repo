@@ -2,6 +2,23 @@
 
 **Debridgers Platform | Live Production System**
 
+> **Correction, 2026-08-29.** This document described commission as **5% of sales**, or "₦300 per ₦1000 sold". That was never the model and is now explicitly forbidden by a locked decision: **commission is a flat naira amount per package, never a percentage of order value.**
+>
+> The percentage was not a rounding error. 5% of a ₦42,000 bag of rice is ₦2,100 against a gross margin of about ₦2,520, which pays out 83% of the margin and leaves nothing for delivery, payments, or the company.
+>
+> The live bands, from `apps/debridgers-backend/src/api/v1/agent/agent-commission.ts`:
+>
+> | Band    | Products                 | Commission per package |
+> | ------- | ------------------------ | ---------------------- |
+> | Beans   | Wake Gida, Cowpea        | ₦1,200                 |
+> | Rice    | Local White, Tuwo, Ofada | ₦1,000                 |
+> | Oil     | Palm, Groundnut          | ₦700                   |
+> | Default | Everything else          | ₦400                   |
+>
+> An agent can verify "₦1,000 a bag" by counting bags. That legibility is the point: pay an agent cannot check is pay an agent stops trusting. Commission is also kept in naira so it can never be confused with the **remittance rate**, which is a percentage - that confusion is what put a phantom "agent remittance rate: 5%" line into three company documents.
+>
+> Commission levels are provisional until the supplier register produces a real landed cost. The **basis** is locked; the level is not. Derivation in `docs/business/BusinessModel.md`, Decision 4.
+
 ---
 
 ## Table of Contents
@@ -33,7 +50,7 @@ An Agent is someone who:
 - **Gets approved** by the admin team
 - **Orders stock** (bags of grain) from the warehouse
 - **Sells** those bags to local shops, markets, or businesses
-- **Makes money** by earning commission (₦300 per ₦1000 sold)
+- **Makes money** by earning a fixed commission per package sold: ₦1,200 a bag of beans, ₦1,000 a bag of rice, ₦700 a keg of oil, ₦400 otherwise
 - **Requests payout** to their bank account when they have earnings
 
 ### Who Can Be an Agent?
@@ -148,7 +165,7 @@ An Agent is someone who:
 
 1. View "Order Stock" page
 2. See available products and price per unit:
-   - **Price per bag:** ₦1,300 (130,000 kobo)
+   - **Price per bag:** the product's own catalogue price, less the agent's banded commission. See `agent-commission.ts`
    - **Minimum order:** 1 bag
 3. Enter quantity they want to order
 4. See total amount to pay
@@ -158,7 +175,7 @@ An Agent is someone who:
 **Example:**
 
 - Agent orders: 10 bags
-- Cost: 10 × ₦1,300 = ₦13,000
+- Cost: 10 × ₦41,000 = ₦410,000, for Local White Rice at ₦42,000 less ₦1,000 commission
 - Status: "Pending fulfillment"
 
 #### After Fulfillment:
@@ -217,8 +234,8 @@ An Agent is someone who:
 
 #### What Happens:
 
-- System auto-calculates commission:
-  - If they collected ₦5,000 → Commission = ₦250 (5%)
+- System auto-calculates commission from the package count and each product's band, not from the value collected:
+  - 5 bags of rice → 5 × ₦1,000 = ₦5,000 commission
 - Commission appears in their wallet as "pending"
 - Commission becomes "available" when admin marks as paid
 
@@ -231,7 +248,7 @@ An Agent is someone who:
 #### Success Requirements:
 
 - ✅ Agent can submit multiple reports daily
-- ✅ Commission auto-calculates correctly (5%)
+- ✅ Commission auto-calculates correctly, per package and per band
 - ✅ Commission tracked as "pending" → "paid"
 - ✅ Agent can see all their past reports
 - ✅ Admin can filter reports by agent/date
@@ -239,8 +256,10 @@ An Agent is someone who:
 #### Testing:
 
 ```
-□ Agent submits report: 5 bags, ₦5,000 → Commission shows ₦250
-□ Agent submits report: 10 bags, ₦10,000 → Commission shows ₦3,000
+□ Agent submits report: 5 bags of rice → Commission shows ₦5,000
+□ Agent submits report: 10 bags of beans → Commission shows ₦12,000
+□ Agent submits report: 3 kegs of palm oil → Commission shows ₦2,100
+□ Commission does not change when the product price changes
 □ Admin marks commission paid → Agent wallet updates
 □ Agent can see history of all reports
 □ Admin dashboard shows pending commissions
@@ -292,7 +311,7 @@ Total Earned:       ₦500,000 (all-time)
 ```
 □ Agent submits report → Pending balance increases
 □ Admin confirms → Available balance increases
-□ Check math: 5% commission is always correct
+□ Check math: commission is the package count times the band, never a share of value
 □ View full history for any agent
 □ No access between agents' wallets
 ```
@@ -596,15 +615,15 @@ AGENT ADMIN DASHBOARD
 
 ### For Entire System
 
-| Metric                    | Success Target                | How to Verify                            |
-| ------------------------- | ----------------------------- | ---------------------------------------- |
-| **Agent Onboarding Time** | <48 hours from apply to login | Measure from app submit to first login   |
-| **KYC Approval Time**     | <24 hours                     | Admin review dashboard                   |
-| **Stock Fulfillment**     | <2 hours                      | Request timestamp to fulfilled timestamp |
-| **Commission Accuracy**   | 100% correct (5% of sales)    | Audit: random reports and verify math    |
-| **Payout Success Rate**   | 99.9% (transfers complete)    | Check bank statements vs requests        |
-| **Email Delivery**        | 95%+ delivered                | Check email logs                         |
-| **System Uptime**         | 99.5% or higher               | Monitoring dashboard                     |
+| Metric                    | Success Target                     | How to Verify                            |
+| ------------------------- | ---------------------------------- | ---------------------------------------- |
+| **Agent Onboarding Time** | <48 hours from apply to login      | Measure from app submit to first login   |
+| **KYC Approval Time**     | <24 hours                          | Admin review dashboard                   |
+| **Stock Fulfillment**     | <2 hours                           | Request timestamp to fulfilled timestamp |
+| **Commission Accuracy**   | 100% correct, per package and band | Audit: random reports, recount packages  |
+| **Payout Success Rate**   | 99.9% (transfers complete)         | Check bank statements vs requests        |
+| **Email Delivery**        | 95%+ delivered                     | Check email logs                         |
+| **System Uptime**         | 99.5% or higher                    | Monitoring dashboard                     |
 
 ---
 
@@ -640,8 +659,8 @@ AGENT ADMIN DASHBOARD
 
 ### 4. Sales Reporting Flow
 
-- [ ] **Submit Report:** Agent submits 5 bags, ₦5,000 → Commission = ₦250
-- [ ] **Math Check:** Verify 5% commission on various amounts (test: ₦1000, ₦5000, ₦10000, ₦75000)
+- [ ] **Submit Report:** Agent submits 5 bags of rice → Commission = ₦5,000
+- [ ] **Math Check:** Verify commission per band and package count (beans ₦1,200, rice ₦1,000, oil ₦700, default ₦400), and that it does not move when the product price does
 - [ ] **Pending Status:** Commission shows as "pending"
 - [ ] **Confirmation:** Admin marks paid → Status changes to "paid"
 - [ ] **Multiple Reports:** Agent can submit multiple daily reports

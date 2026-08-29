@@ -65,6 +65,9 @@ export function useSignup(options: UseSignupOptions): UseSignupResult {
       password: "",
       confirmPassword: "",
       referredByAgentCode: "",
+      lga: "",
+      address: "",
+      cv: undefined,
     },
   });
 
@@ -90,15 +93,25 @@ export function useSignup(options: UseSignupOptions): UseSignupResult {
     };
 
     try {
-      await adapter.register({
-        first_name,
-        last_name,
-        email: values.email,
-        password: values.password,
-        role,
-        phone: values.phone || undefined,
-        referred_by_agent_code: values.referredByAgentCode || undefined,
-      });
+      /*
+       * The role decides how its account is created, not this hook. A role with
+       * its own endpoint supplies `register` in its config; everything else
+       * falls through to the shared one. There is deliberately no branch on
+       * which role this is, so a new role is a config entry and nothing here.
+       */
+      if (config.register) {
+        await config.register(values, { first_name, last_name, role });
+      } else {
+        await adapter.register({
+          first_name,
+          last_name,
+          email: values.email,
+          password: values.password,
+          role,
+          phone: values.phone || undefined,
+          referred_by_agent_code: values.referredByAgentCode || undefined,
+        });
+      }
 
       proceedToVerification();
     } catch (error) {

@@ -23,7 +23,7 @@ import {
   TrendingDown,
   Minus,
 } from "lucide-react";
-import { HeroGreetingCard } from "../shared/HeroGreetingCard";
+import { HeroGreetingCard } from "@debridgers/ui-web";
 import { apiFetch } from "@debridgers/api-client";
 import {
   useCart,

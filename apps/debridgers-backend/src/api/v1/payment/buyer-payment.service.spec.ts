@@ -101,13 +101,15 @@ describe.skipIf(!hasDb)("BuyerPaymentService", () => {
 
     const [zone] = await t.db
       .insert(schema.zones)
-      .values({ name: "Kaduna South", delivery_fee: 150_000, areas: [] })
+      .values({ name: "Kaduna South", delivery_fee: 400_000, areas: [] })
       .returning();
     zoneId = zone.id;
 
     const [product] = await t.db
       .insert(schema.productsTable)
-      .values({ name: "Rice", unit: "50kg bag", price_kobo: 1_000_000 })
+      /* Priced from the real catalogue so the basket clears the ₦25,000
+         minimum order, which a ₦10,000 fixture no longer does. */
+      .values({ name: "Rice", unit: "50kg bag", price_kobo: 4_200_000 })
       .returning();
     productId = product.id;
   });

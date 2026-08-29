@@ -11,7 +11,7 @@ import { BASE_BACKEND_URL } from "@debridgers/api-client";
 /*
  * Glue between the dialog engine and the contact endpoint.
  *
- * Posts to the same /contact endpoint the landing page form uses, so a message
+ * Posts to the same /contact endpoint the marketing page form uses, so a message
  * raised from inside a dashboard lands in the same inbox as a public enquiry.
  * Registered as SUPPORT_TICKET in app/providers/dialog-registry.ts.
  */

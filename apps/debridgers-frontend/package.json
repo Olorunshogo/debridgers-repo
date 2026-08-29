@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@debridgers/api-client": "workspace:*",
+    "@debridgers/pricing": "workspace:*",
     "@debridgers/shared-theme": "workspace:*",
     "@debridgers/ui-web": "workspace:*",
     "@hookform/resolvers": "^5.4.3",

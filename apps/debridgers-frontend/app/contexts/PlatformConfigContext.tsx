@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { apiFetch } from "@debridgers/api-client";
+import type { PricingRules } from "@debridgers/pricing";
 
 /*
  * Platform settings the admin controls, fetched once and shared.
@@ -14,7 +15,7 @@ import { apiFetch } from "@debridgers/api-client";
  * needs no auth because the agent recruitment page reads the commission rate
  * before anyone signs in.
  *
- * Before this existed, `landing/agents.tsx` fetched the endpoint itself and fell
+ * Before this existed, `marketing/agents.tsx` fetched the endpoint itself and fell
  * back to a hardcoded rate, so a slow or failed request rendered an entire
  * earnings table at the wrong figure on the one page whose job is telling
  * agents what they will earn.
@@ -22,11 +23,50 @@ import { apiFetch } from "@debridgers/api-client";
 
 // === Types
 
+/* Kobo, exactly as the API serves it. Converted once, below. */
+interface PublicPricingResponse {
+  service_fee_rate: number;
+  service_fee_min_kobo: number;
+  service_fee_max_kobo: number;
+  packages_included_in_base: number;
+  tier_one_package_count: number;
+  /* Defaults. The taper and ceiling are per zone, so a quote for a specific
+     delivery must read them off that zone rather than from here. */
+  default_tier_one_per_package_kobo: number;
+  default_tier_two_per_package_kobo: number;
+  default_delivery_cap_over_base_kobo: number;
+  minimum_order_kobo: number;
+  minimum_order_packages: number;
+}
+
 interface PublicConfigResponse {
   agent_commission_rate: number;
   buyer_referral_discount_kobo: number;
   buyer_referral_discount_type: string;
   currency: string;
+  pricing?: PublicPricingResponse;
+}
+
+/*
+ * One conversion, in one place. Every consumer downstream works in naira and
+ * never has to ask which unit it is holding, which is the mistake that has
+ * already produced a 100x transfer bug and a 100x refund bug in this codebase.
+ */
+function toPricingRules(p: PublicPricingResponse): PricingRules {
+  const naira = (kobo: number): number => kobo / 100;
+
+  return {
+    serviceFeeRate: p.service_fee_rate,
+    serviceFeeMin: naira(p.service_fee_min_kobo),
+    serviceFeeMax: naira(p.service_fee_max_kobo),
+    packagesInBase: p.packages_included_in_base,
+    tierOnePackages: p.tier_one_package_count,
+    tierOnePerPackage: naira(p.default_tier_one_per_package_kobo),
+    tierTwoPerPackage: naira(p.default_tier_two_per_package_kobo),
+    deliveryCapOverBase: naira(p.default_delivery_cap_over_base_kobo),
+    minimumOrder: naira(p.minimum_order_kobo),
+    minimumOrderPackages: p.minimum_order_packages,
+  };
 }
 
 interface PlatformConfigContextType {
@@ -42,6 +82,12 @@ interface PlatformConfigContextType {
   referralDiscountKobo: number;
   referralDiscountType: string;
   currency: string;
+  /*
+   * Null until the first response lands, and null if it failed. Deliberately
+   * not defaulted: a pricing calculator that silently quotes against invented
+   * fee rules is worse than one that refuses to render.
+   */
+  pricing: PricingRules | null;
   /* True until the first fetch settles, so callers can hold off on rendering
      a number rather than flashing a placeholder that is wrong. */
   isLoading: boolean;
@@ -105,6 +151,7 @@ export function PlatformConfigProvider({ children }: { children: ReactNode }) {
         referralDiscountKobo: config.buyer_referral_discount_kobo,
         referralDiscountType: config.buyer_referral_discount_type,
         currency: config.currency,
+        pricing: config.pricing ? toPricingRules(config.pricing) : null,
         isLoading,
         error,
       }}

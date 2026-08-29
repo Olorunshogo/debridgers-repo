@@ -246,6 +246,84 @@ describe.skipIf(!hasDb)("LedgerService", () => {
     expect(await balanceOf(wallet.id)).toBe(0);
   });
 
+  // === Unsolicited credits
+
+  /*
+   * A dedicated-account transfer has no pending row to claim, so its
+   * idempotency rests entirely on the unique index over reference. These prove
+   * the index is actually doing that job.
+   */
+
+  it("credits an unsolicited transfer and counts it as a deposit", async () => {
+    const wallet = await walletWithBalance(0);
+
+    const result = await ledger.creditOnce(
+      wallet.id,
+      { type: "deposit", amount: 45_000, reference: "dva_ref_1" },
+      true,
+    );
+
+    expect(result?.transaction.status).toBe("completed");
+    expect(await balanceOf(wallet.id)).toBe(45_000);
+
+    const [row] = await t.db
+      .select()
+      .from(schema.buyerWallets)
+      .where(eq(schema.buyerWallets.id, wallet.id));
+    expect(row.total_deposited).toBe(45_000);
+  });
+
+  it("ignores a replayed transfer rather than crediting twice", async () => {
+    const wallet = await walletWithBalance(0);
+    const entry = {
+      type: "deposit" as const,
+      amount: 45_000,
+      reference: "dva_ref_replay",
+    };
+
+    const first = await ledger.creditOnce(wallet.id, entry, true);
+    const second = await ledger.creditOnce(wallet.id, entry, true);
+
+    expect(first).toBeDefined();
+    expect(second).toBeUndefined();
+    expect(await balanceOf(wallet.id)).toBe(45_000);
+  });
+
+  it("credits once when the same transfer webhook arrives twice at once", async () => {
+    const wallet = await walletWithBalance(0);
+    const entry = {
+      type: "deposit" as const,
+      amount: 12_500,
+      reference: "dva_ref_race",
+    };
+
+    const results = await Promise.allSettled([
+      ledger.creditOnce(wallet.id, entry, true),
+      ledger.creditOnce(wallet.id, entry, true),
+    ]);
+
+    const credited = results.filter(
+      (r) => r.status === "fulfilled" && r.value !== undefined,
+    );
+
+    expect(credited).toHaveLength(1);
+    expect(await balanceOf(wallet.id)).toBe(12_500);
+  });
+
+  it("finds the wallet behind a paystack customer code", async () => {
+    const wallet = await walletWithBalance(0);
+    await t.db
+      .update(schema.buyerWallets)
+      .set({ paystack_customer_code: "CUS_findme" })
+      .where(eq(schema.buyerWallets.id, wallet.id));
+
+    const found = await ledger.getWalletByCustomerCode("CUS_findme");
+    const missing = await ledger.getWalletByCustomerCode("CUS_nobody");
+
+    expect(found?.id).toBe(wallet.id);
+    expect(missing).toBeUndefined();
+  });
+
   // === Reversal
 
   it("returns the money and marks the original entry failed", async () => {

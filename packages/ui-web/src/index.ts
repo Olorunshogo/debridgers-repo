@@ -12,6 +12,7 @@ export * from "./types";
 
 // === Reference data
 export * from "./data";
+export * from "./data/help-content";
 
 // === Validation schemas
 export * from "./schemas";
@@ -35,6 +36,7 @@ export * from "./components/agent/agent-request-payout-dialog";
 export * from "./components/buyer/buyer-payment-method-dialog";
 export * from "./components/help/help-guide-dialog";
 export * from "./components/help/support-ticket-dialog";
+export * from "./components/help/help-center";
 
 // === Shared auth forms
 export * from "./components/auth/auth-field";
@@ -72,12 +74,20 @@ export * from "./components/dash-submit-button";
 // === Feedback
 export * from "./components/alert-banner";
 export * from "./components/action-required-chip";
+export * from "./components/coming-soon";
 
 // === Notifications
 export * from "./components/notifications";
 
 // === Confirmation
 export * from "./components/confirm-dialog-panel";
+
+// === Uploads
+export * from "./components/file-upload-field";
+export * from "./components/photo-upload-field";
+
+// === Dashboard shell
+export * from "./components/hero-greeting-card";
 
 // === Other components
 export * from "./components/app-logo";

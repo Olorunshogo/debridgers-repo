@@ -22,6 +22,7 @@ import { WalletService } from "../wallet/wallet.service";
 import { EmailService } from "../../../notification/features/email/email.service";
 import { OrderService } from "../buyer/order.service";
 import { WithdrawalService } from "./withdrawal.service";
+import { LedgerService } from "./ledger.service";
 
 @Controller("webhook")
 export class PaystackWebhookController {
@@ -33,6 +34,7 @@ export class PaystackWebhookController {
     private readonly orderService: OrderService,
     private readonly withdrawalService: WithdrawalService,
     private readonly config: ConfigService,
+    private readonly ledger: LedgerService,
   ) {}
 
   @Post()
@@ -78,7 +80,12 @@ export class PaystackWebhookController {
       const data = typedEvent.data as {
         reference?: string;
         amount?: number;
-        customer?: { email?: string; first_name?: string };
+        channel?: string;
+        customer?: {
+          email?: string;
+          first_name?: string;
+          customer_code?: string;
+        };
         metadata?: { user_id?: number };
       };
 
@@ -123,6 +130,47 @@ export class PaystackWebhookController {
         console.error(
           `⚠ No order found for reference: ${data.reference} - checking if wallet deposit...`,
         );
+
+        /*
+         * A transfer into a dedicated account has no order and no pending
+         * wallet transaction to confirm - the buyer initialised nothing - so
+         * it reaches this point and, before this branch existed, fell through
+         * to a silent success. It is credited through the same ledger call the
+         * other webhook route uses, keyed on the same Paystack reference, so
+         * whichever endpoint Paystack is pointed at the money lands exactly
+         * once even if both receive it.
+         */
+        if (data.channel === "dedicated_nuban") {
+          const customerCode = data.customer?.customer_code;
+          const wallet = customerCode
+            ? await this.ledger.getWalletByCustomerCode(customerCode)
+            : undefined;
+
+          if (!data.amount || data.amount <= 0) {
+            console.error(`⚠ DVA transfer ${data.reference} carried no amount`);
+            return { statusCode: 200, message: "Webhook processed" };
+          }
+
+          if (!wallet) {
+            console.error(
+              `⚠ DVA transfer ${data.reference} matched no wallet (customer ${customerCode ?? "unknown"})`,
+            );
+            return { statusCode: 200, message: "Webhook processed" };
+          }
+
+          await this.ledger.creditOnce(
+            wallet.id,
+            {
+              type: "deposit",
+              amount: data.amount,
+              reference: data.reference,
+              description: "Bank transfer to dedicated account",
+            },
+            true,
+          );
+
+          return { statusCode: 200, message: "Deposit confirmed" };
+        }
 
         // Wallet deposits don't have corresponding order records
         // Try to confirm as wallet transaction
