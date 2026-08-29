@@ -41,10 +41,10 @@ export const TIER_ONE_PACKAGE_COUNT = 4;
  */
 
 /** Charged per package for packages 3 to 6, in kobo. */
-export const TIER_ONE_PER_PACKAGE_KOBO = 100;
+export const TIER_ONE_PER_PACKAGE_KOBO = 50_000;
 
 /** Charged per package for package 7 and beyond, in kobo. */
-export const TIER_TWO_PER_PACKAGE_KOBO = 100;
+export const TIER_TWO_PER_PACKAGE_KOBO = 50_000;
 
 /**
  * Fallback ceiling, as headroom above the zone base, for a zone that carries no
@@ -87,7 +87,7 @@ export const SERVICE_FEE_RATE = 0.03;
  */
 
 /** Minimum cost-to-serve fee, in kobo. */
-export const SERVICE_FEE_MIN_KOBO = 10_000;
+export const SERVICE_FEE_MIN_KOBO = 50_000;
 
 /** Maximum cost-to-serve fee, in kobo. */
 export const SERVICE_FEE_MAX_KOBO = 500_000;
@@ -207,17 +207,14 @@ export function minimumOrderViolation(
   itemsTotalKobo: number,
   packageCount: number,
 ): string | null {
-  // TODO: Re-enable minimum order validation after testing
+  const tooCheap = itemsTotalKobo < MINIMUM_ORDER_KOBO;
+  const tooFew = packageCount < MINIMUM_ORDER_PACKAGES;
+
+  if (tooCheap && tooFew) {
+    return `Minimum order for delivery is ₦${(MINIMUM_ORDER_KOBO / 100).toLocaleString()} or ${MINIMUM_ORDER_PACKAGES} packages.`;
+  }
+
   return null;
-
-  // const tooCheap = itemsTotalKobo < MINIMUM_ORDER_KOBO;
-  // const tooFew = packageCount < MINIMUM_ORDER_PACKAGES;
-
-  // if (tooCheap && tooFew) {
-  //   return `Minimum order for delivery is ₦${(MINIMUM_ORDER_KOBO / 100).toLocaleString()} or ${MINIMUM_ORDER_PACKAGES} packages.`;
-  // }
-
-  // return null;
 }
 
 export interface OrderTotals extends DeliveryFeeBreakdown {
