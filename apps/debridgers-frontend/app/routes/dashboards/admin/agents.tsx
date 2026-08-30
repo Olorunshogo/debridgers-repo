@@ -27,6 +27,13 @@ interface AgentRow {
   location: string;
   status: AgentStatus;
   joinedDate: string;
+  /*
+   * Proxy for bank-details completeness. bank_code is only ever written by
+   * the resolve+save flow, which sets it together with the account number
+   * and name in one update - so its presence alone is a reliable stand-in
+   * without the list endpoint needing to return every bank column.
+   */
+  bankReady: boolean;
 }
 
 interface ApiAgent {
@@ -38,6 +45,7 @@ interface ApiAgent {
   status: string;
   lga: string;
   applied_at: string;
+  bank_code: string | null;
 }
 
 function mapAgent(a: ApiAgent): AgentRow {
@@ -59,6 +67,7 @@ function mapAgent(a: ApiAgent): AgentRow {
       day: "numeric",
       year: "numeric",
     }),
+    bankReady: Boolean(a.bank_code),
   };
 }
 
@@ -209,10 +218,11 @@ export default function AdminAgents() {
       </div>
 
       <div className="border-gray-border overflow-hidden rounded-2xl border bg-white">
-        <div className="border-gray-border text-text grid grid-cols-[2fr_1fr_1fr_110px_200px] gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase">
+        <div className="border-gray-border text-text grid grid-cols-[2fr_1fr_1fr_100px_110px_200px] gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase">
           <span>Agent</span>
           <span>Area (LGA)</span>
           <span>Phone</span>
+          <span>Bank</span>
           <span>Status</span>
           <span>Actions</span>
         </div>
@@ -244,7 +254,7 @@ export default function AdminAgents() {
                   initial={{ opacity: 0, x: -6 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.04 }}
-                  className="border-gray-border grid grid-cols-[2fr_1fr_1fr_110px_200px] items-center gap-4 border-b px-5 py-4 text-sm last:border-0"
+                  className="border-gray-border grid grid-cols-[2fr_1fr_1fr_100px_110px_200px] items-center gap-4 border-b px-5 py-4 text-sm last:border-0"
                 >
                   <div className="flex flex-col gap-0.5">
                     <p className="text-heading font-semibold">{agent.name}</p>
@@ -255,6 +265,15 @@ export default function AdminAgents() {
                   </div>
                   <span className="text-text">{agent.location}</span>
                   <span className="text-text">{agent.phone}</span>
+                  <span
+                    className={`inline-flex w-fit items-center rounded-md px-3 py-1 text-xs font-semibold ${
+                      agent.bankReady
+                        ? "bg-status-delivered-bg text-status-delivered-text"
+                        : "bg-status-cancelled-bg text-status-cancelled-text"
+                    }`}
+                  >
+                    {agent.bankReady ? "✅ Ready" : "❌ Incomplete"}
+                  </span>
                   <span
                     className={`inline-flex w-fit items-center rounded-md px-3 py-1 text-xs font-semibold ${badge.bgClass} ${badge.textClass}`}
                   >
