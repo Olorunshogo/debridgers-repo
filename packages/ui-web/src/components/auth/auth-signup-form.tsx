@@ -75,7 +75,7 @@ export function AuthSignupForm<T extends FieldValues>({
                 className={`font-syne rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
                   isActive
                     ? "bg-primary cursor-default text-white"
-                    : "text-text cursor-pointer bg-gray-100"
+                    : "text-body cursor-pointer bg-gray-100"
                 }`}
               >
                 {role.label}

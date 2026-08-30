@@ -7,8 +7,9 @@ import {
 } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, desc, count, sum, and, inArray, sql } from "drizzle-orm";
+import { eq, asc, desc, count, sum, and, inArray, sql } from "drizzle-orm";
 import * as crypto from "crypto";
+import * as bcrypt from "bcryptjs";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
 import { USER_EVENTS } from "../../../events/event-types/user.event.types";
@@ -18,9 +19,10 @@ import { ReviewKycDto } from "./dto/review-kyc.dto";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { SystemSettingsService } from "../settings/system-settings.service";
-import { WalletService } from "../agent/wallet.service";
+import { AgentWalletService } from "../wallet/agent-wallet.service";
 import { TaxonomyService } from "../catalog/taxonomy.service";
 import { AuditLogService } from "../../../infrastructure/audit/audit-log.service";
+import { parseSort } from "../../../infrastructure/helper/query.helper";
 import {
   ORDER_STATUS_TRANSITIONS,
   ORDER_STATUS_NOTIFICATION,
@@ -47,7 +49,7 @@ export class AdminService {
     private readonly db: NodePgDatabase<typeof schema>,
     private readonly eventEmitter: EventEmitter2,
     private readonly settings: SystemSettingsService,
-    private readonly wallet: WalletService,
+    private readonly wallet: AgentWalletService,
     private readonly taxonomy: TaxonomyService,
     private readonly audit: AuditLogService,
   ) {}
@@ -60,6 +62,8 @@ export class AdminService {
         last_name: schema.users.last_name,
         email: schema.users.email,
         role: schema.users.role,
+        admin_tier: schema.users.admin_tier,
+        must_change_password: schema.users.must_change_password,
       })
       .from(schema.users)
       .where(eq(schema.users.id, userId))
@@ -110,8 +114,8 @@ export class AdminService {
         pending_agents: pendingStats?.total ?? 0,
         total_buyers: buyerStats?.total ?? 0,
         total_orders: orderStats?.total ?? 0,
-        total_revenue: revenueStats?.total ?? 0,
-        pending_commissions: commissionStats?.total ?? "0.00",
+        total_revenue: String(revenueStats?.total ?? 0),
+        pending_commissions: String(commissionStats?.total ?? 0),
         total_leads: leadStats?.total ?? 0,
       },
     };
@@ -202,7 +206,7 @@ export class AdminService {
     const [walletRow] = await this.db
       .select()
       .from(schema.wallets)
-      .where(eq(schema.wallets.agent_id, agentId))
+      .where(eq(schema.wallets.user_id, agentId))
       .limit(1);
 
     const [commissionTotal] = await this.db
@@ -271,11 +275,11 @@ export class AdminService {
       const [existingWallet] = await this.db
         .select()
         .from(schema.wallets)
-        .where(eq(schema.wallets.agent_id, agentId))
+        .where(eq(schema.wallets.user_id, agentId))
         .limit(1);
 
       if (!existingWallet) {
-        await this.db.insert(schema.wallets).values({ agent_id: agentId });
+        await this.db.insert(schema.wallets).values({ user_id: agentId });
       }
 
       this.eventEmitter.emit(USER_EVENTS.AGENT_APPROVED, {
@@ -536,12 +540,40 @@ export class AdminService {
       search?: string; // buyer name or email
       page?: number;
       limit?: number;
+      sort?: string;
+      order?: string;
     } = {},
   ) {
-    const { status, payment_status, search, page = 1, limit = 50 } = filters;
+    const {
+      status,
+      payment_status,
+      search,
+      page = 1,
+      limit = 50,
+      sort,
+      order,
+    } = filters;
     const offset = (page - 1) * limit;
 
     const buyer = schema.users;
+
+    /* The endpoint's own sortable surface. Add a key here, not a branch. */
+    const sorted = parseSort(
+      sort,
+      order,
+      {
+        id: schema.orders.id,
+        created_at: schema.orders.created_at,
+        total_amount: schema.orders.total_amount,
+        status: schema.orders.status,
+        payment_status: schema.orders.payment_status,
+        buyer_name: buyer.first_name,
+        delivered_at: schema.orders.delivered_at,
+      },
+      "created_at",
+    );
+    const orderBy =
+      sorted.direction === "asc" ? asc(sorted.column) : desc(sorted.column);
 
     /* Shared with the count query below, which otherwise totals the whole table. */
     const whereClause = and(
@@ -586,7 +618,7 @@ export class AdminService {
       .innerJoin(buyer, eq(schema.orders.buyer_id, buyer.id))
       .leftJoin(schema.zones, eq(schema.orders.zone_id, schema.zones.id))
       .where(whereClause)
-      .orderBy(desc(schema.orders.created_at))
+      .orderBy(orderBy)
       .limit(limit)
       .offset(offset);
 
@@ -599,7 +631,14 @@ export class AdminService {
     return {
       message: "Orders retrieved",
       data: rows,
-      meta: { total, page, limit, pages: Math.ceil(total / limit) },
+      meta: {
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit),
+        sort: sorted.key,
+        order: sorted.direction,
+      },
     };
   }
 
@@ -1057,6 +1096,8 @@ export class AdminService {
     agentId?: number;
     page: number;
     limit: number;
+    sort?: string;
+    order?: string;
   }) {
     const conditions = [];
     if (params.status)
@@ -1067,6 +1108,22 @@ export class AdminService {
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
     const offset = (params.page - 1) * params.limit;
+
+    const sorted = parseSort(
+      params.sort,
+      params.order,
+      {
+        created_at: schema.commissions.created_at,
+        amount_kobo: schema.commissions.amount_kobo,
+        status: schema.commissions.status,
+        type: schema.commissions.type,
+        paid_at: schema.commissions.paid_at,
+        agent_name: schema.users.first_name,
+      },
+      "created_at",
+    );
+    const orderBy =
+      sorted.direction === "asc" ? asc(sorted.column) : desc(sorted.column);
 
     const [rows, [totals]] = await Promise.all([
       this.db
@@ -1089,7 +1146,7 @@ export class AdminService {
           eq(schema.users.id, schema.commissions.agent_id),
         )
         .where(where)
-        .orderBy(desc(schema.commissions.created_at))
+        .orderBy(orderBy)
         .limit(params.limit)
         .offset(offset),
       /* Same WHERE as the rows, or the total contradicts the page. F19. */
@@ -1106,6 +1163,8 @@ export class AdminService {
         page: params.page,
         limit: params.limit,
         pages: Math.ceil(total / params.limit),
+        sort: sorted.key,
+        order: sorted.direction,
       },
     };
   }
@@ -1508,14 +1567,60 @@ export class AdminService {
    * exit.
    */
 
-  async getWithdrawals(status?: string) {
+  async getWithdrawals(
+    filters: {
+      status?: string;
+      search?: string;
+      page?: number;
+      limit?: number;
+      sort?: string;
+      order?: string;
+    } = {},
+  ) {
+    const { status, search, page = 1, limit = 50, sort, order } = filters;
+    const offset = (page - 1) * limit;
+
+    const agent = schema.users;
+
+    /* The endpoint's own sortable surface. Add a key here, not a branch. */
+    const sorted = parseSort(
+      sort,
+      order,
+      {
+        id: schema.withdrawals.id,
+        created_at: schema.withdrawals.created_at,
+        amount: schema.withdrawals.amount,
+        status: schema.withdrawals.status,
+        agent_name: agent.first_name,
+        processed_at: schema.withdrawals.processed_at,
+      },
+      "created_at",
+    );
+    const orderBy =
+      sorted.direction === "asc" ? asc(sorted.column) : desc(sorted.column);
+
+    const term = search ? `%${search.toLowerCase()}%` : undefined;
+
+    /* Shared with the count query below, which otherwise totals every row. */
+    const whereClause = and(
+      status
+        ? eq(
+            schema.withdrawals.status,
+            status as "pending" | "approved" | "rejected" | "paid",
+          )
+        : undefined,
+      term
+        ? sql`(lower(${agent.first_name}) || ' ' || lower(${agent.last_name}) like ${term} or lower(${agent.email}) like ${term} or lower(${schema.withdrawals.bank_account_name}) like ${term} or ${schema.withdrawals.bank_account_number} like ${term} or lower(${schema.withdrawals.payout_reference}) like ${term})`
+        : undefined,
+    );
+
     const rows = await this.db
       .select({
         id: schema.withdrawals.id,
         agent_id: schema.withdrawals.agent_id,
-        agent_first_name: schema.users.first_name,
-        agent_last_name: schema.users.last_name,
-        agent_email: schema.users.email,
+        agent_first_name: agent.first_name,
+        agent_last_name: agent.last_name,
+        agent_email: agent.email,
         amount: schema.withdrawals.amount,
         bank_name: schema.withdrawals.bank_name,
         bank_account_number: schema.withdrawals.bank_account_number,
@@ -1530,18 +1635,49 @@ export class AdminService {
         created_at: schema.withdrawals.created_at,
       })
       .from(schema.withdrawals)
-      .leftJoin(schema.users, eq(schema.users.id, schema.withdrawals.agent_id))
-      .where(
-        status
-          ? eq(
-              schema.withdrawals.status,
-              status as "pending" | "approved" | "rejected" | "paid",
-            )
-          : undefined,
-      )
-      .orderBy(desc(schema.withdrawals.created_at));
+      .leftJoin(agent, eq(agent.id, schema.withdrawals.agent_id))
+      .where(whereClause)
+      .orderBy(orderBy)
+      .limit(limit)
+      .offset(offset);
 
-    return { message: "Withdrawals retrieved", data: rows };
+    const [{ total }] = await this.db
+      .select({ total: count() })
+      .from(schema.withdrawals)
+      .leftJoin(agent, eq(agent.id, schema.withdrawals.agent_id))
+      .where(whereClause);
+
+    /*
+     * Deliberately unfiltered. The admin page labels these "awaiting review"
+     * and "approved, due Friday", which are claims about the whole queue - a
+     * sum of the visible page would only ever be a sum of ten rows.
+     */
+    const queueTotals = await this.db
+      .select({
+        status: schema.withdrawals.status,
+        amount: sum(schema.withdrawals.amount),
+      })
+      .from(schema.withdrawals)
+      .where(inArray(schema.withdrawals.status, ["pending", "approved"]))
+      .groupBy(schema.withdrawals.status);
+
+    const sumFor = (want: string): number =>
+      Number(queueTotals.find((r) => r.status === want)?.amount ?? 0);
+
+    return {
+      message: "Withdrawals retrieved",
+      data: rows,
+      meta: {
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit),
+        sort: sorted.key,
+        order: sorted.direction,
+        pending_total: sumFor("pending"),
+        approved_total: sumFor("approved"),
+      },
+    };
   }
 
   async approveWithdrawal(id: number, adminId: number) {
@@ -1645,5 +1781,43 @@ export class AdminService {
     });
 
     return { message: "Payout rejected and balance returned", data: updated };
+  }
+
+  async changePassword(
+    dto: { current_password: string; new_password: string },
+    adminId: number,
+  ) {
+    const [admin] = await this.db
+      .select({ id: schema.users.id, password: schema.users.password })
+      .from(schema.users)
+      .where(eq(schema.users.id, adminId))
+      .limit(1);
+
+    if (!admin) throw new NotFoundException("Admin not found");
+    if (!admin.password)
+      throw new BadRequestException("No password set on this account");
+
+    const valid = await bcrypt.compare(dto.current_password, admin.password);
+    if (!valid) throw new BadRequestException("Current password is incorrect");
+
+    if (dto.current_password === dto.new_password) {
+      throw new BadRequestException(
+        "New password must be different from current password",
+      );
+    }
+
+    const hashed = await bcrypt.hash(dto.new_password, 12);
+    /* Clearing the flag here is what retires the dashboard reminder. It is set
+       in the same write as the password so the two can never disagree. */
+    await this.db
+      .update(schema.users)
+      .set({
+        password: hashed,
+        must_change_password: false,
+        password_changed_at: new Date(),
+      })
+      .where(eq(schema.users.id, adminId));
+
+    return { message: "Password changed successfully", data: null };
   }
 }

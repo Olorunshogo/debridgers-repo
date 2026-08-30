@@ -229,7 +229,7 @@ export class AuthService {
     const [user] = await this.db
       .select()
       .from(schema.users)
-      .where(eq(sql`lower(${schema.users.email})`, email))
+      .where(eq(schema.users.email, email))
       .limit(1);
 
     if (!user || !user.password) {
@@ -308,7 +308,7 @@ export class AuthService {
     const [user] = await this.db
       .select()
       .from(schema.users)
-      .where(eq(sql`lower(${schema.users.email})`, email))
+      .where(eq(schema.users.email, email))
       .limit(1);
 
     if (!user || !user.password) {
@@ -400,7 +400,7 @@ export class AuthService {
     const [user] = await this.db
       .select()
       .from(schema.users)
-      .where(eq(sql`lower(${schema.users.email})`, email.toLowerCase()))
+      .where(eq(schema.users.email, email.toLowerCase()))
       .limit(1);
 
     if (user) {
@@ -431,7 +431,7 @@ export class AuthService {
     const [user] = await this.db
       .select()
       .from(schema.users)
-      .where(eq(sql`lower(${schema.users.email})`, email.toLowerCase()))
+      .where(eq(schema.users.email, email.toLowerCase()))
       .limit(1);
 
     if (!user) {
@@ -509,7 +509,7 @@ export class AuthService {
     const [user] = await this.db
       .select()
       .from(schema.users)
-      .where(eq(sql`lower(${schema.users.email})`, email.toLowerCase()))
+      .where(eq(schema.users.email, email.toLowerCase()))
       .limit(1);
 
     if (user && !user.is_email_verified) {
@@ -570,7 +570,16 @@ export class AuthService {
      */
     await this.db
       .update(schema.users)
-      .set({ password: hashed, refresh_token: null })
+      .set({
+        password: hashed,
+        refresh_token: null,
+        /* A reset is a real password change, so it retires the "still on the
+           issued password" flag exactly as the change-password flow does.
+           Without this an invited admin who reset instead of changing would be
+           reminded forever about a password they had already replaced. */
+        must_change_password: false,
+        password_changed_at: new Date(),
+      })
       .where(eq(schema.users.id, reset.user_id));
 
     await this.db
@@ -594,6 +603,7 @@ export class AuthService {
       first_name: string;
       last_name: string;
       role: string;
+      admin_tier?: string | null;
     },
     context?: {
       api_version: string;
@@ -608,6 +618,9 @@ export class AuthService {
       first_name: user.first_name,
       last_name: user.last_name,
       role: user.role as JwtPayload["role"],
+      ...(user.role === "admin" && {
+        admin_tier: (user.admin_tier as "super" | "sub") || "super",
+      }),
       api_version: context?.api_version || "v1",
       device: context?.device || "unknown",
       ip_address: context?.ip_address || "unknown",

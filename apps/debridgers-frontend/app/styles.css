@@ -41,9 +41,9 @@
   --color-heading2: var(--heading-colour2);
 
   /* Text */
-  --color-text: var(--text-colour);
+  --color-body: var(--text-colour);
   --color-text2: var(--text-colour2);
-  --color-text-placeholder: var(--text-placeholder);
+  --color-placeholder-text: var(--text-placeholder);
 
   /* Inputs */
   --color-input-bg: var(--input-bg);
@@ -57,12 +57,12 @@
   --color-warning-yellow: var(--warning-yellow);
 
   /* Backgrounds */
-  --color-bg-gray: var(--bg-gray);
-  --color-bg-light: var(--bg-light);
+  --color-gray-bg: var(--bg-gray);
+  --color-light-bg: var(--bg-light);
 
   /* Borders */
-  --color-border-gray: var(--border-gray);
-  --color-gray-border: var(--border-gray);
+  /* One name for one value; this was two aliases for the same border. */
+  --color-line: var(--border-gray);
 
   /* Icons */
   --color-icon-primary: var(--icon-primary);
@@ -73,20 +73,20 @@
   --shadow-yellow: var(--shadow-yellow);
 
   /* Dashboard status badges */
-  --color-status-on-the-way-bg: var(--status-on-the-way-bg);
-  --color-status-on-the-way-text: var(--status-on-the-way-text);
-  --color-status-delivered-bg: var(--status-delivered-bg);
-  --color-status-delivered-text: var(--status-delivered-text);
-  --color-status-cancelled-bg: var(--status-cancelled-bg);
-  --color-status-cancelled-text: var(--status-cancelled-text);
-  --color-status-active-bg: var(--status-active-bg);
-  --color-status-active-text: var(--status-active-text);
-  --color-status-pending-bg: var(--status-pending-bg);
-  --color-status-pending-text: var(--status-pending-text);
+  --color-status-on-the-way: var(--status-on-the-way-bg);
+  --color-status-on-the-way-fg: var(--status-on-the-way-text);
+  --color-status-delivered: var(--status-delivered-bg);
+  --color-status-delivered-fg: var(--status-delivered-text);
+  --color-status-cancelled: var(--status-cancelled-bg);
+  --color-status-cancelled-fg: var(--status-cancelled-text);
+  --color-status-active: var(--status-active-bg);
+  --color-status-active-fg: var(--status-active-text);
+  --color-status-pending: var(--status-pending-bg);
+  --color-status-pending-fg: var(--status-pending-text);
 
   /* Non-status emphasis - see the note in tokens.css */
-  --color-accent-soft-bg: var(--accent-soft-bg);
-  --color-accent-soft-text: var(--accent-soft-text);
+  --color-accent-soft: var(--accent-soft-bg);
+  --color-accent-soft-fg: var(--accent-soft-text);
 
   /* Dashboard UI */
   --color-dash-quick-action-hover: var(--dash-quick-action-hover);

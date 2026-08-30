@@ -15,7 +15,7 @@ import { useAuth } from "../../contexts/AuthContext";
 /*
  * One cart, shared by every page that touches it.
  *
- * Previously the landing shop, the buyer shop, and checkout each kept their own
+ * Previously the marketing shop, the buyer shop, and checkout each kept their own
  * useState over the same localStorage key. They only agreed by accident: moving
  * between them mid-session could show stale contents until a component
  * remounted, and CartItem was declared three separate times.

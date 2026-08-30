@@ -63,6 +63,26 @@ export function atLeastZero(kobo: number): number {
   return kobo < 0 ? 0 : kobo;
 }
 
+// === Outbound
+
+/*
+ * The amount for a Paystack request body.
+ *
+ * Paystack money fields are the currency's smallest unit - kobo for NGN - so
+ * this is an assertion rather than a conversion. It exists because the call
+ * sites disagreed: the buyer withdrawal passed kobo while both agent payout
+ * paths divided by 100 first, which is the "hundred times too small" transfer
+ * named at the top of this file. Routing every Paystack amount through one
+ * function is what stops that returning.
+ */
+export function toPaystackAmount(kobo: number): number {
+  assertKobo(kobo);
+  if (kobo <= 0) {
+    throw new Error(`Paystack amount must be positive, got ${kobo}`);
+  }
+  return kobo;
+}
+
 // === Guards
 
 export function isKobo(value: unknown): value is number {

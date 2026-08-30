@@ -145,8 +145,8 @@ const STATUS_BADGE: Record<
     label: "Pending",
   },
   paid: {
-    bgClass: "bg-status-active-bg",
-    textClass: "text-status-active-text",
+    bgClass: "bg-status-active",
+    textClass: "text-status-active-fg",
     label: "Paid",
   },
 };
@@ -189,8 +189,8 @@ export default function AgentWalletPage() {
   if (loading) {
     return (
       <div className="flex animate-pulse flex-col gap-6">
-        <div className="bg-gray-border h-40 rounded-2xl" />
-        <div className="bg-gray-border h-64 rounded-2xl" />
+        <div className="bg-line h-40 rounded-2xl" />
+        <div className="bg-line h-64 rounded-2xl" />
       </div>
     );
   }
@@ -259,13 +259,13 @@ export default function AgentWalletPage() {
       </motion.div>
 
       {/* Commission history */}
-      <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
+      <div className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5">
         <h3 className="font-syne text-heading font-semibold">
           Commission History
         </h3>
 
         {commissions.length === 0 ? (
-          <p className="text-text py-8 text-center text-sm">
+          <p className="text-body py-8 text-center text-sm">
             No commissions yet. Sell stock or refer buyers to earn commission.
           </p>
         ) : (
@@ -278,25 +278,23 @@ export default function AgentWalletPage() {
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="border-gray-border flex items-center justify-between border-b py-4 last:border-0"
+                  className="border-line flex items-center justify-between border-b py-4 last:border-0"
                 >
                   <div className="flex items-center gap-3">
                     <span
                       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                        c.isPaid
-                          ? "bg-status-delivered-bg"
-                          : "bg-status-pending-bg"
+                        c.isPaid ? "bg-status-delivered" : "bg-status-pending"
                       }`}
                     >
                       {c.isPaid ? (
                         <ArrowDownLeft
                           size={16}
-                          className="text-status-delivered-text"
+                          className="text-status-delivered-fg"
                         />
                       ) : (
                         <ArrowUpRight
                           size={16}
-                          className="text-status-pending-text"
+                          className="text-status-pending-fg"
                         />
                       )}
                     </span>
@@ -304,7 +302,7 @@ export default function AgentWalletPage() {
                       <p className="text-heading text-sm font-medium">
                         {c.description}
                       </p>
-                      <p className="text-text text-xs">{c.date}</p>
+                      <p className="text-body text-xs">{c.date}</p>
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1">

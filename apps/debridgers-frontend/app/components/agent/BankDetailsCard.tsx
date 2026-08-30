@@ -203,9 +203,9 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
 
   if (loading) {
     return (
-      <div className="border-gray-border flex flex-col gap-3 rounded-2xl border bg-white p-5">
-        <div className="bg-gray-border h-5 w-32 animate-pulse rounded" />
-        <div className="bg-gray-border h-10 w-full animate-pulse rounded-xl" />
+      <div className="border-line flex flex-col gap-3 rounded-2xl border bg-white p-5">
+        <div className="bg-line h-5 w-32 animate-pulse rounded" />
+        <div className="bg-line h-10 w-full animate-pulse rounded-xl" />
       </div>
     );
   }
@@ -216,7 +216,7 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
       initial="initial"
       animate="animate"
       transition={transitionBase}
-      className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5"
+      className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -244,7 +244,7 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
             animate="animate"
             exit="exit"
             transition={transitionBase}
-            className="bg-status-delivered-bg text-status-delivered-text flex items-center gap-2 rounded-xl px-4 py-3 text-sm"
+            className="bg-status-delivered text-status-delivered-fg flex items-center gap-2 rounded-xl px-4 py-3 text-sm"
           >
             <CheckCircle2 size={16} /> Bank details saved.
           </motion.p>
@@ -256,7 +256,7 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
             animate="animate"
             exit="exit"
             transition={transitionBase}
-            className="bg-status-cancelled-bg text-status-cancelled-text flex items-start justify-between gap-3 rounded-xl px-4 py-3 text-sm"
+            className="bg-status-cancelled text-status-cancelled-fg flex items-start justify-between gap-3 rounded-xl px-4 py-3 text-sm"
           >
             <span>{error}</span>
             <button
@@ -300,14 +300,14 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
             account this is before the details can be saved.
           */}
           {resolved ? (
-            <div className="bg-status-delivered-bg flex flex-col gap-1 rounded-xl px-4 py-3">
-              <span className="text-status-delivered-text flex items-center gap-2 text-xs font-semibold uppercase">
+            <div className="bg-status-delivered flex flex-col gap-1 rounded-xl px-4 py-3">
+              <span className="text-status-delivered-fg flex items-center gap-2 text-xs font-semibold uppercase">
                 <ShieldCheck size={14} /> Account verified
               </span>
               <p className="font-syne text-heading text-base font-bold break-words">
                 {resolved.account_name}
               </p>
-              <p className="text-text text-sm">
+              <p className="text-body text-sm">
                 {resolved.bank_name} - {accountNumber}
               </p>
             </div>
@@ -334,14 +334,14 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
             <button
               type="button"
               onClick={cancelEdit}
-              className="border-gray-border text-text w-full cursor-pointer rounded-full border px-5 py-3 text-sm font-semibold transition-colors hover:bg-black/5 sm:w-fit"
+              className="border-line text-body w-full cursor-pointer rounded-full border px-5 py-3 text-sm font-semibold transition-colors hover:bg-black/5 sm:w-fit"
             >
               Cancel
             </button>
           </div>
 
           {!resolved && (
-            <p className="text-text text-xs">
+            <p className="text-body text-xs">
               Verify the account before saving so we can confirm the name on it.
             </p>
           )}
@@ -352,16 +352,16 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
             <p className="font-syne text-heading font-semibold break-words">
               {details.bank_account_name}
             </p>
-            <p className="text-text text-sm break-words">
+            <p className="text-body text-sm break-words">
               {details.bank_name} - {details.bank_account_number}
             </p>
           </div>
-          <span className="bg-status-delivered-bg text-status-delivered-text flex w-fit shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold">
+          <span className="bg-status-delivered text-status-delivered-fg flex w-fit shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold">
             <CheckCircle2 size={13} /> Ready for payout
           </span>
         </div>
       ) : (
-        <p className="text-text text-sm">
+        <p className="text-body text-sm">
           Add your bank account to receive payouts. Payout requests stay blocked
           until this is set.
         </p>

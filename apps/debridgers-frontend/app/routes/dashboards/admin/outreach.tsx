@@ -17,8 +17,15 @@ import {
   DashNumberInput,
   DashDateInput,
   DashSelectInput,
+  DashSelectButton,
   DashTextareaInput,
-  DashSearchInput,
+  DataTable,
+  TablePrimaryCell,
+  TableTextCell,
+  TableStatusBadge,
+  TableEmptyState,
+  type TableColumn,
+  type RowAction,
 } from "@debridgers/ui-web";
 import { kadunaLgas, kadunaAreas, kadunaAreasByLga } from "@/models/models";
 
@@ -82,6 +89,150 @@ function todayString() {
   return new Date().toISOString().slice(0, 10);
 }
 
+/*
+ * Locations are stored two ways.
+ *
+ * Rows written before the picker existed hold the display label ("Kaduna
+ * South", "Narayi"); the picker submits the option's slug ("kaduna-south",
+ * "narayi"). A direct === between the two never matched, so choosing any
+ * location filtered every row away and only "All Locations" appeared to work.
+ *
+ * Normalising both sides fixes the existing rows and keeps working once every
+ * row is slug-shaped, since slugging a slug is a no-op.
+ */
+function toLocationSlug(value: string | null | undefined): string {
+  return (value ?? "").trim().toLowerCase().replace(/\s+/g, "-");
+}
+
+/*
+ * Seven columns was the cramped table. LGA, Area and Date drop to "detail", so
+ * the engine collapses them behind the card disclosure on narrow viewports
+ * instead of squeezing every column until the shop name is unreadable.
+ *
+ * Module scope: an inline array re-derives every row on every keystroke.
+ */
+const COLUMNS: readonly TableColumn<OutreachRecord>[] = [
+  {
+    id: "shop_name",
+    header: "Shop / Customer",
+    priority: "primary",
+    minWidth: "16rem",
+    sortable: true,
+    sortValue: (r) => r.shop_name,
+    searchValue: (r) =>
+      `${r.shop_name} ${r.owner_name ?? ""} ${r.address ?? ""}`,
+    cell: (r) => (
+      <TablePrimaryCell
+        title={r.shop_name}
+        subtitle={[r.owner_name, r.address].filter(Boolean).join(" · ")}
+      />
+    ),
+  },
+  {
+    id: "phone",
+    header: "Phone",
+    priority: "secondary",
+    minWidth: "10rem",
+    searchValue: (r) => r.phone ?? "",
+    cell: (r) =>
+      r.phone ? (
+        <div className="flex flex-col gap-1">
+          {r.phone
+            .split("/")
+            .map((num) => num.trim())
+            .filter(Boolean)
+            .map((num) => (
+              <a
+                key={num}
+                href={`tel:${num.replace(/\s/g, "")}`}
+                className="text-primary flex items-center gap-1 text-xs font-medium transition-opacity hover:opacity-70"
+              >
+                <Phone size={11} />
+                {num}
+              </a>
+            ))}
+        </div>
+      ) : (
+        <TableTextCell value={null} />
+      ),
+  },
+  {
+    id: "lga",
+    header: "LGA",
+    priority: "detail",
+    minWidth: "8rem",
+    sortable: true,
+    sortValue: (r) => r.lga ?? "",
+    searchValue: (r) => r.lga ?? "",
+    cell: (r) => (
+      <TableTextCell
+        value={
+          r.lga
+            ? (kadunaLgas.find((l) => l.value === toLocationSlug(r.lga))
+                ?.label ?? r.lga)
+            : null
+        }
+      />
+    ),
+  },
+  {
+    id: "area",
+    header: "Area",
+    priority: "detail",
+    minWidth: "8rem",
+    sortable: true,
+    sortValue: (r) => r.area ?? "",
+    searchValue: (r) => r.area ?? "",
+    cell: (r) => (
+      <TableTextCell
+        value={
+          r.area
+            ? (kadunaAreas.find((a) => a.value === toLocationSlug(r.area))
+                ?.label ?? r.area)
+            : null
+        }
+      />
+    ),
+  },
+  {
+    id: "product_interest",
+    header: "Interest",
+    priority: "secondary",
+    minWidth: "12rem",
+    sortable: true,
+    sortValue: (r) => r.product_interest ?? "",
+    searchValue: (r) => r.product_interest ?? "",
+    cell: (r) => (
+      <div className="flex flex-col items-start gap-1">
+        <TableTextCell value={r.product_interest} />
+        {r.quantity ? (
+          <TableStatusBadge
+            tone="active"
+            label={`${r.quantity} bag${r.quantity !== 1 ? "s" : ""}`}
+          />
+        ) : null}
+      </div>
+    ),
+  },
+  {
+    id: "visit_date",
+    header: "Date",
+    priority: "detail",
+    align: "right",
+    minWidth: "7rem",
+    sortable: true,
+    sortValue: (r) => r.visit_date,
+    cell: (r) => (
+      <TableTextCell
+        value={new Date(r.visit_date).toLocaleDateString("en-NG", {
+          month: "short",
+          day: "numeric",
+        })}
+      />
+    ),
+  },
+];
+
 export default function AdminOutreachPage() {
   const [records, setRecords] = useState<OutreachRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,10 +243,12 @@ export default function AdminOutreachPage() {
   });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
   const [filterLga, setFilterLga] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
-  /* `formError` sits inside the add panel, so list-level failures need their own. */
+  /* A failed load must not render as "no outreach yet", which is a different
+     story, so the table gets its own error and retry. */
+  const [loadError, setLoadError] = useState<string | null>(null);
+  /* `formError` sits inside the add panel, so delete failures need their own. */
   const [actionError, setActionError] = useState<string | null>(null);
 
   async function load() {
@@ -103,11 +256,10 @@ export default function AdminOutreachPage() {
     try {
       const rows = await apiFetch<OutreachRecord[]>("/admin/outreach");
       setRecords(rows);
-      setActionError(null);
+      setLoadError(null);
     } catch (err) {
-      /* An empty table would read as "no outreach yet", which is misleading. */
       setRecords([]);
-      setActionError(
+      setLoadError(
         err instanceof ApiError
           ? err.message
           : "Could not load outreach records. Check your connection and retry.",
@@ -121,23 +273,16 @@ export default function AdminOutreachPage() {
     void load();
   }, []);
 
-  const filtered = useMemo(() => {
-    let list = records;
-    if (filterLga)
-      list = list.filter((r) => r.lga === filterLga || r.area === filterLga);
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (r) =>
-          r.shop_name.toLowerCase().includes(q) ||
-          (r.owner_name ?? "").toLowerCase().includes(q) ||
-          (r.phone ?? "").includes(q) ||
-          (r.lga ?? "").toLowerCase().includes(q) ||
-          (r.area ?? "").toLowerCase().includes(q),
-      );
-    }
-    return list;
-  }, [records, search, filterLga]);
+  /* Only the location filter is applied here; search, sort and paging are the
+     engine's job now. */
+  const visible = useMemo<OutreachRecord[]>(() => {
+    if (!filterLga) return records;
+    const target = toLocationSlug(filterLga);
+    return records.filter(
+      (r) =>
+        toLocationSlug(r.lga) === target || toLocationSlug(r.area) === target,
+    );
+  }, [records, filterLga]);
 
   const stats = useMemo(() => {
     const uniqueAreas = new Set(records.map((r) => r.lga).filter(Boolean)).size;
@@ -207,6 +352,30 @@ export default function AdminOutreachPage() {
     }
   }
 
+  const rowActions = useMemo<RowAction<OutreachRecord>[]>(
+    () => [
+      {
+        id: "delete",
+        label: "Delete",
+        icon: Trash2,
+        iconOnly: true,
+        tone: "danger",
+        isBusy: (r) => deletingId === r.id,
+        onSelect: (r) => handleDelete(r.id),
+        confirm: {
+          dialogKey: "CONFIRM",
+          props: (r) => ({
+            title: `Delete ${r.shop_name}?`,
+            description:
+              "This removes the outreach record permanently. Field notes and contact details for this visit cannot be recovered.",
+            confirmLabel: "Delete record",
+          }),
+        },
+      },
+    ],
+    [deletingId],
+  );
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
@@ -217,7 +386,7 @@ export default function AdminOutreachPage() {
             <h2 className="font-syne text-heading text-xl font-bold">
               Outreach Records
             </h2>
-            <p className="text-text text-sm">
+            <p className="text-body text-sm">
               Offline customer data collected during field visits
             </p>
           </div>
@@ -243,7 +412,7 @@ export default function AdminOutreachPage() {
             animate="animate"
             exit="exit"
             transition={transitionBase}
-            className="bg-status-cancelled-bg text-status-cancelled-text flex items-start justify-between gap-3 rounded-xl px-4 py-3 text-sm"
+            className="bg-status-cancelled text-status-cancelled-fg flex items-start justify-between gap-3 rounded-xl px-4 py-3 text-sm"
           >
             <span>{actionError}</span>
             <button
@@ -271,10 +440,10 @@ export default function AdminOutreachPage() {
         ].map((s) => (
           <div
             key={s.label}
-            className="border-gray-border flex flex-col gap-2 rounded-2xl border bg-white p-4"
+            className="border-line flex flex-col gap-2 rounded-2xl border bg-white p-4"
           >
             <div className="flex items-center justify-between">
-              <span className="text-text text-xs">{s.label}</span>
+              <span className="text-body text-xs">{s.label}</span>
               <s.icon size={16} className="text-primary" />
             </div>
             <p className="font-syne text-heading text-2xl font-bold">
@@ -291,7 +460,7 @@ export default function AdminOutreachPage() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="border-gray-border rounded-2xl border bg-white p-6"
+            className="border-line rounded-2xl border bg-white p-6"
           >
             <div className="mb-5 flex items-center justify-between">
               <h3 className="font-syne text-heading font-semibold">
@@ -301,12 +470,12 @@ export default function AdminOutreachPage() {
                 onClick={() => setShowForm(false)}
                 className="rounded-full p-1 hover:bg-black/5"
               >
-                <X size={18} className="text-text" />
+                <X size={18} className="text-body" />
               </button>
             </div>
 
             {formError && (
-              <p className="bg-status-cancelled-bg text-status-cancelled-text mb-4 rounded-xl px-4 py-3 text-sm">
+              <p className="bg-status-cancelled text-status-cancelled-fg mb-4 rounded-xl px-4 py-3 text-sm">
                 {formError}
               </p>
             )}
@@ -424,7 +593,7 @@ export default function AdminOutreachPage() {
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="border-gray-border text-text rounded-full border px-6 py-2.5 text-sm font-medium transition-colors hover:bg-black/5"
+                  className="border-line text-body rounded-full border px-6 py-2.5 text-sm font-medium transition-colors hover:bg-black/5"
                 >
                   Cancel
                 </button>
@@ -434,171 +603,48 @@ export default function AdminOutreachPage() {
         )}
       </AnimatePresence>
 
-      {/* Filters */}
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <DashSearchInput
-          placeholder="Search by name, phone, area..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1"
-        />
-        {/*
-          LGAs and areas flattened into one list: DashSelectInput has no
-          optgroup, and the LGA entries are suffixed instead so the two kinds
-          stay tellable apart.
-        */}
-        <DashSelectInput
-          label="Location filter"
-          hideLabel
-          placeholder="All Locations"
-          className="sm:w-64"
-          searchable
-          options={[
-            /* Explicit reset entry: without it there is no way back to unfiltered. */
-            { value: "", label: "All Locations" },
-            ...kadunaLgas.map((l) => ({
-              value: l.value,
-              label: `${l.label} LGA`,
-            })),
-            ...kadunaAreas,
-          ]}
-          value={filterLga}
-          onChange={(e) => setFilterLga(e.target.value)}
-        />
-      </div>
-
-      {/* Records table */}
-      <div className="border-gray-border overflow-hidden rounded-2xl border bg-white">
-        <div className="border-gray-border text-text grid grid-cols-[1fr_120px_100px_100px_1fr_80px_40px] gap-3 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase">
-          <span>Shop / Customer</span>
-          <span>Phone</span>
-          <span>LGA</span>
-          <span>Area</span>
-          <span>Interest</span>
-          <span>Date</span>
-          <span />
-        </div>
-
-        {loading ? (
-          <div className="flex flex-col">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div
-                key={i}
-                className={`border-gray-border h-14 animate-pulse border-b ${i % 2 === 0 ? "bg-bg-light" : "bg-white"}`}
-              />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-16">
-            <MapPin size={40} className="text-text opacity-20" />
-            <p className="text-text text-sm">
-              {records.length === 0
-                ? 'No outreach records yet. Click "Record Visit" to add your first entry.'
-                : "No records match your search."}
-            </p>
-          </div>
-        ) : (
-          <AnimatePresence>
-            {filtered.map((r, i) => (
-              <motion.div
-                key={r.id}
-                initial={{ opacity: 0, x: -6 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.03 }}
-                className="border-gray-border grid grid-cols-[1fr_120px_100px_100px_1fr_80px_40px] items-center gap-3 border-b px-5 py-4 text-sm last:border-0"
-              >
-                {/* Shop */}
-                <div className="flex flex-col gap-0.5">
-                  <p className="text-heading font-semibold">{r.shop_name}</p>
-                  {r.owner_name && (
-                    <p className="text-text text-xs">{r.owner_name}</p>
-                  )}
-                  {r.address && (
-                    <p className="text-text text-xs">{r.address}</p>
-                  )}
-                </div>
-
-                {/* Phone */}
-                <div className="flex flex-col gap-1">
-                  {r.phone ? (
-                    r.phone
-                      .split("/")
-                      .map((num) => num.trim())
-                      .filter(Boolean)
-                      .map((num) => (
-                        <a
-                          key={num}
-                          href={`tel:${num.replace(/\s/g, "")}`}
-                          className="text-primary flex items-center gap-1 text-xs font-medium transition-opacity hover:opacity-70"
-                        >
-                          <Phone size={11} />
-                          {num}
-                        </a>
-                      ))
-                  ) : (
-                    <span className="text-xs opacity-40">—</span>
-                  )}
-                </div>
-
-                {/* LGA */}
-                <span className="text-text text-xs">
-                  {r.lga
-                    ? (kadunaLgas.find((l) => l.value === r.lga)?.label ??
-                      r.lga)
-                    : "—"}
-                </span>
-
-                {/* Area */}
-                <span className="text-heading text-xs">
-                  {r.area
-                    ? (kadunaAreas.find((a) => a.value === r.area)?.label ??
-                      r.area)
-                    : "—"}
-                </span>
-
-                {/* Interest */}
-                <div className="flex flex-col gap-0.5">
-                  {r.product_interest ? (
-                    <span className="text-heading">{r.product_interest}</span>
-                  ) : (
-                    <span className="text-xs opacity-40">—</span>
-                  )}
-                  {r.quantity ? (
-                    <span className="bg-status-active-bg text-status-active-text w-fit rounded-full px-2 py-0.5 text-xs font-semibold">
-                      {r.quantity} bag{r.quantity !== 1 ? "s" : ""}
-                    </span>
-                  ) : null}
-                </div>
-
-                {/* Date */}
-                <span className="text-text text-xs">
-                  {new Date(r.visit_date).toLocaleDateString("en-NG", {
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </span>
-
-                {/* Delete */}
-                <button
-                  onClick={() => void handleDelete(r.id)}
-                  disabled={deletingId === r.id}
-                  className="flex items-center justify-center rounded-lg p-1.5 transition-colors hover:bg-red-50 disabled:opacity-40"
-                  title="Delete"
-                >
-                  <Trash2 size={14} className="text-red-400" />
-                </button>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        )}
-      </div>
-
-      {/* Notes detail drawer hint */}
-      {filtered.some((r) => r.notes) && (
-        <p className="text-text text-xs">
-          * Hover a row to see full notes in future updates.
-        </p>
-      )}
+      <DataTable
+        rows={visible}
+        columns={COLUMNS}
+        actions={rowActions}
+        caption="Outreach records"
+        showSearch
+        searchPlaceholder="Search by shop, owner, phone or area"
+        loading={loading}
+        error={loadError}
+        onRetry={() => void load()}
+        pageSize={10}
+        pageSizeOptions={[10, 25, 50]}
+        /* The location filter lives on the page, so the engine is told when it
+           changes or the viewer stays on a page that no longer exists. */
+        resetKey={filterLga}
+        toolbar={
+          <DashSelectButton
+            label="Location"
+            placeholder="All Locations"
+            className="sm:w-64"
+            searchable
+            options={[
+              /* Explicit reset entry: without it there is no way back to unfiltered. */
+              { value: "", label: "All Locations" },
+              ...kadunaLgas.map((l) => ({
+                value: l.value,
+                label: `${l.label} LGA`,
+              })),
+              ...kadunaAreas,
+            ]}
+            value={filterLga}
+            onChange={setFilterLga}
+          />
+        }
+        emptyState={
+          <TableEmptyState
+            icon={MapPin}
+            title="No outreach records"
+            description={'Click "Record Visit" to add your first entry.'}
+          />
+        }
+      />
     </div>
   );
 }

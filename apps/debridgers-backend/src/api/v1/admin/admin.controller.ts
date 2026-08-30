@@ -31,6 +31,7 @@ import { BankDetailsService } from "../agent/bank-details.service";
 import { TaxonomyService } from "../catalog/taxonomy.service";
 import { AuthGuard } from "../../shared/guards/auth.guard";
 import { RolesGuard } from "../../shared/guards/roles.guard";
+import { AdminKeyGuard } from "../../shared/guards/admin-key.guard";
 import { AdminId } from "../../shared/decorators/admin-id.decorator";
 import { CurrentUser } from "../../shared/decorators/current-user.decorator";
 import { Roles } from "../../shared/decorators/roles.decorator";
@@ -59,6 +60,10 @@ import {
   UpdateProductDto,
 } from "./dto/update-product.dto";
 import { createCategorySchema, updateCategorySchema } from "./dto/category.dto";
+import {
+  adminChangePasswordSchema,
+  AdminChangePasswordDto,
+} from "./dto/change-password.dto";
 import { z } from "zod";
 import {
   parseOptionalBoolean,
@@ -71,6 +76,12 @@ const updateOrderStatusSchema = z.object({
   status: z.enum(ORDER_STATUSES),
 });
 const PAYMENT_STATUSES = ["unpaid", "awaiting", "paid", "failed"] as const;
+const WITHDRAWAL_STATUSES = [
+  "pending",
+  "approved",
+  "rejected",
+  "paid",
+] as const;
 const AGENT_STATUSES = [
   "pending",
   "approved",
@@ -117,7 +128,7 @@ type CreateOutreachDto = z.infer<typeof createOutreachSchema>;
 @ApiTags("Admin")
 @ApiBearerAuth("access-token")
 @Controller("admin")
-@UseGuards(AuthGuard, RolesGuard)
+@UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
 @Roles("admin")
 export class AdminController {
   constructor(
@@ -391,14 +402,30 @@ export class AdminController {
   @ApiOperation({
     summary: "List all orders — with buyer name, amount, payment status",
     description:
-      "Supports ?status=pending|confirmed|delivered|cancelled, ?payment_status=unpaid|paid, ?search=name/email, ?page=1&limit=50",
+      "Supports ?status=pending|confirmed|delivered|cancelled, ?payment_status=unpaid|paid, ?search=name/email, ?page=1&limit=50, ?sort=&order=asc|desc",
   })
+  @ApiQuery({
+    name: "sort",
+    required: false,
+    enum: [
+      "id",
+      "created_at",
+      "total_amount",
+      "status",
+      "payment_status",
+      "buyer_name",
+      "delivered_at",
+    ],
+  })
+  @ApiQuery({ name: "order", required: false, enum: ["asc", "desc"] })
   getAllOrders(
     @Query("status") status?: string,
     @Query("payment_status") payment_status?: string,
     @Query("search") search?: string,
     @Query("page") page?: string,
     @Query("limit") limit?: string,
+    @Query("sort") sort?: string,
+    @Query("order") order?: string,
   ) {
     const paging = parsePagination(page, limit);
     return this.adminService.getAllOrders({
@@ -411,6 +438,8 @@ export class AdminController {
       search,
       page: paging.page,
       limit: paging.limit,
+      sort,
+      order,
     });
   }
 
@@ -925,6 +954,19 @@ export class AdminController {
   @ApiQuery({ name: "agent_id", required: false, type: "integer" })
   @ApiQuery({ name: "page", required: false, type: "integer" })
   @ApiQuery({ name: "limit", required: false, type: "integer" })
+  @ApiQuery({
+    name: "sort",
+    required: false,
+    enum: [
+      "created_at",
+      "amount_kobo",
+      "status",
+      "type",
+      "paid_at",
+      "agent_name",
+    ],
+  })
+  @ApiQuery({ name: "order", required: false, enum: ["asc", "desc"] })
   @ApiResponse({ status: 200, description: "Commissions retrieved" })
   getCommissions(
     @Query("status") status?: string,
@@ -932,6 +974,8 @@ export class AdminController {
     @Query("agent_id") agentId?: string,
     @Query("page") page?: string,
     @Query("limit") limit?: string,
+    @Query("sort") sort?: string,
+    @Query("order") order?: string,
   ) {
     const paging = parsePagination(page, limit);
     return this.adminService.getCommissions({
@@ -940,6 +984,8 @@ export class AdminController {
       agentId: agentId ? parseInt(agentId, 10) : undefined,
       page: paging.page,
       limit: paging.limit,
+      sort,
+      order,
     });
   }
 
@@ -1113,11 +1159,40 @@ export class AdminController {
   @ApiOperation({
     summary: "List agent payout requests",
     description:
-      "Optionally filter by status: pending, approved, rejected, paid.",
+      "Supports ?status=pending|approved|rejected|paid, ?search=agent name/email/bank account/reference, ?page=1&limit=50, ?sort=&order=asc|desc. Meta carries the whole queue's pending and approved sums, which the admin totals cards read.",
   })
-  @ApiQuery({ name: "status", required: false, example: "pending" })
-  getWithdrawals(@Query("status") status?: string) {
-    return this.adminService.getWithdrawals(status);
+  @ApiQuery({ name: "status", required: false, enum: WITHDRAWAL_STATUSES })
+  @ApiQuery({ name: "search", required: false })
+  @ApiQuery({
+    name: "sort",
+    required: false,
+    enum: [
+      "id",
+      "created_at",
+      "amount",
+      "status",
+      "agent_name",
+      "processed_at",
+    ],
+  })
+  @ApiQuery({ name: "order", required: false, enum: ["asc", "desc"] })
+  getWithdrawals(
+    @Query("status") status?: string,
+    @Query("search") search?: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+    @Query("sort") sort?: string,
+    @Query("order") order?: string,
+  ) {
+    const paging = parsePagination(page, limit);
+    return this.adminService.getWithdrawals({
+      status: parseOptionalEnum(status, WITHDRAWAL_STATUSES, "status"),
+      search,
+      page: paging.page,
+      limit: paging.limit,
+      sort,
+      order,
+    });
   }
 
   @Patch("withdrawals/:id/approve")
@@ -1240,5 +1315,44 @@ export class AdminController {
     @AdminId() adminId: number,
   ) {
     return this.adminApiKeysService.deactivateApiKey(keyId, adminId);
+  }
+
+  @Patch("password/change")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Change admin password" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["current_password", "new_password"],
+      properties: {
+        current_password: {
+          type: "string",
+          example: "TempPass123!",
+          description: "Current password (temporary or existing)",
+        },
+        new_password: {
+          type: "string",
+          example: "NewPass456!",
+          description: "New permanent password",
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    schema: {
+      example: {
+        statusCode: 200,
+        message: "Password changed successfully",
+        data: null,
+      },
+    },
+  })
+  changePassword(
+    @Body(new ZodValidationPipe(adminChangePasswordSchema))
+    dto: AdminChangePasswordDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.adminService.changePassword(dto, user.sub);
   }
 }

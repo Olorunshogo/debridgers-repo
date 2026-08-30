@@ -6,6 +6,6 @@ export default defineConfig({
   schema: "./src/infrastructure/persistence/schemas/*.schema.ts",
   out: "./src/infrastructure/persistence/migrations",
   dbCredentials: {
-    url: process.env.DATABASE_URL_DIRECT || process.env.DATABASE_URL!,
+    url: process.env.DATABASE_URL!,
   },
 });

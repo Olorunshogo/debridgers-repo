@@ -1,14 +1,10 @@
 import "reflect-metadata";
 // Must be set before libuv initialises — expand thread pool for bcrypt burst.
 process.env.UV_THREADPOOL_SIZE = process.env.UV_THREADPOOL_SIZE ?? "16";
-import { Logger, VersioningType, ValidationPipe } from "@nestjs/common";
+import { Logger, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import helmet from "helmet";
-import * as fs from "fs";
-import * as path from "path";
-import * as https from "https";
-import { spawnSync } from "child_process";
 import { AppModule } from "./app/app.module";
 import { ApiResponseInterceptor } from "./interceptors/api-response.interceptor";
 import { GlobalExceptionFilter } from "./filters/http-exception.filter";
@@ -18,60 +14,6 @@ const ALLOWED_ORIGINS = (
 )
   .split(",")
   .map((o) => o.trim());
-
-function generateSelfSignedCert(
-  certPath: string,
-  keyPath: string,
-): { cert: Buffer; key: Buffer } {
-  const certDir = path.dirname(certPath);
-
-  // Create directory if it doesn't exist
-  if (!fs.existsSync(certDir)) {
-    fs.mkdirSync(certDir, { recursive: true });
-  }
-
-  // Check if certs already exist
-  if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
-    console.log("✅ Using existing certificates");
-    return {
-      cert: fs.readFileSync(certPath),
-      key: fs.readFileSync(keyPath),
-    };
-  }
-
-  console.log("🔧 Generating self-signed certificate...");
-  const result = spawnSync("openssl", [
-    "req",
-    "-x509",
-    "-newkey",
-    "rsa:2048",
-    "-keyout",
-    keyPath,
-    "-out",
-    certPath,
-    "-days",
-    "365",
-    "-nodes",
-    "-subj",
-    "/CN=localhost/O=Debridgers/C=NG",
-  ]);
-
-  if (result.error) {
-    throw new Error(`Failed to generate certificate: ${result.error.message}`);
-  }
-
-  if (result.status !== 0) {
-    throw new Error(
-      `OpenSSL error: ${result.stderr?.toString() || "Unknown error"}`,
-    );
-  }
-
-  console.log("✅ Self-signed certificate generated");
-  return {
-    cert: fs.readFileSync(certPath),
-    key: fs.readFileSync(keyPath),
-  };
-}
 
 async function bootstrap() {
   console.log("🟢 [1] Bootstrap starting...");
@@ -159,12 +101,8 @@ async function bootstrap() {
       callback(new Error(`CORS: origin ${origin} not allowed`));
     },
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
-    /*
-     * The five static key headers were removed with F7. Nothing reads them any
-     * more: authorisation is the JWT plus RolesGuard. Do not re-add a header
-     * secret the browser has to carry, since a browser cannot keep one.
-     */
-    allowedHeaders: ["Content-Type", "Authorization"],
+    // Added X-Admin-Key for two-tier admin authentication
+    allowedHeaders: ["Content-Type", "Authorization", "X-Admin-Key"],
     credentials: true,
   });
 

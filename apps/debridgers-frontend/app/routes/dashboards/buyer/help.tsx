@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@debridgers/api-client";
-import { HelpCenter } from "../shared/HelpCenter";
-import { buyerHelpContent } from "../shared/help-content";
+import { HelpCenter, buyerHelpContent } from "@debridgers/ui-web";
 
 export function meta() {
   return [

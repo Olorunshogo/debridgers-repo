@@ -44,7 +44,7 @@ export function TextareaInput({
         value={value}
         onChange={onChange}
         rows={rows}
-        className={`placeholder:text-text-placeholder bg-input-bg text-text font-syne w-full resize-none rounded-lg border p-6 text-base transition-all duration-300 ease-in-out outline-none ${error ? "border-input-error-red focus:border-input-error-red" : "border-input-border focus:border-input-border-focus"}`}
+        className={`placeholder:text-placeholder-text bg-input-bg text-body font-syne w-full resize-none rounded-lg border p-6 text-base transition-all duration-300 ease-in-out outline-none ${error ? "border-input-error-red focus:border-input-error-red" : "border-input-border focus:border-input-border-focus"}`}
       />
       {error && errorMessage && (
         <p className="text-input-error-red text-xs">{errorMessage}</p>

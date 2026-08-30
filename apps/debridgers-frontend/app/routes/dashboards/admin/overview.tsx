@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { motion } from "framer-motion";
 import { Users, UserCheck, ShoppingBag, TrendingUp } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
-import { formatFromKobo } from "@debridgers/ui-web";
+import { formatFromKobo, useDialog } from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -47,6 +47,23 @@ function mapStats(api: ApiAdminStats): AdminStats {
 export default function AdminOverview() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const { triggerDialog } = useDialog();
+  /* Opened once per mount; the dialog is dismissable and re-triggering on every
+     render would trap the admin behind it. */
+  const promptedRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    // Check if admin needs to verify invite code
+    const inviteVerified = localStorage.getItem("admin_invite_verified");
+    if (!inviteVerified && !promptedRef.current) {
+      promptedRef.current = true;
+      triggerDialog("VERIFY_INVITE", {
+        onVerified: () => {
+          localStorage.setItem("admin_invite_verified", "true");
+        },
+      });
+    }
+  }, [triggerDialog]);
 
   useEffect(() => {
     apiFetch<ApiAdminStats>("/admin/dashboard")
@@ -59,7 +76,7 @@ export default function AdminOverview() {
     return (
       <div className="grid animate-pulse grid-cols-2 gap-4 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-gray-border h-28 rounded-2xl" />
+          <div key={i} className="bg-line h-28 rounded-2xl" />
         ))}
       </div>
     );
@@ -107,11 +124,11 @@ export default function AdminOverview() {
             >
               <Link
                 to={c.href}
-                className="border-gray-border flex flex-col gap-3 rounded-2xl border bg-white p-4 transition-shadow hover:shadow-md"
+                className="border-line flex flex-col gap-3 rounded-2xl border bg-white p-4 transition-shadow hover:shadow-md"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-text text-sm">{c.label}</span>
-                  <span className="bg-bg-light flex h-8 w-8 items-center justify-center rounded-full">
+                  <span className="text-body text-sm">{c.label}</span>
+                  <span className="bg-light-bg flex h-8 w-8 items-center justify-center rounded-full">
                     <c.icon size={16} className="text-primary" />
                   </span>
                 </div>
@@ -123,27 +140,27 @@ export default function AdminOverview() {
           ))}
         </div>
       ) : (
-        <div className="border-gray-border rounded-2xl border bg-white p-10 text-center">
-          <p className="text-text text-sm">
+        <div className="border-line rounded-2xl border bg-white p-10 text-center">
+          <p className="text-body text-sm">
             Stats unavailable. The admin API is not yet connected.
           </p>
         </div>
       )}
 
-      <div className="border-gray-border rounded-2xl border bg-white p-6">
+      <div className="border-line rounded-2xl border bg-white p-6">
         <h3 className="font-syne text-heading mb-4 font-semibold">
           Quick Actions
         </h3>
         <div className="flex flex-wrap gap-3">
           <Link
             to="/admin-dashboard/agents"
-            className="border-gray-border text-heading rounded-full border px-4 py-2 text-sm font-medium transition-colors"
+            className="border-line text-heading rounded-full border px-4 py-2 text-sm font-medium transition-colors"
           >
             Review Pending Agents
           </Link>
           <Link
             to="/admin-dashboard/buyers"
-            className="border-gray-border text-heading rounded-full border px-4 py-2 text-sm font-medium transition-colors"
+            className="border-line text-heading rounded-full border px-4 py-2 text-sm font-medium transition-colors"
           >
             View All Buyers
           </Link>

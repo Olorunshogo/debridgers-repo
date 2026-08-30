@@ -1,12 +1,41 @@
-import { Injectable, OnModuleDestroy } from "@nestjs/common";
+import { Injectable, Logger, OnModuleDestroy } from "@nestjs/common";
 import { PostHog } from "posthog-node";
+
+/*
+ * Event ingestion needs a PROJECT key, which PostHog prefixes with `phc_`.
+ * A personal key (`phx_`) authenticates the management API and is rejected by
+ * /batch/ with a 401 - which the client then retries, so one wrong key produced
+ * a stack trace every flush interval and buried real errors in the log.
+ */
+const PROJECT_KEY_PREFIX = "phc_";
 
 @Injectable()
 export class PostHogService implements OnModuleDestroy {
-  private posthog: PostHog;
+  private readonly logger = new Logger(PostHogService.name);
+  /* Null when analytics is not usable, so nothing is queued and nothing flushes. */
+  private readonly posthog: PostHog | null;
 
   constructor() {
-    this.posthog = new PostHog(process.env.POSTHOG_API_KEY || "", {
+    const key = process.env.POSTHOG_API_KEY?.trim();
+
+    if (!key) {
+      this.posthog = null;
+      return;
+    }
+
+    if (!key.startsWith(PROJECT_KEY_PREFIX)) {
+      /*
+       * Warn once at boot rather than failing per flush. Analytics is not worth
+       * an error loop, and a silent drop would leave nobody knowing it is off.
+       */
+      this.logger.warn(
+        `POSTHOG_API_KEY does not look like a project key (expected "${PROJECT_KEY_PREFIX}…"). Analytics disabled.`,
+      );
+      this.posthog = null;
+      return;
+    }
+
+    this.posthog = new PostHog(key, {
       host: process.env.POSTHOG_HOST || "https://us.posthog.com",
       flushInterval: 10000, // Flush events every 10 seconds
     });
@@ -20,7 +49,7 @@ export class PostHogService implements OnModuleDestroy {
     event: string,
     properties?: Record<string, unknown>,
   ): void {
-    if (!process.env.POSTHOG_API_KEY) return;
+    if (!this.posthog) return;
 
     this.posthog.capture({
       distinctId,
@@ -99,6 +128,8 @@ export class PostHogService implements OnModuleDestroy {
    * Flush events on app shutdown
    */
   async onModuleDestroy(): Promise<void> {
-    await this.posthog.shutdown();
+    /* Nothing to flush when analytics never initialised, and calling shutdown
+       on a null client would take the whole shutdown path down with it. */
+    await this.posthog?.shutdown();
   }
 }

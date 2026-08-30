@@ -25,7 +25,13 @@ import { DashSelect } from "../dash-select";
 
 // === Types
 
-export type AuthFieldType = "text" | "email" | "tel" | "password" | "select";
+export type AuthFieldType =
+  | "text"
+  | "email"
+  | "tel"
+  | "password"
+  | "select"
+  | "file";
 
 export interface AuthFieldDescriptor {
   /** Must match a key in the form's values type. */
@@ -37,6 +43,10 @@ export interface AuthFieldDescriptor {
   options?: readonly string[];
   optional?: boolean;
   autoComplete?: string;
+  /** Accept attribute for `type: "file"`, ignored otherwise. */
+  accept?: string;
+  /** Help text under the control, for anything the label cannot carry. */
+  hint?: string;
 }
 
 export interface AuthFieldProps<T extends FieldValues> {
@@ -81,6 +91,41 @@ export function AuthField<T extends FieldValues>({
             error={error}
             required={required}
           />
+        )}
+      />
+    );
+  }
+
+  /*
+   * A file input cannot be controlled by value, so it registers its onChange
+   * and hands the form the File itself rather than a FileList. Everything
+   * downstream then sees one shape whether the field came from a text box or a
+   * file picker.
+   */
+  if (field.type === "file") {
+    return (
+      <Controller
+        name={name}
+        control={control}
+        render={({ field: controlled }) => (
+          <div className="flex flex-col gap-1">
+            <label className="text-heading text-sm font-medium">
+              {field.label}
+              {!required && (
+                <span className="text-body font-normal"> (optional)</span>
+              )}
+            </label>
+            <input
+              type="file"
+              accept={field.accept}
+              onChange={(event) =>
+                controlled.onChange(event.target.files?.[0] ?? undefined)
+              }
+              className="border-line text-body file:bg-line file:text-heading w-full rounded-xl border px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:px-3 file:py-1.5 file:text-sm"
+            />
+            {field.hint && <p className="text-body text-xs">{field.hint}</p>}
+            {error && <p className="text-xs text-red-600">{error}</p>}
+          </div>
         )}
       />
     );

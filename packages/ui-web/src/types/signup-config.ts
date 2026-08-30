@@ -13,6 +13,18 @@ import type { SignupValues } from "../schemas/auth/signup";
 /** Union of every field any role's signup form can carry. */
 export interface SignupFormValues extends SignupValues {
   referredByAgentCode?: string;
+  /* Fields only some roles collect. Optional here because this type is the
+     union across every role, not the shape of any one form. */
+  lga?: string;
+  address?: string;
+  cv?: File;
+}
+
+/** Name split off the single full-name input, plus the role being created. */
+export interface SignupIdentity {
+  first_name: string;
+  last_name: string;
+  role: string;
 }
 
 export interface RoleSignupConfig {
@@ -27,4 +39,16 @@ export interface RoleSignupConfig {
      own wording with it. */
   successTitle: string;
   successDescription: string;
+  /*
+   * How this role's account is created. Omitted means the shared register
+   * endpoint, which is right for any role the plain form can express.
+   *
+   * A role needing its own endpoint - an agent application carries an LGA, a
+   * home address and a CV file, so it is multipart against /agent/apply -
+   * supplies it here rather than the hook learning role names.
+   */
+  register?: (
+    values: SignupFormValues,
+    identity: SignupIdentity,
+  ) => Promise<void>;
 }

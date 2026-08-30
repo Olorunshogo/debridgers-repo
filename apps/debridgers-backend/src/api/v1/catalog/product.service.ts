@@ -8,6 +8,7 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq, desc, count, isNull, and } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
+import { remitPerPackageKobo } from "../agent/agent-commission";
 
 export interface CreateProductDto {
   name: string;
@@ -29,6 +30,11 @@ export interface UpdateProductDto {
   stock_quantity?: number;
   is_active?: boolean;
   sort_order?: number;
+}
+
+export interface CreateStockRequestDto {
+  product_id: number;
+  quantity: number;
 }
 
 @Injectable()
@@ -229,6 +235,105 @@ export class ProductService {
     return {
       message: "Product deleted successfully",
       data: deleted,
+    };
+  }
+
+  /**
+   * Request stock from product (Agent only)
+   * Creates a stock request that admin can fulfill
+   */
+  async requestStock(agentId: number, dto: CreateStockRequestDto) {
+    const [product] = await this.db
+      .select()
+      .from(schema.productsTable)
+      .where(
+        and(
+          eq(schema.productsTable.id, dto.product_id),
+          isNull(schema.productsTable.deleted_at),
+        ),
+      )
+      .limit(1);
+
+    if (!product) {
+      throw new NotFoundException("Product not found");
+    }
+
+    if (dto.quantity <= 0) {
+      throw new BadRequestException("Quantity must be greater than 0");
+    }
+
+    if (product.stock_quantity < dto.quantity) {
+      throw new BadRequestException(
+        `Insufficient stock. Available: ${product.stock_quantity}, Requested: ${dto.quantity}`,
+      );
+    }
+
+    // Create stock request
+    // Note: This assumes stock_requests table exists with agent_id, product_id, quantity fields
+    const [stockRequest] = await this.db
+      .insert(schema.stock_requests)
+      .values({
+        agent_id: agentId,
+        product_id: dto.product_id,
+        quantity: dto.quantity,
+        status: "pending",
+        /* Remit price is the product's own price less the agent's commission
+           per package. The old ₦1,300 flat assumed a product the catalogue
+           has never sold: it recorded ten bags of ₦42,000 rice as ₦13,000
+           owed, so an agent could keep almost the whole consignment. */
+        amount_to_remit:
+          dto.quantity * remitPerPackageKobo(product.name, product.price_kobo),
+        amount_remitted: 0,
+      })
+      .returning();
+
+    return {
+      message: "Stock request created",
+      data: stockRequest,
+    };
+  }
+
+  /**
+   * Get stock requests for admin (to fulfill)
+   */
+  async getStockRequests(
+    page: number = 1,
+    limit: number = 20,
+    status?: string,
+  ) {
+    const offset = (page - 1) * limit;
+
+    const whereConditions = status
+      ? eq(
+          schema.stock_requests.status,
+          status as "pending" | "fulfilled" | "cancelled",
+        )
+      : undefined;
+
+    const [requests, [{ total }]] = await Promise.all([
+      this.db
+        .select()
+        .from(schema.stock_requests)
+        .where(whereConditions)
+        .orderBy(desc(schema.stock_requests.created_at))
+        .limit(limit)
+        .offset(offset),
+      this.db
+        .select({ total: count() })
+        .from(schema.stock_requests)
+        .where(whereConditions),
+    ]);
+
+    return {
+      message: "Stock requests retrieved",
+      data: {
+        requests,
+        pagination: {
+          page,
+          limit,
+          total: Number(total ?? 0),
+        },
+      },
     };
   }
 }

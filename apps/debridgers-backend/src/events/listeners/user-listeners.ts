@@ -6,6 +6,7 @@ import * as schema from "../../infrastructure/persistence/index";
 import { lower } from "../../infrastructure/persistence/schemas/users.schema";
 import { DATABASE_CONNECTION } from "../../infrastructure/database/database.provider";
 import { EmailService } from "../../notification/features/email/email.service";
+import { NotificationsService } from "../../api/v1/buyer/notifications.service";
 import {
   USER_EVENTS,
   UserRegisteredPayload,
@@ -27,6 +28,7 @@ export class UserListeners {
 
   constructor(
     private readonly emailService: EmailService,
+    private readonly notificationsService: NotificationsService,
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
   ) {}
@@ -118,6 +120,14 @@ export class UserListeners {
       payload.email,
       payload.name,
     );
+
+    /* An application sits at "pending" until an admin acts on it, so the
+       admin dashboard is told as well as the applicant. */
+    await this.notificationsService.notifyAdmins({
+      type: "agent",
+      title: "New agent application",
+      description: `${payload.name} (${payload.email}) applied to become an agent and is awaiting review.`,
+    });
   }
 
   @OnEvent(USER_EVENTS.AGENT_APPROVED)

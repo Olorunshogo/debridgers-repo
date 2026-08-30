@@ -33,7 +33,7 @@ export function DialogSuccessPanel({
     >
       <CheckCircle2 className="text-good-green h-12 w-12" />
       <h2 className="font-syne text-heading text-lg font-bold">{title}</h2>
-      {description && <p className="text-text text-sm">{description}</p>}
+      {description && <p className="text-body text-sm">{description}</p>}
     </motion.div>
   );
 }

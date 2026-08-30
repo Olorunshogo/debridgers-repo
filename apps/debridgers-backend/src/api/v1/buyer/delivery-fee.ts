@@ -1,83 +1,33 @@
 /*
- * Delivery fee computation - per package, not per kilo.
+ * The API's view of order pricing.
  *
- * What fills a vehicle is packages: a 50kg bag and a 25 litre keg each occupy
- * one slot. Pricing on mass would need density constants for oil and an average
- * tuber weight for yam, both of which are guesses, to answer a question the
- * driver settles by counting.
+ * The rules themselves live in @debridgers/pricing, which the browser also
+ * imports, so the quote, the checkout charge and the buying desk cannot drift
+ * apart. Nothing here restates a number.
  *
- * It is also the version a buyer can verify at a glance:
- *   "₦1,000 to Kaduna South, plus ₦500 per extra bag."
- *
- * Pure functions with no database access, so the quote endpoint and the
- * checkout charge cannot drift apart - both call this - and so it stays
- * testable without a server.
+ * This file exists for one reason: the shared package must not depend on Nest,
+ * so the minimum-order rule reports a message there and is turned into an HTTP
+ * error here.
  */
 
-/** Packages included in the zone base fee before extras are charged. */
-export const PACKAGES_INCLUDED_IN_BASE = 1;
+import { BadRequestException } from "@nestjs/common";
+import { minimumOrderViolation } from "@debridgers/pricing";
 
-/** Charged for each package beyond the included allowance, in kobo. */
-export const PER_EXTRA_PACKAGE_KOBO = 50_000;
+export * from "@debridgers/pricing";
 
-/** Flat order handling fee, in kobo. */
-export const HANDLING_FEE_KOBO = 10_000;
-
-export interface DeliveryFeeInput {
-  /** Base fee for the delivery zone, in kobo. */
-  zoneFeeKobo: number;
-  /** Total packages in the basket - the sum of every line's quantity. */
-  packageCount: number;
-  /** Set while a free-delivery promotion is running. */
-  freeDelivery?: boolean;
-}
-
-export interface DeliveryFeeBreakdown {
-  zoneFeeKobo: number;
-  extraPackages: number;
-  extraPackagesKobo: number;
-  /** What the buyer is actually charged, after any promotion. */
-  deliveryFeeKobo: number;
-  /** What it would have cost without the promotion, for "was/now" copy. */
-  deliveryFeeBeforePromoKobo: number;
-  freeDelivery: boolean;
-}
-
-export function computeDeliveryFee(
-  input: DeliveryFeeInput,
-): DeliveryFeeBreakdown {
-  const { zoneFeeKobo, packageCount, freeDelivery = false } = input;
-
-  const extraPackages = Math.max(0, packageCount - PACKAGES_INCLUDED_IN_BASE);
-  const extraPackagesKobo = extraPackages * PER_EXTRA_PACKAGE_KOBO;
-  const beforePromo = zoneFeeKobo + extraPackagesKobo;
-
-  return {
-    zoneFeeKobo,
-    extraPackages,
-    extraPackagesKobo,
-    /* The full price is still computed during a promo so the UI can show it
-       struck through next to FREE. */
-    deliveryFeeKobo: freeDelivery ? 0 : beforePromo,
-    deliveryFeeBeforePromoKobo: beforePromo,
-    freeDelivery,
-  };
-}
-
-export interface OrderTotals extends DeliveryFeeBreakdown {
-  itemsTotalKobo: number;
-  handlingFeeKobo: number;
-  totalKobo: number;
-}
-
-export function computeOrderTotals(
+/**
+ * Throws when a basket is too small to deliver at a positive contribution.
+ *
+ * Enforced on the quote as well as the charge, so the buyer is told why before
+ * they reach payment rather than after.
+ */
+export function assertMeetsMinimumOrder(
   itemsTotalKobo: number,
-  fee: DeliveryFeeBreakdown,
-): OrderTotals {
-  return {
-    ...fee,
-    itemsTotalKobo,
-    handlingFeeKobo: HANDLING_FEE_KOBO,
-    totalKobo: itemsTotalKobo + fee.deliveryFeeKobo + HANDLING_FEE_KOBO,
-  };
+  packageCount: number,
+): void {
+  const violation = minimumOrderViolation(itemsTotalKobo, packageCount);
+
+  if (violation) {
+    throw new BadRequestException(violation);
+  }
 }

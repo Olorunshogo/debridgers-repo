@@ -23,7 +23,7 @@ import {
   TrendingDown,
   Minus,
 } from "lucide-react";
-import { HeroGreetingCard } from "../shared/HeroGreetingCard";
+import { HeroGreetingCard } from "@debridgers/ui-web";
 import { apiFetch } from "@debridgers/api-client";
 import {
   useCart,
@@ -339,7 +339,7 @@ function mapApiToDashboard(
 function SpendingTrendChip({ trend }: { trend: SpendingTrend }) {
   if (trend.direction === "flat") {
     return (
-      <span className="bg-bg-light text-text flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium">
+      <span className="bg-light-bg text-body flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium">
         <Minus size={13} aria-hidden="true" />
         This week level
       </span>
@@ -353,8 +353,8 @@ function SpendingTrendChip({ trend }: { trend: SpendingTrend }) {
     <span
       className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${
         isUp
-          ? "bg-status-delivered-bg text-status-delivered-text"
-          : "bg-status-cancelled-bg text-status-cancelled-text"
+          ? "bg-status-delivered text-status-delivered-fg"
+          : "bg-status-cancelled text-status-cancelled-fg"
       }`}
     >
       <Icon size={13} aria-hidden="true" />
@@ -375,28 +375,28 @@ const statusStyles: Record<
   { bgClass: string; textClass: string; label: string }
 > = {
   "on-the-way": {
-    bgClass: "bg-status-on-the-way-bg",
-    textClass: "text-status-on-the-way-text",
+    bgClass: "bg-status-on-the-way",
+    textClass: "text-status-on-the-way-fg",
     label: "On the way",
   },
   delivered: {
-    bgClass: "bg-status-delivered-bg",
-    textClass: "text-status-delivered-text",
+    bgClass: "bg-status-delivered",
+    textClass: "text-status-delivered-fg",
     label: "✓ Delivered",
   },
   cancelled: {
-    bgClass: "bg-status-cancelled-bg",
-    textClass: "text-status-cancelled-text",
+    bgClass: "bg-status-cancelled",
+    textClass: "text-status-cancelled-fg",
     label: "✕ Cancelled",
   },
 };
 
 function StatCardItem({ stat }: { stat: StatCard }) {
   return (
-    <div className="border-gray-border flex flex-col gap-3 rounded-2xl border bg-white p-4">
+    <div className="border-line flex flex-col gap-3 rounded-2xl border bg-white p-4">
       <div className="flex items-center justify-between">
-        <span className="text-text text-sm">{stat.label}</span>
-        <span className="bg-bg-light flex h-8 w-8 items-center justify-center rounded-full">
+        <span className="text-body text-sm">{stat.label}</span>
+        <span className="bg-light-bg flex h-8 w-8 items-center justify-center rounded-full">
           <Icon icon={stat.icon} className="text-primary h-4 w-4" />
         </span>
       </div>
@@ -415,7 +415,7 @@ function OrderRow({ order }: { order: RecentOrder }) {
     <div className="hover:bg-dash-quick-action-hover flex items-center justify-between rounded-xl bg-white px-4 py-3 transition-colors duration-150">
       <div className="flex flex-col gap-0.5">
         <p className="text-heading text-sm font-semibold">{order.items}</p>
-        <p className="text-text text-xs">
+        <p className="text-body text-xs">
           {order.orderId} • {order.time}
         </p>
       </div>
@@ -503,13 +503,10 @@ export default function BuyerOverview() {
   if (loading || !data) {
     return (
       <div className="flex animate-pulse flex-col gap-6">
-        <div className="border-gray-border h-40 rounded-2xl border" />
+        <div className="border-line h-40 rounded-2xl border" />
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="border-gray-border h-28 rounded-2xl border"
-            />
+            <div key={i} className="border-line h-28 rounded-2xl border" />
           ))}
         </div>
       </div>
@@ -572,7 +569,7 @@ export default function BuyerOverview() {
 
       {/* Recent orders + Quick actions */}
       <div className="grid grid-cols-1 gap-6">
-        <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
+        <div className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5">
           <div className="flex items-center justify-between">
             <h3 className="font-syne text-heading font-semibold">
               Recent Order
@@ -587,7 +584,7 @@ export default function BuyerOverview() {
           <div className="flex flex-col gap-2">
             {data.recentOrders.length === 0 ? (
               <div className="flex flex-col items-center gap-3 py-4 text-center">
-                <p className="text-text text-sm">No orders yet.</p>
+                <p className="text-body text-sm">No orders yet.</p>
                 <Link
                   to="/buyer-dashboard/shop"
                   className="bg-secondary text-heading mt-1 rounded-full px-4 py-2 text-xs font-semibold transition-opacity hover:opacity-80"
@@ -615,7 +612,7 @@ export default function BuyerOverview() {
             ...staticQuickActions.slice(1),
           ].map((action) => {
             const tileClass =
-              "border-gray-border hover:border-primary hover:bg-dash-quick-action-hover flex w-full flex-col items-center gap-2 rounded-2xl border bg-white p-4 text-center transition-colors duration-200 cursor-pointer";
+              "border-line hover:border-primary hover:bg-dash-quick-action-hover flex w-full flex-col items-center gap-2 rounded-2xl border bg-white p-4 text-center transition-all ease-in-out duration-300 cursor-pointer";
             const inner = (
               <>
                 <action.icon size={22} className="text-primary" />
@@ -663,7 +660,7 @@ export default function BuyerOverview() {
                   Live Tracking
                 </p>
               </div>
-              <span className="bg-status-active-bg text-status-active-text rounded-full px-2.5 py-1 text-xs font-medium">
+              <span className="bg-status-active text-status-active-fg rounded-full px-2.5 py-1 text-xs font-medium">
                 ● Active
               </span>
             </div>
@@ -728,7 +725,7 @@ export default function BuyerOverview() {
       </motion.div>
 
       {/* Spending chart */}
-      <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
+      <div className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5">
         <div className="flex items-center justify-between">
           <h3 className="font-syne text-heading font-semibold">
             Spending - Last 6 Weeks
@@ -768,14 +765,14 @@ export default function BuyerOverview() {
           </BarChart>
         </ResponsiveContainer>
 
-        <div className="border-gray-border grid grid-cols-3 gap-4 border-t pt-4">
+        <div className="border-line grid grid-cols-3 gap-4 border-t pt-4">
           {[
             { label: "This week", value: data.spending.thisWeek },
             { label: "This month", value: data.spending.thisMonth },
             { label: "Avg / week", value: data.spending.avgPerWeek },
           ].map((s) => (
             <div key={s.label} className="flex flex-col gap-0.5">
-              <p className="text-text text-xs">{s.label}</p>
+              <p className="text-body text-xs">{s.label}</p>
               <p className="font-syne text-heading text-lg font-bold">
                 {s.value}
               </p>

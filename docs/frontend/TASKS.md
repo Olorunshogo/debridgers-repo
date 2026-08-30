@@ -1,441 +1,134 @@
-# Core Development Tasks
+# Tasks
 
-Kept in sync with `docs/frontend/PLAN.md`. Anything here is either **open** or
-**partially done with the gap named**. Completed items move to the Done list
-below rather than being deleted, so the reasoning stays findable.
+The single engineering backlog, in shipping order. This file replaces the old
+split between `TASKS.md` (the backlog) and `PLAN.md` (the sequence): they
+carried two Done lists and two open lists that had to be hand-synced, and they
+had already drifted apart. There is one list now, and its order is the plan.
+
+The scorecard lives in `docs/jottings/KPI.md`. The business decisions that gate
+several of these live in `docs/business/BusinessModel.md`.
+
+**Only open work is described here.** Shipped work is one line under Done and
+appears nowhere else. When something ships: cut its section, add the line.
+
+**Audited against the code on 2026-08-29.**
 
 ---
 
 ## Done
 
-Verified against the code on 2026-07-27.
-
-- **#1 Cart sync on login** - `POST /buyer/cart/merge`, higher quantity per line
-  rather than the sum.
-- **#2 Shopping cart backend sync** - `GET`/`PUT`/`DELETE /buyer/cart`, 2s
-  debounce while authenticated, localStorage stays authoritative. No guest cart
-  by design: an anonymous cart has no owner to key on.
-- **#3 Favourites / wishlist** - `favorites` table, endpoints, optimistic heart,
-  hidden for anonymous visitors. **Buy again** was split out separately as an
-  order-history-derived rail.
-- **#4 Checkout and payment flow** - `POST /buyer/orders/initialize-payment`,
-  `order_items` table (it did not exist, which is why this was broken), the
-  `buyer_order` webhook branch, and `FRONTEND_URL`. `PAYMENTS_SIMULATED=true`
-  stands in until Paystack credentials exist.
-- **#8.4 Change password** - shipped earlier.
-- **#11.1 system_settings / admin settings** - shipped earlier; the
-  commission-rate wiring was closed on 2026-07-30.
-
-Also shipped and not originally in this file: product categories, per-package
-delivery pricing with a per-zone free-delivery flag, the State to LGA to Zone
-checkout cascade, the dialog engine with two consumers, agent-requested payouts,
-the auth refactor with single-flight refresh, shared currency formatting, and a
-Nigerian states dataset.
-
----
-
-## Partially done - gap named
-
-Nothing outstanding from the previous list. All five items below were closed on
-2026-07-30; see the Done section for what each turned out to involve.
-
----
-
-## Closed 2026-07-30
-
-Each of these was flagged partial. Working through them surfaced four separate
-dead links where a feature existed on both sides but nothing joined them.
-
-- **#5 Error handling** - the description was stale: no truly empty `catch {}`
-  blocks remained. What did remain were five catches whose body was
-  `// silently fail` (admin products x2, admin outreach, agent settings, buyer
-  settings). All now surface a message. Two admin list loads were also swallowing
-  failures and rendering an empty table, which reads as "no records" rather than
-  "load failed". Two catches that are empty on purpose were left alone with their
-  reasons documented.
-
-- **#7 Product catalog** - replaced the flat `category` text with a
-  `product_categories` tree (migration `0015_product_taxonomy`). Self-referencing
-  rather than three fixed tables, because the catalogue is not uniformly three
-  deep: Grains reaches Grains > Rice > Ofada, Oil stops at Oil > Palm Oil. The
-  agent stock page now drills to whatever depth a branch has instead of grouping
-  products by their **description** text, which is what it was actually doing.
-  `products.category` is retained and derived from the root ancestor so the shop
-  filter keeps working.
-  - Found on the way: `createProduct` and `updateProduct` never persisted
-    `category`, `measure_value` or `measure_unit`. The DTO accepted them and the
-    form sent them; the insert dropped them. So "category exists" was only ever
-    half true.
-  - Also fixed: `updateProduct`'s `image_url` used `z.string().url()`, rejecting
-    bundled `/images/...` paths. A product with a bundled image could be created
-    but never edited. The create DTO already documented this exact fix.
-
-- **#8.1 Email notification toggle** - `UserListeners` now checks the flag before
-  optional mail. Account and security mail (welcome, verification, password
-  reset, agent application outcomes) always sends. Worth stating plainly: there
-  are still **no order or delivery emails anywhere**, so the toggle governs only
-  sign-in notices and contact confirmations. It is honest now rather than
-  decorative, but it stays thin until order-lifecycle email exists.
-
-- **#9.2 Agent wallet** - the payout request was not merely incomplete, it was
-  **impossible to use**. `agent_profiles.bank_code` had no write path anywhere in
-  the codebase, and `requestWithdrawal` requires it to be non-null, so every
-  agent got "Add your bank details in settings" against a settings page with no
-  such field. Added `GET /agent/banks`, `POST /agent/bank-details/resolve`,
-  `PATCH /agent/bank-details`, a bank picker on the wallet page, `bank_code` in
-  the KYC flow, and `POST /admin/agents/backfill-bank-codes` for existing agents.
-  Account names come from the provider's name-enquiry, never from the client.
-  - The provider is **SafeHaven, not Paystack** - this file previously said
-    Paystack. `getBanks()` and `nameEnquiry()` already existed and were unused.
-  - Second dead link: nothing could approve a withdrawal. `POST /payment/payout/:id`
-    requires status `approved`, but no endpoint moved a row off `pending`. Added
-    `GET /admin/withdrawals` and approve/reject, where reject returns the balance
-    the request had debited up front.
-
-- **#11.1 commission rate** - `SystemSettingsService` now exists (this file
-  previously referred to it as though it did; settings were actually read by
-  inline queries in four places). `PaymentService` reads the rate at call time
-  instead of caching it in its constructor.
-  - Unit mismatch worth knowing: the setting is stored as a **percentage**
-    (1-100, validated in `updateSetting`) while payment code needs a
-    **fraction**. Wiring them naively would have multiplied every commission by
-    a hundred. The conversion lives in one place, `getAgentCommissionRate()`.
-  - `createSubaccount` was posting a hardcoded `settlement_bank: "058"` and
-    `account_number: "0000000000"`, creating subaccounts that could never settle.
-    It now uses the agent's real details and refuses if they are absent.
-
-### Also added
-
-- **Admin payouts page** (`/admin-dashboard/payouts`). The approve/reject
-  endpoints existed with no interface behind them, so the queue still had no
-  exit in practice. Lists requests by status, approves, rejects with a reason
-  (stating that the amount goes back to the agent), and can trigger the weekly
-  sweep on demand rather than waiting for Friday.
-- **`PlatformConfigContext`** - one fetch of `/config/public`, shared. It exposes
-  the commission as **both** `commissionPercent` (5, for display) and
-  `commissionRate` (0.05, for maths), because the percentage/fraction ambiguity
-  already caused one real bug server-side.
-  - `landing/agents.tsx` previously defaulted to a hardcoded rate while its own
-    fetch was in flight, overstating the earnings table on the page whose whole
-    purpose is stating what agents earn. It now shows a skeleton until the live
-    figure arrives.
-  - That page's SEO metadata also hardcoded a commission figure in its title,
-    description, keywords and social cards. `meta()` is static and the rate is an
-    admin setting, so the figure was removed rather than left to go stale again.
-- **Migration `0016`** pushes products from their type node down onto their
-  variety leaf, so the grains branch actually drills three levels. `0015` could
-  only match on the old flat text and stopped at the type. Deliberately skips
-  ambiguous names: "Wake Gida (Honey Beans)" names two varieties and stays on
-  Beans rather than being guessed at. Verified idempotent.
-
-- Weekly payout cron (`PayoutService`, Friday 09:00 `Africa/Lagos`), which the
-  wallet page had always advertised but nothing performed. It pays only
-  already-approved withdrawals; approval stays human. `processWithdrawal` gained
-  an atomic claim so an admin clicking payout during the sweep cannot double-pay,
-  and the transfer reference is now deterministic so a retry cannot pay twice.
-- `DashSelectInput` rebuilt with `AnimatePresence`, keyboard navigation and an
-  `isBank` mode that adds search, for bank lists that run to hundreds of entries.
+- Cart sync on login, server cart, 2s debounce, higher quantity per line on merge
+- Favourites, and Buy Again derived separately from order history
+- Checkout and payment flow, `order_items` table, multi-product orders
+- Product categories: three-level taxonomy with `parent_id`, real `category` column
+- Delivery pricing as pure functions shared by the quote and the charge
+- Checkout cascade: State to LGA to Zone to address, with a live quote
+- Dialog engine, with `REQUEST_PAYOUT`, `AUTH_GATE` and `PAYMENT_METHOD`
+- Checkout split into create-order then pay, method chosen in the modal
+- Change password
+- `system_settings` and the admin settings UI
+- Commission rate read from `system_settings`, not the env var
+- Agent-requested payouts, debit and pending row in one transaction
+- Agent bank details against the live Paystack bank list
+- Weekly agent payout cron, Fridays, plus a 15-minute order reconciliation cron
+- Buyer wallet: schema, top-up, `wallet_transactions`, withdrawals
+- Dedicated virtual account issuance per buyer
+- Order lifecycle past confirmed: out for delivery, delivered, `delivered_at`
+- Admin orders list and order detail endpoints
+- Auth refactor: single-flight refresh, hooks in `ui-web`, 1728 lines to 602
+- Shared currency formatting across 15 call sites
+- Nigerian states dataset, 37 states and 774 LGAs
+- Tables engine, with buyer orders and wallet moved onto it
+- Automated tests: money paths, auth and pricing, on an isolated database
+- Live Paystack round trip verified for checkout, withdrawals, virtual accounts
+- Pricing repricing: 3% cost-to-serve fee with floor and cap, delivery at
+  measured trip cost with a taper and per-drop cap, ₦25,000 minimum order
+- Agent remit price from product price less banded commission, replacing the
+  ₦1,300 flat rate that recorded ten bags of rice as ₦13,000 owed
+- Catalogue unit sizes corrected to 100kg, millet listed, Chikun zone repaired
+- `ComingSoon` component and the Procurement Targets page
+- Backend refactor phases 0 to 3: stray build artefacts removed, payment logic
+  consolidated into `api/v1/payment/`, `api/v1/wallet/` created with
+  `AgentLedgerService`, DVA creation decoupled from persistence
 
 ---
 
-## Open
+## 1. Ship the repriced zone fees to production
 
-## 1. Cart Sync on Login
+The seeder carries ₦4,000 / ₦4,500 / ₦6,000. The production `zones` rows still
+hold ₦500 / ₦700 / ₦800, so the repricing has only half landed: the fee code is
+live but the zone bases it multiplies are the old ones.
 
-> **DONE.** Kept for the merge-logic reasoning. See the Done list above.
+Update the three rows directly. Nothing else depends on it.
 
-Cart browsing works (localStorage). The missing piece is merging the guest cart into the user's backend cart when they log in.
+---
 
-### What's missing
+## 2. Email notification listener gate
 
-- On login success, fetch `GET /cart` from backend, merge with current localStorage cart (take max qty per item), then `PUT /cart` with merged result, then clear localStorage cart.
-- On app init for authenticated users, load cart from `GET /cart` instead of localStorage.
-- On logout, persist the current cart to localStorage so it survives.
+The column, DTO, and profile read/update all exist, but **no listener checks the
+flag**, so the toggle is decorative. Gate the sends in `UserListeners` on
+`users.email_notifications`.
 
-### Merge logic
+Low effort, fully contained.
+
+---
+
+## 3. Unpaid order recovery
+
+Splitting checkout into create-then-pay means an order can exist that nobody
+paid for. That is a recoverable record of intent, not a leak, provided it is
+handled deliberately.
+
+**Do not redirect to payment on next login.** Someone logging in to check a
+delivery gets shoved into a checkout they already walked away from, with no
+obvious way out. It also breaks the signup path, where the intent was never
+payment. Recovery is offered, not forced.
+
+- [ ] Unpaid-order card on the buyer dashboard: amount, age, **Complete payment**
+      and **Cancel order**
+- [ ] Complete payment action on the orders list row, so a pending entry is not
+      a mystery
+- [ ] Reuse the `PAYMENT_METHOD` dialog, which already takes an order id and its
+      totals
+- [ ] Re-price on resume through the same `priceBasket` path. If the total
+      moved, show old and new and make the buyer confirm. Silently charging a
+      different number than the one shown is the failure to avoid; silently
+      honouring a stale one is a slower version of the same problem
+- [ ] Return an existing unpaid pending order with the same cart rather than
+      inserting a duplicate
+- [ ] `@Cron` to expire unpaid orders after 24 hours, `cancelled` with reason
+      "not paid in time", in the same shape as the payout cron
+
+---
+
+## 4. Repeat last order, server persistence
+
+`repeatLastOrder()` reads `debridgers_last_order` from localStorage, snapshotted
+at checkout. Works per device; lost on a browser wipe or a device change.
+
+**Backend.** `GET /buyer/orders/last/items` returns the line items of the most
+recent confirmed order: join `orders` to `order_items` and `products`, filter by
+`buyer_id`, order by `created_at DESC`, limit 1. Return `[]` when there are no
+orders.
+
+**Frontend, `buyer/overview.tsx`.** On mount when authenticated, call it, and if
+non-empty write the result to `debridgers_last_order`. The existing
+`repeatLastOrder()` needs no change. On failure, skip silently: the localStorage
+snapshot still works.
+
+---
+
+## 5. Agent stock request, hierarchical UX
+
+The page lists products flat. The three-level taxonomy now exists in the
+database, so this is frontend work against data that is already there.
 
 ```
-localStorage cart: [itemA x2, itemB x1]
-backend cart on login: [itemA x1, itemC x3]
-merged: [itemA x2, itemB x1, itemC x3]   ← take max qty
-PUT /cart with merged result
-Clear localStorage cart
+Step 1 - Category buttons:  [ Grains ]  [ Beans ]  [ Oil ]  [ Roots ]
+Step 2 - Type pills:        [ Rice ]  [ Maize ]  [ Millet ]
+Step 3 - Variety list:      Local White / Ofada / Tuwo
+Step 4 - Inline stepper:    Local White  [ - ] [ 3 ] [ + ]  Add to Request
 ```
-
-### Backend endpoints needed
-
-- `GET /cart` - fetch user's saved cart
-- `PUT /cart` - replace full cart (idempotent)
-- `DELETE /cart` - clear cart on order completion
-
----
-
-## 2. Shopping Cart Backend Sync (Authenticated Users)
-
-> **DONE.** Kept for the strategy notes. See the Done list above.
-
-For logged-in users, cart changes should sync to the backend so the cart survives across devices and browser clears.
-
-### Strategy
-
-- Debounce 3 seconds: every cart mutation resets a timer; after 3s of no changes, `PUT /cart` fires with the full current cart.
-- On page unload (`beforeunload`), flush immediately without waiting for debounce.
-- On error, retry once then fall back to localStorage.
-- Show a subtle "saving..." indicator while sync is in flight.
-
----
-
-## 3. Favorites / Wishlist
-
-> **DONE**, and split into favourites plus a separate buy-again rail.
-
-Not started. No backend endpoints, no UI, no heart icon on product cards.
-
-### What's needed
-
-**Backend:**
-
-- `GET /favorites` - list all favorites
-- `POST /favorites/:productId` - add
-- `DELETE /favorites/:productId` - remove
-- `POST /favorites/batch` - bulk add on login (for guest merge)
-
-**Frontend:**
-
-- Heart/bookmark icon on each product card (optimistic toggle)
-- Guest favorites stored as product ID array in localStorage
-- On login: batch merge localStorage favorites with backend, then clear localStorage
-- "My Favorites" page or drawer in dashboard
-
----
-
-## 4. Checkout and Payment Flow
-
-> **DONE.** The status below is superseded - checkout is built and the
-> root cause was a missing `order_items` table, not just a missing route.
-
-### Status: RESOLVED (was: BROKEN - frontend/backend contract mismatch)
-
-`buyer/checkout.tsx` calls `POST /buyer/orders/initialize-payment` with `{ delivery_address, delivery_time, notes, cart: [{ product_id, name, price_kobo, unit, qty }] }`, expects `authorization_url` back, redirects to it, then on Paystack callback (`?trxref=...`) clears cart, snapshots to `debridgers_last_order`, and shows the confirmed screen.
-
-That endpoint did not exist. `buyer.controller.ts` had only `POST orders` / `GET orders`, and the sole payment-initialize route was `payment.controller.ts > POST payment/initialize`, built for the agent stock-request flow (requires `agent_id`, validated against an approved agent) and unable to accept a buyer cart payload. Checkout 404'd.
-
-**Why it had never been built:** there was no `order_items` table and no `product_id` on `orders`. The orders table stored `quantity`, `unit_price` and a total but never recorded _what_ was bought, because the schema was shaped for the single-product field flow. A multi-product buyer cart was unrepresentable, so the route could not be written against that schema. `order_items` was added and existing orders backfilled by matching `unit_price` to a product price.
-
-### Backend needed
-
-```
-Buyer places order
-→ POST /buyer/orders/initialize-payment
-→ Backend calls Paystack initialize → returns authorization_url + reference
-→ Frontend redirects buyer to Paystack
-→ Paystack webhook: charge.success → create order with status "confirmed"
-→ Buyer redirected back → confirmed screen already handled on frontend
-```
-
-1. New endpoint `POST /buyer/orders/initialize-payment` (auth: buyer) - accept `{ delivery_address, delivery_time, notes, cart }`, look up buyer email from JWT, call Paystack `transaction/initialize` with `{ email, amount, callback_url: FRONTEND_URL + "/buyer-dashboard/checkout", metadata: { type: "buyer_order", cart, delivery_address, delivery_time, notes } }`, return `{ data: { authorization_url, reference } }`.
-2. Paystack webhook (`payment.service.ts > handleWebhook`): on `charge.success` where `metadata.type === "buyer_order"`, create the order row + order_items rows, notify buyer via email.
-3. Set `FRONTEND_URL` env var on backend so the callback URL is correct per environment.
-
-### Option A - Pay from wallet (later, after buyer wallet exists)
-
-```
-Buyer tops up wallet → balance stored in DB
-At checkout → deduct balance → create order as "confirmed"
-If balance insufficient → prompt top-up
-```
-
----
-
-## 5. Error Handling & Edge Cases
-
-- **Session expiry during checkout** - detect expired token, show re-auth modal, preserve cart and checkout progress.
-- **Network errors** - user-friendly messages on API failure, allow retry, keep modal open.
-- **Cart limits** - max quantity per item, out-of-stock handling, price change detection.
-- **localStorage unavailable** - fall back to in-memory cart, warn on incognito mode.
-
----
-
-## 6. Testing Scenarios
-
-> **NOT RUN.** No automated test covers any of the new endpoints; everything
-> shipped was verified by hand. This is the largest quality gap in the repo.
-
-### Happy path
-
-- [ ] Browse shop without authentication
-- [ ] Add items to cart
-- [ ] Click checkout → auth modal appears
-- [ ] Sign up → cart remains intact → proceed to payment
-- [ ] Log in instead of signing up → same result
-
-### Alternative path
-
-- [ ] Update quantities before checkout
-- [ ] Remove items from cart
-- [ ] Abandon checkout and return later (cart persists)
-
-### Error cases
-
-- [ ] Signup with invalid email / weak password
-- [ ] Login with wrong credentials
-- [ ] Session expires during checkout
-- [ ] Network error during signup
-- [ ] localStorage unavailable
-
----
-
-## 7. Product Catalog Structure
-
-Kept as reference - both shop and agent stock request consume this.
-
-### Two-tier model: Category → Variety
-
-```
-Category: Grains
-  Variety: Rice - Local White, Ofada, Tuwo, Long Grain
-  Variety: Beans - Wake Gida, Cowpea, Soya Beans, Ameria, Honey Beans
-  Variety: Garri - White, Yellow (toasted), Ijebu
-
-Category: Oil
-  Palm Oil, Groundnut Oil, Vegetable Oil
-
-Category: Tubers
-  Yam, Irish Potato, Sweet Potato
-```
-
-### Per-variety data shape
-
-```typescript
-interface ProductVariety {
-  id: string;
-  slug: string;
-  name: string;
-  categoryId: string;
-  images: string[];
-  pricePerUnit: number;
-  unit: "bag" | "kg" | "litre" | "keg" | "tuber" | "crate";
-  unitSizes: string[];
-  description: string;
-  inStock: boolean;
-  featured?: boolean;
-}
-```
-
-### Notes
-
-- Images per variety are critical - Wake Gida looks different from cowpea, Ofada from long grain. Get real photos.
-- Pricing is at variety level, not category level.
-- The shop catalog and homepage "What We Deliver" cards share the same underlying data.
-
----
-
-## 8. Buyer Settings - Unimplemented Toggles
-
-### 8.1 Email Notification Toggle
-
-Frontend hydrates and sends the toggle correctly. Backend is missing:
-
-1. `users` table: add `email_notifications boolean NOT NULL DEFAULT true` column + migration.
-2. `updateProfile` DTO: add `email_notifications?: boolean`.
-3. `BuyerService.updateProfile`: include `email_notifications` in updates.
-4. `BuyerService.getProfile`: return `email_notifications` in profile response.
-5. `UserListeners` / `EmailService`: before every transactional email to a buyer, check `email_notifications` flag and skip if `false`. Welcome and verification emails always send.
-
-### 8.2 SMS Notification Toggle
-
-Toggle is pure UI - no SMS service exists anywhere.
-
-1. Choose SMS provider: Africa's Talking (recommended for Nigeria), Termii, or Twilio.
-2. Build `SmsService` under `notification/features/sms/`.
-3. `users` table: add `sms_notifications boolean NOT NULL DEFAULT false` + migration.
-4. Wire `sms_notifications` into `updateProfile` DTO + service + `getProfile`.
-5. Add SMS sends in `UserListeners` for order placed, out-for-delivery, delivered events. Only send if `sms_notifications === true` AND user has a `phone` on file.
-6. Frontend: show helper note "You must have a phone number saved to receive SMS."
-
-### 8.3 Two-Factor Authentication Toggle
-
-Toggle is pure UI - no TOTP implementation exists.
-
-1. `users` table: add `two_factor_enabled boolean NOT NULL DEFAULT false` and `two_factor_secret text` (nullable) + migration.
-2. Install `otplib` for TOTP.
-3. New endpoints:
-   - `POST /buyer/2fa/setup` - generate TOTP secret, return QR code URL.
-   - `POST /buyer/2fa/verify-setup` - confirm first TOTP code, persist secret, set `two_factor_enabled = true`.
-   - `DELETE /buyer/2fa` - disable (requires current TOTP code).
-4. `AuthService.login`: if `two_factor_enabled`, do NOT return tokens - return `{ requires2fa: true, tempToken }`.
-5. New `POST /auth/2fa/login` - accepts `tempToken` + `totpCode`, verifies, issues real tokens.
-6. Frontend settings: clicking toggle opens setup flow (QR code + confirm code), not just a boolean flip. Disabling also requires entering current TOTP code.
-7. Frontend login page: if `requires2fa` returned, show second step for TOTP code.
-
-| Feature                   | Backend missing                           | Complexity |
-| ------------------------- | ----------------------------------------- | ---------- |
-| Email notification        | Schema col, DTO, listener gate            | Low        |
-| SMS notifications         | Full SMS provider + schema + listeners    | High       |
-| Two-factor authentication | Full TOTP flow + 3 endpoints + login step | High       |
-
----
-
-## 9. Wallet & Payment
-
-### 9.1 Buyer Wallet - Not Built
-
-Balance is hardcoded to 0. "Add Funds" is disabled/fake. No `GET /buyer/wallet` endpoint exists. No buyer row in the `wallets` table.
-
-**Backend needed:**
-
-1. Create `buyer_wallets` table: `id, buyer_id FK, balance_kobo, total_funded_kobo, updated_at`. Create row on buyer registration.
-2. `GET /buyer/wallet` - return `{ balance_kobo, total_funded_kobo }`.
-3. `POST /buyer/wallet/topup/initialize` - accepts `{ amount_kobo }`, calls Paystack `transaction/initialize`, returns `{ authorization_url, reference }`.
-4. Paystack webhook: on `charge.success` with `metadata.type = "buyer_topup"`, credit buyer wallet.
-5. `wallet_transactions` table: `id, wallet_id, type (credit|debit), amount_kobo, description, reference, created_at`. Credit on top-up, debit on order.
-
-**Frontend (`buyer/wallet.tsx`):**
-
-- Fetch from `GET /buyer/wallet` for real balance.
-- "Add Funds" calls initialize endpoint, redirects to `authorization_url`.
-- Show real credit/debit history from transaction log.
-
-### 9.2 Agent Wallet - Bank Details & Payout Missing
-
-`GET /agent/wallet` and commissions work. Missing:
-
-1. `PATCH /agent/bank-details` - accepts `{ bank_code, account_number }`, verifies via Paystack account resolution API, updates profile and Paystack subaccount. Currently hardcoded to `"0000000000"`.
-2. Payout cron job (`@Cron`, every Friday 9am Nigeria time):
-   - Find agents with `pending_balance > 0` and approved Paystack subaccount.
-   - Call Paystack `POST /transfer`.
-   - On success, move pending to available balance, record payout transaction.
-3. Frontend `agent/wallet.tsx`: replace "Contact admin" placeholder with bank name (from Paystack bank list) + account number form. Show resolved account name before saving.
-
----
-
-## 10. Agent Stock Request - Hierarchical UX
-
-Current page lists products flat. Goal: three-level drill-down.
-
-### Desired flow
-
-```
-Step 1 - Category buttons (always visible):  [ Grains ]  [ Oil ]  [ Tubers ]
-
-↓ click "Grains"
-
-Step 2 - Type pills appear below:  [ Beans ]  [ Rice ]  [ Garri ]
-
-↓ click "Beans"
-
-Step 3 - Variety list (inline accordion):
-  Wake Gida
-  Cowpea
-  Soya Beans
-
-↓ select "Wake Gida"
-
-Step 4 - Inline qty stepper appears:
-  Wake Gida  [ - ]  [ 3 ]  [ + ]   Add to Request
-```
-
-### State shape
 
 ```typescript
 interface StockSelectionState {
@@ -444,165 +137,206 @@ interface StockSelectionState {
   activeVarietyId: string | null;
   quantity: number;
 }
-
-interface RequestLineItem {
-  varietyId: string;
-  varietyName: string;
-  typeName: string;
-  categoryName: string;
-  unit: string;
-  quantity: number;
-}
 ```
 
-### UX notes
+UX notes: the category row scrolls horizontally on mobile without wrapping, and
+active category and type need clear visual distinction.
 
-- Category row: horizontally scrollable on mobile, no wrapping.
-- Active category and type have clear visual distinction.
-- Type is an accordion toggle - clicking active type collapses it.
-- Already-added varieties show a checkmark.
-- Running request list at bottom (sticky or collapsible sheet) with remove option.
-- File to modify: `apps/debridgers-frontend/app/routes/dashboards/agent/request-stock.tsx`
+**Blocked on a business decision.** Do not build the request flow until the agent
+commission level is confirmed against a measured procurement spread. The bands
+are locked in structure and provisional in level; see
+`docs/business/BusinessModel.md`, Decision 4. Building the UX against a rate that
+then drops is worse than waiting.
 
 ---
 
-## 11. Admin Commission & Referral System
+## 6. Commission and referral system
 
-### 11.1 Backend - system_settings Table
+Largest feature left. Do not start before item 5 finishes.
 
-`system_settings` table, `SystemSettingsService`, `GET`/`PATCH /admin/settings`, and `GET /config/public` are all built. The admin settings UI (`admin/settings.tsx`) is wired on the frontend.
+**Re-cost the numbers before building.** The ₦500 flat referral discount and the
+₦20 perpetual referral commission were set against a ₦1,400 product. Against a
+₦42,000 bag, ₦500 is a 1.2% discount that will not motivate anyone, and ₦20 in
+perpetuity is an unbounded liability for a trivial amount. Decide both against
+real unit economics first.
 
-### What's still missing
-
-- `PaymentService` still reads the agent commission rate from the `AGENT_COMMISSION_RATE` env var, not from `SystemSettingsService.getSetting("agent_commission_rate")`. Wire it to the DB-backed setting so admin changes actually take effect.
-- Seed rows for `buyer_referral_discount_kobo` (`50000`) and `buyer_referral_discount_type` (`flat`) - needed once section 11.4 (buyer referral discounts) is built.
-
-### 11.2 Referral Tracking Columns
-
-`users` table additions (migration needed):
+**Columns** (`users`, migration needed):
 
 ```
-referral_code:   varchar UNIQUE    Generated on account activation. Format: "DBR-<ULID-short>"
-referred_by:     integer FK -> users.id (nullable)
+referral_code:  varchar UNIQUE   Generated on activation. Format "DBR-<ULID-short>"
+referred_by:    integer FK -> users.id, nullable
 ```
 
-### 11.3 Agent Referral System
+Only an admin-assigned `referred_by_agent_id` exists today.
 
-Agent earns commission when a referred buyer places an order.
+**Order of work:**
 
-**Backend:**
+| #   | What                                                  | Complexity |
+| --- | ----------------------------------------------------- | ---------- |
+| 1   | `referral_code` + `referred_by` columns and migration | Low        |
+| 2   | Generate `referral_code` on user activation           | Low        |
+| 3   | Capture `?ref=` on signup, persist `referred_by`      | Low        |
+| 4   | Agent referral commission on a referred buyer's order | Medium     |
+| 5   | `buyer_discounts` table and migration                 | Low        |
+| 6   | Referral discount on the referee's first order        | Medium     |
+| 7   | Apply the discount at checkout before Paystack init   | Medium     |
+| 8   | `GET /buyer/discounts` and the checkout UI            | Low        |
+| 9   | `/refer` landing page                                 | Medium     |
+| 10  | Referral link in the buyer and agent dashboards       | Low        |
 
-1. `POST /auth/signup`: if `referred_by_code` in body, resolve to user ID, persist as `users.referred_by`.
-2. Paystack webhook: on `charge.success` for buyer order, check if buyer has `referred_by`. If so, create `commissions` row with `type: "buyer_referral"`.
-3. `GET /agent/profile` must return `referral_code`.
+**Backend detail.** On signup, resolve `referred_by_code` to a user id. On
+`charge.success` for a buyer order, if the buyer has `referred_by`, write a
+`commissions` row with `type: "buyer_referral"`. `GET /agent/profile` must return
+`referral_code`. The existing monthly cron only handles agent-recruits-agent
+overrides.
 
-**Frontend:**
-
-- Show agent's referral link in `agent/overview.tsx` or `agent/wallet.tsx` with copy-to-clipboard button.
-
-### 11.4 Buyer Referral System
-
-Buyer earns a discount (not cash) when a referred friend places their first order.
-
-**Backend:**
-
-1. New `buyer_discounts` table:
-   ```
-   id, buyer_id FK, amount_kobo, reason, status (pending|applied|expired),
-   expires_at, order_id FK (nullable), created_at
-   ```
-2. Paystack webhook: on `charge.success` for buyer order, if it is the buyer's first order AND buyer has `referred_by`, create a `buyer_discounts` row for the referrer. Notify referrer.
-3. Checkout flow: before calling Paystack initialize, query `buyer_discounts` for pending discounts. If one exists, subtract from total. Mark as `applied` after Paystack confirms.
-4. `GET /buyer/discounts` - pending discounts for authenticated buyer.
-
-**Business rules:**
-
-- One discount per referral (only on referee's first order).
-- Discounts stack if multiple referrals - apply oldest first at checkout.
-- Discount cannot bring total below ₦0; remainder is forfeited.
-- 90-day expiry.
-
-**Frontend:**
-
-- Show buyer's referral link in `buyer/overview.tsx` or `buyer/settings.tsx` with copy button and explanation.
-- Checkout shows pending discount if available.
-
-### 11.5 /refer Landing Page
-
-New route: `apps/debridgers-frontend/app/routes/landing/refer.tsx`
-
-**Sections:**
-
-1. Hero - "Invite a friend, both of you win."
-2. For Buyers - how it works (3 steps), ₦500 discount, 90-day expiry note, CTA.
-3. For Agents - how it works (3 steps), live commission rate from `/config/public`, CTA.
-4. FAQ - limits, timing, buyer vs agent distinction.
-
-**Navigation entry points:**
-
-- Landing page header nav.
-- Buyer dashboard sidebar.
-- Agent dashboard sidebar under Wallet section.
-
-### 11.6 Implementation Order
-
-| Step | What                                                | Complexity |
-| ---- | --------------------------------------------------- | ---------- |
-| 1    | `system_settings` table + migration                 | Low        |
-| 2    | `SystemSettingsService` + `GET /config/public`      | Low        |
-| 3    | `PATCH /admin/settings` endpoint                    | Low        |
-| 4    | Wire `PaymentService` to `system_settings`          | Low        |
-| 5    | `referral_code` + `referred_by` columns + migration | Low        |
-| 6    | Generate `referral_code` on user activation         | Low        |
-| 7    | Capture `?ref=` on signup, persist `referred_by`    | Low        |
-| 8    | Agent referral commission on referred buyer order   | Medium     |
-| 9    | `buyer_discounts` table + migration                 | Low        |
-| 10   | Buyer referral discount on referee's first order    | Medium     |
-| 11   | Apply discount at checkout before Paystack init     | Medium     |
-| 12   | `GET /buyer/discounts` + checkout UI                | Low        |
-| 13   | `/refer` landing page                               | Medium     |
-| 14   | Referral link in buyer + agent dashboards           | Low        |
+**`/refer` page:** hero, how it works for buyers, how it works for agents with
+the live rate from `/config/public`, and an FAQ covering limits, timing, and the
+buyer versus agent distinction. Entry points in the landing header and both
+dashboard sidebars.
 
 ---
 
-## 12. Repeat Last Order - Server Persistence
+## 7. Payment links
 
-The "Repeat Last" quick action on the buyer overview currently reads from `debridgers_last_order` in localStorage, which is snapshotted from `debridgers_cart` at checkout. This works per-device but is lost if the browser data is cleared or the user switches devices.
+A shareable link that opens a prefilled checkout, so an order can be taken over
+WhatsApp or by phone without the buyer navigating the shop.
 
-### What's missing
+**Blocked on guest checkout, which does not exist.** A payment link that forces a
+signup is worthless, and the cart has no owner to key on before login. Decide how
+a guest order attaches to a person afterwards before anything else here.
 
-**Backend:**
+Then: a `payment_links` table (reference, cart contents, optional buyer, total,
+status, expiry), create/read-by-reference/pay endpoints, a public route that
+renders the itemised total through the same pricing path as checkout, and an
+admin sidebar entry, which payment links do not currently have.
 
-1. New endpoint `GET /buyer/orders/last/items` - returns the line items of the buyer's most recent confirmed order:
-   ```json
-   [
-     {
-       "product_id": 3,
-       "name": "Rice - Local White",
-       "price_kobo": 250000,
-       "unit": "50kg bag",
-       "qty": 2
-     },
-     {
-       "product_id": 7,
-       "name": "Palm Oil",
-       "price_kobo": 80000,
-       "unit": "keg",
-       "qty": 1
-     }
-   ]
-   ```
-   Query: join `orders` with `order_items` and `products`, filter by `buyer_id`, order by `created_at DESC`, limit 1.
-   Returns `[]` if the buyer has no orders yet.
+---
 
-**Frontend (`buyer/overview.tsx`):**
+## 8. Product photography
 
-1. On mount (authenticated), call `GET /buyer/orders/last/items`.
-2. If the result is non-empty, map to `CartItem[]` and write to `localStorage.setItem("debridgers_last_order", JSON.stringify(items))`.
-3. The existing `repeatLastOrder()` function already reads from `debridgers_last_order` and copies it to `debridgers_cart`, so no other changes needed.
+Real photos per variety. Wake Gida looks nothing like cowpea, Ofada nothing like
+long grain, and both garri products currently have no image at all because the
+only unused bundled photos are of maize cobs.
 
-### Notes
+A content and operations task, not an engineering one, and the last thing
+blocking the catalogue from looking finished.
 
-- The localStorage snapshot at checkout (`checkout.tsx`) remains as an immediate fallback for the session in which the order was just placed, before the next app load.
-- If the API call fails, silently skip - the localStorage snapshot (if present) still works.
-- The `order_items` table must exist and be populated when orders are created. Verify the backend's `POST /buyer/orders` is writing line items, not just the order header.
+---
+
+## 9. SMS notifications
+
+The toggle is pure UI; no SMS service exists anywhere.
+
+1. Choose a provider. Africa's Talking or Termii for Nigeria; Twilio otherwise
+2. `SmsService` under `notification/features/sms/`
+3. `users.sms_notifications boolean NOT NULL DEFAULT false`, plus migration
+4. Wire it into the `updateProfile` DTO, service, and `getProfile`
+5. Sends in `UserListeners` for order placed, out for delivery, and delivered.
+   Only when `sms_notifications` is true **and** a phone number is on file
+6. Frontend helper note: a phone number must be saved to receive SMS
+
+---
+
+## 10. Two-factor authentication
+
+The toggle is pure UI; no TOTP implementation exists.
+
+1. `users.two_factor_enabled boolean NOT NULL DEFAULT false` and
+   `two_factor_secret text` nullable, plus migration
+2. `otplib`
+3. `POST /buyer/2fa/setup` generates the secret and returns a QR URL;
+   `POST /buyer/2fa/verify-setup` confirms the first code and persists;
+   `DELETE /buyer/2fa` disables, requiring a current code
+4. `AuthService.login` returns `{ requires2fa: true, tempToken }` instead of
+   tokens when enabled
+5. `POST /auth/2fa/login` exchanges `tempToken` plus code for real tokens
+6. Settings toggle opens a setup flow rather than flipping a boolean; disabling
+   also requires a current code
+7. Login page shows a second step when `requires2fa` comes back
+
+Security-critical and not revenue-blocking, which is why it is this far down.
+
+---
+
+## 11. Auth rate limiting: add the email dimension
+
+**Already built, and IP-only.** `@nestjs/throttler` is wired per endpoint through
+`api/shared/throttle.config.ts`: 3 per minute on the most sensitive routes, 5 on
+login and reset, 20 on referral-code lookup, with `AUTH_THROTTLE_LIMIT` as an
+e2e override. There is an e2e spec at
+`apps/debridgers-backend-e2e/src/debridgers-backend/rate-limit.spec.ts`.
+
+**The gap is that throttling keys on the address alone.** One address trying
+many emails is caught. One email tried from many addresses is not, and
+credential stuffing takes exactly that shape.
+
+Add a second counter so both are covered:
+
+```
+failed_attempts:<ip>            already covered by the throttler
+failed_attempts:<email>:<ip>    missing
+```
+
+Redis is already in the stack, so this needs no new infrastructure. Count
+failures rather than requests, so a legitimate user who mistypes once is not
+treated like an attack.
+
+---
+
+## 12. Backend refactor, remaining phases
+
+Phases 0 to 3 are done and listed under Done. What is left:
+
+- **Move in-app notifications to a shared module.** `notifications.controller.ts`
+  and `notifications.service.ts` still sit under `api/v1/buyer/`, with separate
+  admin and agent controllers alongside. Relocate to
+  `notification/features/in-app/`, drop the `@Roles("buyer")` gate, and serve
+  `/notifications` for every role. **Check the frontend for hardcoded
+  `buyer/notifications` paths before moving the route**
+- **Replace hardcoded role strings with `USER_ROLES` constants.** 22 `@Roles("...")`
+  literals remain against 10 uses of the constant
+- **Event-driven login consistency.** `posthog.trackLogin` is called directly at
+  two points in `auth.service.ts`. Move it into `UserListeners.onUserLoggedIn`
+  and emit `USER_LOGGED_IN` from `loginAdmin`, which does not currently emit
+- **Agent dedicated virtual accounts.** Needs a design doc: schema migration, the
+  trigger point for issuance, and how it integrates with the refactored DVA
+  service. Buyers have DVAs; agents do not
+
+---
+
+## Ongoing, not scheduled
+
+- **Error handling.** Several `catch {}` blocks remain. Fold proper handling
+  into whichever item touches the flow
+- **Test coverage.** Money paths, auth and pricing are covered. The older
+  endpoints are not
+- **Dialog migrations.** Eight hand-rolled `fixed inset-0` modals remain.
+  Migrate each as it is touched; `REQUEST_PAYOUT` is the reference
+- **Agent commission to a product column.** Currently a name map in
+  `agent-commission.ts`. Move to `products.agent_commission_kobo` once the
+  catalogue outgrows a list you can read in one screen
+- **Browser verification.** Most work is verified by typecheck, build, SSR HTML
+  or API call. Little of it has been exercised visually or at 360px
+
+---
+
+## Copy to fix
+
+Buyer virtual account, on failure to issue:
+
+> We could not set up your account number just now. Use the card option below,
+> or try again.
+
+The "this account should exist already" case needs its own message. Retrying
+against an account that was issued successfully is a different situation from
+one that was never created, and telling both the same thing sends the buyer in
+a loop.
+
+---
+
+## How to use this
+
+Work top to bottom. If an item slips, slide the rest rather than reordering,
+then check whether it moves a tier in `docs/jottings/KPI.md`. When something
+ships, cut its section and add one line to Done.

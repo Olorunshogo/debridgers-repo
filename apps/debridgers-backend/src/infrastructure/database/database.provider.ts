@@ -51,6 +51,16 @@ const connectionProvider = {
         : false,
       allowExitOnIdle: true,
       connectionTimeoutMillis: 72000,
+      // Keep connections alive so the server (Neon in particular) does not
+      // silently close them while they sit idle in the pool.
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10000,
+      // Give idle connections 30 s before the pool recycles them. This is long
+      // enough to survive brief quiet spells but short enough that the pool
+      // does not try to reuse a connection that Neon has already terminated.
+      idleTimeoutMillis: 30000,
+      // Default pg max is 10, which is easily exhausted under concurrent load.
+      max: 20,
     });
 
     const db = drizzle(pool, { schema }) as NodePgDatabase<typeof schema>;

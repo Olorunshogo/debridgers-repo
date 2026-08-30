@@ -27,7 +27,7 @@ export function DashSwitchInput({
             <span className="text-heading text-sm font-medium">{label}</span>
           )}
           {description && (
-            <span className="text-text text-xs">{description}</span>
+            <span className="text-body text-xs">{description}</span>
           )}
         </div>
       )}
@@ -37,7 +37,7 @@ export function DashSwitchInput({
         id={switchId}
         aria-checked={checked}
         onClick={() => onCheckedChange(!checked)}
-        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none ${checked ? "bg-primary" : "bg-border-gray"}`}
+        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-all duration-300 ease-in-out focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none ${checked ? "bg-primary" : "bg-border-gray"}`}
       >
         <span
           className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${checked ? "translate-x-5.5" : "translate-x-1"}`}

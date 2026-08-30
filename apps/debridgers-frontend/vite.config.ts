@@ -40,6 +40,7 @@ export default defineConfig({
         __dirname,
         "../../packages/api-client/src",
       ),
+      "@debridgers/pricing": resolve(__dirname, "../../packages/pricing/dist"),
     },
   },
   server: {

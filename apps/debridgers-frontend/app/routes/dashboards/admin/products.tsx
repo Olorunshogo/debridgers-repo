@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Package,
@@ -17,14 +17,21 @@ import {
   BASE_BACKEND_URL,
 } from "@debridgers/api-client";
 import {
-  formatFromKobo,
   DashSelectInput,
   DashTextInput,
   DashNumberInput,
+  DataTable,
+  TablePrimaryCell,
+  TableAmountCell,
+  TableStatusBadge,
+  TableTextCell,
+  TableEmptyState,
   fadeDownVariants,
   staggerItemVariants,
   staggerDelay,
   transitionBase,
+  type RowAction,
+  type TableColumn,
 } from "@debridgers/ui-web";
 
 export function meta() {
@@ -57,7 +64,6 @@ interface Product {
   weight_grams: number | null;
   is_active: boolean;
   sort_order: number;
-  stock_quantity: number;
 }
 
 interface ProductForm {
@@ -76,7 +82,6 @@ interface ProductForm {
   measure_value: string;
   measure_unit: MeasureUnit;
   weight_grams: string;
-  stock_quantity: string;
 }
 
 interface BundledImage {
@@ -94,7 +99,6 @@ const emptyForm: ProductForm = {
   measure_value: "",
   measure_unit: "kg",
   weight_grams: "",
-  stock_quantity: "",
 };
 
 const measureUnitOptions: { value: MeasureUnit; label: string }[] = [
@@ -144,6 +148,9 @@ export default function AdminProductsPage() {
    * report failures triggered from the list itself. This one sits at page level.
    */
   const [actionError, setActionError] = useState<string | null>(null);
+  /* Distinct from actionError: a failed load must not render as "no products",
+     which is a different story entirely. */
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [uploadingImage, setUploadingImage] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -157,11 +164,10 @@ export default function AdminProductsPage() {
       ]);
       setProducts(rows);
       setCategoryLeaves(leaves);
-      setActionError(null);
+      setLoadError(null);
     } catch (err) {
-      /* An empty list would read as "no products", which is a different story. */
       setProducts([]);
-      setActionError(
+      setLoadError(
         err instanceof ApiError
           ? err.message
           : "Could not load products. Check your connection and retry.",
@@ -194,7 +200,6 @@ export default function AdminProductsPage() {
       measure_value: p.measure_value === null ? "" : String(p.measure_value),
       measure_unit: p.measure_unit ?? "kg",
       weight_grams: p.weight_grams === null ? "" : String(p.weight_grams),
-      stock_quantity: String(p.stock_quantity),
     });
     setError(null);
     setShowForm(true);
@@ -251,7 +256,6 @@ export default function AdminProductsPage() {
     };
     const measure_value = toOptionalInt(form.measure_value);
     const weight_grams = toOptionalInt(form.weight_grams);
-    const stock_quantity = toOptionalInt(form.stock_quantity);
     setSaving(true);
     setError(null);
     try {
@@ -268,7 +272,6 @@ export default function AdminProductsPage() {
             measure_value,
             measure_unit: form.measure_unit,
             weight_grams,
-            stock_quantity,
           }),
         });
       } else {
@@ -286,7 +289,6 @@ export default function AdminProductsPage() {
             measure_value,
             measure_unit: form.measure_unit,
             weight_grams,
-            stock_quantity,
           }),
         });
       }
@@ -322,14 +324,18 @@ export default function AdminProductsPage() {
     }
   }
 
+  /*
+   * Throws rather than swallowing: the confirm dialog runs this, and it is the
+   * dialog that shows the failure and stays open. Catching here would close it
+   * on a delete that never happened.
+   */
   async function handleDelete(id: number) {
     setDeletingId(id);
-    setActionError(null);
     try {
       await apiFetch(`/admin/products/${id}`, { method: "DELETE" });
       setProducts((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
-      setActionError(
+      throw new Error(
         err instanceof ApiError
           ? err.message
           : "Could not delete that product. Please try again.",
@@ -338,6 +344,126 @@ export default function AdminProductsPage() {
       setDeletingId(null);
     }
   }
+
+  /*
+   * Memoised, as the table engine requires: an inline array would be a new
+   * identity every render and re-derive every row on each keystroke.
+   */
+  const columns = useMemo<TableColumn<Product>[]>(
+    () => [
+      {
+        id: "name",
+        header: "Product",
+        priority: "primary",
+        minWidth: "16rem",
+        sortable: true,
+        sortValue: (p) => p.name,
+        searchValue: (p) =>
+          `${p.name} ${p.unit} ${p.category_name ?? ""} ${p.description ?? ""}`,
+        cell: (p) => (
+          <TablePrimaryCell
+            title={p.name}
+            subtitle={p.description}
+            leading={
+              p.image_url ? (
+                <img
+                  src={p.image_url}
+                  alt={p.name}
+                  className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                />
+              ) : (
+                <div className="bg-light-bg flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
+                  <Package size={18} className="text-body opacity-30" />
+                </div>
+              )
+            }
+          />
+        ),
+      },
+      {
+        id: "unit",
+        header: "Unit / Size",
+        priority: "secondary",
+        sortable: true,
+        sortValue: (p) => p.unit,
+        cell: (p) => <TableTextCell value={p.unit} />,
+      },
+      {
+        id: "category",
+        header: "Category",
+        priority: "detail",
+        sortable: true,
+        sortValue: (p) => p.category_name ?? "",
+        cell: (p) => <TableTextCell value={p.category_name} />,
+      },
+      {
+        id: "price_kobo",
+        header: "Price",
+        align: "right",
+        priority: "trailing",
+        sortable: true,
+        sortValue: (p) => p.price_kobo,
+        cell: (p) => <TableAmountCell kobo={p.price_kobo} />,
+      },
+      {
+        id: "is_active",
+        header: "Status",
+        priority: "trailing",
+        sortable: true,
+        sortValue: (p) => (p.is_active ? 1 : 0),
+        cell: (p) => (
+          <button
+            type="button"
+            title={p.is_active ? "Deactivate product" : "Activate product"}
+            onClick={(event) => {
+              /* The row is not clickable here, but the badge must not become
+                 one either if that changes. */
+              event.stopPropagation();
+              void handleToggleActive(p);
+            }}
+            className="cursor-pointer transition-opacity duration-200 hover:opacity-75"
+          >
+            <TableStatusBadge
+              label={p.is_active ? "Active" : "Inactive"}
+              tone={p.is_active ? "success" : "danger"}
+            />
+          </button>
+        ),
+      },
+    ],
+    [],
+  );
+
+  const rowActions = useMemo<RowAction<Product>[]>(
+    () => [
+      {
+        id: "edit",
+        label: "Edit",
+        icon: Pencil,
+        iconOnly: true,
+        onSelect: openEdit,
+      },
+      {
+        id: "delete",
+        label: "Delete",
+        icon: Trash2,
+        iconOnly: true,
+        tone: "danger",
+        isBusy: (p) => deletingId === p.id,
+        onSelect: (p) => handleDelete(p.id),
+        confirm: {
+          dialogKey: "CONFIRM",
+          props: (p) => ({
+            title: `Delete ${p.name}?`,
+            description:
+              "This removes the product from the catalog. Buyers will no longer see it.",
+            confirmLabel: "Delete product",
+          }),
+        },
+      },
+    ],
+    [deletingId],
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -349,7 +475,7 @@ export default function AdminProductsPage() {
             <h2 className="font-syne text-heading text-xl font-bold">
               Products
             </h2>
-            <p className="text-text text-sm">
+            <p className="text-body text-sm">
               Manage the product catalog for buyers and agents
             </p>
           </div>
@@ -371,7 +497,7 @@ export default function AdminProductsPage() {
             animate="animate"
             exit="exit"
             transition={transitionBase}
-            className="bg-status-cancelled-bg text-status-cancelled-text flex items-start justify-between gap-3 rounded-xl px-4 py-3 text-sm"
+            className="bg-status-cancelled text-status-cancelled-fg flex items-start justify-between gap-3 rounded-xl px-4 py-3 text-sm"
           >
             <span>{actionError}</span>
             <button
@@ -395,7 +521,7 @@ export default function AdminProductsPage() {
             animate="animate"
             exit="exit"
             transition={transitionBase}
-            className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5"
+            className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5"
           >
             <div className="flex items-center justify-between">
               <h3 className="font-syne text-heading font-semibold">
@@ -407,12 +533,12 @@ export default function AdminProductsPage() {
                 onClick={() => setShowForm(false)}
                 className="rounded-full p-1 hover:bg-black/5"
               >
-                <X size={18} className="text-text" />
+                <X size={18} className="text-body" />
               </button>
             </div>
 
             {error && (
-              <p className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm">
+              <p className="bg-status-cancelled text-status-cancelled-fg rounded-xl px-4 py-3 text-sm">
                 {error}
               </p>
             )}
@@ -444,21 +570,6 @@ export default function AdminProductsPage() {
                 value={form.price}
                 onChange={(e) =>
                   setForm((p) => ({ ...p, price: e.target.value }))
-                }
-              />
-              {/*
-                Warehouse stock. Agent stock requests are rejected once this
-                hits 0 and are never auto-restocked, so this is the only lever
-                admin has to make a product orderable again.
-              */}
-              <DashNumberInput
-                label="Warehouse Stock"
-                id="stock-quantity"
-                min={0}
-                placeholder="e.g. 200"
-                value={form.stock_quantity}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, stock_quantity: e.target.value }))
                 }
               />
               <DashTextInput
@@ -533,7 +644,7 @@ export default function AdminProductsPage() {
               </label>
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
                 {form.image_url ? (
-                  <div className="border-gray-border relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border">
+                  <div className="border-line relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border">
                     <img
                       src={form.image_url}
                       alt={
@@ -553,8 +664,8 @@ export default function AdminProductsPage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="border-gray-border bg-bg-light flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border-2 border-dashed">
-                    <Package size={28} className="text-text opacity-20" />
+                  <div className="border-line bg-light-bg flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border-2 border-dashed">
+                    <Package size={28} className="text-body opacity-20" />
                   </div>
                 )}
                 <div className="flex flex-col gap-1.5">
@@ -568,7 +679,7 @@ export default function AdminProductsPage() {
                   />
                   <label
                     htmlFor="product-image-input"
-                    className="border-gray-border text-heading flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5"
+                    className="border-line text-heading flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5"
                   >
                     {uploadingImage ? (
                       <>
@@ -582,7 +693,7 @@ export default function AdminProductsPage() {
                       </>
                     )}
                   </label>
-                  <p className="text-text text-xs">
+                  <p className="text-body text-xs">
                     JPG, PNG or WebP: max 5 MB
                   </p>
                 </div>
@@ -590,7 +701,7 @@ export default function AdminProductsPage() {
 
               {/* Bundled photo gallery */}
               <div className="flex flex-col gap-2">
-                <p className="text-text text-xs font-medium">
+                <p className="text-body text-xs font-medium">
                   Or pick one of the photos that ship with the app
                 </p>
                 <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
@@ -613,7 +724,7 @@ export default function AdminProductsPage() {
                         className={`relative aspect-square overflow-hidden rounded-xl border-2 transition-colors ${
                           isSelected
                             ? "border-primary ring-primary/30 ring-2"
-                            : "border-gray-border hover:border-primary/50"
+                            : "border-line hover:border-primary/50"
                         }`}
                       >
                         <img
@@ -661,7 +772,7 @@ export default function AdminProductsPage() {
               </button>
               <button
                 onClick={() => setShowForm(false)}
-                className="border-gray-border text-text rounded-full border px-6 py-2.5 text-sm font-semibold transition-colors hover:bg-black/5"
+                className="border-line text-body rounded-full border px-6 py-2.5 text-sm font-semibold transition-colors hover:bg-black/5"
               >
                 Cancel
               </button>
@@ -671,130 +782,26 @@ export default function AdminProductsPage() {
       </AnimatePresence>
 
       {/* Products table */}
-      <div className="border-gray-border overflow-hidden rounded-2xl border bg-white">
-        {loading ? (
-          <div className="flex flex-col gap-3 p-5">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="bg-bg-light h-12 animate-pulse rounded-xl"
-              />
-            ))}
-          </div>
-        ) : products.length === 0 ? (
-          <div className="py-16 text-center">
-            <Package size={40} className="text-text mx-auto mb-3 opacity-30" />
-            <p className="text-text text-sm">
-              No products yet. Click &quot;Add Product&quot; to get started.
-            </p>
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-gray-border border-b">
-                {[
-                  "Product",
-                  "Unit / Size",
-                  "Price",
-                  "Stock",
-                  "Status",
-                  "Actions",
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className="text-text px-5 py-3 text-left text-xs font-semibold tracking-wide uppercase"
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((p, i) => (
-                <motion.tr
-                  key={p.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.04 }}
-                  className={
-                    i < products.length - 1
-                      ? "border-gray-border border-b"
-                      : undefined
-                  }
-                >
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      {p.image_url ? (
-                        <img
-                          src={p.image_url}
-                          alt={p.name}
-                          className="h-10 w-10 rounded-lg object-cover"
-                        />
-                      ) : (
-                        <div className="bg-bg-light flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
-                          <Package size={18} className="text-text opacity-30" />
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-heading font-medium">{p.name}</p>
-                        {p.description && (
-                          <p className="text-text text-xs">{p.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="text-text px-5 py-4">{p.unit}</td>
-                  <td className="text-heading px-5 py-4 font-semibold">
-                    {formatFromKobo(p.price_kobo)}
-                  </td>
-                  <td className="px-5 py-4">
-                    <span
-                      className={`font-semibold ${
-                        p.stock_quantity === 0
-                          ? "text-status-cancelled-text"
-                          : "text-heading"
-                      }`}
-                    >
-                      {p.stock_quantity}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <button
-                      onClick={() => void handleToggleActive(p)}
-                      className={`rounded-full px-3 py-1 text-xs font-semibold transition-opacity hover:opacity-75 ${
-                        p.is_active
-                          ? "bg-status-delivered-bg text-status-delivered-text"
-                          : "bg-status-cancelled-bg text-status-cancelled-text"
-                      }`}
-                    >
-                      {p.is_active ? "Active" : "Inactive"}
-                    </button>
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => openEdit(p)}
-                        className="rounded-lg p-1.5 transition-colors hover:bg-black/5"
-                        title="Edit"
-                      >
-                        <Pencil size={15} className="text-text" />
-                      </button>
-                      <button
-                        onClick={() => void handleDelete(p.id)}
-                        disabled={deletingId === p.id}
-                        className="rounded-lg p-1.5 transition-colors hover:bg-red-50 disabled:opacity-50"
-                        title="Delete"
-                      >
-                        <Trash2 size={15} className="text-red-500" />
-                      </button>
-                    </div>
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <DataTable
+        rows={products}
+        columns={columns}
+        actions={rowActions}
+        caption="Products"
+        showSearch
+        searchPlaceholder="Search products by name, unit or category"
+        loading={loading}
+        error={loadError}
+        onRetry={() => void load()}
+        pageSize={10}
+        pageSizeOptions={[10, 25, 50]}
+        emptyState={
+          <TableEmptyState
+            icon={Package}
+            title="No products yet"
+            description={'Click "Add Product" to get started.'}
+          />
+        }
+      />
     </div>
   );
 }

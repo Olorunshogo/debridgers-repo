@@ -21,7 +21,7 @@ const base =
 const variants: Record<DashSubmitButtonVariant, string> = {
   primary: "bg-primary px-6 py-3 font-semibold text-white hover:opacity-90",
   secondary:
-    "border-gray-border text-heading border bg-white px-4 py-2 font-medium hover:bg-black/5",
+    "border-line text-heading border bg-white px-4 py-2 font-medium hover:bg-black/5",
   tertiary:
     "bg-secondary text-heading px-5 py-2.5 font-semibold hover:opacity-90",
 };

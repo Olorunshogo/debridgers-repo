@@ -155,40 +155,66 @@ export class PaystackDvaService {
     };
   }
 
-  async createDvaForUser(
-    userId: number,
-    dto: CreateCustomerDto,
-  ): Promise<{
+  /*
+   * Pure API path: create customer and DVA without DB writes. Returns both
+   * account details and customer code for the caller to persist.
+   */
+  async createDva(dto: CreateCustomerDto): Promise<{
     account_number: string;
     bank_name: string;
     account_name: string;
+    customer_code: string;
   }> {
-    // Step 1: Create Paystack customer
     const customer = await this.createPaystackCustomer(dto);
-    this.logger.log(
-      `Created Paystack customer ${customer.customer_code} for user ${userId}`,
-    );
+    this.logger.log(`Created Paystack customer ${customer.customer_code}`);
 
-    // Step 2: Create the dedicated account against that customer
     const dva = await this.createDvaForCustomer(customer.customer_code);
     this.logger.log(
       `Created DVA ${dva.account_number} for customer ${customer.customer_code}`,
     );
 
-    // Step 3: Update buyer wallet with DVA details
-    await this.db
+    return {
+      account_number: dva.account_number,
+      bank_name: dva.bank_name,
+      account_name: dva.account_name,
+      customer_code: customer.customer_code,
+    };
+  }
+
+  /*
+   * `tx` is required when the caller already holds a lock on the wallet row.
+   * Writing through this.db there would take a second connection and wait on a
+   * lock the caller's own transaction is holding, which deadlocks until the
+   * statement timeout rather than failing fast.
+   */
+  async createDvaForUser(
+    userId: number,
+    dto: CreateCustomerDto,
+    tx?: NodePgDatabase<typeof schema>,
+  ): Promise<{
+    account_number: string;
+    bank_name: string;
+    account_name: string;
+  }> {
+    const dvaWithCustomer = await this.createDva(dto);
+
+    await (tx ?? this.db)
       .update(schema.buyerWallets)
       .set({
-        paystack_customer_code: customer.customer_code,
-        account_number: dva.account_number,
-        bank_name: dva.bank_name,
-        account_name: dva.account_name,
+        paystack_customer_code: dvaWithCustomer.customer_code,
+        account_number: dvaWithCustomer.account_number,
+        bank_name: dvaWithCustomer.bank_name,
+        account_name: dvaWithCustomer.account_name,
       })
       .where(eq(schema.buyerWallets.user_id, userId));
 
     this.logger.log(`Updated wallet for user ${userId} with DVA details`);
 
-    return dva;
+    return {
+      account_number: dvaWithCustomer.account_number,
+      bank_name: dvaWithCustomer.bank_name,
+      account_name: dvaWithCustomer.account_name,
+    };
   }
 
   /*
@@ -206,23 +232,64 @@ export class PaystackDvaService {
       return existing;
     }
 
-    const [wallet] = await this.db
-      .select()
-      .from(schema.buyerWallets)
-      .where(eq(schema.buyerWallets.user_id, userId))
-      .limit(1);
+    /*
+     * Serialised on the wallet row for the whole check-then-create.
+     *
+     * This was a bare read-then-write. Two requests arriving together - two
+     * tabs on the wallet page is enough - both saw no account number, both
+     * called POST /dedicated_account, and the second write overwrote the
+     * first. The overwritten account still exists at the bank and still
+     * accepts transfers, so a buyer paying into the number they were shown
+     * first would send money to an account this system no longer records.
+     *
+     * SELECT ... FOR UPDATE makes the second caller wait, and its re-read
+     * inside the lock then finds the account the first one created.
+     */
+    return this.db.transaction(async (tx) => {
+      const [wallet] = await tx
+        .select()
+        .from(schema.buyerWallets)
+        .where(eq(schema.buyerWallets.user_id, userId))
+        .limit(1)
+        .for("update");
 
-    if (!wallet) {
-      throw new InternalServerErrorException("Wallet not found for buyer");
-    }
+      if (!wallet) {
+        throw new InternalServerErrorException("Wallet not found for buyer");
+      }
 
+      /* Re-checked under the lock: a concurrent caller may have just finished. */
+      if (wallet.account_number && wallet.bank_name && wallet.account_name) {
+        return {
+          account_number: wallet.account_number,
+          bank_name: wallet.bank_name,
+          account_name: wallet.account_name,
+        };
+      }
+
+      return this.createDvaWithinLock(tx, wallet, userId);
+    });
+  }
+
+  /*
+   * The body of ensureDvaForUser, run with the wallet row already locked.
+   * Split out only so the locking above reads as one thing.
+   */
+  private async createDvaWithinLock(
+    tx: NodePgDatabase<typeof schema>,
+    wallet: typeof schema.buyerWallets.$inferSelect,
+    userId: number,
+  ): Promise<{
+    account_number: string;
+    bank_name: string;
+    account_name: string;
+  }> {
     // The customer may already exist from a run that failed at the DVA step.
     if (wallet.paystack_customer_code) {
       const dva = await this.createDvaForCustomer(
         wallet.paystack_customer_code,
       );
 
-      await this.db
+      await tx
         .update(schema.buyerWallets)
         .set({
           account_number: dva.account_number,
@@ -234,7 +301,7 @@ export class PaystackDvaService {
       return dva;
     }
 
-    const [user] = await this.db
+    const [user] = await tx
       .select()
       .from(schema.users)
       .where(eq(schema.users.id, userId))
@@ -244,12 +311,16 @@ export class PaystackDvaService {
       throw new InternalServerErrorException("Buyer not found");
     }
 
-    return this.createDvaForUser(userId, {
-      email: user.email,
-      firstName: user.first_name,
-      lastName: user.last_name,
-      phone: user.phone ?? "",
-    });
+    return this.createDvaForUser(
+      userId,
+      {
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        phone: user.phone ?? "",
+      },
+      tx,
+    );
   }
 
   async getDvaForUser(userId: number): Promise<{

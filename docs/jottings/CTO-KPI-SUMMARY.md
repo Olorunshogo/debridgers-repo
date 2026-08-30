@@ -1,53 +1,101 @@
 # CTO KPIs - This Quarter
 
-Submitted scorecard. The detailed engineering backlog and week-by-week
-build plan live in `docs/frontend/TASKS.md` and `docs/frontend/PLAN.md` -
-this is the outcome-level summary of that work.
+The submitted scorecard. The working version with reasoning is
+`docs/jottings/KPI.md`; the backlog is `docs/frontend/TASKS.md`.
+
+**Revised 2026-08-29.**
 
 ---
 
-## 1. Product Reliability
+## What closed since the last scorecard
 
-**Buyers can complete a purchase end-to-end, every time.**
-Checkout is currently broken in production (payment initialization fails).
-Target: fixed and verified within the first two weeks of this quarter, then
-zero checkout-blocking incidents for the remainder of it.
+Reported once, then dropped from the scorecard.
 
-## 2. Delivery Predictability
+Checkout works end to end and is verified against live Paystack. The buyer
+wallet, top-up, withdrawals and per-buyer virtual accounts shipped. Weekly agent
+payouts run unattended on a cron. Order lifecycle now closes through delivered.
+An automated test suite exists over the money paths, auth and pricing. Eight
+silent money bugs were found and fixed before launch rather than after an
+incident.
 
-**Engineering ships 1-2 completed features per week, on a published cadence.**
-Not "busy" - completed, deployed, and off the backlog. Reviewed monthly
-against the shipping plan.
+---
 
-## 3. Operational Reliability
+## 1. Commercial truth
+
+**Every assumption under the business model replaced with a measured figure.**
+
+Landed cost of goods for rice, beans and oil. Delivery cost per drop. Monthly
+burn. GMV, AOV and repeat rate. Order channel mix.
+
+This is first on purpose. One measured delivery already invalidated an estimate
+by 38% and moved every number in the model; nine cost lines remain unmeasured.
+None of this needs capital and only one item needs code. Until it exists, no
+growth decision can be made honestly.
+
+## 2. Pricing integrity
+
+**The repriced fee structure live in production, and orders priced above cost.**
+
+The old price list required buying a bag of rice 10.6% below market simply to
+break even. The corrected pricing takes that below zero on six of seven hero
+products, meaning they clear even at full market price. The code has shipped;
+the production zone rows have not.
+
+## 3. Customer growth and concentration
+
+**From 2 repeat B2B accounts to 12 or more, at ₦3,000,000 monthly GMV.**
+
+Two customers is a relationship, not a market, and one departure removes half the
+business. This is a risk reduction target as much as a growth one.
+
+## 4. Contribution margin
+
+**Positive contribution at median order size, above 5%, measured rather than
+modelled.**
+
+The locked pricing returns 5.0% to 6.6% at an assumed 6% procurement spread.
+Whether that spread is real is the single largest open question in the company.
+
+## 5. Operational reliability
 
 **Zero P0 production incidents per month.**
-A P0 is anything that stops buyers from ordering, agents from requesting
-stock, or payments from processing.
 
-## 4. Payout Trust
+A P0 is anything that stops buyers ordering, agents requesting stock, or
+payments processing.
 
-**Agent commission payouts run automatically and on schedule, unattended.**
-Currently manual-trigger only. Target: automated weekly payout live this
-quarter, with zero missed or late payout cycles once it is.
+## 6. Financial data integrity
 
-## 5. Financial Data Integrity
+**Every naira through Paystack reconciled and auditable.**
 
-**Every naira that moves through Paystack (payments, payouts, wallet
-top-ups) is reconciled and auditable.**
-Given the platform now holds and moves buyer/agent money, this is a
-baseline trust and compliance requirement, not a stretch goal.
+The platform holds and moves buyer and agent money. This is a baseline trust
+requirement, not a stretch goal. Reconciliation runs every 15 minutes.
 
-## 6. Security & Data Safety
+## 7. Security and data safety
 
 **Monthly verified-restorable database backup, and no plaintext credentials
-or secrets committed to the codebase.**
-Baseline hygiene for a platform handling personal data and payment flows.
+committed.**
 
-## 7. Market Growth (Kaduna Phase)
+The backup discipline has not started. The credentials KPI is **currently not
+met**: test account credentials are committed and remain in git history.
 
-**10-20 active, verified field agents onboarded and remitting reliably
-(>90% of stock value within the agreed window).**
-This is the phase-1 target from the company's own 5/10-year growth plan
-(`docs/jottings/ONBOARDING.md`) - a checkpoint on the way there, not the
-destination.
+## 8. Compliance groundwork
+
+**A payments legal opinion on holding buyer balances, and a NAFDAC opinion
+before the first bag is opened.**
+
+Both have external lead times, so both start now rather than when needed. The
+buyer wallet is parked as a promoted feature until the first lands.
+
+---
+
+## Deliberately not on this scorecard
+
+- **Feature shipping cadence.** Suspended on purpose. Shipping features is not
+  the constraint; measuring the business is
+- **Agent network targets.** No agents recruited yet, deliberately. Blocked on
+  confirming the commission level against a real procurement spread
+- **Uptime SLA language.** Premature without on-call or redundancy. Reported as
+  zero P0 incidents instead
+- **Multi-year vision targets.** 200+ agents, 10 cities, a mobile app. Company
+  direction, not a quarterly grading bar
+- **Feature-by-feature backlog detail.** Tracked in `docs/frontend/TASKS.md`

@@ -91,8 +91,8 @@ export default function AdminSettings() {
   if (loading) {
     return (
       <div className="flex animate-pulse flex-col gap-6">
-        <div className="bg-gray-border h-40 rounded-2xl" />
-        <div className="bg-gray-border h-40 rounded-2xl" />
+        <div className="bg-line h-40 rounded-2xl" />
+        <div className="bg-line h-40 rounded-2xl" />
       </div>
     );
   }
@@ -106,7 +106,7 @@ export default function AdminSettings() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="bg-status-delivered-bg text-status-delivered-text flex items-center gap-2 rounded-xl px-4 py-3 text-sm"
+            className="bg-status-delivered text-status-delivered-fg flex items-center gap-2 rounded-xl px-4 py-3 text-sm"
           >
             <CheckCircle2 size={16} /> Settings saved successfully.
           </motion.div>
@@ -116,7 +116,7 @@ export default function AdminSettings() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
+            className="bg-status-cancelled text-status-cancelled-fg rounded-xl px-4 py-3 text-sm"
           >
             {error}
           </motion.div>
@@ -124,15 +124,15 @@ export default function AdminSettings() {
       </AnimatePresence>
 
       {/* Commission Rate */}
-      <div className="border-gray-border flex flex-col gap-5 rounded-2xl border bg-white p-6">
-        <div className="border-gray-border flex items-center gap-2 border-b pb-3">
+      <div className="border-line flex flex-col gap-5 rounded-2xl border bg-white p-6">
+        <div className="border-line flex items-center gap-2 border-b pb-3">
           <Settings size={18} className="text-primary" />
           <h3 className="font-syne text-heading text-lg font-semibold">
             Agent Commission Rate
           </h3>
         </div>
 
-        <p className="text-text text-sm">
+        <p className="text-body text-sm">
           The percentage of each sale that agents earn as commission. Current:{" "}
           <strong>{settings?.agent_commission_rate ?? "—"}%</strong>
         </p>
@@ -148,22 +148,22 @@ export default function AdminSettings() {
             value={commissionRate}
             onChange={(e) => setCommissionRate(e.target.value)}
           />
-          <p className="text-text text-xs">
+          <p className="text-body text-xs">
             Agents earn this % on every confirmed order. Range: 1–100.
           </p>
         </div>
       </div>
 
       {/* Buyer Referral Discount */}
-      <div className="border-gray-border flex flex-col gap-5 rounded-2xl border bg-white p-6">
-        <div className="border-gray-border flex items-center gap-2 border-b pb-3">
+      <div className="border-line flex flex-col gap-5 rounded-2xl border bg-white p-6">
+        <div className="border-line flex items-center gap-2 border-b pb-3">
           <Settings size={18} className="text-primary" />
           <h3 className="font-syne text-heading text-lg font-semibold">
             Buyer Referral Discount
           </h3>
         </div>
 
-        <p className="text-text text-sm">
+        <p className="text-body text-sm">
           The flat discount a buyer earns when a friend they referred places
           their first order. Current:{" "}
           <strong>
@@ -182,7 +182,7 @@ export default function AdminSettings() {
             value={discountKobo}
             onChange={(e) => setDiscountKobo(e.target.value)}
           />
-          <p className="text-text text-xs">
+          <p className="text-body text-xs">
             Applied as a flat discount at checkout. Expires 90 days after
             earning.
           </p>

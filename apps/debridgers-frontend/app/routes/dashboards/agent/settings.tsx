@@ -61,8 +61,8 @@ const kycStatusMap: Record<
   { bgClass: string; textClass: string; label: string }
 > = {
   approved: {
-    bgClass: "bg-status-delivered-bg",
-    textClass: "text-status-delivered-text",
+    bgClass: "bg-status-delivered",
+    textClass: "text-status-delivered-fg",
     label: "Approved",
   },
   submitted: {
@@ -71,13 +71,13 @@ const kycStatusMap: Record<
     label: "Submitted - Under Review",
   },
   rejected: {
-    bgClass: "bg-status-cancelled-bg",
-    textClass: "text-status-cancelled-text",
+    bgClass: "bg-status-cancelled",
+    textClass: "text-status-cancelled-fg",
     label: "Rejected",
   },
   pending: {
-    bgClass: "bg-status-pending-bg",
-    textClass: "text-status-pending-text",
+    bgClass: "bg-status-pending",
+    textClass: "text-status-pending-fg",
     label: "Not Submitted",
   },
 };
@@ -338,7 +338,7 @@ export default function AgentSettingsPage() {
         <User size={24} className="text-primary" />
         <div>
           <h2 className="font-syne text-heading text-xl font-bold">Settings</h2>
-          <p className="text-text text-sm">Manage your profile and account</p>
+          <p className="text-body text-sm">Manage your profile and account</p>
         </div>
       </div>
 
@@ -346,7 +346,7 @@ export default function AgentSettingsPage() {
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="border-gray-border rounded-2xl border bg-white p-5"
+        className="border-line rounded-2xl border bg-white p-5"
       >
         <div className="mb-4 flex items-center gap-2">
           <Camera size={18} className="text-primary" />
@@ -369,8 +369,8 @@ export default function AgentSettingsPage() {
             )}
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="border-gray-border bg-bg-light hover:border-primary flex cursor-pointer items-center gap-2 self-start rounded-full border px-4 py-2 text-sm font-medium transition-colors">
-              <Upload size={14} className="text-text" />
+            <label className="border-line bg-light-bg hover:border-primary flex cursor-pointer items-center gap-2 self-start rounded-full border px-4 py-2 text-sm font-medium transition-colors">
+              <Upload size={14} className="text-body" />
               <span className="text-heading">
                 {avatarUploading ? "Uploading..." : "Upload photo"}
               </span>
@@ -384,11 +384,9 @@ export default function AgentSettingsPage() {
               />
             </label>
             {avatarError && (
-              <p className="text-status-cancelled-text text-xs">
-                {avatarError}
-              </p>
+              <p className="text-status-cancelled-fg text-xs">{avatarError}</p>
             )}
-            <p className="text-text text-xs">JPG, PNG or WebP. Max 5MB.</p>
+            <p className="text-body text-xs">JPG, PNG or WebP. Max 5MB.</p>
           </div>
         </div>
       </motion.div>
@@ -398,7 +396,7 @@ export default function AgentSettingsPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.04 }}
-        className="border-gray-border rounded-2xl border bg-white p-5"
+        className="border-line rounded-2xl border bg-white p-5"
       >
         <div className="mb-4 flex items-center gap-2">
           <User size={18} className="text-primary" />
@@ -414,7 +412,7 @@ export default function AgentSettingsPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-status-active-text flex items-center gap-2 text-sm font-medium"
+              className="text-status-active-fg flex items-center gap-2 text-sm font-medium"
             >
               <CheckCircle size={16} /> Profile updated successfully!
             </motion.div>
@@ -423,7 +421,7 @@ export default function AgentSettingsPage() {
               {[0, 1, 2].map((i) => (
                 <div
                   key={i}
-                  className="bg-bg-light h-10 animate-pulse rounded-xl"
+                  className="bg-light-bg h-10 animate-pulse rounded-xl"
                 />
               ))}
             </div>
@@ -434,7 +432,7 @@ export default function AgentSettingsPage() {
               className="flex flex-col gap-4"
             >
               {profileError && (
-                <p className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm">
+                <p className="bg-status-cancelled text-status-cancelled-fg rounded-xl px-4 py-3 text-sm">
                   {profileError}
                 </p>
               )}
@@ -521,7 +519,7 @@ export default function AgentSettingsPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
-        className="border-gray-border rounded-2xl border bg-white p-5"
+        className="border-line rounded-2xl border bg-white p-5"
       >
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -544,14 +542,14 @@ export default function AgentSettingsPage() {
             {[0, 1, 2].map((i) => (
               <div
                 key={i}
-                className="bg-bg-light h-10 animate-pulse rounded-xl"
+                className="bg-light-bg h-10 animate-pulse rounded-xl"
               />
             ))}
           </div>
         ) : kycIsApproved ? (
           <div className="flex items-center gap-2 text-sm">
-            <CheckCircle size={16} className="text-status-delivered-text" />
-            <p className="text-status-delivered-text font-medium">
+            <CheckCircle size={16} className="text-status-delivered-fg" />
+            <p className="text-status-delivered-fg font-medium">
               Your KYC is verified. No further action needed.
             </p>
           </div>
@@ -563,7 +561,7 @@ export default function AgentSettingsPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="text-status-active-text flex items-center gap-2 text-sm font-medium"
+                className="text-status-active-fg flex items-center gap-2 text-sm font-medium"
               >
                 <CheckCircle size={16} /> KYC submitted! We will review and get
                 back to you.
@@ -578,21 +576,21 @@ export default function AgentSettingsPage() {
                 className="flex flex-col gap-4"
               >
                 {kyc?.kyc_rejection_reason && (
-                  <div className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm">
+                  <div className="bg-status-cancelled text-status-cancelled-fg rounded-xl px-4 py-3 text-sm">
                     <span className="font-semibold">Rejection reason: </span>
                     {kyc.kyc_rejection_reason}
                   </div>
                 )}
 
                 {kycIsSubmitted && (
-                  <p className="text-text rounded-xl bg-amber-50 px-4 py-3 text-sm">
+                  <p className="text-body rounded-xl bg-amber-50 px-4 py-3 text-sm">
                     Your KYC documents are under review. You can resubmit below
                     if you need to make changes.
                   </p>
                 )}
 
                 {kycError && (
-                  <p className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm">
+                  <p className="bg-status-cancelled text-status-cancelled-fg rounded-xl px-4 py-3 text-sm">
                     {kycError}
                   </p>
                 )}
@@ -670,9 +668,9 @@ export default function AgentSettingsPage() {
                     <label className="text-heading text-sm font-medium">
                       ID Front Photo
                     </label>
-                    <label className="border-gray-border bg-bg-light hover:border-primary flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5 text-sm transition-colors">
-                      <Upload size={16} className="text-text shrink-0" />
-                      <span className={idFront ? "text-heading" : "text-text"}>
+                    <label className="border-line bg-light-bg hover:border-primary flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5 text-sm transition-colors">
+                      <Upload size={16} className="text-body shrink-0" />
+                      <span className={idFront ? "text-heading" : "text-body"}>
                         {idFront ? idFront.name : "Choose file"}
                       </span>
                       <input
@@ -690,9 +688,9 @@ export default function AgentSettingsPage() {
                     <label className="text-heading text-sm font-medium">
                       Selfie with ID
                     </label>
-                    <label className="border-gray-border bg-bg-light hover:border-primary flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5 text-sm transition-colors">
-                      <Upload size={16} className="text-text shrink-0" />
-                      <span className={idSelfie ? "text-heading" : "text-text"}>
+                    <label className="border-line bg-light-bg hover:border-primary flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5 text-sm transition-colors">
+                      <Upload size={16} className="text-body shrink-0" />
+                      <span className={idSelfie ? "text-heading" : "text-body"}>
                         {idSelfie ? idSelfie.name : "Choose file"}
                       </span>
                       <input
@@ -726,7 +724,7 @@ export default function AgentSettingsPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="border-gray-border rounded-2xl border bg-white p-5"
+        className="border-line rounded-2xl border bg-white p-5"
       >
         <div className="mb-4 flex items-center gap-2">
           <Lock size={18} className="text-primary" />

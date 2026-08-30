@@ -18,7 +18,8 @@
       "@/*": ["./app/*"],
       "@debridgers/ui-app": ["../../packages/ui-app/src"],
       "@debridgers/ui-web": ["../../packages/ui-web/src"],
-      "@debridgers/api-client": ["../../packages/api-client/src"]
+      "@debridgers/api-client": ["../../packages/api-client/src"],
+      "@debridgers/pricing": ["../../packages/pricing/src"]
     },
     "esModuleInterop": true,
     "verbatimModuleSyntax": true,

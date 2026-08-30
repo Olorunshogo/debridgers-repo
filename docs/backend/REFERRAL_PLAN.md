@@ -1,6 +1,23 @@
 # Referral System: Design and Implementation Plan
 
-Status: decisions locked, ready to build. Nothing in here is built yet.
+Status: **the mechanism is sound, the numbers are stale.** Nothing here is built.
+
+> **Correction, 2026-08-29.** This plan was written against a ₦1,400 unit price
+> with a ₦100 spread. That product does not exist: the catalogue sells packages
+> at ₦12,000 to ₦55,000, median ₦35,000. Every worked example and every reward
+> size below was computed from the wrong base and **must be re-derived before
+> anything is built**.
+>
+> What survives intact is the central idea in section 2: put a real cost on the
+> product, stamp it onto the order, and compute contribution from it. That is
+> still exactly right, and it is now the recommended home for the commission
+> bands currently held as a name map in `agent-commission.ts`.
+>
+> What does not survive: the ₦1,300 default cost, the ₦100 spread, the ₦500
+> welcome discount as a share of contribution, and the "35 packs to ₦50,000"
+> arithmetic. A ₦50,000 order is one or two packages, not thirty-five.
+>
+> Current economics: `docs/business/BusinessModel.md`.
 
 Scope: agents referring buyers, agents referring agents, buyers referring buyers, buyers referring agents. Rewards, attribution, correctness fixes, and the shared hook layer.
 
@@ -35,14 +52,14 @@ You asked how to make the uncomputable computable. This is the answer, and it is
 
 ### 2.1 The problem
 
-Products carry only `price_kobo`, the sell price. The ₦1,300 agent remit price lives in the consignment and stock model, not on the product row, so an order has no idea what its goods cost. A reward sized as a share of profit cannot be computed from a number the system does not hold.
+Products carry only `price_kobo`, the sell price. The agent remit price is derived in `agent-commission.ts` and the landed cost is not recorded anywhere at all, so an order has no idea what its goods cost. A reward sized as a share of profit cannot be computed from a number the system does not hold.
 
 ### 2.2 The fix
 
 **Add a cost to the product, and stamp it onto the order.**
 
 ```
-product.cost_kobo        integer not null default 130000   -- ₦1,300
+product.cost_kobo        integer not null                  -- landed cost, per product
 order_items.cost_kobo    integer not null                  -- stamped at order time
 orders.contribution_kobo integer not null default 0        -- stamped at order time
 ```
@@ -61,7 +78,7 @@ Contribution is **clamped at zero** for reward purposes. A promotional product s
 
 ### 2.4 Backfill
 
-- Existing products: default to ₦1,300, which is the documented remit price
+- Existing products: no safe default exists. Backfill from the supplier register once real landed costs are recorded, and leave the column not-null so a product cannot be sold before its cost is known
 - Existing orders: `contribution_kobo` stays 0 and they are excluded from reward calculation. They predate the programme, and inventing a historical cost to make a report look complete would be worse than a zero
 - Admin needs a cost field on the product form. `TODO:` who maintains cost per product, and how often does it change?
 
@@ -75,17 +92,20 @@ This closes the number one open question in the company profile. Once every orde
 
 ### 3.1 What an order earns
 
-| Line                   | Value                                    |
-| ---------------------- | ---------------------------------------- |
-| Buyer pays per pack    | ₦1,400                                   |
-| Agent remits per pack  | ₦1,300                                   |
-| Spread per pack        | ₦100                                     |
-| Handling fee per order | ₦100                                     |
-| Delivery fee           | Zone base, assumed cost-neutral. See 2.3 |
+**Stale. Re-derive before building.** Kept only to show the shape of the
+calculation; every value is wrong.
+
+| Line                   | Value as written     | Actual                                                                                |
+| ---------------------- | -------------------- | ------------------------------------------------------------------------------------- |
+| Buyer pays per pack    | ₦1,400               | ₦12,000 to ₦55,000, median ₦35,000                                                    |
+| Agent remits per pack  | ₦1,300               | Price less banded commission, e.g. ₦41,000 on rice                                    |
+| Spread per pack        | ₦100                 | ₦2,500 to ₦3,300 at a 6% procurement spread                                           |
+| Handling fee per order | ₦100                 | 3% of subtotal, floor ₦500, cap ₦5,000 (corrected 2026-08-29, was written here as 2%) |
+| Delivery fee           | Assumed cost-neutral | Zone base at measured trip cost, tapered, capped                                      |
 
 ### 3.2 The programme against a qualifying order
 
-A ₦50,000 subtotal is about 35 packs, so contribution is roughly **₦3,600** (35 × ₦100 + ₦100).
+**Stale.** A ₦50,000 subtotal is one or two packages, not 35. The reward shares in the table below were computed against a ₦3,600 contribution that does not correspond to any real order, and every percentage in it is therefore meaningless until recomputed.
 
 | Reward                             | Cost | Share of contribution |
 | ---------------------------------- | ---- | --------------------- |
@@ -108,7 +128,12 @@ A buyer who recruits an agent earns:
 
 The cap keeps this bounded. It is set at **₦2,000** per recruited agent.
 
-Why that number. An agent earns 5% commission, so an agent selling 100 packs a month turns over ₦140,000 and earns ₦7,000. Across the three month window that is ₦21,000 of commission, and 2% of it is about **₦420**. A strong agent at 500 packs a month produces roughly ₦2,100.
+Why that number. **Stale derivation, corrected 2026-08-29.** This was computed
+assuming a 5% commission on a ₦1,400 product. Agent commission is actually a
+flat naira amount per package, banded by product type (beans ₦1,200, rice
+₦1,000, oil ₦700, else ₦400), so this whole worked example needs
+re-deriving from the real bands. Not re-derived here since the correct inputs
+(product mix an average agent sells) are unmeasured.
 
 So ₦2,000 binds only on an exceptional recruit and leaves a normal one well clear. It also gives a rule that explains itself: **the most a buyer can earn from one recruitment is ₦4,000**, the ₦2,000 bounty plus ₦2,000 of share. An earlier draft suggested ₦10,000, which would have required the recruit to sell ₦10 million in three months. That is not a cap, it is decoration.
 
@@ -368,21 +393,21 @@ This is the same seam as `RoleSignupConfig` and `RolePaymentConfig`: a declarati
 
 ### 6.4 The registry contents
 
-| Key                                   | Kind    | Default | Meaning                                |
-| ------------------------------------- | ------- | ------- | -------------------------------------- |
-| `agent_commission_rate`               | percent | 5       | Direct agent commission                |
-| `agent_override_rate_percent`         | percent | 5       | Recruiter share of a recruited agent   |
-| `state_manager_override_rate_percent` | percent | 2       | State manager share                    |
-| `buyer_referral_commission_kobo`      | kobo    | 2000    | ₦20 per delivered order                |
-| `buyer_referral_window_months`        | months  | 12      | How long that ₦20 runs                 |
-| `buyer_referral_discount_kobo`        | kobo    | 50000   | ₦500 welcome discount                  |
-| `buyer_referral_min_order_kobo`       | kobo    | 5000000 | ₦50,000 minimum to qualify             |
-| `buyer_cashback_rate_percent`         | percent | 5       | Buyer cashback, share of contribution  |
-| `agent_recruit_bounty_kobo`           | kobo    | 200000  | ₦2,000 on first remittance             |
-| `agent_recruit_share_percent`         | percent | 2       | Share of recruited agent's commissions |
-| `agent_recruit_share_months`          | months  | 3       | Window for that share                  |
-| `agent_recruit_share_cap_kobo`        | kobo    | 200000  | ₦2,000 cap per recruited agent         |
-| `store_credit_expiry_months`          | months  | 6       | Credit lifetime from grant             |
+| Key                                   | Kind    | Default | Meaning                                                                                                                                                                   |
+| ------------------------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `agent_commission_rate`               | percent | 5       | Superseded 2026-08-29: direct agent commission is now a flat naira amount per package, banded by product type, held in `agent-commission.ts`, not this percentage setting |
+| `agent_override_rate_percent`         | percent | 5       | Recruiter share of a recruited agent                                                                                                                                      |
+| `state_manager_override_rate_percent` | percent | 2       | State manager share                                                                                                                                                       |
+| `buyer_referral_commission_kobo`      | kobo    | 2000    | ₦20 per delivered order                                                                                                                                                   |
+| `buyer_referral_window_months`        | months  | 12      | How long that ₦20 runs                                                                                                                                                    |
+| `buyer_referral_discount_kobo`        | kobo    | 50000   | ₦500 welcome discount                                                                                                                                                     |
+| `buyer_referral_min_order_kobo`       | kobo    | 5000000 | ₦50,000 minimum to qualify                                                                                                                                                |
+| `buyer_cashback_rate_percent`         | percent | 5       | Buyer cashback, share of contribution                                                                                                                                     |
+| `agent_recruit_bounty_kobo`           | kobo    | 200000  | ₦2,000 on first remittance                                                                                                                                                |
+| `agent_recruit_share_percent`         | percent | 2       | Share of recruited agent's commissions                                                                                                                                    |
+| `agent_recruit_share_months`          | months  | 3       | Window for that share                                                                                                                                                     |
+| `agent_recruit_share_cap_kobo`        | kobo    | 200000  | ₦2,000 cap per recruited agent                                                                                                                                            |
+| `store_credit_expiry_months`          | months  | 6       | Credit lifetime from grant                                                                                                                                                |
 
 Every `percent` value converts to a fraction through the single conversion already centralised in `SystemSettingsService`, generalised from `getAgentCommissionRate` to work for any percent key. Every `kobo` value is validated as a non-negative integer. No caller ever sees a raw string.
 
@@ -461,7 +486,7 @@ store_credit_grants
 
 **Resolution: the product carries it, and it drives agent remittance too, so it is not new work.**
 
-`stock_requests` already stores `amount_to_remit` with the comment "quantity × ₦1,300 in kobo". That ₦1,300 is hardcoded into the stock path today. So the remit price is already a real business decision being made on every stock request, it is just implicit and frozen.
+`stock_requests` stores `amount_to_remit`. That was hardcoded to ₦1,300 per unit until 2026-08-29 and now derives from the product's price less its banded commission. So the remit price is already a real business decision made on every stock request. What is still missing is the landed cost behind it.
 
 Invert it:
 
@@ -471,16 +496,16 @@ stock_requests.amount_to_remit = quantity × product.cost_kobo
 orders/order_items.cost_kobo   = stamped from product.cost_kobo at order time
 ```
 
-One number per product, set once, feeding **both** what an agent remits and what contribution is worth. That also removes a hardcoded ₦1,300 from the stock path.
+One number per product, set once, feeding **both** what an agent remits and what contribution is worth.
 
 Resolution order when reading a cost:
 
 1. The product's own `cost_kobo`, if an admin has set one
-2. Otherwise the platform default setting, `default_product_cost_kobo`, defaulting to ₦1,300
+2. Otherwise refuse the sale rather than guessing. A platform-wide default cost is what produced the ₦1,300 problem in the first place
 
 **Staleness guard:** the admin product list shows when each cost was last updated and flags anything untouched beyond a configurable age. That directly addresses a stale cost quietly distorting cashback, by making the staleness visible rather than silent.
 
-`TODO:` deriving cost automatically from fulfilled stock receipts is the natural next step, but it is circular today because `amount_to_remit` is itself computed from the assumed ₦1,300. Breaking that circle needs a real cost entered once, which is what this section does. Automatic derivation becomes possible afterwards.
+`TODO:` deriving cost automatically from fulfilled stock receipts is the natural next step. It used to be circular, because `amount_to_remit` was computed from an assumed ₦1,300; it now derives from the product price, so the circle is broken on that side. What is still missing is a real **landed** cost entered once, which is what this section provides and what the supplier register produces.
 
 ### 10.3 Does the delivery fee cover the delivery
 
@@ -511,4 +536,4 @@ The fix is to read the current value inside `updateSetting` before writing, and 
 Nothing blocks Phase 0. For the later phases:
 
 - Confirm the grants ledger in 10.1 is acceptable scope. It is my recommendation and the only way 6 month expiry works
-- Confirm cost lives on the product per 10.2, which also means agent remittance starts following the product's real cost instead of a hardcoded ₦1,300. That is a behaviour change to the stock path and worth an explicit yes
+- Confirm cost lives on the product per 10.2. Agent remittance already follows the product price rather than a hardcoded ₦1,300; what this adds is the **landed cost**, which is what contribution needs and what the commission bands should eventually key off

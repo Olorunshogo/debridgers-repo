@@ -10,7 +10,7 @@ import {
 import type { Route } from "./+types/root";
 import type { MetaFunction } from "react-router";
 import "./styles.css";
-import { IntroAnimation } from "./components/landing/IntroAnimation";
+import { IntroAnimation } from "./components/marketing/IntroAnimation";
 import { DialogProvider } from "@debridgers/ui-web";
 import { AuthProvider } from "./contexts/AuthContext";
 import { PlatformConfigProvider } from "./contexts/PlatformConfigContext";
@@ -75,7 +75,7 @@ export default function App() {
               adapter does for the auth hooks. Inside AppAuthAdapterProvider
               so its requests carry a session. */}
           <AppPaymentAdapterProvider>
-            {/* One cart for every page - landing shop, buyer shop, checkout */}
+            {/* One cart for every page - marketing shop, buyer shop, checkout */}
             <CartProvider>
               {/* Innermost, because the engine renders dialogs at its own
                   position in the tree rather than at the caller's. Any provider

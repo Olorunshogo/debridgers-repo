@@ -8,6 +8,7 @@ export interface JwtPayload {
   first_name: string;
   last_name: string;
   role: UserRole;
+  admin_tier?: "super" | "sub";
   api_version: string;
   device: string;
   ip_address: string;

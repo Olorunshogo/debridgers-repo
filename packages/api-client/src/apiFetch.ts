@@ -1,5 +1,11 @@
 import { BASE_BACKEND_URL } from "./api";
 import { getAccessToken, refreshTokens, clearTokens } from "./auth";
+import {
+  buildQueryString,
+  type PagedResponse,
+  type PaginationMeta,
+  type QueryParams,
+} from "./types/pagination";
 
 export class ApiError extends Error {
   constructor(
@@ -11,16 +17,24 @@ export class ApiError extends Error {
   }
 }
 
-/**
- * Authenticated fetch with automatic token refresh.
- * Throws ApiError on non-2xx responses.
- * On 401, attempts one silent refresh then retries.
- * On second 401, clears tokens and throws - caller should redirect to /login.
+/*
+ * The full response envelope the backend's interceptor emits. `meta` is present
+ * only on paginated handlers.
  */
-export async function apiFetch<T = unknown>(
+interface ApiEnvelope<T> {
+  data: T;
+  meta?: PaginationMeta;
+  message?: string;
+}
+
+/*
+ * One request, one silent refresh on 401, one retry. Both apiFetch and
+ * apiFetchPaged go through here so the auth behaviour cannot drift apart.
+ */
+async function requestEnvelope<T>(
   path: string,
-  options: RequestInit = {},
-): Promise<T> {
+  options: RequestInit,
+): Promise<ApiEnvelope<T>> {
   const token = getAccessToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -55,6 +69,65 @@ export async function apiFetch<T = unknown>(
     throw new ApiError(res.status, msg, body);
   }
 
-  const json = await res.json();
-  return (json as { data: T }).data;
+  return (await res.json()) as ApiEnvelope<T>;
+}
+
+/**
+ * Authenticated fetch with automatic token refresh.
+ * Throws ApiError on non-2xx responses.
+ * On 401, attempts one silent refresh then retries.
+ * On second 401, clears tokens and throws - caller should redirect to /login.
+ */
+export async function apiFetch<T = unknown>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const envelope = await requestEnvelope<T>(path, options);
+  return envelope.data;
+}
+
+/**
+ * Authenticated fetch for a paginated list endpoint, keeping `meta`.
+ *
+ * Use this anywhere a pager, a total, or server-side sorting is involved.
+ * `params` is serialised onto the path, so callers never hand-build a query
+ * string: apiFetchPaged("/admin/orders", { page, limit, sort, order, search }).
+ */
+export async function apiFetchPaged<
+  T = unknown,
+  TMeta extends PaginationMeta = PaginationMeta,
+>(
+  path: string,
+  params: QueryParams = {},
+  options: RequestInit = {},
+): Promise<PagedResponse<T, TMeta>> {
+  const envelope = await requestEnvelope<T[]>(
+    `${path}${buildQueryString(params)}`,
+    options,
+  );
+
+  /*
+   * A missing `meta` means the endpoint is not actually paginated, so the
+   * caller is wrong. Failing loudly beats rendering a pager over a full list
+   * that silently shows only its first page.
+   */
+  if (!envelope.meta) {
+    throw new ApiError(
+      500,
+      `${path} returned no pagination meta. Use apiFetch, or make the endpoint paginated.`,
+    );
+  }
+
+  return { data: envelope.data ?? [], meta: envelope.meta as TMeta };
+}
+
+/**
+ * POST/PUT/DELETE mutation with automatic token refresh.
+ * Convenience wrapper around apiFetch for mutation operations.
+ */
+export async function apiMutate<T = unknown>(
+  path: string,
+  options: RequestInit & { method: "POST" | "PUT" | "DELETE" | "PATCH" },
+): Promise<T> {
+  return apiFetch<T>(path, options);
 }

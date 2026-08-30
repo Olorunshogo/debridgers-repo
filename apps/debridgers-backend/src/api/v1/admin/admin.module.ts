@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { AdminController } from "./admin.controller";
 import { AdminService } from "./admin.service";
 import { AdminApiKeysService } from "./admin-api-keys.service";
@@ -7,15 +7,48 @@ import { AuthModule } from "../auth/auth.module";
 import { AgentModule } from "../agent/agent.module";
 import { CloudinaryService } from "../../../infrastructure/cloudinary/cloudinary.service";
 import { AuditModule } from "../../../infrastructure/audit/audit.module";
+import { BuyerAdminController } from "./buyer-admin/buyer-admin.controller";
+import { BuyerAdminService } from "./buyer-admin/buyer-admin.service";
+import { DeliveryAdminController } from "./buyer-admin/delivery-admin.controller";
+import { DeliveryAdminService } from "./buyer-admin/delivery-admin.service";
+import { NotificationsService } from "../buyer/notifications.service";
+import { NotificationsAdminController } from "./notifications-admin.controller";
+import { AdminInviteController } from "./admin-invite/admin-invite.controller";
+import { AdminInviteService } from "./admin-invite/admin-invite.service";
+import { EmailModule } from "../../../notification/features/email/email.module";
+import { AgentWalletService } from "../wallet/agent-wallet.service";
 
 @Module({
-  /*
-   * AgentModule for BankDetailsService, used by the bank-code backfill route.
-   * AuditModule for the F9 trail on privileged mutations.
-   */
-  imports: [DatabaseModule, AuthModule, AgentModule, AuditModule],
-  controllers: [AdminController],
-  providers: [AdminService, AdminApiKeysService, CloudinaryService],
-  exports: [AdminApiKeysService], // Export for ApiKeyGuard
+  imports: [
+    DatabaseModule,
+    forwardRef(() => AuthModule),
+    AgentModule,
+    AuditModule,
+    EmailModule,
+  ],
+  controllers: [
+    AdminController,
+    BuyerAdminController,
+    DeliveryAdminController,
+    NotificationsAdminController,
+    AdminInviteController,
+  ],
+  providers: [
+    AdminService,
+    AdminApiKeysService,
+    CloudinaryService,
+    BuyerAdminService,
+    DeliveryAdminService,
+    NotificationsService,
+    AdminInviteService,
+    AgentWalletService,
+    // Remove EmailService - it comes from EmailModule
+  ],
+  exports: [
+    AdminApiKeysService,
+    BuyerAdminService,
+    DeliveryAdminService,
+    AdminInviteService,
+  ],
 })
 export class AdminModule {}

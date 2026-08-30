@@ -86,6 +86,23 @@ export class LedgerService {
     return wallet;
   }
 
+  /*
+   * The customer code is the only identifier a dedicated-account transfer
+   * carries back to us, so it is how an unsolicited deposit finds its wallet.
+   */
+  async getWalletByCustomerCode(
+    customerCode: string,
+    exec: LedgerExecutor = this.db,
+  ): Promise<BuyerWallet | undefined> {
+    const [wallet] = await exec
+      .select()
+      .from(schema.buyerWallets)
+      .where(eq(schema.buyerWallets.paystack_customer_code, customerCode))
+      .limit(1);
+
+    return wallet;
+  }
+
   // === Balance primitives
 
   /*
@@ -306,6 +323,54 @@ export class LedgerService {
       }
 
       return { wallet, transaction: claimed };
+    });
+  }
+
+  /*
+   * Credit a reference that has no pending entry waiting for it. A dedicated
+   * account transfer is unsolicited - the buyer initialised nothing, so there
+   * is no pending row to claim - which means the usual claim-the-pending-row
+   * lock has nothing to bite on. The unique index on reference takes its
+   * place: the insert is what wins or loses the race, and a replayed webhook
+   * conflicts, returns undefined and never reaches applyCredit.
+   */
+  async creditOnce(
+    walletId: number,
+    entry: Omit<LedgerEntry, "status"> & { reference: string },
+    countsAsDeposit = false,
+  ): Promise<
+    { wallet: BuyerWallet; transaction: WalletTransaction } | undefined
+  > {
+    this.assertPositive(entry.amount);
+
+    return this.db.transaction(async (tx) => {
+      const [row] = await tx
+        .insert(schema.walletTransactions)
+        .values({
+          wallet_id: walletId,
+          type: entry.type,
+          amount: entry.amount,
+          status: "completed",
+          reference: entry.reference,
+          description: entry.description ?? null,
+        })
+        .onConflictDoNothing({ target: schema.walletTransactions.reference })
+        .returning();
+
+      if (!row) return undefined;
+
+      const wallet = await this.applyCredit(
+        walletId,
+        entry.amount,
+        countsAsDeposit,
+        tx,
+      );
+
+      if (!wallet) {
+        throw new BadRequestException("Wallet not found");
+      }
+
+      return { wallet, transaction: row };
     });
   }
 

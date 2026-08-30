@@ -148,7 +148,7 @@ export function SupportTicketDialog({
         error={fieldErrors.email}
       />
       {defaultEmail && (
-        <p id="support-email-hint" className="text-text -mt-2 text-xs">
+        <p id="support-email-hint" className="text-body -mt-2 text-xs">
           We will reply to this address, taken from your account.
         </p>
       )}

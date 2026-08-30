@@ -64,9 +64,9 @@ export function ProductCard({
       initial="initial"
       animate="animate"
       transition={staggerDelay(animationIndex)}
-      className="border-gray-border flex h-full flex-col overflow-hidden rounded-2xl border bg-white"
+      className="border-line flex h-full flex-col overflow-hidden rounded-2xl border bg-white"
     >
-      <div className="bg-bg-light relative h-40 overflow-hidden">
+      <div className="bg-light-bg relative h-40 overflow-hidden">
         {product.image_url ? (
           <img
             src={product.image_url}
@@ -75,7 +75,7 @@ export function ProductCard({
           />
         ) : (
           <div className="flex h-full items-center justify-center">
-            <Package size={44} className="text-text opacity-15" />
+            <Package size={44} className="text-body opacity-15" />
           </div>
         )}
 
@@ -124,7 +124,7 @@ export function ProductCard({
           </p>
 
           {product.description && (
-            <p className="text-text line-clamp-3 flex-1 text-sm leading-relaxed">
+            <p className="text-body line-clamp-3 flex-1 text-sm leading-relaxed">
               {product.description}
             </p>
           )}

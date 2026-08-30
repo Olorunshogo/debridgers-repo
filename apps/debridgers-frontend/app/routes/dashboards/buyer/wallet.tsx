@@ -6,10 +6,10 @@ import {
   ArrowDownLeft,
   Plus,
   Landmark,
-  Pencil,
   Copy,
   Check,
   Loader2,
+  Receipt,
 } from "lucide-react";
 import { apiFetch, ApiError } from "@debridgers/api-client";
 import {
@@ -19,6 +19,14 @@ import {
   DashSubmitButton,
   DashSelectInput,
   DashTextInput,
+  DataTable,
+  TablePrimaryCell,
+  TableTextCell,
+  TableDateCell,
+  TableStatusBadge,
+  TableEmptyState,
+  type StatusTone,
+  type TableColumn,
   type SelectOption,
 } from "@debridgers/ui-web";
 
@@ -105,14 +113,125 @@ function clearPendingTransfer(): void {
 }
 type TransactionStatus = "pending" | "completed" | "failed";
 
+/*
+ * Raw kobo and an ISO timestamp, not display strings. The table sorts on these,
+ * and a formatted date sorts alphabetically while a naira-rounded amount loses
+ * the kobo the sort needs.
+ */
 interface Transaction {
   id: string;
   description: string;
-  amount: number;
+  amountKobo: number;
   type: TransactionType;
   status: TransactionStatus;
-  date: string;
+  createdAt: string;
 }
+
+const TRANSACTION_STATUS: Record<
+  TransactionStatus,
+  { tone: StatusTone; label: string }
+> = {
+  completed: { tone: "success", label: "Completed" },
+  pending: { tone: "warning", label: "Pending" },
+  failed: { tone: "danger", label: "Failed" },
+};
+
+const TRANSACTION_LABEL: Record<TransactionType, string> = {
+  deposit: "Deposit",
+  withdraw: "Withdrawal",
+  refund: "Refund",
+};
+
+/* Money coming in is signed and coloured differently from money going out,
+   which is the one thing a reader scans a transaction list for. */
+function isInbound(type: TransactionType): boolean {
+  return type === "deposit" || type === "refund";
+}
+
+const TRANSACTION_COLUMNS: readonly TableColumn<Transaction>[] = [
+  {
+    id: "description",
+    header: "Description",
+    priority: "primary",
+    minWidth: "16rem",
+    sortable: true,
+    sortValue: (t) => t.description,
+    searchValue: (t) => `${t.description} ${TRANSACTION_LABEL[t.type]}`,
+    cell: (t) => (
+      <TablePrimaryCell
+        title={t.description}
+        leading={
+          <span
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+              isInbound(t.type) ? "bg-status-delivered" : "bg-status-cancelled"
+            }`}
+          >
+            {isInbound(t.type) ? (
+              <ArrowDownLeft size={16} className="text-status-delivered-fg" />
+            ) : (
+              <ArrowUpRight size={16} className="text-status-cancelled-fg" />
+            )}
+          </span>
+        }
+      />
+    ),
+  },
+  {
+    id: "type",
+    header: "Type",
+    priority: "detail",
+    minWidth: "8rem",
+    sortable: true,
+    sortValue: (t) => t.type,
+    cell: (t) => <TableTextCell value={TRANSACTION_LABEL[t.type]} />,
+  },
+  {
+    id: "date",
+    header: "Date",
+    priority: "secondary",
+    minWidth: "9rem",
+    sortable: true,
+    sortValue: (t) => t.createdAt,
+    cell: (t) => <TableDateCell value={t.createdAt} />,
+  },
+  {
+    id: "status",
+    header: "Status",
+    priority: "detail",
+    minWidth: "8rem",
+    sortable: true,
+    sortValue: (t) => t.status,
+    cell: (t) => (
+      <TableStatusBadge
+        label={TRANSACTION_STATUS[t.status].label}
+        tone={TRANSACTION_STATUS[t.status].tone}
+      />
+    ),
+  },
+  {
+    id: "amount",
+    header: "Amount",
+    priority: "trailing",
+    align: "right",
+    minWidth: "9rem",
+    sortable: true,
+    /* Signed, so a sort puts withdrawals and deposits on opposite ends
+       rather than interleaving them by magnitude. */
+    sortValue: (t) => (isInbound(t.type) ? t.amountKobo : -t.amountKobo),
+    cell: (t) => (
+      <span
+        className={`font-syne font-semibold ${
+          isInbound(t.type)
+            ? "text-status-delivered-fg"
+            : "text-status-cancelled-fg"
+        }`}
+      >
+        {isInbound(t.type) ? "+" : "-"}
+        {formatFromKobo(t.amountKobo)}
+      </span>
+    ),
+  },
+];
 
 interface WalletData {
   availableBalance: number;
@@ -168,14 +287,10 @@ function buildWalletData(api: ApiWalletResponse): WalletData {
   const transactions: Transaction[] = api.transactions.map((tx) => ({
     id: String(tx.id),
     description: tx.description || "Wallet transaction",
-    amount: Math.round(tx.amount / 100),
+    amountKobo: tx.amount,
     type: tx.type || "deposit",
     status: tx.status || "completed",
-    date: new Date(tx.created_at).toLocaleDateString("en-NG", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }),
+    createdAt: tx.created_at,
   }));
 
   return {
@@ -186,10 +301,11 @@ function buildWalletData(api: ApiWalletResponse): WalletData {
   };
 }
 
-/* Shows the last 4 digits only, matching how the bank itself would mask it. */
-function maskAccountNumber(accountNumber: string): string {
+/* Shows the last 4 digits only, matching how the bank itself would mask it.
+   Commented out with the payout-account card it belongs to, below. */
+/* function maskAccountNumber(accountNumber: string): string {
   return `****${accountNumber.slice(-4)}`;
-}
+} */
 
 function fmt(n: number) {
   return formatCurrency(n);
@@ -392,7 +508,9 @@ export default function BuyerWallet() {
   }, [showFundModal, dvaLoading, dva]);
 
   /* Banks are a large, slow-to-fetch list, so they load only when the form
-     that needs them is actually opened. */
+     that needs them is actually opened. Left live, unlike its caller: the
+     payout modal it feeds is still in the file, so commenting it out would
+     strand the banks state that modal reads. */
   function loadBanksIfNeeded(): void {
     if (banksLoaded || banksLoading) return;
     setBanksLoading(true);
@@ -405,14 +523,15 @@ export default function BuyerWallet() {
       .finally(() => setBanksLoading(false));
   }
 
-  function openPayoutModal(): void {
+  /* Commented out with the payout-account card that calls it, below. */
+  /* function openPayoutModal(): void {
     setPayoutAccountError(null);
     setConfirmedAccountName(null);
     setSelectedBankCode(payoutAccount?.bank_code ?? "");
     setAccountNumber("");
     setShowPayoutModal(true);
     loadBanksIfNeeded();
-  }
+  } */
 
   async function handleSavePayoutAccount(
     e: React.SyntheticEvent<HTMLFormElement>,
@@ -454,13 +573,14 @@ export default function BuyerWallet() {
     }
   }
 
-  function openWithdrawModal(): void {
+  /* Commented out with the Withdraw button that calls it, below. */
+  /* function openWithdrawModal(): void {
     setWithdrawError(null);
     setWithdrawResult(null);
     setWithdrawAmount("");
     setWithdrawReason("");
     setShowWithdrawModal(true);
-  }
+  } */
 
   async function handleWithdraw(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -541,7 +661,7 @@ export default function BuyerWallet() {
         // Drop the reference so a page refresh cannot replay the confirmation.
         setSearchParams({}, { replace: true });
       });
-  }, [searchParams]);
+  }, [searchParams, setSearchParams]);
 
   async function handleFund(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -580,8 +700,8 @@ export default function BuyerWallet() {
   if (loading || !data) {
     return (
       <div className="flex animate-pulse flex-col gap-6">
-        <div className="bg-gray-border h-36 rounded-2xl" />
-        <div className="bg-gray-border h-64 rounded-2xl" />
+        <div className="bg-line h-36 rounded-2xl" />
+        <div className="bg-line h-64 rounded-2xl" />
       </div>
     );
   }
@@ -591,17 +711,17 @@ export default function BuyerWallet() {
       {/* Deposit outcome. Lives at page level because returning from Paystack
           closes the modal, so a banner inside it would never be seen. */}
       {confirmingDeposit && (
-        <div className="border-gray-border text-text rounded-xl border bg-white px-4 py-3 text-sm">
+        <div className="border-line text-body rounded-xl border bg-white px-4 py-3 text-sm">
           Confirming your deposit...
         </div>
       )}
       {depositSuccess && !confirmingDeposit && (
-        <div className="text-status-delivered-text border-gray-border rounded-xl border bg-white px-4 py-3 text-sm font-medium">
+        <div className="text-status-delivered-fg border-line rounded-xl border bg-white px-4 py-3 text-sm font-medium">
           Funds added successfully.
         </div>
       )}
       {depositError && !confirmingDeposit && (
-        <div className="border-gray-border rounded-xl border bg-white px-4 py-3 text-sm font-medium text-red-600">
+        <div className="border-line rounded-xl border bg-white px-4 py-3 text-sm font-medium text-red-600">
           {depositError}
         </div>
       )}
@@ -609,14 +729,14 @@ export default function BuyerWallet() {
       {/* Transfer outcome, also at page level: the buyer can close the modal
           and wander off, and the watcher keeps running either way. */}
       {watchingTransfer && (
-        <div className="border-gray-border text-text flex items-center gap-2 rounded-xl border bg-white px-4 py-3 text-sm">
+        <div className="border-line text-body flex items-center gap-2 rounded-xl border bg-white px-4 py-3 text-sm">
           <Loader2 size={16} className="animate-spin" />
           Waiting for your transfer to land. You do not need to stay on this
           page.
         </div>
       )}
       {transferSettled && (
-        <div className="text-status-delivered-text border-gray-border rounded-xl border bg-white px-4 py-3 text-sm font-medium">
+        <div className="text-status-delivered-fg border-line rounded-xl border bg-white px-4 py-3 text-sm font-medium">
           Transfer received. Taking you to your overview...
         </div>
       )}
@@ -677,12 +797,12 @@ export default function BuyerWallet() {
       </motion.div>
 
       {/* === Payout account */}
-      {/* <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
+      {/* <div className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5">
         <h3 className="font-syne text-heading font-semibold">Payout Account</h3>
         {payoutAccountLoading ? (
-          <div className="bg-gray-border h-16 animate-pulse rounded-xl" />
+          <div className="bg-line h-16 animate-pulse rounded-xl" />
         ) : payoutAccount ? (
-          <div className="border-gray-border flex items-center justify-between gap-3 rounded-xl border bg-white p-4">
+          <div className="border-line flex items-center justify-between gap-3 rounded-xl border bg-white p-4">
             <div className="flex items-center gap-3">
               <span className="bg-secondary flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
                 <Landmark size={16} className="text-heading" />
@@ -691,7 +811,7 @@ export default function BuyerWallet() {
                 <p className="text-heading text-sm font-medium">
                   {payoutAccount.bank_name}
                 </p>
-                <p className="text-text text-xs">
+                <p className="text-body text-xs">
                   {maskAccountNumber(payoutAccount.account_number)} ·{" "}
                   {payoutAccount.account_name}
                 </p>
@@ -706,8 +826,8 @@ export default function BuyerWallet() {
             </button>
           </div>
         ) : (
-          <div className="border-gray-border flex flex-col items-start gap-3 rounded-xl border border-dashed p-4">
-            <p className="text-text text-sm">
+          <div className="border-line flex flex-col items-start gap-3 rounded-xl border border-dashed p-4">
+            <p className="text-body text-sm">
               No payout account on file yet. Add one to enable withdrawals.
             </p>
             <DashSubmitButton
@@ -722,80 +842,22 @@ export default function BuyerWallet() {
         )}
       </div> */}
 
-      <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
-        <h3 className="font-syne text-heading font-semibold">
-          Transaction History
-        </h3>
-        <div className="flex flex-col">
-          {data.transactions.length === 0 && (
-            <p className="text-text py-8 text-center text-sm">
-              No orders yet. Your order history will appear here.
-            </p>
-          )}
-          {data.transactions.map((tx, i) => {
-            const isInbound = tx.type === "deposit" || tx.type === "refund";
-            return (
-              <motion.div
-                key={tx.id}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="border-gray-border flex items-center justify-between border-b py-4 last:border-0"
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                      isInbound
-                        ? "bg-status-delivered-bg"
-                        : "bg-status-cancelled-bg"
-                    }`}
-                  >
-                    {isInbound ? (
-                      <ArrowDownLeft
-                        size={16}
-                        className="text-status-delivered-text"
-                      />
-                    ) : (
-                      <ArrowUpRight
-                        size={16}
-                        className="text-status-cancelled-text"
-                      />
-                    )}
-                  </span>
-                  <div className="flex flex-col gap-0.5">
-                    <p className="text-heading text-sm font-medium">
-                      {tx.description}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-text text-xs">{tx.date}</p>
-                      {tx.status === "pending" && (
-                        <span className="text-status-pending-text bg-status-pending-bg rounded-full px-2 py-0.5 text-[10px] font-medium">
-                          Pending
-                        </span>
-                      )}
-                      {tx.status === "failed" && (
-                        <span className="text-status-cancelled-text bg-status-cancelled-bg rounded-full px-2 py-0.5 text-[10px] font-medium">
-                          Failed
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <p
-                  className={`font-syne font-semibold ${
-                    isInbound
-                      ? "text-status-delivered-text"
-                      : "text-status-cancelled-text"
-                  }`}
-                >
-                  {isInbound ? "+" : "-"}
-                  {fmt(tx.amount)}
-                </p>
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
+      <DataTable
+        rows={data.transactions}
+        columns={TRANSACTION_COLUMNS}
+        caption="Transaction history"
+        showSearch
+        searchPlaceholder="Search transactions"
+        pageSize={10}
+        pageSizeOptions={[10, 25, 50]}
+        emptyState={
+          <TableEmptyState
+            icon={Receipt}
+            title="No transactions yet"
+            description="Deposits, withdrawals and order payments will appear here."
+          />
+        }
+      />
 
       <AnimatePresence>
         {showFundModal && (
@@ -826,27 +888,27 @@ export default function BuyerWallet() {
                   Shown before the card form because a transfer costs them
                   nothing and settles into the same wallet. */}
               {!depositSuccess && !transferSettled && (
-                <div className="border-gray-border mb-4 flex flex-col gap-3 rounded-xl border p-4">
+                <div className="border-line mb-4 flex flex-col gap-3 rounded-xl border p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex flex-col gap-0.5">
                       <p className="text-heading text-sm font-semibold">
                         Transfer to your account
                       </p>
-                      <p className="text-text text-xs">
+                      <p className="text-body text-xs">
                         Money sent here lands in your wallet automatically.
                       </p>
                     </div>
                     <Landmark
                       size={18}
-                      className="text-text mt-0.5 shrink-0 opacity-60"
+                      className="text-body mt-0.5 shrink-0 opacity-60"
                     />
                   </div>
 
                   {dvaLoading ? (
-                    <div className="bg-gray-border h-16 animate-pulse rounded-lg" />
+                    <div className="bg-line h-16 animate-pulse rounded-lg" />
                   ) : dva ? (
                     <>
-                      <div className="bg-bg-light flex flex-col gap-1 rounded-lg px-3 py-2.5">
+                      <div className="bg-light-bg flex flex-col gap-1 rounded-lg px-3 py-2.5">
                         <div className="flex items-center justify-between gap-3">
                           <p className="font-syne text-heading text-lg font-bold tracking-wide">
                             {dva.account_number}
@@ -855,7 +917,7 @@ export default function BuyerWallet() {
                             type="button"
                             onClick={copyAccountNumber}
                             aria-label="Copy account number"
-                            className="text-text hover:text-heading flex items-center gap-1 text-xs transition-colors"
+                            className="text-body hover:text-heading flex items-center gap-1 text-xs transition-colors"
                           >
                             {copied ? (
                               <>
@@ -868,13 +930,13 @@ export default function BuyerWallet() {
                             )}
                           </button>
                         </div>
-                        <p className="text-text text-xs">
+                        <p className="text-body text-xs">
                           {dva.bank_name} - {dva.account_name}
                         </p>
                       </div>
 
                       {watchingTransfer ? (
-                        <p className="text-text flex items-center gap-2 text-xs">
+                        <p className="text-body flex items-center gap-2 text-xs">
                           <Loader2 size={14} className="animate-spin" />
                           Waiting for your transfer. This page updates itself.
                         </p>
@@ -889,13 +951,13 @@ export default function BuyerWallet() {
                       )}
                     </>
                   ) : dvaRepairing ? (
-                    <p className="text-text flex items-center gap-2 text-xs">
+                    <p className="text-body flex items-center gap-2 text-xs">
                       <Loader2 size={14} className="animate-spin" />
                       Setting up your account number...
                     </p>
                   ) : (
                     <div className="flex flex-col gap-2">
-                      <p className="text-text text-xs">
+                      <p className="text-body text-xs">
                         {dvaRepairFailed
                           ? "We could not set up your account number just now. Use the card option below, or try again."
                           : "Your account number is still being set up. Use the card option below."}
@@ -914,20 +976,20 @@ export default function BuyerWallet() {
 
               {transferSettled ? (
                 <div className="flex flex-col gap-2">
-                  <p className="text-status-delivered-text text-sm font-medium">
+                  <p className="text-status-delivered-fg text-sm font-medium">
                     Transfer received. Your wallet has been credited.
                   </p>
-                  <p className="text-text text-xs">
+                  <p className="text-body text-xs">
                     Taking you to your overview...
                   </p>
                 </div>
               ) : depositSuccess ? (
-                <p className="text-status-delivered-text text-sm font-medium">
+                <p className="text-status-delivered-fg text-sm font-medium">
                   Funds added successfully!
                 </p>
               ) : (
                 <form onSubmit={handleFund} className="flex flex-col gap-4">
-                  <p className="text-text text-xs">Or pay with a card:</p>
+                  <p className="text-body text-xs">Or pay with a card:</p>
                   <DashNumberInput
                     label="Amount"
                     min={100}
@@ -987,8 +1049,8 @@ export default function BuyerWallet() {
               </h3>
               {confirmedAccountName ? (
                 <div className="flex flex-col gap-4">
-                  <div className="border-status-delivered-text/30 bg-status-delivered-bg flex flex-col gap-1 rounded-xl border p-4">
-                    <p className="text-status-delivered-text text-sm font-medium">
+                  <div className="border-status-delivered-fg/30 bg-status-delivered flex flex-col gap-1 rounded-xl border p-4">
+                    <p className="text-status-delivered-fg text-sm font-medium">
                       Account verified
                     </p>
                     <p className="text-heading font-syne text-base font-bold">
@@ -1092,14 +1154,14 @@ export default function BuyerWallet() {
               </h3>
               {withdrawResult ? (
                 <div className="flex flex-col gap-4">
-                  <div className="border-status-pending-text/30 bg-status-pending-bg flex flex-col gap-1 rounded-xl border p-4">
-                    <p className="text-status-pending-text text-sm font-medium">
+                  <div className="border-status-pending-fg/30 bg-status-pending flex flex-col gap-1 rounded-xl border p-4">
+                    <p className="text-status-pending-fg text-sm font-medium">
                       Withdrawal processing
                     </p>
                     <p className="text-heading font-syne text-base font-bold">
                       {formatFromKobo(withdrawResult.amount_kobo)}
                     </p>
-                    <p className="text-text text-xs">
+                    <p className="text-body text-xs">
                       Reference {withdrawResult.reference}. This will show as
                       pending until the transfer is confirmed.
                     </p>
@@ -1114,8 +1176,8 @@ export default function BuyerWallet() {
                 </div>
               ) : (
                 <form onSubmit={handleWithdraw} className="flex flex-col gap-4">
-                  <div className="bg-bg-light flex items-center justify-between gap-3 rounded-xl px-4 py-3">
-                    <span className="text-text text-sm">Available</span>
+                  <div className="bg-light-bg flex items-center justify-between gap-3 rounded-xl px-4 py-3">
+                    <span className="text-body text-sm">Available</span>
                     <span className="font-syne text-heading text-base font-bold">
                       {fmt(data.availableBalance)}
                     </span>

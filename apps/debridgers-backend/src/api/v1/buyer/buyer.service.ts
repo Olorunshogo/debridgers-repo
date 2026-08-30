@@ -7,6 +7,7 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import * as bcrypt from "bcryptjs";
+import { randomBytes } from "crypto";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq, desc, sum, count, and, inArray, sql } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
@@ -18,8 +19,13 @@ import { CreateOrderDto } from "./dto/create-order.dto";
 import { SyncCartDto } from "./dto/sync-cart.dto";
 import { InitializeOrderPaymentDto } from "./dto/initialize-order-payment.dto";
 import { QuoteCartDto } from "./dto/quote-cart.dto";
-import { computeDeliveryFee, computeOrderTotals } from "./delivery-fee";
+import {
+  assertMeetsMinimumOrder,
+  computeDeliveryFee,
+  computeOrderTotals,
+} from "./delivery-fee";
 import { PaymentService } from "../payment/payment.service";
+import { PaystackInvoiceService } from "../payment/paystack-invoice.service";
 import { ConfigService } from "@nestjs/config";
 import { SystemSettingsService } from "../settings/system-settings.service";
 
@@ -31,10 +37,15 @@ export class BuyerService {
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
     private readonly payment: PaymentService,
+    private readonly invoice: PaystackInvoiceService,
     private readonly config: ConfigService,
     private readonly settings: SystemSettingsService,
     private readonly emailService: EmailService,
   ) {}
+
+  private generateOrderReference(): string {
+    return `ord_${randomBytes(6).toString("hex")}`;
+  }
 
   async getProfile(user: JwtPayload) {
     const [buyer] = await this.db
@@ -141,6 +152,7 @@ export class BuyerService {
       const [created] = await tx
         .insert(schema.orders)
         .values({
+          order_reference: this.generateOrderReference(),
           buyer_id: user.sub,
           zone_id: zoneId,
           quantity: totalQuantity,
@@ -169,6 +181,34 @@ export class BuyerService {
       return created;
     });
 
+    // Create Paystack invoice (fire-and-forget - Paystack outage won't fail order)
+    this.invoice
+      .createInvoice(
+        order.id,
+        user.sub,
+        totals.totalKobo,
+        order.order_reference,
+        user.email,
+        `${user.first_name} ${user.last_name}`,
+      )
+      .then(async (invoiceData) => {
+        // Store invoice code in order
+        await this.db
+          .update(schema.orders)
+          .set({ paystack_invoice_code: invoiceData.invoice_code })
+          .where(eq(schema.orders.id, order.id));
+        this.logger.log(
+          `Created Paystack invoice ${invoiceData.invoice_code} for order ${order.order_reference}`,
+        );
+      })
+      .catch((err) => {
+        this.logger.error(
+          `Failed to create Paystack invoice for order ${order.id}: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        );
+      });
+
     /*
      * OrderController also declares POST /buyer/orders and sent this email, but
      * BuyerController registers first and wins the path, so that copy never ran.
@@ -179,7 +219,7 @@ export class BuyerService {
       .sendOrderConfirmation(
         user.email,
         user.first_name || "Buyer",
-        `#DBR-${String(order.id).padStart(4, "0")}`,
+        order.order_reference || `#DBR-${String(order.id).padStart(4, "0")}`,
         `₦${Math.round(totals.totalKobo / 100)}`,
         lines.length,
       )
@@ -694,6 +734,9 @@ export class BuyerService {
       .select({
         delivery_fee: schema.zones.delivery_fee,
         free_delivery: schema.zones.free_delivery,
+        tier_one_per_package_kobo: schema.zones.tier_one_per_package_kobo,
+        tier_two_per_package_kobo: schema.zones.tier_two_per_package_kobo,
+        delivery_cap_kobo: schema.zones.delivery_cap_kobo,
       })
       .from(schema.zones)
       .where(eq(schema.zones.id, zoneId))
@@ -708,15 +751,22 @@ export class BuyerService {
     const freeDelivery =
       Boolean(zone?.free_delivery) || (await this.isFreeDeliveryActive());
 
+    /* Refused on the quote as well as the charge, so the buyer learns why
+       before reaching payment rather than after. */
+    assertMeetsMinimumOrder(itemsTotalKobo, packageCount);
+
     const fee = computeDeliveryFee({
       zoneFeeKobo: zone?.delivery_fee ?? 0,
       packageCount,
       freeDelivery,
+      tierOnePerPackageKobo: zone?.tier_one_per_package_kobo,
+      tierTwoPerPackageKobo: zone?.tier_two_per_package_kobo,
+      deliveryCapKobo: zone?.delivery_cap_kobo,
     });
 
     return {
       lines: priced,
-      totals: computeOrderTotals(itemsTotalKobo, fee),
+      totals: computeOrderTotals(itemsTotalKobo, fee, packageCount),
       packageCount,
     };
   }
@@ -806,6 +856,7 @@ export class BuyerService {
       const [created] = await tx
         .insert(schema.orders)
         .values({
+          order_reference: `ord_${randomBytes(6).toString("hex")}`,
           buyer_id: user.sub,
           zone_id: zoneId,
           quantity: totalQuantity,

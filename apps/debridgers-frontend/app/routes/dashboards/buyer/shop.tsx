@@ -145,9 +145,9 @@ export default function BuyerShop() {
                     })
                   }
                   aria-label={`Add ${product.name} to cart`}
-                  className="border-gray-border hover:border-primary flex w-40 shrink-0 cursor-pointer flex-col gap-2 rounded-xl border bg-white p-3 text-left transition-colors"
+                  className="border-line hover:border-primary flex w-40 shrink-0 cursor-pointer flex-col gap-2 rounded-xl border bg-white p-3 text-left transition-colors"
                 >
-                  <div className="bg-bg-light h-20 w-full overflow-hidden rounded-lg">
+                  <div className="bg-light-bg h-20 w-full overflow-hidden rounded-lg">
                     {product.image_url ? (
                       <img
                         src={product.image_url}
@@ -156,14 +156,14 @@ export default function BuyerShop() {
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center">
-                        <Package size={20} className="text-text opacity-20" />
+                        <Package size={20} className="text-body opacity-20" />
                       </div>
                     )}
                   </div>
                   <span className="font-syne text-heading line-clamp-2 text-sm font-semibold">
                     {product.name}
                   </span>
-                  <span className="text-text text-xs">
+                  <span className="text-body text-xs">
                     Ordered {product.times_ordered}x
                   </span>
                   <span className="font-syne text-heading text-sm font-bold">
@@ -201,7 +201,7 @@ export default function BuyerShop() {
                   className={`cursor-pointer rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
                     active
                       ? "border-primary bg-primary text-white"
-                      : "border-gray-border text-heading bg-white"
+                      : "border-line text-heading bg-white"
                   }`}
                 >
                   {cat}
@@ -214,21 +214,18 @@ export default function BuyerShop() {
         {loading ? (
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="bg-gray-border h-64 animate-pulse rounded-2xl"
-              />
+              <div key={i} className="bg-line h-64 animate-pulse rounded-2xl" />
             ))}
           </div>
         ) : products.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-20">
-            <Package size={48} className="text-text opacity-20" />
-            <p className="text-text text-sm">
+            <Package size={48} className="text-body opacity-20" />
+            <p className="text-body text-sm">
               No products available yet. Check back soon.
             </p>
           </div>
         ) : filtered.length === 0 ? (
-          <p className="text-text py-10 text-center text-sm">
+          <p className="text-body py-10 text-center text-sm">
             No products match &quot;{search}&quot;
           </p>
         ) : (
@@ -282,11 +279,11 @@ export default function BuyerShop() {
             animate="animate"
             exit="exit"
             transition={springPanel}
-            className="border-gray-border absolute right-0 bottom-0 left-0 z-30 border-t bg-white shadow-lg"
+            className="border-line absolute right-0 bottom-0 left-0 z-30 border-t bg-white shadow-lg"
           >
             <div className="flex flex-wrap items-center justify-center gap-4 px-6 py-4 sm:justify-between">
               <div className="flex w-full items-center justify-between gap-4">
-                <p className="text-text text-sm">
+                <p className="text-body text-sm">
                   {cartProductCount} item{cartProductCount > 1 ? "s" : ""} in
                   cart
                 </p>
@@ -297,7 +294,7 @@ export default function BuyerShop() {
               <div className="flex w-full justify-end gap-3 sm:w-auto">
                 <button
                   onClick={() => setCartOpen(true)}
-                  className="border-gray-border text-heading flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
+                  className="border-line text-heading flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
                 >
                   <ShoppingCart size={16} /> View Cart
                 </button>
@@ -333,7 +330,7 @@ export default function BuyerShop() {
               transition={{ type: "tween", duration: 0.28 }}
               className="absolute top-0 right-0 z-50 flex h-full w-full max-w-120 flex-col bg-white shadow-2xl"
             >
-              <div className="border-gray-border flex items-center justify-between border-b px-5 py-4">
+              <div className="border-line flex items-center justify-between border-b px-5 py-4">
                 <h3 className="font-syne text-heading font-bold">
                   Your cart ({cartProductCount})
                 </h3>
@@ -341,7 +338,7 @@ export default function BuyerShop() {
                   onClick={() => setCartOpen(false)}
                   className="cursor-pointer rounded-full p-1.5 hover:bg-black/5"
                 >
-                  <X size={18} className="text-text" />
+                  <X size={18} className="text-body" />
                 </button>
               </div>
 
@@ -349,10 +346,10 @@ export default function BuyerShop() {
                 {cart.map((item) => (
                   <div
                     key={item.id}
-                    className="border-gray-border flex items-center gap-3 rounded-xl border p-3"
+                    className="border-line flex items-center gap-3 rounded-xl border p-3"
                   >
                     {/* Cart item thumbnail */}
-                    <div className="bg-bg-light h-12 w-12 shrink-0 overflow-hidden rounded-lg">
+                    <div className="bg-light-bg h-12 w-12 shrink-0 overflow-hidden rounded-lg">
                       {item.image_url ? (
                         <img
                           src={item.image_url}
@@ -361,7 +358,7 @@ export default function BuyerShop() {
                         />
                       ) : (
                         <div className="flex h-full items-center justify-center">
-                          <Package size={18} className="text-text opacity-20" />
+                          <Package size={18} className="text-body opacity-20" />
                         </div>
                       )}
                     </div>
@@ -370,14 +367,14 @@ export default function BuyerShop() {
                       <p className="text-heading truncate text-sm font-medium">
                         {item.name}
                       </p>
-                      <p className="text-text text-xs">
+                      <p className="text-body text-xs">
                         {item.unit} · {formatCurrency(item.price)} each
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => updateQty(item.id, -1)}
-                        className="border-gray-border flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border text-xs"
+                        className="border-line flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border text-xs"
                       >
                         <Minus size={10} />
                       </button>
@@ -386,7 +383,7 @@ export default function BuyerShop() {
                       </span>
                       <button
                         onClick={() => updateQty(item.id, 1)}
-                        className="border-gray-border flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border text-xs"
+                        className="border-line flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border text-xs"
                       >
                         <Plus size={10} />
                       </button>
@@ -401,9 +398,9 @@ export default function BuyerShop() {
                 ))}
               </div>
 
-              <div className="border-gray-border flex flex-col gap-3 border-t p-5">
+              <div className="border-line flex flex-col gap-3 border-t p-5">
                 <div className="flex justify-between">
-                  <span className="text-text text-sm">Total</span>
+                  <span className="text-body text-sm">Total</span>
                   <span className="font-syne text-heading font-bold">
                     {formatCurrency(cartTotal)}
                   </span>

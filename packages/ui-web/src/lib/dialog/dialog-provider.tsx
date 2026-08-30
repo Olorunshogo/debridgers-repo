@@ -49,6 +49,8 @@ export interface DialogProviderProps {
 export function DialogProvider({ registry, children }: DialogProviderProps) {
   const [openDialogs, setOpenDialogs] = useState<OpenDialog[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  /* A dialog that gates the dashboard behind it opts out of dismissal. */
+  const [isDismissible, setIsDismissible] = useState<boolean>(true);
   const nextId = useRef<number>(0);
   const location = useLocation();
 
@@ -99,11 +101,13 @@ export function DialogProvider({ registry, children }: DialogProviderProps) {
 
   const closeDialog = useCallback((): void => {
     setIsLoading(false);
+    setIsDismissible(true);
     setOpenDialogs((current) => current.slice(0, -1));
   }, []);
 
   const closeAllDialogs = useCallback((): void => {
     setIsLoading(false);
+    setIsDismissible(true);
     setOpenDialogs([]);
   }, []);
 
@@ -112,17 +116,18 @@ export function DialogProvider({ registry, children }: DialogProviderProps) {
     closeAllDialogs();
   }, [location.pathname, closeAllDialogs]);
 
-  // Escape closes the topmost dialog, unless a blocking action is running
+  /* Escape closes the topmost dialog, unless a blocking action is running or
+     the dialog has opted out of dismissal. */
   useEffect(() => {
     if (openDialogs.length === 0) return;
 
     function handleKeyDown(event: KeyboardEvent): void {
-      if (event.key === "Escape" && !isLoading) closeDialog();
+      if (event.key === "Escape" && !isLoading && isDismissible) closeDialog();
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [openDialogs.length, isLoading, closeDialog]);
+  }, [openDialogs.length, isLoading, isDismissible, closeDialog]);
 
   // Lock body scroll while anything is open
   useEffect(() => {
@@ -140,6 +145,7 @@ export function DialogProvider({ registry, children }: DialogProviderProps) {
       closeDialog,
       closeAllDialogs,
       setDialogLoading: setIsLoading,
+      setDialogDismissible: setIsDismissible,
       openDialogs,
     }),
     [triggerDialog, closeDialog, closeAllDialogs, openDialogs],
@@ -159,7 +165,7 @@ export function DialogProvider({ registry, children }: DialogProviderProps) {
               key={dialog.id}
               isTop={index === openDialogs.length - 1}
               stackIndex={index}
-              onDismiss={isLoading ? undefined : closeDialog}
+              onDismiss={isLoading || !isDismissible ? undefined : closeDialog}
             >
               <Suspense fallback={<DialogLoaderOverlay inline />}>
                 {/* Props are app-defined; the engine passes them through untouched. */}
@@ -178,15 +184,22 @@ export function DialogProvider({ registry, children }: DialogProviderProps) {
 interface DialogPanelProps {
   isTop: boolean;
   stackIndex: number;
-  /** Undefined while a blocking action runs, which disables dismissal. */
+  /** Undefined while a blocking action runs, or while the dialog is a gate,
+      either of which disables dismissal. */
   onDismiss?: () => void;
   children: ReactNode;
 }
 
 /*
- * Bottom sheet on mobile, centered panel from md up, per the repo's modal
- * convention. The panel wrapper is pointer-events-none so a click lands on the
- * backdrop underneath it rather than the empty space beside the panel.
+ * Centered panel at every breakpoint, vertically and horizontally.
+ *
+ * Was a bottom sheet below md. Centering everywhere is what the admin password
+ * dialog needed to stop reading as clipped, and the wrapper's py-6 is the other
+ * half of it: max-height alone still let a tall panel sit flush against the
+ * viewport edge with nothing to show it was scrollable.
+ *
+ * The wrapper is pointer-events-none so a click lands on the backdrop
+ * underneath it rather than the empty space beside the panel.
  */
 function DialogPanel({
   isTop,
@@ -210,7 +223,9 @@ function DialogPanel({
   return (
     <>
       <motion.div
-        className="fixed inset-0 cursor-pointer bg-black/50 backdrop-blur-sm"
+        className={`fixed inset-0 bg-black/50 backdrop-blur-sm ${
+          onDismiss ? "cursor-pointer" : ""
+        }`}
         style={{ zIndex: 40 + stackIndex * 10 }}
         variants={backdropVariants}
         initial="initial"
@@ -222,7 +237,7 @@ function DialogPanel({
       />
 
       <div
-        className="px-section-px sm:px-section-px-sm lg:px-section-px-lg pointer-events-none fixed inset-0 flex items-end justify-center md:items-center"
+        className="px-section-px sm:px-section-px-sm lg:px-section-px-lg pointer-events-none fixed inset-0 flex items-center justify-center py-6"
         style={{ zIndex: 50 + stackIndex * 10 }}
       >
         <motion.div
@@ -231,14 +246,18 @@ function DialogPanel({
           aria-modal={isTop}
           tabIndex={-1}
           /*
-           * max-w-112 (28rem), not max-w-md.
+           * max-w-150 (37.5rem), not max-w-md.
            *
            * The app theme defines a named spacing scale including
            * --spacing-md: 0.75rem, and in Tailwind v4 max-w-* reads the spacing
            * namespace - so max-w-md compiled to 12px and the panel collapsed to
            * the width of its padding. Numeric widths cannot be shadowed.
+           *
+           * The admin branch independently reached for max-w-160; this keeps the
+           * narrower value already chosen here. Widen if an admin dialog needs
+           * the extra room.
            */
-          className="border-gray-border pointer-events-auto max-h-[90vh] w-full max-w-150 overflow-y-auto rounded-t-2xl border bg-white p-6 outline-none md:rounded-xl"
+          className="border-line pointer-events-auto max-h-[calc(100dvh-3rem)] w-full max-w-150 overflow-y-auto rounded-2xl border bg-white p-6 outline-none"
           variants={dialogPanelVariants}
           initial="initial"
           animate="animate"
@@ -250,6 +269,15 @@ function DialogPanel({
       </div>
     </>
   );
+}
+
+/*
+ * The context without the throw, for engines that can work without a provider.
+ * The table engine uses this: a DataTable with no confirm action must render
+ * fine outside a DialogProvider, and only a confirm action needs one.
+ */
+export function useOptionalDialog(): DialogContextValue | null {
+  return useContext(DialogContext);
 }
 
 export function useDialog(): DialogContextValue {

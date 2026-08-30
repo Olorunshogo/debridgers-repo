@@ -21,17 +21,17 @@ import {
   ApiConsumes,
   ApiResponse,
 } from "@nestjs/swagger";
+import { memoryStorage } from "multer";
 import {
   FileInterceptor,
   FileFieldsInterceptor,
 } from "@nestjs/platform-express";
 import { AgentService } from "./agent.service";
-import { WalletService } from "./wallet.service";
+import { AgentWalletService } from "../wallet/agent-wallet.service";
 import { StockService } from "./stock.service";
 import { KycService } from "./kyc.service";
 import { BankDetailsService } from "./bank-details.service";
 import { CloudinaryService } from "../../../infrastructure/cloudinary/cloudinary.service";
-import { FileValidationPipe } from "../../../infrastructure/file/file-validation.pipe";
 import { ZodValidationPipe } from "../../../infrastructure/pipeline/validation.pipeline";
 import { applyAgentSchema, ApplyAgentDto } from "./dto/apply-agent.dto";
 import {
@@ -74,7 +74,7 @@ import { JwtPayload } from "../../../interfaces/users/jwt.type";
 export class AgentController {
   constructor(
     private readonly agentService: AgentService,
-    private readonly walletService: WalletService,
+    private readonly walletService: AgentWalletService,
     private readonly stockService: StockService,
     private readonly kycService: KycService,
     private readonly bankDetailsService: BankDetailsService,
@@ -137,21 +137,29 @@ export class AgentController {
     description: "Validation failed / passwords don't match",
   })
   @ApiResponse({ status: 409, description: "Email already registered" })
+  /*
+   * Memory storage on this route specifically, not module-wide: the CV goes
+   * straight to Cloudinary and never touches the server's disk. It previously
+   * stored `file.path`, a path under /tmp/uploads, which meant cv_url was not a
+   * URL at all - the file vanished on the next restart and no admin screen
+   * could ever display it.
+   */
   @UseInterceptors(
-    FileInterceptor("cv", { limits: { fileSize: 5 * 1024 * 1024 } }),
+    FileInterceptor("cv", {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
   )
   async apply(@Body() body: unknown, @UploadedFile() cv?: Express.Multer.File) {
     const dto = new ZodValidationPipe(applyAgentSchema).transform(body);
 
-    /* CV is optional at apply time, so only validate/upload when supplied. */
-    let cvUrl: string | undefined;
-    if (cv) {
-      new FileValidationPipe().transform(cv);
-      cvUrl = await this.cloudinaryService.uploadBuffer(
-        cv.buffer,
-        "debridgers/agent-cvs",
-      );
-    }
+    const cvUrl = cv?.buffer
+      ? await this.cloudinaryService.uploadDocument(
+          cv.buffer,
+          "debridgers/agent-cvs",
+          cv.originalname,
+        )
+      : undefined;
 
     return this.agentService.apply(dto as ApplyAgentDto, cvUrl);
   }
@@ -597,13 +605,10 @@ export class AgentController {
     description: "Application not approved / already submitted / missing files",
   })
   @UseInterceptors(
-    FileFieldsInterceptor(
-      [
-        { name: "id_front", maxCount: 1 },
-        { name: "id_selfie", maxCount: 1 },
-      ],
-      { limits: { fileSize: 5 * 1024 * 1024 } },
-    ),
+    FileFieldsInterceptor([
+      { name: "id_front", maxCount: 1 },
+      { name: "id_selfie", maxCount: 1 },
+    ]),
   )
   async submitKyc(
     @Body() body: unknown,
@@ -617,34 +622,18 @@ export class AgentController {
     const dto = new ZodValidationPipe(submitKycSchema).transform(
       body,
     ) as SubmitKycDto;
-
-    const idFrontFile = files.id_front?.[0];
-    const idSelfieFile = files.id_selfie?.[0];
-    const validator = new FileValidationPipe();
-    if (idFrontFile) validator.transform(idFrontFile);
-    if (idSelfieFile) validator.transform(idSelfieFile);
-
-    /*
-     * kycService still enforces that both are present (business rule); this
-     * only uploads whichever files actually arrived so that check is not
-     * duplicated here.
-     */
-    const [id_front, id_selfie] = await Promise.all([
-      idFrontFile
-        ? this.cloudinaryService.uploadBuffer(
-            idFrontFile.buffer,
-            "debridgers/kyc",
-          )
-        : Promise.resolve(undefined),
-      idSelfieFile
-        ? this.cloudinaryService.uploadBuffer(
-            idSelfieFile.buffer,
-            "debridgers/kyc",
-          )
-        : Promise.resolve(undefined),
-    ]);
-
-    return this.kycService.submitKyc(dto, user, { id_front, id_selfie });
+    return this.kycService.submitKyc(dto, user, {
+      id_front: (
+        files.id_front?.[0] as
+          | (Express.Multer.File & { path?: string })
+          | undefined
+      )?.path,
+      id_selfie: (
+        files.id_selfie?.[0] as
+          | (Express.Multer.File & { path?: string })
+          | undefined
+      )?.path,
+    });
   }
 
   @Get("kyc")

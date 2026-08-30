@@ -8,6 +8,7 @@ import {
   uniqueIndex,
   text,
   AnyPgColumn,
+  timestamp,
 } from "drizzle-orm/pg-core";
 import { SQL, sql } from "drizzle-orm";
 import { timestamps } from "../../helper/column.helper";
@@ -39,6 +40,9 @@ export const users = pgTable(
     is_phone_verified: boolean().notNull().default(false),
     is_blocked: boolean().notNull().default(false),
     is_suspended: boolean().notNull().default(false),
+    suspended_at: timestamp(),
+    suspended_reason: text(),
+    total_deposited: integer().notNull().default(0), // in kobo
     // zone assigned from delivery address (buyers) or LGA (agents)
     zone_id: integer(),
     delivery_address: text(),
@@ -48,6 +52,20 @@ export const users = pgTable(
     mailtrap_contact_id: text(),
     refresh_token: text(),
     email_notifications: boolean().notNull().default(true),
+    // Admin tier: super_admin (owner), sub_admin (invited)
+    admin_tier: varchar("admin_tier", { length: 20 }),
+    /*
+     * Still on the password the account was issued.
+     *
+     * The invite flow emails a temporary password in plaintext, so this is the
+     * single source of truth behind the dashboard's reminder. The UI renders
+     * it and stores nothing of its own: dismissing the prompt does not clear
+     * the obligation, only changing the password does.
+     */
+    must_change_password: boolean().notNull().default(false),
+    password_changed_at: timestamp("password_changed_at"),
+    // Unique API key for admin authentication via header
+    admin_api_key: varchar("admin_api_key", { length: 255 }).unique(),
     ...timestamps,
   },
   (table) => [uniqueIndex("users_email_idx").on(lower(table.email))],

@@ -6,6 +6,7 @@ import {
   text,
   timestamp,
   varchar,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { timestamps } from "../../helper/column.helper";
 import { users } from "./users.schema";
@@ -19,6 +20,16 @@ export const orderStatusEnum = pgEnum("order_status", [
   "out_for_delivery",
   "delivered",
   "cancelled",
+]);
+
+/*
+ * Where the order came from. Recorded rather than derived from which columns
+ * happen to be null, so reporting does not depend on that inference holding.
+ */
+export const orderSourceEnum = pgEnum("order_source", [
+  "self_serve",
+  "assisted",
+  "agent",
 ]);
 
 export const orderModeEnum = pgEnum("order_mode", [
@@ -35,6 +46,9 @@ export const paymentStatusEnum = pgEnum("payment_status", [
 
 export const orders = pgTable("orders", {
   id: serial().primaryKey().notNull(),
+  order_reference: varchar("order_reference", { length: 30 })
+    .unique()
+    .notNull(), // ord_xxxxx format
   buyer_id: integer()
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
@@ -44,16 +58,22 @@ export const orders = pgTable("orders", {
     .references(() => zones.id, { onDelete: "restrict" }),
   rider_id: integer().references(() => riders.id, { onDelete: "set null" }),
   quantity: integer().notNull(),
-  unit_price: integer().notNull().default(140000), // ₦1,400 in kobo
-  handling_fee: integer().notNull().default(10000), // ₦100 in kobo
+  /* No default: prices come from the catalogue, per order. The old ₦1,400 and
+     ₦100 defaults predate the current catalogue and silently mispriced any
+     insert that omitted them. */
+  unit_price: integer().notNull(),
+  handling_fee: integer().notNull(),
   delivery_fee: integer().notNull(), // from zone, in kobo
   total_amount: integer().notNull(),
   order_mode: orderModeEnum().notNull(),
+  order_source: orderSourceEnum().notNull().default("self_serve"),
   status: orderStatusEnum().notNull().default("pending"),
   delivery_address: text().notNull(),
   cancellation_reason: text(),
   notes: text(),
   delivered_at: timestamp(),
+  // Paystack invoice tracking
+  paystack_invoice_code: varchar("paystack_invoice_code", { length: 100 }),
   // SafeHaven payment
   payment_status: paymentStatusEnum().notNull().default("unpaid"),
   payment_reference: varchar("payment_reference", { length: 100 }),
@@ -62,6 +82,13 @@ export const orders = pgTable("orders", {
   virtual_account_account_name: text(),
   virtual_account_expires_at: timestamp(),
   paid_at: timestamp(),
+  // Delivery verification by buyer admin
+  delivery_verified_at: timestamp(),
+  delivery_verified_by_admin_id: integer().references(() => users.id, {
+    onDelete: "set null",
+  }),
+  delivery_proof_photos: jsonb(), // array of {url, caption}
+  delivery_notes: text(),
   ...timestamps,
 });
 

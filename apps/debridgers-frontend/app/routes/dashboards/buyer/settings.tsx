@@ -98,8 +98,8 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="border-gray-border flex flex-col gap-5 rounded-2xl border bg-white p-6">
-      <h3 className="border-gray-border font-syne text-heading border-b pb-3 text-lg font-semibold">
+    <div className="border-line flex flex-col gap-5 rounded-2xl border bg-white p-6">
+      <h3 className="border-line font-syne text-heading border-b pb-3 text-lg font-semibold">
         {title}
       </h3>
       {children}
@@ -122,14 +122,14 @@ function FieldRow({
       <span className="text-heading font-syne font-medium">{label}</span>
       <div className="bg-input-bg border-input-border flex h-11 items-center justify-between rounded-full border px-4">
         <span
-          className={`text-sm ${value ? "text-heading" : "text-text-placeholder"}`}
+          className={`text-sm ${value ? "text-heading" : "text-placeholder-text"}`}
         >
           {value || "Not set"}
         </span>
         <button
           type="button"
           onClick={onEdit}
-          className="text-text cursor-pointer transition-opacity hover:opacity-60"
+          className="text-body cursor-pointer transition-opacity hover:opacity-60"
           aria-label={`Edit ${label}`}
         >
           <Pencil size={14} />
@@ -357,7 +357,7 @@ export default function BuyerSettings() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="bg-status-delivered-bg text-status-delivered-text flex items-center gap-2 rounded-xl px-4 py-3 text-sm"
+            className="bg-status-delivered text-status-delivered-fg flex items-center gap-2 rounded-xl px-4 py-3 text-sm"
           >
             <CheckCircle2 size={16} />
             Settings saved successfully.
@@ -368,7 +368,7 @@ export default function BuyerSettings() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="bg-status-cancelled-bg text-status-cancelled-text rounded-xl px-4 py-3 text-sm"
+            className="bg-status-cancelled text-status-cancelled-fg rounded-xl px-4 py-3 text-sm"
           >
             {apiError}
           </motion.div>

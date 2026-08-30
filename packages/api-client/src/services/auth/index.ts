@@ -1,4 +1,4 @@
-import { publicPost } from "../../transport/public-request";
+import { publicPost, publicPostForm } from "../../transport/public-request";
 import type {
   AuthUser,
   LoginResponse,
@@ -70,6 +70,18 @@ export function register(
     "/auth/register",
     payload,
   );
+}
+
+/*
+ * Agent applications do not go through /auth/register.
+ *
+ * An agent supplies an LGA, a home address and optionally a CV file, and the
+ * account is created `pending` for admin approval rather than active. That is a
+ * different resource with a different shape, so it has its own endpoint and its
+ * own multipart request.
+ */
+export function applyAgent(form: FormData): Promise<{ id: number }> {
+  return publicPostForm<{ id: number }>("/agent/apply", form);
 }
 
 // === Password reset

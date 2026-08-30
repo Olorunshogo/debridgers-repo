@@ -24,7 +24,7 @@ export const colors = {
   // Text
   textColour: "var(--text-colour)",
   textColour2: "var(--text-colour2)",
-  textPlaceholder: "var(--text-placeholder)",
+  textPlaceholder: "var(--text-placeholder-text)",
 
   // Status
   goodGreen: "var(--good-green)",

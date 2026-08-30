@@ -53,7 +53,7 @@ describe.skipIf(!hasDb)("OrderService order creation", () => {
 
     const [zone] = await t.db
       .insert(schema.zones)
-      .values({ name: "Kaduna South", delivery_fee: 150_000, areas: [] })
+      .values({ name: "Kaduna South", delivery_fee: 400_000, areas: [] })
       .returning();
     zoneId = zone.id;
 
@@ -69,7 +69,11 @@ describe.skipIf(!hasDb)("OrderService order creation", () => {
 
     const [garri] = await t.db
       .insert(schema.productsTable)
-      .values({ name: "Yellow Garri", unit: "25kg bag", price_kobo: 1_400_000 })
+      .values({
+        name: "Yellow Garri",
+        unit: "100kg bag",
+        price_kobo: 1_400_000,
+      })
       .returning();
     garriId = garri.id;
   });
@@ -159,7 +163,9 @@ describe.skipIf(!hasDb)("OrderService order creation", () => {
     const first = await orders.createOrder(userId, dto());
     const second = await orders.createOrder(
       userId,
-      dto({ cart: [{ product_id: garriId, qty: 1 }] }),
+      /* Two packages, not one: a single ₦14,000 garri is below the
+         minimum order and would be rejected before the basket is compared. */
+      dto({ cart: [{ product_id: garriId, qty: 2 }] }),
     );
 
     expect(second.order.id).not.toBe(first.order.id);
@@ -252,9 +258,10 @@ describe.skipIf(!hasDb)("OrderService order creation", () => {
       }),
     );
 
-    /* 4_200_000 item + 150_000 delivery + 10_000 handling */
+    /* 4_200_000 item + 400_000 delivery + 126_000 cost-to-serve, being 3% of
+       the goods rather than the ₦100 flat fee this once asserted. */
     expect(result.order.subtotal_kobo).toBe(4_200_000);
-    expect(result.order.total_kobo).toBe(4_360_000);
+    expect(result.order.total_kobo).toBe(4_726_000);
   });
 
   it("rejects an empty cart", async () => {

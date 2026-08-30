@@ -9,12 +9,21 @@ import { ConfigService } from "@nestjs/config";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
-import { percentOfKobo, formatNaira } from "../../shared/money";
+import {
+  percentOfKobo,
+  formatNaira,
+  toPaystackAmount,
+} from "../../shared/money";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
 import { WebhookDeduplicationService } from "../../../infrastructure/webhook/webhook-deduplication.service";
 import { InitializePaymentDto } from "./dto/initialize-payment.dto";
 import { SystemSettingsService } from "../settings/system-settings.service";
 import { RefundService } from "./refund.service";
+import {
+  AgentPayoutTargetService,
+  AgentPayoutTargetError,
+} from "./agent-payout-target.service";
+import { LedgerService } from "./ledger.service";
 
 @Injectable()
 export class PaymentService {
@@ -29,6 +38,8 @@ export class PaymentService {
     private readonly settings: SystemSettingsService,
     private readonly webhookDedup: WebhookDeduplicationService,
     private readonly refundService: RefundService,
+    private readonly payoutTargets: AgentPayoutTargetService,
+    private readonly ledger: LedgerService,
   ) {
     this.secretKey = this.config.get<string>("PaystackConfig.secretKey") ?? "";
   }
@@ -205,6 +216,63 @@ export class PaymentService {
         return { message: "Webhook processed", data: null };
       }
 
+      /*
+       * Money transferred into a buyer's dedicated virtual account. Paystack
+       * sends these with no metadata at all - the buyer initialised nothing on
+       * our side, they simply moved money - so none of the branches above match
+       * and, until this existed, the transfer was acknowledged and credited to
+       * nobody. The customer code on the charge is the only link back to a
+       * wallet.
+       */
+      if (data.channel === "dedicated_nuban") {
+        const customer = data.customer as
+          | { customer_code?: string }
+          | undefined;
+        const customerCode = customer?.customer_code;
+        const reference = data.reference as string;
+
+        if (!customerCode) {
+          this.logger.warn(
+            `DVA transfer ${reference} arrived without a customer code`,
+          );
+          return { message: "Webhook processed", data: null };
+        }
+
+        const wallet = await this.ledger.getWalletByCustomerCode(customerCode);
+
+        if (!wallet) {
+          this.logger.warn(
+            `DVA transfer ${reference} is for unknown customer ${customerCode}`,
+          );
+          return { message: "Webhook processed", data: null };
+        }
+
+        /*
+         * The transfer always lands in the wallet and is never guessed onto an
+         * open order. A dedicated account is per-customer, not per-order, so
+         * two open orders of the same price are indistinguishable from here.
+         * Paying an order from the balance is a separate, deliberate step.
+         */
+        const credited = await this.ledger.creditOnce(
+          wallet.id,
+          {
+            type: "deposit",
+            amount: data.amount as number,
+            reference,
+            description: "Bank transfer to dedicated account",
+          },
+          true,
+        );
+
+        if (credited) {
+          this.logger.log(
+            `Wallet ${wallet.id} credited ${formatNaira(data.amount as number)} from DVA transfer ${reference}`,
+          );
+        }
+
+        return { message: "Webhook processed", data: null };
+      }
+
       if (agentId) {
         const commissionRate = await this.settings.getAgentCommissionRate();
         /*
@@ -257,23 +325,31 @@ export class PaymentService {
 
     if (!agent) throw new NotFoundException("Agent not found");
 
-    const [profile] = await this.db
-      .select()
-      .from(schema.agent_profiles)
-      .where(eq(schema.agent_profiles.user_id, withdrawal.agent_id))
-      .limit(1);
-
-    if (!profile?.bank_account_number || !profile?.bank_code) {
-      throw new BadRequestException(
-        "Agent has incomplete bank details on file",
-      );
+    /*
+     * One shared lookup. This read agent_profiles itself and addressed the
+     * subaccount code, exactly as the Friday sweep did; the duplicated lookup
+     * is why the same bug existed twice.
+     */
+    let target: Awaited<ReturnType<AgentPayoutTargetService["resolve"]>>;
+    try {
+      target = await this.payoutTargets.resolve(withdrawal.agent_id);
+    } catch (error) {
+      if (error instanceof AgentPayoutTargetError) {
+        throw new BadRequestException(
+          error.reason === "missing_bank_details"
+            ? "Agent has incomplete bank details on file"
+            : "Could not prepare the agent's payout account",
+        );
+      }
+      throw error;
     }
 
-    if (!profile.paystack_subaccount_code) {
-      throw new BadRequestException("Agent has no Paystack subaccount");
-    }
-
-    const amountNaira = Math.round(
+    /*
+     * withdrawal.amount is kobo. This rounded it into naira before sending,
+     * and Paystack reads the field as kobo, so an approved withdrawal paid out
+     * one hundredth of its value.
+     */
+    const amountKobo = Math.round(
       parseFloat(withdrawal.amount as unknown as string),
     );
     const reference = `WITHDRAWAL_${withdrawalId}_${Date.now()}`;
@@ -286,8 +362,8 @@ export class PaymentService {
       },
       body: JSON.stringify({
         source: "balance",
-        amount: amountNaira,
-        recipient: profile.paystack_subaccount_code,
+        amount: toPaystackAmount(amountKobo),
+        recipient: target.recipientCode,
         reference,
         reason: `On-demand withdrawal - ${agent.email}`,
       }),
@@ -325,7 +401,7 @@ export class PaymentService {
       .where(eq(schema.withdrawals.id, withdrawalId));
 
     this.logger.log(
-      `Withdrawal ${withdrawalId} processed for agent ${withdrawal.agent_id}: ₦${amountNaira}`,
+      `Withdrawal ${withdrawalId} processed for agent ${withdrawal.agent_id}: ${formatNaira(amountKobo)}`,
     );
 
     return { message: "Withdrawal processing", data: { reference } };

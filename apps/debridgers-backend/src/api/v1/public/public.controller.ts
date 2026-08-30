@@ -17,6 +17,18 @@ import { z } from "zod";
 import { ZodValidationPipe } from "../../../infrastructure/pipeline/validation.pipeline";
 import { SystemSettingsService } from "../settings/system-settings.service";
 import { TaxonomyService } from "../catalog/taxonomy.service";
+import {
+  DELIVERY_CAP_OVER_BASE_KOBO,
+  MINIMUM_ORDER_KOBO,
+  MINIMUM_ORDER_PACKAGES,
+  PACKAGES_INCLUDED_IN_BASE,
+  SERVICE_FEE_MAX_KOBO,
+  SERVICE_FEE_MIN_KOBO,
+  SERVICE_FEE_RATE,
+  TIER_ONE_PACKAGE_COUNT,
+  TIER_ONE_PER_PACKAGE_KOBO,
+  TIER_TWO_PER_PACKAGE_KOBO,
+} from "../buyer/delivery-fee";
 
 const webLeadSchema = z.object({
   owner_name: z.string().min(2, "Name required"),
@@ -125,7 +137,11 @@ export class PublicController {
 
   @Get("config/public")
   @SkipThrottle({ short: true })
-  @ApiOperation({ summary: "Public platform config (commission rate etc.)" })
+  @ApiOperation({
+    summary: "Public platform config: commission rate and the pricing rules",
+    description:
+      "The pricing block is read from the same constants the checkout charge uses, so a client that quotes from this endpoint cannot drift from what the buyer is actually billed.",
+  })
   async getPublicConfig() {
     const commissionRate = await this.settings.getAgentCommissionPercent();
     const discountKobo = await this.settings.getInt(
@@ -140,6 +156,29 @@ export class PublicController {
         buyer_referral_discount_kobo: discountKobo,
         buyer_referral_discount_type: "flat",
         currency: "NGN",
+        /*
+         * Imported from delivery-fee.ts rather than restated here. Anything
+         * that re-types these numbers is a place they can drift from the
+         * charge, which is exactly how a ₦1,400 unit price outlived the
+         * product it described.
+         */
+        pricing: {
+          service_fee_rate: SERVICE_FEE_RATE,
+          service_fee_min_kobo: SERVICE_FEE_MIN_KOBO,
+          service_fee_max_kobo: SERVICE_FEE_MAX_KOBO,
+          packages_included_in_base: PACKAGES_INCLUDED_IN_BASE,
+          tier_one_package_count: TIER_ONE_PACKAGE_COUNT,
+          /*
+           * Defaults only. The taper and the ceiling are per zone, so a client
+           * quoting a specific delivery must read them off that zone rather
+           * than from here, or it will under-quote the far ones.
+           */
+          default_tier_one_per_package_kobo: TIER_ONE_PER_PACKAGE_KOBO,
+          default_tier_two_per_package_kobo: TIER_TWO_PER_PACKAGE_KOBO,
+          default_delivery_cap_over_base_kobo: DELIVERY_CAP_OVER_BASE_KOBO,
+          minimum_order_kobo: MINIMUM_ORDER_KOBO,
+          minimum_order_packages: MINIMUM_ORDER_PACKAGES,
+        },
       },
     };
   }
