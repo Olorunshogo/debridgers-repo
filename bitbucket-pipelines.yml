@@ -1,0 +1,122 @@
+image: node:20
+
+definitions:
+  caches:
+    pnpm: ~/.pnpm-store
+
+pipelines:
+  branches:
+    develop:
+      - step:
+          name: Lint
+          script:
+            - corepack enable
+            - pnpm install --frozen-lockfile
+            - pnpm lint
+          caches:
+            - pnpm
+
+      - step:
+          name: Typecheck
+          script:
+            - corepack enable
+            - pnpm install --frozen-lockfile
+            - pnpm typecheck
+          caches:
+            - pnpm
+
+      - step:
+          name: Build
+          script:
+            - corepack enable
+            - pnpm install --frozen-lockfile
+            - pnpm build
+          caches:
+            - pnpm
+
+      - step:
+          name: E2E Tests
+          script:
+            - corepack enable
+            - pnpm install --frozen-lockfile
+            - pnpm build:backend
+            - pnpm test:e2e
+          services:
+            - postgres
+            - redis
+          caches:
+            - pnpm
+
+      - step:
+          name: Deploy to Dev
+          trigger: manual
+          script:
+            - apt-get update && apt-get install -y openssh-client
+            - mkdir -p ~/.ssh
+            - echo "$DEV_SERVER_SSH_KEY" | base64 -d > ~/.ssh/id_rsa
+            - chmod 600 ~/.ssh/id_rsa
+            - ssh-keyscan -H $DEV_SERVER_IP >> ~/.ssh/known_hosts
+            - ssh root@$DEV_SERVER_IP "cd /opt/debridgers && git pull origin develop && bash scripts/deploy.sh develop"
+
+    main:
+      - step:
+          name: Lint
+          script:
+            - corepack enable
+            - pnpm install --frozen-lockfile
+            - pnpm lint
+          caches:
+            - pnpm
+
+      - step:
+          name: Typecheck
+          script:
+            - corepack enable
+            - pnpm install --frozen-lockfile
+            - pnpm typecheck
+          caches:
+            - pnpm
+
+      - step:
+          name: Build
+          script:
+            - corepack enable
+            - pnpm install --frozen-lockfile
+            - pnpm build
+          caches:
+            - pnpm
+
+      - step:
+          name: E2E Tests
+          script:
+            - corepack enable
+            - pnpm install --frozen-lockfile
+            - pnpm build:backend
+            - pnpm test:e2e
+          services:
+            - postgres
+            - redis
+          caches:
+            - pnpm
+
+      - step:
+          name: Deploy to Prod
+          trigger: manual
+          script:
+            - apt-get update && apt-get install -y openssh-client
+            - mkdir -p ~/.ssh
+            - echo "$PROD_SERVER_SSH_KEY" | base64 -d > ~/.ssh/id_rsa
+            - chmod 600 ~/.ssh/id_rsa
+            - ssh-keyscan -H $PROD_SERVER_IP >> ~/.ssh/known_hosts
+            - ssh root@$PROD_SERVER_IP "cd /opt/debridgers && git pull origin main && bash scripts/deploy.sh main"
+
+definitions:
+  services:
+    postgres:
+      image: postgres:16-alpine
+      environment:
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: debridgers
+    redis:
+      image: redis:7-alpine
