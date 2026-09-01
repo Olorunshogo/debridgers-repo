@@ -28,6 +28,7 @@ export class AppService {
     }
 
     return {
+      message: "Welcome To DEBRIDGERS LTD API!",
       status: "ok",
       service: "debridgers-backend",
       db: "ok",

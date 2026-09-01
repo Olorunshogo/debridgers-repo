@@ -1,0 +1,68 @@
+services:
+  debridgers-backend:
+    image: ghcr.io/debridgers/debridgers-backend:${IMAGE_TAG:-latest}
+    container_name: debridgers-backend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:4001:4001"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=4001
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://127.0.0.1:4001/api/v1/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  debridgers-frontend:
+    image: ghcr.io/debridgers/debridgers-frontend:${IMAGE_TAG:-latest}
+    container_name: debridgers-frontend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      debridgers-backend:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://127.0.0.1:3000']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: debridgers-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --protocol http2 --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./cloudflared:/etc/cloudflared:ro
+    depends_on:
+      debridgers-backend:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
