@@ -37,13 +37,16 @@ chown 65532:65532 cloudflared/creds.json 2>/dev/null || true
 chmod 600 cloudflared/creds.json 2>/dev/null || true
 
 echo "==> Pulling latest images"
-docker compose pull debridgers-backend debridgers-frontend
+docker compose pull debridgers-backend
 
 echo "==> Starting services"
 docker compose up -d --remove-orphans
 
 # Cloudflared needs to be recreated when config changes
 docker compose up -d --force-recreate cloudflared
+
+echo "==> Running database migrations"
+docker compose exec -T debridgers-backend pnpm db:migrate
 
 echo "==> Pruning old images"
 docker image prune -f

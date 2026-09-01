@@ -5,6 +5,16 @@ on:
     branches:
       - develop
       - main
+    paths:
+      - 'apps/debridgers-backend/**'
+      - 'packages/**'
+      - 'deploy/**'
+      - '.gitea/workflows/deploy.yml'
+  workflow_dispatch: {}
+
+env:
+  REGISTRY: code.codeberg.org
+  IMAGE_NAME: DEBRIDGERS_LTD/debridgers-backend
 
 jobs:
   lint:
@@ -118,36 +128,182 @@ jobs:
           PAYSTACK_SECRET_KEY: ""
         run: pnpm test:e2e
 
-  deploy-dev:
-    runs-on: ubuntu-latest
+  build-and-push:
     needs: [build, test]
-    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.image_tag }}
     steps:
-      - name: Deploy to dev
-        env:
-          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
-          SSH_USER: ${{ secrets.DEV_SSH_USER }}
-          SSH_KEY: ${{ secrets.DEV_SSH_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
-          ssh -i ~/.ssh/deploy_key $SSH_USER@$SSH_HOST "cd /opt/debridgers && git pull origin develop && bash deploy/deploy.sh develop"
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  deploy-prod:
-    runs-on: ubuntu-latest
-    needs: [build, test]
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - name: Deploy to prod
-        env:
-          SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
-          SSH_USER: ${{ secrets.PROD_SSH_USER }}
-          SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+      - name: Resolve image tag
+        id: meta
         run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
-          ssh -i ~/.ssh/deploy_key $SSH_USER@$SSH_HOST "cd /opt/debridgers && git pull origin main && bash deploy/deploy.sh main"
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "image_tag=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Codeberg Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.CODEBERG_TOKEN }}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/backend.Dockerfile
+          target: prod
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name == 'main' && 'latest' || 'develop' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-dev:
+    needs: build-and-push
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add host to known_hosts
+        run: mkdir -p ~/.ssh && ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Copy deploy files
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /opt/debridgers/cloudflared"
+          scp deploy/docker-compose.prod.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/docker-compose.yml
+          scp deploy/deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/deploy.sh
+          scp deploy/cloudflared/config.template.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/cloudflared/config.template.yml
+
+      - name: Install app environment on target VPS
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+        run: |
+          if [ -z "$ENV_FILE" ]; then
+            echo "ENV_FILE secret is empty — refusing to overwrite /opt/debridgers/.env" >&2
+            exit 1
+          fi
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} '
+            set -eu
+            cd /opt/debridgers
+            cat > .env.incoming
+            if [ ! -s .env.incoming ]; then
+              echo "incoming env is empty — refusing to replace .env" >&2
+              rm -f .env.incoming
+              exit 1
+            fi
+            if [ -f .env ]; then
+              cp -a .env ".env.bak.$(date +%s)"
+              for k in IMAGE_TAG; do
+                grep -h "^${k}=" .env >> .env.incoming || true
+              done
+              ls -1t .env.bak.* 2>/dev/null | tail -n +6 | xargs -r rm -f
+            fi
+            install -m 600 .env.incoming .env
+            rm -f .env.incoming
+          ' <<< "$ENV_FILE"
+
+      - name: Install tunnel credentials on target VPS
+        env:
+          TUNNEL_CREDENTIALS: ${{ secrets.CLOUDFLARE_TUNNEL_CREDENTIALS }}
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "install -m 600 -o 65532 -g 65532 /dev/stdin /opt/debridgers/cloudflared/creds.json" <<< "$TUNNEL_CREDENTIALS"
+
+      - name: Login to Codeberg Container Registry on target VPS
+        env:
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin" <<< "$CODEBERG_TOKEN"
+
+      - name: Run deploy
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "chmod +x /opt/debridgers/deploy.sh && /opt/debridgers/deploy.sh ${{ needs.build-and-push.outputs.image_tag }}"
+
+  deploy-production:
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add host to known_hosts
+        run: mkdir -p ~/.ssh && ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Copy deploy files
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /opt/debridgers/cloudflared"
+          scp deploy/docker-compose.prod.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/docker-compose.yml
+          scp deploy/deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/deploy.sh
+          scp deploy/cloudflared/config.template.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/cloudflared/config.template.yml
+
+      - name: Install app environment on target VPS
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+        run: |
+          if [ -z "$ENV_FILE" ]; then
+            echo "ENV_FILE secret is empty — refusing to overwrite /opt/debridgers/.env" >&2
+            exit 1
+          fi
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} '
+            set -eu
+            cd /opt/debridgers
+            cat > .env.incoming
+            if [ ! -s .env.incoming ]; then
+              echo "incoming env is empty — refusing to replace .env" >&2
+              rm -f .env.incoming
+              exit 1
+            fi
+            if [ -f .env ]; then
+              cp -a .env ".env.bak.$(date +%s)"
+              for k in IMAGE_TAG; do
+                grep -h "^${k}=" .env >> .env.incoming || true
+              done
+              ls -1t .env.bak.* 2>/dev/null | tail -n +6 | xargs -r rm -f
+            fi
+            install -m 600 .env.incoming .env
+            rm -f .env.incoming
+          ' <<< "$ENV_FILE"
+
+      - name: Install tunnel credentials on target VPS
+        env:
+          TUNNEL_CREDENTIALS: ${{ secrets.CLOUDFLARE_TUNNEL_CREDENTIALS }}
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "install -m 600 -o 65532 -g 65532 /dev/stdin /opt/debridgers/cloudflared/creds.json" <<< "$TUNNEL_CREDENTIALS"
+
+      - name: Login to Codeberg Container Registry on target VPS
+        env:
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin" <<< "$CODEBERG_TOKEN"
+
+      - name: Run deploy
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "chmod +x /opt/debridgers/deploy.sh && /opt/debridgers/deploy.sh ${{ needs.build-and-push.outputs.image_tag }}"

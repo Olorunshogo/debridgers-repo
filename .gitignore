@@ -83,3 +83,4 @@ docs/*-snippets.md
 # Specs and test support files are never consumed as types, so any .d.ts
 # beside them is build residue.
 apps/debridgers-backend-e2e/src/**/*.d.ts
+~/credentials.json
