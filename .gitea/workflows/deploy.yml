@@ -12,6 +12,7 @@ on:
       - '.gitea/workflows/deploy.yml'
       - 'package.json'
       - 'pnpm-lock.yaml'
+      - 'docker/backend.Dockerfile'
   workflow_dispatch: {}
 
 env:
@@ -112,15 +113,16 @@ jobs:
         run: pnpm build:backend
 
   build-and-push:
+  package-and-deploy:
     needs: [build, test]
     runs-on: codeberg-small
     outputs:
-      image_tag: ${{ steps.meta.outputs.image_tag }}
+      build_id: ${{ steps.meta.outputs.build_id }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Resolve image tag
+      - name: Resolve build ID
         id: meta
         run: |
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
@@ -130,8 +132,46 @@ jobs:
 
       - name: Install buildah
         run: apt-get update -qq && apt-get install -y buildah ca-certificates
+          BUILD_ID=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "build_id=${BUILD_ID}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push image
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.32.1"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build backend
+        run: pnpm build:backend
+
+      - name: Create deployment package
+        run: |
+          mkdir -p dist-pkg
+          cp -r apps/debridgers-backend/dist dist-pkg/app
+          cp -r node_modules dist-pkg/
+          cp pnpm-lock.yaml dist-pkg/
+          cp package.json dist-pkg/
+          tar -czf debridgers-backend-${{ steps.meta.outputs.build_id }}.tar.gz -C dist-pkg .
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add host to known_hosts
+        run: mkdir -p ~/.ssh && ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to VPS (dev)
+        if: github.ref == 'refs/heads/develop'
         run: |
           buildah build \
             --storage-driver=vfs \
@@ -150,9 +190,25 @@ jobs:
             --storage-driver=vfs \
             --creds ${{ github.actor }}:${{ secrets.REGISTRY_TOKEN }} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.branch_tag }}
+          scp debridgers-backend-${{ steps.meta.outputs.build_id }}.tar.gz \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
+
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "chmod +x /opt/debridgers/deploy.sh && \
+             /opt/debridgers/deploy.sh dev ${{ steps.meta.outputs.build_id }}"
+
+      - name: Deploy to VPS (production)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          scp debridgers-backend-${{ steps.meta.outputs.build_id }}.tar.gz \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
+
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "chmod +x /opt/debridgers/deploy.sh && \
+             /opt/debridgers/deploy.sh production ${{ steps.meta.outputs.build_id }}"
 
   deploy-dev:
-    needs: build-and-push
+    needs: package-and-deploy
     if: github.ref == 'refs/heads/develop'
     runs-on: codeberg-small
     environment: dev
@@ -213,8 +269,10 @@ jobs:
       - name: Login to Codeberg Container Registry on target VPS
         env:
           REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin" <<< "$REGISTRY_TOKEN"
             "docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin" <<< "$REGISTRY_TOKEN"
 
       - name: Run deploy
@@ -284,8 +342,10 @@ jobs:
       - name: Login to Codeberg Container Registry on target VPS
         env:
           REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin" <<< "$REGISTRY_TOKEN"
             "docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin" <<< "$REGISTRY_TOKEN"
 
       - name: Run deploy
