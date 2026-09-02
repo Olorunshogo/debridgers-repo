@@ -9,7 +9,7 @@ on:
       - 'apps/debridgers-backend/**'
       - 'packages/**'
       - 'deploy/**'
-      - '.gitea/workflows/deploy.yml'
+      - '.forgejo/workflows/deploy.yml'
       - 'package.json'
       - 'pnpm-lock.yaml'
   workflow_dispatch: {}
@@ -111,25 +111,6 @@ jobs:
       - name: Build backend
         run: pnpm build:backend
 
-      # - name: Run E2E tests
-      #   env:
-      #     NODE_ENV: test
-      #     DATABASE_URL: postgresql://postgres:postgres@postgres:5432/debridgers
-      #     UPSTASH_REDIS_URL: redis://redis:6379
-      #     PORT: "4000"
-      #     ALLOWED_ORIGINS: "http://localhost:5173"
-      #     ADMIN_EMAIL: admin@debridgers.com
-      #     ADMIN_PASSWORD: "Admin@2026!"
-      #     ACCESS_TOKEN_SECRET: ci-access-token-secret
-      #     REFRESH_TOKEN_SECRET: ci-refresh-token-secret
-      #     REQUEST_KEY: ci-request-key
-      #     ADMIN_KEY_1: ci-admin-key-1
-      #     ADMIN_KEY_2: ci-admin-key-2
-      #     PAYMENT_KEY_1: ci-payment-key-1
-      #     PAYMENT_KEY_2: ci-payment-key-2
-      #     PAYSTACK_SECRET_KEY: ""
-      #   run: pnpm test:e2e
-
   build-and-push:
     needs: [build, test]
     runs-on: codeberg-small
@@ -147,19 +128,29 @@ jobs:
           echo "image_tag=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
           echo "branch_tag=${BRANCH_TAG}" >> "$GITHUB_OUTPUT"
 
-      - name: Build and Push with Kaniko
-        uses: codeberg.org/umglurf/kaniko-action@master
-        with:
-          context: .
-          docker_file: ./docker/backend.Dockerfile
-          push: true
-          destinations: |
+      - name: Install buildah
+        run: apt-get update -qq && apt-get install -y buildah ca-certificates
+
+      - name: Build and push image
+        run: |
+          buildah build \
+            --storage-driver=vfs \
+            --isolation=chroot \
+            --target=prod \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }} \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.branch_tag }} \
+            -f ./docker/backend.Dockerfile \
+            .
+
+          buildah push \
+            --storage-driver=vfs \
+            --creds ${{ github.actor }}:${{ secrets.REGISTRY_TOKEN }} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}
+
+          buildah push \
+            --storage-driver=vfs \
+            --creds ${{ github.actor }}:${{ secrets.REGISTRY_TOKEN }} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.branch_tag }}
-          credentials: |
-            ${{ env.REGISTRY }}=${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}
-          extra_build_args: |
-            --target=prod
 
   deploy-dev:
     needs: build-and-push
@@ -222,10 +213,10 @@ jobs:
 
       - name: Login to Codeberg Container Registry on target VPS
         env:
-          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin" <<< "$CODEBERG_TOKEN"
+            "docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin" <<< "$REGISTRY_TOKEN"
 
       - name: Run deploy
         run: |
@@ -293,10 +284,10 @@ jobs:
 
       - name: Login to Codeberg Container Registry on target VPS
         env:
-          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin" <<< "$CODEBERG_TOKEN"
+            "docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin" <<< "$REGISTRY_TOKEN"
 
       - name: Run deploy
         run: |
