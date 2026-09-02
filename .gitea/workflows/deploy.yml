@@ -148,22 +148,23 @@ jobs:
           echo "image_tag=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
           echo "branch_tag=${BRANCH_TAG}" >> "$GITHUB_OUTPUT"
 
-      - name: Build and Push with Kaniko
-        uses: https://codeberg.org/umglurf/kaniko-action
-        with:
-          context: .
-          docker_file: ./docker/backend.Dockerfile
-          push: true
-          build_args: |
-            BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-            VCS_REF=${{ github.sha }}
-          destinations: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.branch_tag }}
-          credentials: |
-            ${{ env.REGISTRY }}=${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}
-          extra_build_args: |
-            --target=prod
+      - name: Build and Push Image
+        run: |
+          # Create auth config
+          mkdir -p ~/.config/containers
+          echo "${{ secrets.CODEBERG_TOKEN }}" | buildah login -u "${{ github.actor }}" --password-stdin ${{ env.REGISTRY }}
+
+          # Build image with buildah
+          buildah bud \
+            --target=prod \
+            --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}" \
+            --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.branch_tag }}" \
+            -f ./docker/backend.Dockerfile \
+            .
+
+          # Push images
+          buildah push "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}"
+          buildah push "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.branch_tag }}"
 
   deploy-dev:
     needs: build-and-push
