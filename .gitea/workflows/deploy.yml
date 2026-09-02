@@ -159,7 +159,8 @@ jobs:
 
       - name: Download and run Kaniko
         run: |
-          wget -O /tmp/kaniko https://github.com/GoogleContainerTools/kaniko/releases/download/v1.20.1/executor-linux-amd64
+          wget -q -O /tmp/kaniko https://github.com/GoogleContainerTools/kaniko/releases/download/v1.23.0/executor-linux-amd64 || \
+          curl -L -o /tmp/kaniko https://github.com/GoogleContainerTools/kaniko/releases/download/v1.23.0/executor-linux-amd64
           chmod +x /tmp/kaniko
           /tmp/kaniko \
             --dockerfile=./docker/backend.Dockerfile \
