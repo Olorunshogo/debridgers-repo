@@ -151,7 +151,7 @@ jobs:
           TUNNEL_CREDENTIALS: ${{ secrets.CLOUDFLARE_TUNNEL_CREDENTIALS }}
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "install -m 600 -o 65532 -g 65532 /dev/stdin /opt/debridgers/cloudflared/creds.json" <<< "$TUNNEL_CREDENTIALS"
+            "install -m 600 /dev/stdin /opt/debridgers/cloudflared/creds.json" <<< "$TUNNEL_CREDENTIALS"
 
       - name: Login to Codeberg Container Registry on target VPS
         env:
@@ -227,7 +227,7 @@ jobs:
           TUNNEL_CREDENTIALS: ${{ secrets.CLOUDFLARE_TUNNEL_CREDENTIALS }}
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "install -m 600 -o 65532 -g 65532 /dev/stdin /opt/debridgers/cloudflared/creds.json" <<< "$TUNNEL_CREDENTIALS"
+            "install -m 600 /dev/stdin /opt/debridgers/cloudflared/creds.json" <<< "$TUNNEL_CREDENTIALS"
 
       - name: Login to Codeberg Container Registry on target VPS
         env:

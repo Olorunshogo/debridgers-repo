@@ -50,10 +50,15 @@ sed -e "s|__TUNNEL_ID__|${TUNNEL_ID}|" \
     cloudflared/config.template.yml > cloudflared/config.yml
 
 # The cloudflared image runs as the non-root user 65532, so root-owned files
-# it needs are unreadable inside the container.
+# it needs are unreadable inside the container. Try to set ownership, but fall back
+# to permissive permissions if the user doesn't exist.
 chmod 644 cloudflared/config.yml
-chown 65532:65532 cloudflared/creds.json 2>/dev/null || true
-chmod 600 cloudflared/creds.json 2>/dev/null || true
+if id 65532 >/dev/null 2>&1; then
+  chown 65532:65532 cloudflared/creds.json
+  chmod 600 cloudflared/creds.json
+else
+  chmod 644 cloudflared/creds.json
+fi
 
 echo "==> Pulling latest images"
 docker compose pull debridgers-backend
