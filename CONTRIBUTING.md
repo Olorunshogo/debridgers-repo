@@ -6,15 +6,18 @@ This guide covers everything you need to work effectively in this repo - from se
 
 ## Table of Contents
 
-- [Prerequisites](#prerequisites)
-- [Setup](#setup)
-- [Branch Naming](#branch-naming)
-- [Commit Messages](#commit-messages)
-- [Development Workflow](#development-workflow)
-- [Code Quality](#code-quality)
-- [Opening a Pull Request](#opening-a-pull-request)
-- [Protected Branches](#protected-branches)
-- [Troubleshooting](#troubleshooting)
+- [Contributing to Debridgers](#contributing-to-debridgers)
+  - [Table of Contents](#table-of-contents)
+  - [Prerequisites](#prerequisites)
+  - [Setup](#setup)
+  - [Branch Naming](#branch-naming)
+    - [Format](#format)
+    - [Allowed Prefixes](#allowed-prefixes)
+    - [Examples](#examples)
+  - [Commit Messages](#commit-messages)
+  - [Development Workflow](#development-workflow)
+  - [Code Quality](#code-quality)
+  - [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -242,3 +245,4 @@ git push -u origin feature/new-name
 feat: add product listing page
 fix: correct cart total on quantity change
 chore: upgrade vite to Pre-commit hooks run `eslint --fix` and `prettier --write` on staged `.ts`, `.tsx`, `.js`, `.jsx` files automatically when you c
+just push
