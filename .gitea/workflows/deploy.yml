@@ -16,7 +16,7 @@ on:
 
 env:
   REGISTRY: code.codeberg.org
-  IMAGE_NAME: DEBRIDGERS_LTD/debridgers-backend
+  IMAGE_NAME: debridgers_ltd/debridgers-backend
 
 jobs:
   lint:
