@@ -12,6 +12,7 @@ on:
       - '.gitea/workflows/deploy.yml'
       - 'package.json'
       - 'pnpm-lock.yaml'
+      - 'docker/backend.Dockerfile'
   workflow_dispatch: {}
 
 env:
