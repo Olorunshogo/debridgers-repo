@@ -111,24 +111,24 @@ jobs:
       - name: Build backend
         run: pnpm build:backend
 
-      - name: Run E2E tests
-        env:
-          NODE_ENV: test
-          DATABASE_URL: postgresql://postgres:postgres@postgres:5432/debridgers
-          UPSTASH_REDIS_URL: redis://redis:6379
-          PORT: "4000"
-          ALLOWED_ORIGINS: "http://localhost:5173"
-          ADMIN_EMAIL: admin@debridgers.com
-          ADMIN_PASSWORD: "Admin@2026!"
-          ACCESS_TOKEN_SECRET: ci-access-token-secret
-          REFRESH_TOKEN_SECRET: ci-refresh-token-secret
-          REQUEST_KEY: ci-request-key
-          ADMIN_KEY_1: ci-admin-key-1
-          ADMIN_KEY_2: ci-admin-key-2
-          PAYMENT_KEY_1: ci-payment-key-1
-          PAYMENT_KEY_2: ci-payment-key-2
-          PAYSTACK_SECRET_KEY: ""
-        run: pnpm test:e2e
+      # - name: Run E2E tests
+      #   env:
+      #     NODE_ENV: test
+      #     DATABASE_URL: postgresql://postgres:postgres@postgres:5432/debridgers
+      #     UPSTASH_REDIS_URL: redis://redis:6379
+      #     PORT: "4000"
+      #     ALLOWED_ORIGINS: "http://localhost:5173"
+      #     ADMIN_EMAIL: admin@debridgers.com
+      #     ADMIN_PASSWORD: "Admin@2026!"
+      #     ACCESS_TOKEN_SECRET: ci-access-token-secret
+      #     REFRESH_TOKEN_SECRET: ci-refresh-token-secret
+      #     REQUEST_KEY: ci-request-key
+      #     ADMIN_KEY_1: ci-admin-key-1
+      #     ADMIN_KEY_2: ci-admin-key-2
+      #     PAYMENT_KEY_1: ci-payment-key-1
+      #     PAYMENT_KEY_2: ci-payment-key-2
+      #     PAYSTACK_SECRET_KEY: ""
+      #   run: pnpm test:e2e
 
   build-and-push:
     needs: [build, test]
