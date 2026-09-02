@@ -9,10 +9,9 @@ on:
       - 'apps/debridgers-backend/**'
       - 'packages/**'
       - 'deploy/**'
-      - '.gitea/workflows/deploy.yml'
+      - '.forgejo/workflows/deploy.yml'
       - 'package.json'
       - 'pnpm-lock.yaml'
-      
   workflow_dispatch: {}
 
 env:
@@ -148,23 +147,19 @@ jobs:
           echo "image_tag=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
           echo "branch_tag=${BRANCH_TAG}" >> "$GITHUB_OUTPUT"
 
-      - name: Build and Push Image
-        run: |
-          # Create auth config
-          mkdir -p ~/.config/containers
-          echo "${{ secrets.CODEBERG_TOKEN }}" | buildah login -u "${{ github.actor }}" --password-stdin ${{ env.REGISTRY }}
-
-          # Build image with buildah
-          buildah bud \
-            --target=prod \
-            --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}" \
-            --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.branch_tag }}" \
-            -f ./docker/backend.Dockerfile \
-            .
-
-          # Push images
-          buildah push "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}"
-          buildah push "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.branch_tag }}"
+      - name: Build and Push with Kaniko
+        uses: https://codeberg.org/umglurf/kaniko-action@master
+        with:
+          context: .
+          docker_file: ./docker/backend.Dockerfile
+          push: true
+          destinations: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.branch_tag }}
+          credentials: |
+            ${{ env.REGISTRY }}=${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}
+          extra_build_args: |
+            --target=prod
 
   deploy-dev:
     needs: build-and-push
