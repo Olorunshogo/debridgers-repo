@@ -103,7 +103,9 @@ export async function truncateAllTables(databaseUrl: string): Promise<void> {
 
     if (result.rows.length === 0) return;
 
-    const tableList = result.rows.map((row) => `"${row.tablename}"`).join(", ");
+    const tableList = result.rows
+      .map((row: { tablename: string }) => `"${row.tablename}"`)
+      .join(", ");
     await pool.query(`TRUNCATE TABLE ${tableList} RESTART IDENTITY CASCADE`);
   } finally {
     await pool.end();
