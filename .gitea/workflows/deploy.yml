@@ -147,7 +147,7 @@ jobs:
 
       - name: Setup Kaniko auth
         run: |
-          mkdir -p $HOME/.kaniko
+          mkdir -p $HOME/.docker
           echo '{
             "auths": {
               "${{ env.REGISTRY }}": {
@@ -155,7 +155,8 @@ jobs:
                 "password": "${{ secrets.CODEBERG_TOKEN }}"
               }
             }
-          }' > $HOME/.kaniko/config.json
+          }' > $HOME/.docker/config.json
+          chmod 600 $HOME/.docker/config.json
 
       - name: Download and run Kaniko
         run: |
@@ -168,8 +169,31 @@ jobs:
             --destination=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }} \
             --destination=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name == 'main' && 'latest' || 'develop' }} \
             --target=prod
-        env:
-          DOCKER_CONFIG: ${{ runner.temp }}/.docker
+      # - name: Setup Kaniko auth
+      #   run: |
+      #     mkdir -p $HOME/.kaniko
+      #     echo '{
+      #       "auths": {
+      #         "${{ env.REGISTRY }}": {
+      #           "username": "${{ github.actor }}",
+      #           "password": "${{ secrets.CODEBERG_TOKEN }}"
+      #         }
+      #       }
+      #     }' > $HOME/.kaniko/config.json
+
+      # - name: Download and run Kaniko
+      #   run: |
+      #     wget -q -O /tmp/kaniko https://github.com/GoogleContainerTools/kaniko/releases/download/v1.23.0/executor-linux-amd64 || \
+      #     curl -L -o /tmp/kaniko https://github.com/GoogleContainerTools/kaniko/releases/download/v1.23.0/executor-linux-amd64
+      #     chmod +x /tmp/kaniko
+      #     /tmp/kaniko \
+      #       --dockerfile=./docker/backend.Dockerfile \
+      #       --context=. \
+      #       --destination=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }} \
+      #       --destination=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name == 'main' && 'latest' || 'develop' }} \
+      #       --target=prod
+      #   env:
+      #     DOCKER_CONFIG: ${{ runner.temp }}/.docker
 
   deploy-dev:
     needs: build-and-push
