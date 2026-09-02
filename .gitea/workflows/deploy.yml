@@ -148,7 +148,7 @@ jobs:
           echo "branch_tag=${BRANCH_TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Build and Push with Kaniko
-        uses: https://codeberg.org/umglurf/kaniko-action@master
+        uses: codeberg.org/umglurf/kaniko-action@master
         with:
           context: .
           docker_file: ./docker/backend.Dockerfile
