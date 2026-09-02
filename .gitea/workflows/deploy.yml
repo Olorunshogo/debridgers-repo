@@ -135,7 +135,6 @@ jobs:
         run: |
           buildah build \
             --storage-driver=vfs \
-            --isolation=chroot \
             --target=prod \
             --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }} \
             --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.branch_tag }} \
