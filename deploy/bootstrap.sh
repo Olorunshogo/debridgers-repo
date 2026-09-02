@@ -6,14 +6,31 @@ set -euo pipefail
 APP_DIR="/opt/debridgers"
 DEPLOY_USER="debridgers_dev1"
 
-echo "==> Installing Docker"
-if ! command -v docker >/dev/null 2>&1; then
-  curl -fsSL https://get.docker.com | sh
-  echo "    Docker installed"
+echo "==> Installing Node.js"
+if ! command -v node >/dev/null 2>&1; then
+  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+  apt-get install -y nodejs
+  echo "    Node.js installed"
 else
-  echo "    Docker already installed"
+  echo "    Node.js already installed"
 fi
-systemctl enable --now docker
+
+echo "==> Installing pnpm"
+if ! command -v pnpm >/dev/null 2>&1; then
+  npm install -g pnpm@10.32.1
+  echo "    pnpm installed"
+else
+  echo "    pnpm already installed"
+fi
+
+echo "==> Installing PM2"
+if ! command -v pm2 >/dev/null 2>&1; then
+  npm install -g pm2
+  pm2 startup systemd -u ${DEPLOY_USER} --hp /home/${DEPLOY_USER}
+  echo "    PM2 installed"
+else
+  echo "    PM2 already installed"
+fi
 
 echo "==> Creating deployment user: ${DEPLOY_USER}"
 if id "$DEPLOY_USER" &>/dev/null; then

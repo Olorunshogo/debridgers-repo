@@ -1,73 +1,114 @@
 #!/usr/bin/env bash
-# Runs on the target VPS via SSH from GitHub Actions.
-# Pulls the freshly-built images and restarts the stack in place.
+# Direct Node.js deployment script (runs on VPS via SSH)
 set -euo pipefail
 
 APP_DIR="/opt/debridgers"
-IMAGE_TAG="${1:?Usage: deploy.sh <image-tag>}"
+CURRENT_DIR="${APP_DIR}/current"
+BACKUP_DIR="${APP_DIR}/backups"
+ENV="${1:?Usage: deploy.sh <dev|production> <build-id>}"
+BUILD_ID="${2:?Usage: deploy.sh <dev|production> <build-id>}"
 
 cd "${APP_DIR}"
 
-echo "==> Deploying Debridgers:${IMAGE_TAG}"
-export IMAGE_TAG
+echo "==> Deploying Debridgers backend: ${ENV} (${BUILD_ID})"
 
-echo "==> Persisting IMAGE_TAG to .env for future manual commands"
-sed -i '/^IMAGE_TAG=/d' .env
-echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
+# Create backup of current deployment
+if [ -d "${CURRENT_DIR}" ]; then
+  mkdir -p "${BACKUP_DIR}"
+  BACKUP_TS=$(date +%s)
+  cp -a "${CURRENT_DIR}" "${BACKUP_DIR}/app-${BACKUP_TS}"
+  echo "✓ Backed up previous deployment to ${BACKUP_DIR}/app-${BACKUP_TS}"
+fi
 
-# Load environment variables for tunnel config
+# Extract deployment package
+echo "==> Extracting deployment package"
+mkdir -p "${CURRENT_DIR}"
+tar -xzf "/tmp/debridgers-backend-${BUILD_ID}.tar.gz" -C "${CURRENT_DIR}"
+echo "✓ Extracted to ${CURRENT_DIR}"
+
+# Load environment
 set -a
-# shellcheck disable=SC1091
 source .env
 set +a
-: "${TUNNEL_ID:?TUNNEL_ID must be set in ${APP_DIR}/.env}"
 
-echo "==> Rendering cloudflared config for tunnel ${TUNNEL_ID}"
-if [ ! -s cloudflared/creds.json ]; then
-  echo "cloudflared/creds.json is missing or empty — tunnel cannot authenticate" >&2
-  exit 1
-fi
-sed -e "s|__TUNNEL_ID__|${TUNNEL_ID}|" \
-    cloudflared/config.template.yml > cloudflared/config.yml
+# Ensure DATABASE_URL is set
+: "${DATABASE_URL:?DATABASE_URL must be set in ${APP_DIR}/.env}"
 
-# The cloudflared image runs as the non-root user 65532, so root-owned files
-# it needs are unreadable inside the container.
-chmod 644 cloudflared/config.yml
-chown 65532:65532 cloudflared/creds.json 2>/dev/null || true
-chmod 600 cloudflared/creds.json 2>/dev/null || true
+# Install dependencies (pnpm is already installed globally via bootstrap)
+echo "==> Installing dependencies"
+cd "${CURRENT_DIR}"
+pnpm install --frozen-lockfile --prod
+echo "✓ Dependencies installed"
 
-echo "==> Pulling latest images"
-docker compose pull debridgers-backend
-
-echo "==> Starting services"
-docker compose up -d --remove-orphans
-
-# Cloudflared needs to be recreated when config changes
-docker compose up -d --force-recreate cloudflared
-
+# Run migrations
 echo "==> Running database migrations"
-docker compose exec -T debridgers-backend pnpm db:migrate
+export DATABASE_URL
+pnpm db:migrate
+echo "✓ Migrations complete"
 
-echo "==> Pruning old images"
-docker image prune -f
+# Stop old PM2 process
+echo "==> Stopping old PM2 process"
+pm2 stop debridgers-backend 2>/dev/null || true
+echo "✓ PM2 process stopped"
 
-echo "==> Current status"
-docker compose ps
+# Create PM2 ecosystem config
+echo "==> Creating PM2 config"
+cat > "${APP_DIR}/ecosystem.config.js" <<'EOF'
+module.exports = {
+  apps: [{
+    name: 'debridgers-backend',
+    script: './dist/main.js',
+    cwd: '/opt/debridgers/current',
+    env: {
+      NODE_ENV: 'production'
+    },
+    instances: 1,
+    exec_mode: 'fork',
+    error_file: '/opt/debridgers/logs/error.log',
+    out_file: '/opt/debridgers/logs/out.log',
+    log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+    max_memory_restart: '1G',
+    watch: false,
+    merge_logs: true,
+    autorestart: true,
+    max_restarts: 10,
+    min_uptime: '10s'
+  }]
+};
+EOF
+echo "✓ PM2 config created"
 
-echo "==> Smoke test https://api-test.debridgers.com/api/v1/health"
+# Start/restart with PM2
+echo "==> Starting Node app with PM2"
+cd /opt/debridgers
+pm2 start ecosystem.config.js --env production
+pm2 save
+echo "✓ PM2 process started"
+
+# Wait for app to be ready
+echo "==> Waiting for app to be ready"
+sleep 3
+
+# Health check via Cloudflare Tunnel
+HEALTH_URL="${APP_URL:-http://localhost:4001}/api/v1/health"
+echo "==> Health check: ${HEALTH_URL}"
+
 for attempt in $(seq 1 12); do
-  code=$(curl -sS -o /dev/null -w '%{http_code}' "https://api-test.debridgers.com/api/v1/health" || true)
-  if [ "${code}" = "200" ]; then
-    echo "==> Smoke test passed"
-    exit 0
+  if curl -sf "${HEALTH_URL}" > /dev/null 2>&1; then
+    echo "✓ Health check passed"
+    break
   fi
-  echo "    attempt ${attempt}/12: HTTP ${code}, retrying in 5s"
+  if [ $attempt -eq 12 ]; then
+    echo "✗ Health check failed after 12 attempts" >&2
+    echo "==> Recent PM2 logs:" >&2
+    pm2 logs debridgers-backend --lines 20 --nostream || true
+    exit 1
+  fi
+  echo "  attempt ${attempt}/12: retrying in 5s..."
   sleep 5
 done
 
-echo "==> Smoke test FAILED: api-test.debridgers.com never returned 200" >&2
-echo "==> Recent backend logs:" >&2
-docker compose logs --tail 40 debridgers-backend >&2 || true
-echo "==> Recent cloudflared logs:" >&2
-docker compose logs --tail 40 cloudflared >&2 || true
-exit 1
+echo ""
+echo "==> Deployment complete!"
+echo "==> Current app status:"
+pm2 status
