@@ -12,6 +12,7 @@ on:
       - '.forgejo/workflows/deploy.yml'
       - 'package.json'
       - 'pnpm-lock.yaml'
+      
   workflow_dispatch: {}
 
 env:
