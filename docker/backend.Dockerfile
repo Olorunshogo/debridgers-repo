@@ -2,8 +2,6 @@ FROM node:20-alpine AS base
 
 WORKDIR /app
 
-RUN corepack enable
-
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Every workspace manifest must be present before install. With only a subset,
