@@ -70,27 +70,6 @@ jobs:
   test:
     runs-on: codeberg-small
     needs: lint
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: debridgers
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 5
-
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@v4
 
@@ -113,7 +92,7 @@ jobs:
 
   build-and-push:
     needs: [build, test]
-    runs-on: codeberg-small
+    runs-on: self-hosted
     outputs:
       image_tag: ${{ steps.meta.outputs.image_tag }}
     steps:
@@ -128,28 +107,24 @@ jobs:
           echo "image_tag=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
           echo "branch_tag=${BRANCH_TAG}" >> "$GITHUB_OUTPUT"
 
-      - name: Install buildah
-        run: apt-get update -qq && apt-get install -y buildah ca-certificates
+      - name: Login to Codeberg Registry
+        run: |
+          echo "${{ secrets.REGISTRY_TOKEN }}" | docker login \
+            -u ${{ github.actor }} \
+            --password-stdin \
+            ${{ env.REGISTRY }}
 
       - name: Build and push image
         run: |
-          buildah build \
-            --storage-driver=vfs \
+          docker build \
             --target=prod \
-            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }} \
-            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.branch_tag }} \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }} \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.branch_tag }} \
             -f ./docker/backend.Dockerfile \
             .
 
-          buildah push \
-            --storage-driver=vfs \
-            --creds ${{ github.actor }}:${{ secrets.REGISTRY_TOKEN }} \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}
-
-          buildah push \
-            --storage-driver=vfs \
-            --creds ${{ github.actor }}:${{ secrets.REGISTRY_TOKEN }} \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.branch_tag }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.branch_tag }}
 
   deploy-dev:
     needs: build-and-push
