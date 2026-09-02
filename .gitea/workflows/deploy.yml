@@ -9,7 +9,7 @@ on:
       - 'apps/debridgers-backend/**'
       - 'packages/**'
       - 'deploy/**'
-      - '.forgejo/workflows/deploy.yml'
+      - '.gitea/workflows/deploy.yml'
       - 'package.json'
       - 'pnpm-lock.yaml'
       
