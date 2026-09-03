@@ -20,7 +20,7 @@ set +a
 : "${TUNNEL_ID:?TUNNEL_ID must be set in ${APP_DIR}/.env}"
 
 echo "==> Persisting IMAGE_TAG to .env for future manual commands"
-sed -i '/^IMAGE_TAG=/d' .env
+grep -v '^IMAGE_TAG=' .env > .env.tmp && mv .env.tmp .env || true
 echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
 
 echo "==> Rendering cloudflared config for tunnel ${TUNNEL_ID}"
