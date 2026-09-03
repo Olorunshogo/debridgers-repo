@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Runs on the target VPS via SSH from GitHub Actions.
-# Pulls pre-built Docker image from registry and deploys.
+# Pulls pre-built image and deploys.
 set -euo pipefail
 
 APP_DIR="/opt/debridgers"
 IMAGE_TAG="${1:?Usage: deploy.sh <image-tag>}"
-REGISTRY="codeberg.org"
-IMAGE_NAME="debridgers_ltd/debridgers-backend"
+REGISTRY="docker.io"
+IMAGE_NAME="1techhunter/debridgers"
 
 cd "${APP_DIR}"
 
@@ -31,9 +31,6 @@ fi
 sed -e "s|__TUNNEL_ID__|${TUNNEL_ID}|" \
     cloudflared/config.template.yml > cloudflared/config.yml
 
-# The cloudflared image runs as the non-root user 65532, so root-owned files
-# it needs are unreadable inside the container. Try to set ownership, but fall back
-# to permissive permissions if the user doesn't exist.
 chmod 644 cloudflared/config.yml
 if id 65532 >/dev/null 2>&1; then
   chown 65532:65532 cloudflared/creds.json

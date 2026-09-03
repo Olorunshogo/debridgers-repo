@@ -90,39 +90,8 @@ jobs:
       - name: Build backend
         run: pnpm build:backend
 
-  build-and-push:
-    needs: [build, test]
-    runs-on: codeberg-small
-    outputs:
-      image_tag: ${{ steps.vars.outputs.sha_short }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set Short SHA
-        id: vars
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build and Push Docker Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./docker/backend.Dockerfile
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.sha_short }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name == 'main' && 'latest' || 'develop' }}
-
   deploy-dev:
-    needs: build-and-push
+    needs: [build, test]
     if: github.ref == 'refs/heads/develop'
     runs-on: codeberg-small
     environment: dev
@@ -137,21 +106,29 @@ jobs:
       - name: Add host to known_hosts
         run: mkdir -p ~/.ssh && ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Copy deploy files
+      - name: Deploy to VPS (build + push + deploy)
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+          TUNNEL_CREDENTIALS: ${{ secrets.CLOUDFLARE_TUNNEL_CREDENTIALS }}
         run: |
+          # Calculate git SHA for image tag
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          BRANCH_TAG="develop"
+
+          # Copy deploy files and source code
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /opt/debridgers/cloudflared"
+          tar --exclude=node_modules --exclude=.git --exclude=dist -czf /tmp/code.tar.gz .
+          scp /tmp/code.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/code.tar.gz
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /opt/debridgers && tar -xzf /tmp/code.tar.gz && rm -f /tmp/code.tar.gz"
+
+          # Copy deploy scripts
           scp deploy/docker-compose.prod.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/docker-compose.yml
           scp deploy/deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/deploy.sh
           scp deploy/cloudflared/config.template.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/cloudflared/config.template.yml
 
-      - name: Install app environment on target VPS
-        env:
-          ENV_FILE: ${{ secrets.ENV_FILE }}
-        run: |
-          if [ -z "$ENV_FILE" ]; then
-            echo "ENV_FILE secret is empty — refusing to overwrite /opt/debridgers/.env" >&2
-            exit 1
-          fi
+          # Install environment and credentials
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} '
             set -eu
             cd /opt/debridgers
@@ -172,29 +149,28 @@ jobs:
             rm -f .env.incoming
           ' <<< "$ENV_FILE"
 
-      - name: Install tunnel credentials on target VPS
-        env:
-          TUNNEL_CREDENTIALS: ${{ secrets.CLOUDFLARE_TUNNEL_CREDENTIALS }}
-        run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /opt/debridgers/cloudflared"
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "cat > /opt/debridgers/cloudflared/creds.json && chmod 600 /opt/debridgers/cloudflared/creds.json" <<< "$TUNNEL_CREDENTIALS"
 
-      - name: Login to Docker Hub on target VPS
-        env:
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-        run: |
+          # Build and push on VPS
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "docker login -u $DOCKERHUB_USERNAME --password-stdin" <<< "$DOCKERHUB_TOKEN"
 
-      - name: Run deploy
-        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /opt/debridgers && \
+            docker build --target=prod \
+              -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${SHORT_SHA} \
+              -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${BRANCH_TAG} \
+              -f ./docker/backend.Dockerfile . && \
+            docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${SHORT_SHA} && \
+            docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${BRANCH_TAG}"
+
+          # Deploy
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "chmod +x /opt/debridgers/deploy.sh && /opt/debridgers/deploy.sh ${{ needs.build-and-push.outputs.image_tag }}"
+            "chmod +x /opt/debridgers/deploy.sh && /opt/debridgers/deploy.sh ${SHORT_SHA}"
 
   deploy-production:
-    needs: build-and-push
+    needs: [build, test]
     if: github.ref == 'refs/heads/main'
     runs-on: codeberg-small
     environment: production
@@ -209,21 +185,29 @@ jobs:
       - name: Add host to known_hosts
         run: mkdir -p ~/.ssh && ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Copy deploy files
+      - name: Deploy to VPS (build + push + deploy)
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+          TUNNEL_CREDENTIALS: ${{ secrets.CLOUDFLARE_TUNNEL_CREDENTIALS }}
         run: |
+          # Calculate git SHA for image tag
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          BRANCH_TAG="latest"
+
+          # Copy deploy files and source code
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /opt/debridgers/cloudflared"
+          tar --exclude=node_modules --exclude=.git --exclude=dist -czf /tmp/code.tar.gz .
+          scp /tmp/code.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/code.tar.gz
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /opt/debridgers && tar -xzf /tmp/code.tar.gz && rm -f /tmp/code.tar.gz"
+
+          # Copy deploy scripts
           scp deploy/docker-compose.prod.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/docker-compose.yml
           scp deploy/deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/deploy.sh
           scp deploy/cloudflared/config.template.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/cloudflared/config.template.yml
 
-      - name: Install app environment on target VPS
-        env:
-          ENV_FILE: ${{ secrets.ENV_FILE }}
-        run: |
-          if [ -z "$ENV_FILE" ]; then
-            echo "ENV_FILE secret is empty — refusing to overwrite /opt/debridgers/.env" >&2
-            exit 1
-          fi
+          # Install environment and credentials
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} '
             set -eu
             cd /opt/debridgers
@@ -244,23 +228,22 @@ jobs:
             rm -f .env.incoming
           ' <<< "$ENV_FILE"
 
-      - name: Install tunnel credentials on target VPS
-        env:
-          TUNNEL_CREDENTIALS: ${{ secrets.CLOUDFLARE_TUNNEL_CREDENTIALS }}
-        run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /opt/debridgers/cloudflared"
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "cat > /opt/debridgers/cloudflared/creds.json && chmod 600 /opt/debridgers/cloudflared/creds.json" <<< "$TUNNEL_CREDENTIALS"
 
-      - name: Login to Docker Hub on target VPS
-        env:
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-        run: |
+          # Build and push on VPS
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "docker login -u $DOCKERHUB_USERNAME --password-stdin" <<< "$DOCKERHUB_TOKEN"
 
-      - name: Run deploy
-        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /opt/debridgers && \
+            docker build --target=prod \
+              -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${SHORT_SHA} \
+              -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${BRANCH_TAG} \
+              -f ./docker/backend.Dockerfile . && \
+            docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${SHORT_SHA} && \
+            docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${BRANCH_TAG}"
+
+          # Deploy
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "chmod +x /opt/debridgers/deploy.sh && /opt/debridgers/deploy.sh ${{ needs.build-and-push.outputs.image_tag }}"
+            "chmod +x /opt/debridgers/deploy.sh && /opt/debridgers/deploy.sh ${SHORT_SHA}"
