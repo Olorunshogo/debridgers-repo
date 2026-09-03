@@ -1,6 +1,6 @@
 services:
   debridgers-backend:
-    image: code.codeberg.org/DEBRIDGERS_LTD/debridgers-backend:${IMAGE_TAG:-latest}
+    image: 1techhunter/debridgers:${IMAGE_TAG:-develop}
     container_name: debridgers-backend
     restart: unless-stopped
     ports:
