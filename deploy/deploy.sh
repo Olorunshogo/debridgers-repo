@@ -40,6 +40,7 @@ else
 fi
 
 echo "==> Pulling latest images"
+export IMAGE_TAG
 docker compose pull debridgers-backend
 
 echo "==> Starting services"
