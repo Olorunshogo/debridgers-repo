@@ -31,6 +31,9 @@ import {
   PAYSTACK_CARD_RATE,
   PAYSTACK_CARD_FLAT_KOBO,
   PAYSTACK_CARD_CAP_KOBO,
+  paystackCardFeeKobo,
+  landedCostKobo,
+  type Metric,
 } from "./assumptions";
 
 /** Paystack local card: 1.5% + ₦100, capped. Verify on the dashboard. */
@@ -125,9 +128,19 @@ export function paystackFee(revenue: number): number {
 
 // === The breakdown
 
-export function computeOrder(
+/**
+ * What the gateway takes on a transaction of this size.
+ *
+ * Passed in rather than fixed so the same arithmetic serves both the naira
+ * functions below and the kobo `procurementTargets` at the bottom of the file,
+ * each with the rounding its own unit demands.
+ */
+type PaystackFeeAt = (revenue: number) => number;
+
+function orderBreakdown(
   inputs: OrderInputs,
   rules: PricingRules,
+  paystackAt: PaystackFeeAt,
 ): OrderBreakdown {
   const {
     sellPrice,
@@ -145,7 +158,7 @@ export function computeOrder(
   const revenue: number = itemsTotal + delivery + service;
 
   const landedGoods: number = (buyPrice + inboundHaulage) * packages;
-  const paystack: number = paystackFee(revenue);
+  const paystack: number = paystackAt(revenue);
   /* The trip is the cost, and it is shared across every drop it serves. */
   const vehicle: number = zoneBase / Math.max(1, dropsPerTrip);
   const loading: number = loadingPerPackage * packages;
@@ -169,23 +182,25 @@ export function computeOrder(
   };
 }
 
+export function computeOrder(
+  inputs: OrderInputs,
+  rules: PricingRules,
+): OrderBreakdown {
+  return orderBreakdown(inputs, rules, paystackFee);
+}
+
 // === Solving backwards
 
-/**
- * Highest price payable per package to hit a target margin at a known sell
- * price. Direct, because revenue does not depend on what we paid.
- *
- * A result above the sell price means the fees alone carry the order: the goods
- * can be bought at market and the order still hits target.
- */
-export function buyPriceForMargin(
+function solveBuyPrice(
   inputs: Omit<OrderInputs, "buyPrice">,
   targetMargin: number,
   rules: PricingRules,
+  paystackAt: PaystackFeeAt,
 ): number {
-  const withZero: OrderBreakdown = computeOrder(
+  const withZero: OrderBreakdown = orderBreakdown(
     { ...inputs, buyPrice: 0 },
     rules,
+    paystackAt,
   );
   const allowedGoods: number =
     withZero.revenue * (1 - targetMargin) -
@@ -196,20 +211,20 @@ export function buyPriceForMargin(
   return allowedGoods / inputs.packages - inputs.inboundHaulage;
 }
 
-/**
- * Lowest sell price per package that hits a target margin at a known buy price.
- *
- * Solved by bisection rather than algebra because the service fee and the
- * delivery and Paystack caps make revenue piecewise in the sell price, and a
- * closed form would silently mislead wherever a cap binds.
+/*
+ * Bisection, deliberately, and it must stay bisection. The cost-to-serve fee
+ * and the delivery and Paystack caps make revenue piecewise in the sell price,
+ * so a closed form is only right until a cap binds, and then it is wrong
+ * without saying so.
  */
-export function sellPriceForMargin(
+function solveSellPrice(
   inputs: Omit<OrderInputs, "sellPrice">,
   targetMargin: number,
   rules: PricingRules,
+  paystackAt: PaystackFeeAt,
 ): number {
   const marginAt = (sellPrice: number): number =>
-    computeOrder({ ...inputs, sellPrice }, rules).marginOnRevenue;
+    orderBreakdown({ ...inputs, sellPrice }, rules, paystackAt).marginOnRevenue;
 
   let low: number = 1;
   let high: number = Math.max(1000, (inputs.buyPrice + 1) * 10);
@@ -228,4 +243,259 @@ export function sellPriceForMargin(
   }
 
   return high;
+}
+
+/**
+ * Highest price payable per package to hit a target margin at a known sell
+ * price. Direct, because revenue does not depend on what we paid.
+ *
+ * A result above the sell price means the fees alone carry the order: the goods
+ * can be bought at market and the order still hits target.
+ */
+export function buyPriceForMargin(
+  inputs: Omit<OrderInputs, "buyPrice">,
+  targetMargin: number,
+  rules: PricingRules,
+): number {
+  return solveBuyPrice(inputs, targetMargin, rules, paystackFee);
+}
+
+/**
+ * Lowest sell price per package that hits a target margin at a known buy price.
+ *
+ * Solved by bisection rather than algebra because the service fee and the
+ * delivery and Paystack caps make revenue piecewise in the sell price, and a
+ * closed form would silently mislead wherever a cap binds.
+ */
+export function sellPriceForMargin(
+  inputs: Omit<OrderInputs, "sellPrice">,
+  targetMargin: number,
+  rules: PricingRules,
+): number {
+  return solveSellPrice(inputs, targetMargin, rules, paystackFee);
+}
+
+// === The buying desk, in kobo
+//
+// Everything above this line is in naira, and stays there: `PricingRules` is
+// what PlatformConfigContext.toPricingRules already produces, and every existing
+// caller reads it in naira. Rewriting the module's unit would mean rewriting
+// that conversion too, so instead the kobo boundary is drawn here. Callers below
+// hand over kobo, exactly like the rest of the platform, and the naira core is
+// fed through one conversion inside `procurementTargets`.
+
+/**
+ * The order the targets are computed against, in kobo.
+ *
+ * The taper and the ceiling are the ZONE's own, not the defaults from
+ * GET /config/public. Quoting a far zone at the near zone's rates is how the
+ * desk came to compute walk-away prices against a schedule checkout does not
+ * charge.
+ */
+export interface ProcurementContext {
+  packages: number;
+  /** Zone base fee, which is also the cost of one dedicated trip, in kobo. */
+  zoneBaseKobo: number;
+  /** Deliveries sharing one vehicle. The trip cost divides by this. */
+  dropsPerTrip: number;
+  /** Loading and offloading per package, in kobo. From assumptions.ts. */
+  loadingPerPackageKobo: number;
+  /** Supplier to warehouse, per package, in kobo. Part of landed cost. */
+  inboundHaulageKobo: number;
+  /** This zone's charge per package for packages 3 to 6, in kobo. */
+  tierOnePerPackageKobo: number;
+  /** This zone's charge per package for package 7 and beyond, in kobo. */
+  tierTwoPerPackageKobo: number;
+  /** This zone's absolute ceiling on one delivery fee, in kobo. */
+  deliveryCapKobo: number;
+  /**
+   * A PERCENTAGE, as typed on the screen and as stored in system_settings.
+   * Divided to a fraction exactly once, inside. No call site handles both
+   * forms, which is the ambiguity that has already produced a real bug.
+   */
+  targetMarginPercent: number;
+  /** Catalogue product name, to read a measured landed cost when one exists. */
+  productName?: string;
+}
+
+/**
+ * Which of the two prices the desk actually knows. The other is solved.
+ *
+ * One discriminated input rather than two functions, so both directions travel
+ * the same code path and two figures on one screen cannot be computed against
+ * different assumptions.
+ */
+export type ProcurementTargetsInput = ProcurementContext &
+  (
+    | { known: "marketPrice"; marketPriceKobo: number }
+    | { known: "farmerPrice"; farmerPriceKobo: number }
+  );
+
+export interface ProcurementTargets {
+  known: "marketPrice" | "farmerPrice";
+  /** The target margin as a fraction, divided down from the percentage once. */
+  targetMargin: number;
+  /** What the buyer pays per package, given or solved. */
+  sellPriceKobo: number;
+  /** What we pay the supplier per package, given or solved. */
+  buyPriceKobo: number;
+  /** The figure this call solved for: the other one was stated. */
+  solvedPriceKobo: number;
+  /** Pay above this and the order loses money. */
+  walkAwayPriceKobo: number;
+  /**
+   * What a package is modelled to cost landed: the measured figure where one
+   * exists, otherwise the figure implied by the target spread. Carries its own
+   * status, so a target computed from a guess is visibly computed from a guess.
+   */
+  landedCost: Metric;
+  itemsTotalKobo: number;
+  deliveryFeeKobo: number;
+  /** The cost-to-serve fee. */
+  serviceFeeKobo: number;
+  /** What the buyer pays in total. */
+  revenueKobo: number;
+  landedGoodsKobo: number;
+  paystackKobo: number;
+  vehicleKobo: number;
+  loadingKobo: number;
+  totalCostKobo: number;
+  contributionKobo: number;
+  /** Contribution as a share of what the buyer paid. */
+  marginOnRevenue: number;
+  /** How far below the sell price the goods were bought, as a share. */
+  procurementSpread: number;
+}
+
+/*
+ * The one place a percentage becomes a fraction, mirroring
+ * SystemSettingsService.getPercentAsFraction on the server. Out of range is
+ * clamped rather than trusted: a margin of 900% would solve to a sell price
+ * nothing could be bought at, and silently.
+ */
+function marginFraction(percent: number): number {
+  if (!Number.isFinite(percent)) return 0;
+  return Math.min(Math.max(percent, 0), 100) / 100;
+}
+
+/*
+ * The naira fee rules, restated in kobo, with the zone's own taper and ceiling
+ * in place of the served defaults. Nothing new is invented here: every figure
+ * is either the served rule scaled by 100 or the zone's own row.
+ */
+function toKoboRules(
+  rules: PricingRules,
+  context: ProcurementContext,
+): PricingRules {
+  const kobo = (naira: number): number => Math.round(naira * 100);
+
+  return {
+    serviceFeeRate: rules.serviceFeeRate,
+    serviceFeeMin: kobo(rules.serviceFeeMin),
+    serviceFeeMax: kobo(rules.serviceFeeMax),
+    packagesInBase: rules.packagesInBase,
+    tierOnePackages: rules.tierOnePackages,
+    tierOnePerPackage: context.tierOnePerPackageKobo,
+    tierTwoPerPackage: context.tierTwoPerPackageKobo,
+    /* The zone carries an absolute ceiling; PricingRules holds headroom. */
+    deliveryCapOverBase: Math.max(
+      0,
+      context.deliveryCapKobo - context.zoneBaseKobo,
+    ),
+    minimumOrder: kobo(rules.minimumOrder),
+    minimumOrderPackages: rules.minimumOrderPackages,
+  };
+}
+
+/**
+ * Every figure the buying desk needs, from one call.
+ *
+ * State the cost and the target margin and the rest follows: the price to sell
+ * at or buy at, the walk-away price, the fees charged, the costs incurred and
+ * the contribution left. Solving these through separate calls is what let two
+ * numbers on one screen disagree about their own assumptions.
+ */
+export function procurementTargets(
+  input: ProcurementTargetsInput,
+  rules: PricingRules,
+): ProcurementTargets {
+  const targetMargin: number = marginFraction(input.targetMarginPercent);
+  const koboRules: PricingRules = toKoboRules(rules, input);
+
+  const shared = {
+    packages: input.packages,
+    zoneBase: input.zoneBaseKobo,
+    dropsPerTrip: input.dropsPerTrip,
+    loadingPerPackage: input.loadingPerPackageKobo,
+    inboundHaulage: input.inboundHaulageKobo,
+  };
+
+  /*
+   * Round outward, not to nearest. A target to buy at must be one we can still
+   * hit, and a target to sell at must still clear, so each rounds against us by
+   * at most a kobo.
+   */
+  const sellPriceKobo: number =
+    input.known === "marketPrice"
+      ? input.marketPriceKobo
+      : Math.ceil(
+          solveSellPrice(
+            { ...shared, buyPrice: input.farmerPriceKobo },
+            targetMargin,
+            koboRules,
+            paystackCardFeeKobo,
+          ),
+        );
+
+  const buyPriceKobo: number =
+    input.known === "farmerPrice"
+      ? input.farmerPriceKobo
+      : Math.floor(
+          solveBuyPrice(
+            { ...shared, sellPrice: input.marketPriceKobo },
+            targetMargin,
+            koboRules,
+            paystackCardFeeKobo,
+          ),
+        );
+
+  const walkAwayPriceKobo: number = Math.floor(
+    solveBuyPrice(
+      { ...shared, sellPrice: sellPriceKobo },
+      0,
+      koboRules,
+      paystackCardFeeKobo,
+    ),
+  );
+
+  /* Recomputed at the rounded prices, so what is shown is what was solved. */
+  const order: OrderBreakdown = orderBreakdown(
+    { ...shared, sellPrice: sellPriceKobo, buyPrice: buyPriceKobo },
+    koboRules,
+    paystackCardFeeKobo,
+  );
+
+  return {
+    known: input.known,
+    targetMargin,
+    sellPriceKobo,
+    buyPriceKobo,
+    solvedPriceKobo:
+      input.known === "marketPrice" ? buyPriceKobo : sellPriceKobo,
+    walkAwayPriceKobo,
+    landedCost: landedCostKobo(input.productName ?? "", sellPriceKobo),
+    itemsTotalKobo: Math.round(order.itemsTotal),
+    deliveryFeeKobo: Math.round(order.deliveryFee),
+    serviceFeeKobo: Math.round(order.serviceFee),
+    revenueKobo: Math.round(order.revenue),
+    landedGoodsKobo: Math.round(order.landedGoods),
+    paystackKobo: Math.round(order.paystack),
+    /* A trip shared across drops divides into a fraction of a kobo. */
+    vehicleKobo: Math.round(order.vehicle),
+    loadingKobo: Math.round(order.loading),
+    totalCostKobo: Math.round(order.totalCost),
+    contributionKobo: Math.round(order.contribution),
+    marginOnRevenue: order.marginOnRevenue,
+    procurementSpread: order.procurementSpread,
+  };
 }

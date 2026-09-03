@@ -12,6 +12,7 @@ import { timestamps } from "../../helper/column.helper";
 import { users } from "./users.schema";
 import { zones } from "./zones.schema";
 import { riders } from "./riders.schema";
+import { deliveryPromotions } from "./delivery_promotions.schema";
 import { createInsertSchema } from "drizzle-zod";
 
 export const orderStatusEnum = pgEnum("order_status", [
@@ -64,6 +65,18 @@ export const orders = pgTable("orders", {
   unit_price: integer().notNull(),
   handling_fee: integer().notNull(),
   delivery_fee: integer().notNull(), // from zone, in kobo
+  /*
+   * What delivery would have cost without a promotion, in kobo.
+   *
+   * Recorded on every order, not only discounted ones, so the cost of a
+   * campaign is one query afterwards. Without it, a free-delivery week left no
+   * trace of what it gave away.
+   */
+  delivery_fee_before_promo: integer().notNull().default(0),
+  /** The campaign that made this delivery free, when one did. */
+  delivery_promotion_id: integer().references(() => deliveryPromotions.id, {
+    onDelete: "set null",
+  }),
   total_amount: integer().notNull(),
   order_mode: orderModeEnum().notNull(),
   order_source: orderSourceEnum().notNull().default("self_serve"),
@@ -89,6 +102,8 @@ export const orders = pgTable("orders", {
   }),
   delivery_proof_photos: jsonb(), // array of {url, caption}
   delivery_notes: text(),
+  /* Who actually took delivery, which is not always the buyer. */
+  delivery_recipient_name: text(),
   ...timestamps,
 });
 

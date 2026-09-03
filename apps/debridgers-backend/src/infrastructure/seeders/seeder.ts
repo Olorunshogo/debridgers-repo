@@ -5,6 +5,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { count, eq, sql } from "drizzle-orm";
 import * as bcrypt from "bcryptjs";
 import * as schema from "../persistence/index";
+import { intoTaperBand } from "@debridgers/pricing";
 import {
   PRODUCTS,
   TAXONOMY,
@@ -14,6 +15,15 @@ import {
 
 // ₦ → kobo
 const naira = (n: number) => n * 100;
+
+/*
+ * Taper rates are the locked schedule mapped through the pricing package, never
+ * written out here. A fresh database seeds these rows while an existing one is
+ * corrected by migration 0024, and both read the same mapping, so the two
+ * cannot drift apart. Writing the banded figures literally is what would let
+ * them.
+ */
+const taper = (lockedNaira: number) => intoTaperBand(naira(lockedNaira));
 
 const ZONES = [
   {
@@ -27,8 +37,8 @@ const ZONES = [
      * rather than separately measured, and should be measured in turn.
      */
     delivery_fee: naira(4000),
-    tier_one_per_package_kobo: naira(700),
-    tier_two_per_package_kobo: naira(400),
+    tier_one_per_package_kobo: taper(700),
+    tier_two_per_package_kobo: taper(400),
     delivery_cap_kobo: naira(10000),
     areas: [
       "Narayi",
@@ -44,8 +54,8 @@ const ZONES = [
     name: "Kaduna North",
     description: "Kawo, Tudun Wada North, Rigachikun, Rigasa",
     delivery_fee: naira(4500),
-    tier_one_per_package_kobo: naira(800),
-    tier_two_per_package_kobo: naira(450),
+    tier_one_per_package_kobo: taper(800),
+    tier_two_per_package_kobo: taper(450),
     delivery_cap_kobo: naira(11000),
     areas: ["Kawo", "Rigachikun", "Rigasa", "Unguwan Mu'azu"],
     is_active: true,
@@ -54,8 +64,8 @@ const ZONES = [
     name: "Chikun",
     description: "Chikun LGA - Kujama, Sabon Sarki, Nasarawa, Ungwan Yero",
     delivery_fee: naira(6000),
-    tier_one_per_package_kobo: naira(1000),
-    tier_two_per_package_kobo: naira(600),
+    tier_one_per_package_kobo: taper(1000),
+    tier_two_per_package_kobo: taper(600),
     delivery_cap_kobo: naira(14000),
     /*
      * Kachia, Kafanchan, Kagoro and Jema'a used to sit here at a ₦800 base.

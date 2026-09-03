@@ -35,3 +35,4 @@ export * from "./schemas/admin_transactions.schema";
 export * from "./schemas/payment_records.schema";
 export * from "./schemas/buyer_admin_logs.schema";
 export * from "./schemas/admin_invites.schema";
+export * from "./schemas/delivery_promotions.schema";
