@@ -155,7 +155,7 @@ jobs:
 
           # Build and push on VPS
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "docker login -u $DOCKERHUB_USERNAME --password-stdin" <<< "$DOCKERHUB_TOKEN"
+            "docker login -u '$DOCKERHUB_USERNAME' --password-stdin" <<< "$DOCKERHUB_TOKEN"
 
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /opt/debridgers && \
             docker build --target=prod \
@@ -234,7 +234,7 @@ jobs:
 
           # Build and push on VPS
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "docker login -u $DOCKERHUB_USERNAME --password-stdin" <<< "$DOCKERHUB_TOKEN"
+            "docker login -u '$DOCKERHUB_USERNAME' --password-stdin" <<< "$DOCKERHUB_TOKEN"
 
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /opt/debridgers && \
             docker build --target=prod \
