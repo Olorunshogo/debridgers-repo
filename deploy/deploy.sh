@@ -15,13 +15,18 @@ echo "==> Deploying Debridgers:${IMAGE_TAG}"
 # Load environment variables for tunnel config
 set -a
 # shellcheck disable=SC1091
-source .env
+source deploy/.env
 set +a
-: "${TUNNEL_ID:?TUNNEL_ID must be set in ${APP_DIR}/.env}"
+: "${TUNNEL_ID:?TUNNEL_ID must be set in ${APP_DIR}/deploy/.env}"
 
 echo "==> Persisting IMAGE_TAG to .env for future manual commands"
-grep -v '^IMAGE_TAG=' .env > .env.tmp && mv .env.tmp .env || true
-echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
+grep -v '^IMAGE_TAG=' deploy/.env > deploy/.env.tmp && mv deploy/.env.tmp deploy/.env || true
+echo "IMAGE_TAG=${IMAGE_TAG}" >> deploy/.env
+
+# Re-source to pick up the updated IMAGE_TAG
+set -a
+source deploy/.env
+set +a
 
 echo "==> Rendering cloudflared config for tunnel ${TUNNEL_ID}"
 if [ ! -s cloudflared/creds.json ]; then
