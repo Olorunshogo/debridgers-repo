@@ -13,6 +13,7 @@ COPY apps/debridgers-backend/package.json apps/debridgers-backend/
 COPY apps/debridgers-backend-e2e/package.json apps/debridgers-backend-e2e/
 COPY apps/debridgers-frontend/package.json apps/debridgers-frontend/
 COPY packages/api-client/package.json packages/api-client/
+COPY packages/pricing/package.json packages/pricing/
 COPY packages/ui-app/package.json packages/ui-app/
 COPY packages/ui-web/package.json packages/ui-web/
 
@@ -35,7 +36,8 @@ CMD ["pnpm", "--filter", "@debridgers/debridgers-backend", "dev"]
 # Last stage, so a build with no explicit target still produces this.
 FROM base AS prod
 
-RUN pnpm --filter @debridgers/debridgers-backend build
+RUN pnpm --filter @debridgers/pricing build && \
+    pnpm --filter @debridgers/debridgers-backend build
 
 EXPOSE 4001
 
