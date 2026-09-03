@@ -41,22 +41,22 @@ fi
 
 echo "==> Pulling latest images"
 export IMAGE_TAG
-docker compose pull debridgers-backend
+docker compose -f deploy/docker-compose.prod.yml pull debridgers-backend
 
 echo "==> Starting services"
-docker compose up -d --remove-orphans
+docker compose -f deploy/docker-compose.prod.yml up -d --remove-orphans
 
 # Cloudflared needs to be recreated when config changes
-docker compose up -d --force-recreate cloudflared
+docker compose -f deploy/docker-compose.prod.yml up -d --force-recreate cloudflared
 
 echo "==> Running database migrations"
-docker compose exec -T debridgers-backend pnpm db:migrate
+docker compose -f deploy/docker-compose.prod.yml exec -T debridgers-backend pnpm db:migrate
 
 echo "==> Pruning old images"
 docker image prune -f
 
 echo "==> Current status"
-docker compose ps
+docker compose -f deploy/docker-compose.prod.yml ps
 
 echo "==> Smoke test https://api-test.debridgers.com/api/v1/health"
 for attempt in $(seq 1 12); do
@@ -71,7 +71,7 @@ done
 
 echo "==> Smoke test FAILED: api-test.debridgers.com never returned 200" >&2
 echo "==> Recent backend logs:" >&2
-docker compose logs --tail 40 debridgers-backend >&2 || true
+docker compose -f deploy/docker-compose.prod.yml logs --tail 40 debridgers-backend >&2 || true
 echo "==> Recent cloudflared logs:" >&2
-docker compose logs --tail 40 cloudflared >&2 || true
+docker compose -f deploy/docker-compose.prod.yml logs --tail 40 cloudflared >&2 || true
 exit 1
