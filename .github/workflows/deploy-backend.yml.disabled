@@ -1,0 +1,122 @@
+# === Stood down
+# Deployment is deferred. This file carries the .disabled suffix so GitHub never
+# parses it: a workflow commented out in place is an empty document, which shows
+# as a red error on the repository rather than as an absent workflow.
+#
+# To bring it back: git mv this file to deploy-backend.yml.
+
+name: Deploy backend
+
+on:
+  push:
+    branches: [develop, main]
+  workflow_dispatch:
+
+# One deploy at a time per branch. Two overlapping runs would race on the same
+# host .env and the same migration.
+concurrency:
+  group: deploy-backend-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/debridgers/debridgers-backend
+
+jobs:
+  build:
+    name: Build and push image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.tag.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute tags
+        id: tag
+        run: |
+          echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          # Slashes are legal in branch names and illegal in tags.
+          echo "branch=$(echo '${{ github.ref_name }}' | tr '/' '-')" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/debridgers-backend/Dockerfile
+          platforms: linux/amd64
+          push: true
+          # The SHA tag is what actually gets deployed, so a rollback is always
+          # to a specific commit. The branch tag only says what is current.
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.sha }}
+            ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.branch }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to host
+    needs: build
+    runs-on: ubuntu-latest
+    # develop and main deploy to different GitHub Environments, so they carry
+    # different hosts and different secrets without a second workflow.
+    environment: ${{ github.ref_name == 'main' && 'production' || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ vars.SSH_PORT || '22' }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          # Pinning the host key rather than accepting any key on first contact.
+          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Copy deploy files to host
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ vars.SSH_PORT || '22' }}
+        run: |
+          # The host .env and the tunnel credentials live in the same directory
+          # and are host-owned, so they are excluded rather than synced.
+          rsync -az --delete \
+            --exclude '.env' \
+            --exclude 'env-backups' \
+            --exclude 'cloudflared/credentials.json' \
+            --exclude 'cloudflared/config.yml' \
+            -e "ssh -i ~/.ssh/id_deploy -p $SSH_PORT" \
+            deploy/ "$SSH_USER@$SSH_HOST:/opt/debridgers/"
+
+      - name: Deploy
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ vars.SSH_PORT || '22' }}
+          IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
+          GHCR_OWNER: ${{ github.repository_owner }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Base64 so newlines and quoting survive the trip through ssh.
+          DEPLOY_ENV_B64: ${{ secrets.DEPLOY_ENV_B64 }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
+            "IMAGE_TAG='$IMAGE_TAG' \
+             GHCR_OWNER='$GHCR_OWNER' \
+             GHCR_USER='$GHCR_USER' \
+             GHCR_TOKEN='$GHCR_TOKEN' \
+             DEPLOY_ENV_B64='$DEPLOY_ENV_B64' \
+             bash /opt/debridgers/deploy.sh"

@@ -6,4 +6,21 @@ build
 **/node_modules
 **/.react-router
 **/dist
+**/build
 README.md
+
+# Secrets must never reach a build context that is pushed to a public registry.
+.env
+**/.env
+**/.env.*
+
+.git
+.github
+.husky
+.nx
+.vercel
+.vscode
+docs
+deploy
+**/coverage
+**/*.log

@@ -1,0 +1,92 @@
+# === Stood down
+# Deployment is deferred, so this file is commented out in full. Nothing reads
+# it while deploy/deploy.sh is inert. Uncomment to bring it back.
+
+# name: debridgers
+#
+# # Nothing here publishes a host port. The only way in is the Cloudflare Tunnel,
+# # which dials out to Cloudflare and reaches the backend over this network, so
+# # the host firewall can stay closed to everything except SSH.
+# #
+# # Image versions and healthcheck style match docker/docker-compose.yml so
+# # production runs what developers run locally.
+#
+# services:
+#   postgres:
+#     image: postgres:16-alpine
+#     restart: unless-stopped
+#     environment:
+#       POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+#       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+#       POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+#       interval: 5s
+#       timeout: 5s
+#       retries: 5
+#
+#   redis:
+#     image: redis:7-alpine
+#     restart: unless-stopped
+#     command: ["redis-server", "--appendonly", "yes"]
+#     volumes:
+#       - redis_data:/data
+#     healthcheck:
+#       test: ["CMD", "redis-cli", "ping"]
+#       interval: 5s
+#       timeout: 3s
+#       retries: 5
+#
+#   backend:
+#     image: ghcr.io/${GHCR_OWNER:?GHCR_OWNER is required}/debridgers/debridgers-backend:${IMAGE_TAG:?IMAGE_TAG is required}
+#     restart: unless-stopped
+#     env_file:
+#       - .env
+#     environment:
+#       NODE_ENV: production
+#       PORT: "4001"
+#     depends_on:
+#       postgres:
+#         condition: service_healthy
+#       redis:
+#         condition: service_healthy
+#     expose:
+#       - "4001"
+#     # The API is only useful once it answers, not once its process exists.
+#     # Without this, cloudflared could publish a tunnel to a backend that was
+#     # still booting or crash-looping, and the first thing a buyer would meet is
+#     # a 502 from our own edge. Uses node rather than curl because the runtime
+#     # image carries no shell utilities.
+#     healthcheck:
+#       test:
+#         [
+#           "CMD",
+#           "node",
+#           "-e",
+#           "require('http').get('http://127.0.0.1:4001/api/v1/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
+#         ]
+#       interval: 30s
+#       timeout: 5s
+#       retries: 3
+#       start_period: 30s
+#
+#   cloudflared:
+#     image: cloudflare/cloudflared:2025.8.1
+#     restart: unless-stopped
+#     command: ["tunnel", "--no-autoupdate", "--config", "/etc/cloudflared/config.yml", "run"]
+#     volumes:
+#       - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+#       - ./cloudflared/credentials.json:/etc/cloudflared/credentials.json:ro
+#     # Waits for the API to answer, not merely to start. The tunnel is the public
+#     # face of the service, so bringing it up ahead of a working backend turns a
+#     # slow boot into a visible outage.
+#     depends_on:
+#       backend:
+#         condition: service_healthy
+#
+# volumes:
+#   postgres_data:
+#   redis_data:
+#

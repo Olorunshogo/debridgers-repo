@@ -3,11 +3,32 @@ import "reflect-metadata";
 process.env.UV_THREADPOOL_SIZE = process.env.UV_THREADPOOL_SIZE ?? "16";
 import { Logger, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import type { NestExpressApplication } from "@nestjs/platform-express";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import helmet from "helmet";
 import { AppModule } from "./app/app.module";
 import { ApiResponseInterceptor } from "./interceptors/api-response.interceptor";
 import { GlobalExceptionFilter } from "./filters/http-exception.filter";
+
+/*
+ * Delivery proof photos travel as base64 inside the JSON body, which is why the
+ * default 100kb ceiling had to move: a single phone photo exceeded it and the
+ * whole verification failed with a 413 the admin could not interpret.
+ *
+ * Sized from what the client actually sends, not from what it accepts. The
+ * upload control takes files up to 5MB, but downscales each one to 1600px and
+ * steps JPEG quality down until it fits a 1.2MB budget, so eight photos is
+ * roughly 10MB of body. The rest is margin for the fallback path, where a
+ * browser without canvas encoding sends an original untouched.
+ *
+ * Sizing it for the raw input instead would mean a 55MB ceiling on every
+ * endpoint in the API, which is a great deal of memory to hand an unauthorised
+ * caller for the sake of one authenticated admin screen.
+ *
+ * This whole allowance disappears when proof photos move to object storage:
+ * the body then carries URLs and the limit goes back to a default.
+ */
+const BODY_LIMIT = "20mb";
 
 const ALLOWED_ORIGINS = (
   process.env.ALLOWED_ORIGINS ?? "https://localhost:5173"
@@ -66,11 +87,33 @@ async function bootstrap() {
    * JSON.stringify only happens to match while key order and escaping survive
    * the round trip.
    */
-  const app = await NestFactory.create(AppModule, {
+  /*
+   * The default body limit is 100kb, which delivery verification exceeded on a
+   * single photo: proof images are posted as base64 data URLs, and base64 adds
+   * roughly a third on top of the file size. The upload control accepts several
+   * photos at up to 5MB each, so the request needs real headroom or the whole
+   * flow fails with a 413 the admin cannot interpret.
+   *
+   * Sized for the control's own limits rather than picked round: MAX_PHOTOS
+   * files at MAX_PHOTO_MB each, encoded, plus a margin for the rest of the body.
+   * If either limit changes in photo-upload-field.tsx, change it here too.
+   */
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
     rawBody: true,
   });
   console.log("🟢 [5] App created, setting up middleware...");
+
+  /*
+   * Both parsers are raised, not just JSON. Raising one and not the other is
+   * the kind of half-fix that looks like it worked until a form post fails.
+   *
+   * The raw buffer the Paystack webhook verifies its signature against is
+   * captured by the same parsers, so it inherits this limit rather than needing
+   * its own.
+   */
+  app.useBodyParser("json", { limit: BODY_LIMIT });
+  app.useBodyParser("urlencoded", { limit: BODY_LIMIT, extended: true });
 
   // === Security headers (Helmet)
   app.use(
