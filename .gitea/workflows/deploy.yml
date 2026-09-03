@@ -90,14 +90,45 @@ jobs:
       - name: Build backend
         run: pnpm build:backend
 
-  deploy-dev:
+  build-and-push:
     needs: [build, test]
+    runs-on: codeberg-small
+    outputs:
+      image_tag: ${{ steps.vars.outputs.sha_short }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set Short SHA
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Codeberg Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.CODEBERG_USERNAME }}
+          password: ${{ secrets.CODEBERG_TOKEN }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/backend.Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.sha_short }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name == 'main' && 'latest' || 'develop' }}
+
+  deploy-dev:
+    needs: build-and-push
     if: github.ref == 'refs/heads/develop'
     runs-on: codeberg-small
     environment: dev
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup SSH key
         uses: webfactory/ssh-agent@v0.9.0
@@ -107,16 +138,12 @@ jobs:
       - name: Add host to known_hosts
         run: mkdir -p ~/.ssh && ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Copy deploy files and source code
+      - name: Copy deploy files
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /opt/debridgers/cloudflared"
           scp deploy/docker-compose.prod.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/docker-compose.yml
           scp deploy/deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/deploy.sh
           scp deploy/cloudflared/config.template.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/cloudflared/config.template.yml
-          # Copy source code needed for Docker build
-          tar --exclude=node_modules --exclude=.git --exclude=dist -czf /tmp/code.tar.gz .
-          scp /tmp/code.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/code.tar.gz
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /opt/debridgers && tar -xzf /tmp/code.tar.gz && rm -f /tmp/code.tar.gz"
 
       - name: Install app environment on target VPS
         env:
@@ -164,18 +191,16 @@ jobs:
 
       - name: Run deploy
         run: |
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "chmod +x /opt/debridgers/deploy.sh && /opt/debridgers/deploy.sh ${SHORT_SHA}"
+            "chmod +x /opt/debridgers/deploy.sh && /opt/debridgers/deploy.sh ${{ needs.build-and-push.outputs.image_tag }}"
 
   deploy-production:
-    needs: [build, test]
+    needs: build-and-push
     if: github.ref == 'refs/heads/main'
     runs-on: codeberg-small
     environment: production
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup SSH key
         uses: webfactory/ssh-agent@v0.9.0
@@ -185,16 +210,12 @@ jobs:
       - name: Add host to known_hosts
         run: mkdir -p ~/.ssh && ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Copy deploy files and source code
+      - name: Copy deploy files
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /opt/debridgers/cloudflared"
           scp deploy/docker-compose.prod.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/docker-compose.yml
           scp deploy/deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/deploy.sh
           scp deploy/cloudflared/config.template.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/cloudflared/config.template.yml
-          # Copy source code needed for Docker build
-          tar --exclude=node_modules --exclude=.git --exclude=dist -czf /tmp/code.tar.gz .
-          scp /tmp/code.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/code.tar.gz
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /opt/debridgers && tar -xzf /tmp/code.tar.gz && rm -f /tmp/code.tar.gz"
 
       - name: Install app environment on target VPS
         env:
@@ -242,6 +263,5 @@ jobs:
 
       - name: Run deploy
         run: |
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "chmod +x /opt/debridgers/deploy.sh && /opt/debridgers/deploy.sh ${SHORT_SHA}"
+            "chmod +x /opt/debridgers/deploy.sh && /opt/debridgers/deploy.sh ${{ needs.build-and-push.outputs.image_tag }}"

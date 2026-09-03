@@ -1,41 +1,23 @@
 #!/usr/bin/env bash
 # Runs on the target VPS via SSH from GitHub Actions.
-# Builds Docker image locally, pushes to registry, and deploys.
+# Pulls pre-built Docker image from registry and deploys.
 set -euo pipefail
 
 APP_DIR="/opt/debridgers"
 IMAGE_TAG="${1:?Usage: deploy.sh <image-tag>}"
-REGISTRY="code.codeberg.org"
+REGISTRY="codeberg.org"
 IMAGE_NAME="debridgers_ltd/debridgers-backend"
 
 cd "${APP_DIR}"
 
 echo "==> Deploying Debridgers:${IMAGE_TAG}"
 
-# Load environment variables for tunnel config and image builds
+# Load environment variables for tunnel config
 set -a
 # shellcheck disable=SC1091
 source .env
 set +a
 : "${TUNNEL_ID:?TUNNEL_ID must be set in ${APP_DIR}/.env}"
-
-echo "==> Building Docker image locally"
-# Determine branch tag based on current git status
-BRANCH_TAG="develop"
-if git -C . symbolic-ref -q --short HEAD 2>/dev/null | grep -q "^main$"; then
-  BRANCH_TAG="latest"
-fi
-
-docker build \
-  --target=prod \
-  -t "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}" \
-  -t "${REGISTRY}/${IMAGE_NAME}:${BRANCH_TAG}" \
-  -f ./docker/backend.Dockerfile \
-  .
-
-echo "==> Pushing images to registry"
-docker push "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
-docker push "${REGISTRY}/${IMAGE_NAME}:${BRANCH_TAG}"
 
 echo "==> Persisting IMAGE_TAG to .env for future manual commands"
 sed -i '/^IMAGE_TAG=/d' .env
