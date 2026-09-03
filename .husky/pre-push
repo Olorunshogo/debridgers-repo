@@ -2,6 +2,21 @@
 
 set -e
 
+# 0️⃣ Nothing infected leaves this machine.
+#
+# The range, not the working tree: a clean checkout says nothing about the
+# commits being pushed, and this campaign hides on branches nobody opened.
+scan_range() {
+  local local_sha="$1" remote_sha="$2"
+  local z="0000000000000000000000000000000000000000"
+  [ "$local_sha" = "$z" ] && return 0
+  if [ "$remote_sha" = "$z" ]; then
+    bash scripts/scan-backdoor.sh --all
+  else
+    bash scripts/scan-backdoor.sh --range "${remote_sha}..${local_sha}"
+  fi
+}
+
 # 1️⃣ Validate branch name
 echo "🔖 Validating branch name..."
 npx validate-branch-name || {
@@ -62,6 +77,12 @@ z40=0000000000000000000000000000000000000000
 
 while read local_ref local_sha remote_ref remote_sha
 do
+  echo "🔎 Scanning outgoing commits for the EtherHiding backdoor..."
+  scan_range "$local_sha" "$remote_sha" || {
+    echo "❌ Backdoor signature found in the commits being pushed. Push aborted."
+    exit 1
+  }
+
   case "$remote_ref" in
     refs/heads/develop)
       # No deleting or force-pushing develop

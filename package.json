@@ -56,6 +56,9 @@
     "build:ui-web": "pnpm --filter @debridgers/ui-web build",
     "watch:ui-web": "pnpm --filter @debridgers/ui-web watch",
     "audit:spacing-tokens": "sh scripts/audit-spacing-tokens.sh",
+    "scan:backdoor": "bash scripts/scan-backdoor.sh --all",
+    "scan:backdoor:staged": "bash scripts/scan-backdoor.sh --staged",
+    "scan:machine": "bash scripts/scan-machine.sh",
     "dev:pricing": "pnpm --filter @debridgers/pricing dev",
     "build:pricing": "pnpm --filter @debridgers/pricing build"
   },

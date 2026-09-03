@@ -2,6 +2,11 @@
 
 set -e
 
+# The payload writes into a build config on disk and `git add` sweeps it up with
+# real work. This is the moment that happens, so this is where to catch it.
+echo "🔎 Scanning staged files for the EtherHiding backdoor..."
+bash scripts/scan-backdoor.sh --staged
+
 echo "💅 Fixing lint & formatting staged files..."
 pnpm lint-staged
 

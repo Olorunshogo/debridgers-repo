@@ -14,6 +14,19 @@ env:
   PNPM_VERSION: "10.32.1"
 
 jobs:
+  backdoor-scan:
+    name: Backdoor scan
+    runs-on: ubuntu-latest
+    steps:
+      # The whole history, not the tip. This campaign hides on branches nobody
+      # has checked out, and four repositories in it passed a shallow check.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # The hooks can be skipped with --no-verify. This cannot, which is why it
+      # is the gate and they are only the fast feedback.
+      - run: bash scripts/scan-backdoor.sh --all
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
