@@ -34,6 +34,15 @@ export interface RegisterPayload {
   role: SelfRegisterableRole;
   phone?: string;
   referred_by_agent_code?: string;
+  /*
+   * Which document the account holder agreed to, and when it was current.
+   * Sent rather than assumed: each role has its own terms, so the role alone
+   * does not identify the text, and a version-less record cannot show whether
+   * a later revision was ever seen.
+   */
+  accepted_terms?: boolean;
+  terms_document?: string;
+  terms_version?: string;
 }
 
 export interface ResetPasswordPayload {

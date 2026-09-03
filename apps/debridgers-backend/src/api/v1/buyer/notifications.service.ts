@@ -75,6 +75,49 @@ export class NotificationsService {
     }
   }
 
+  /*
+   * Fans one notification out to the buyer admins, not to every admin.
+   *
+   * Delivery batching is their job, so an alert about a drop that needs
+   * batching is noise in a super admin's list and a task in theirs. Falls back
+   * to every admin when no sub-admin exists yet, because an operational alert
+   * that reaches nobody is worse than one that reaches the wrong desk.
+   */
+  async notifyBuyerAdmins(input: NotificationInput): Promise<void> {
+    try {
+      const subAdmins = await this.db
+        .select({ id: schema.users.id })
+        .from(schema.users)
+        .where(
+          and(
+            eq(schema.users.role, "admin"),
+            eq(schema.users.admin_tier, "sub"),
+          ),
+        );
+
+      if (subAdmins.length === 0) {
+        await this.notifyAdmins(input);
+        return;
+      }
+
+      await this.db.insert(schema.notifications).values(
+        subAdmins.map((admin) => ({
+          user_id: admin.id,
+          type: input.type,
+          title: input.title,
+          description: input.description,
+          read: false,
+        })),
+      );
+    } catch (error) {
+      /* Never roll back an order because an alert about it failed to send. */
+      this.logger.error(
+        `Failed to notify buyer admins: ${input.title}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
+  }
+
   /**
    * Send order status notification
    */

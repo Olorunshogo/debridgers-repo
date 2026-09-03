@@ -1,6 +1,7 @@
 import { apiFetch, JSON_HEADERS, authHeaders } from "./api-client";
 import { postWebhook, readPaystackSecret } from "./paystack-webhook";
 import { seedPendingDeposit } from "./wallet-seed";
+import { TERMS_CONSENT } from "./terms-consent";
 
 // === Types
 
@@ -46,6 +47,7 @@ export async function registerBuyer(
       last_name: "Buyer",
       email,
       password,
+      ...TERMS_CONSENT,
     }),
   });
 

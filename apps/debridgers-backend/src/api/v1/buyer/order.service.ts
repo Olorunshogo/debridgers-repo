@@ -9,11 +9,7 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq, desc, and, count, inArray, gte } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
-import {
-  assertMeetsMinimumOrder,
-  computeDeliveryFee,
-  computeServiceFee,
-} from "./delivery-fee";
+import { computeDeliveryFee, computeServiceFee } from "@debridgers/pricing";
 
 /*
  * `name`, `price_kobo` and `unit` are accepted for backwards compatibility with
@@ -158,7 +154,7 @@ export class OrderService {
       (sum: number, item: { qty: number }) => sum + item.qty,
       0,
     );
-    assertMeetsMinimumOrder(subtotal, packageCount);
+    /* Not enforced against the buyer: see priceBasket in buyer.service.ts. */
     const deliveryFee = computeDeliveryFee({
       zoneFeeKobo: zone.delivery_fee || 0,
       packageCount,

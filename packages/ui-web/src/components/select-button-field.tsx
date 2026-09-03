@@ -17,23 +17,23 @@ import {
 import type { SelectOption } from "../types/location";
 
 /*
- * The compact sibling of DashSelectInput.
+ * The compact sibling of SelectInputField.
  *
  * Same trigger-plus-absolute-menu pattern, but a button rather than a form
  * field: no BaseInputField wrapper, no label above it, and onChange hands back
  * the value instead of a synthesised ChangeEvent<HTMLSelectElement>. That event
- * shape exists so DashSelectInput can drop into a form; a toolbar filter or a
+ * shape exists so SelectInputField can drop into a form; a toolbar filter or a
  * rows-per-page control has no form to satisfy and had to unwrap it again at
  * every call site.
  *
- * Use this in toolbars, filter bars and table footers. Use DashSelectInput
+ * Use this in toolbars, filter bars and table footers. Use SelectInputField
  * inside forms, where the label and error slot matter.
  */
 
-export type DashSelectButtonSize = "sm" | "md";
-export type DashSelectButtonAlign = "left" | "right";
+export type SelectButtonFieldSize = "sm" | "md";
+export type SelectButtonFieldAlign = "left" | "right";
 
-export interface DashSelectButtonProps {
+export interface SelectButtonFieldProps {
   /*
    * Names the control for screen readers, and is the prefix when
    * showInlineLabel is on. Never rendered as a field label above the trigger.
@@ -48,19 +48,19 @@ export interface DashSelectButtonProps {
   placeholder?: string;
   searchable?: boolean;
   /** sm for table footers and dense toolbars, md for filter bars. */
-  size?: DashSelectButtonSize;
+  size?: SelectButtonFieldSize;
   /*
    * Which edge the menu is pinned to. A right-aligned control near the viewport
    * edge needs "right", or the menu opens off screen.
    */
-  align?: DashSelectButtonAlign;
+  align?: SelectButtonFieldAlign;
   disabled?: boolean;
   className?: string;
   /** Escape hatch for the trigger only, e.g. a bespoke width. */
   triggerClassName?: string;
 }
 
-const sizeClasses: Record<DashSelectButtonSize, string> = {
+const sizeClasses: Record<SelectButtonFieldSize, string> = {
   sm: "h-8 gap-1.5 px-3 text-xs",
   md: "h-11 gap-2 px-4 text-sm",
 };
@@ -113,7 +113,7 @@ interface MenuPosition {
  */
 function computeMenuPosition(
   trigger: HTMLElement,
-  align: DashSelectButtonAlign,
+  align: SelectButtonFieldAlign,
   desiredHeight: number,
 ): MenuPosition {
   const rect = trigger.getBoundingClientRect();
@@ -149,7 +149,7 @@ function estimateMenuHeight(optionCount: number, searchable: boolean): number {
   return Math.min(total, MENU_MAX_HEIGHT);
 }
 
-export function DashSelectButton({
+export function SelectButtonField({
   label,
   options,
   value,
@@ -162,7 +162,7 @@ export function DashSelectButton({
   disabled = false,
   className = "",
   triggerClassName = "",
-}: DashSelectButtonProps) {
+}: SelectButtonFieldProps) {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [query, setQuery] = useState<string>("");
   /* Which row the keyboard is on. Separate from the selected value. */
@@ -467,4 +467,4 @@ export function DashSelectButton({
   );
 }
 
-DashSelectButton.displayName = "DashSelectButton";
+SelectButtonField.displayName = "SelectButtonField";

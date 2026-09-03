@@ -15,10 +15,10 @@ import {
   getAccessToken,
 } from "@debridgers/api-client";
 import {
-  DashSelectInput,
-  DashTextInput,
-  DashEmailInput,
-  DashPasswordInput,
+  SelectInputField,
+  TextInputField,
+  EmailInputField,
+  PasswordInputField,
   defaultStateName,
   stateSelectOptions,
   lgaSelectOptions,
@@ -437,7 +437,7 @@ export default function AgentSettingsPage() {
                 </p>
               )}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <DashTextInput
+                <TextInputField
                   label="First Name"
                   value={form.firstName}
                   onChange={(e) =>
@@ -445,7 +445,7 @@ export default function AgentSettingsPage() {
                   }
                   required
                 />
-                <DashTextInput
+                <TextInputField
                   label="Last Name"
                   value={form.lastName}
                   onChange={(e) =>
@@ -455,14 +455,14 @@ export default function AgentSettingsPage() {
                 />
               </div>
               {/* Read-only: the email is the login identity and is changed via support. */}
-              <DashEmailInput
+              <EmailInputField
                 label="Email"
                 value={form.email}
                 readOnly
                 required
                 className="opacity-60"
               />
-              <DashTextInput
+              <TextInputField
                 label="Phone Number"
                 type="tel"
                 inputMode="tel"
@@ -472,7 +472,7 @@ export default function AgentSettingsPage() {
                 }
                 placeholder="+234 800 000 0000"
               />
-              <DashTextInput
+              <TextInputField
                 label="Home Address"
                 value={form.address}
                 onChange={(e) =>
@@ -480,7 +480,7 @@ export default function AgentSettingsPage() {
                 }
                 placeholder="Your business/delivery address"
               />
-              <DashSelectInput
+              <SelectInputField
                 label="State"
                 value={form.state}
                 options={stateSelectOptions()}
@@ -494,7 +494,7 @@ export default function AgentSettingsPage() {
                   }))
                 }
               />
-              <DashSelectInput
+              <SelectInputField
                 label="LGA"
                 value={form.lga}
                 options={lgaSelectOptions(form.state)}
@@ -596,7 +596,7 @@ export default function AgentSettingsPage() {
                 )}
 
                 {/* ID Type */}
-                <DashSelectInput
+                <SelectInputField
                   label="ID Type"
                   value={kycForm.id_type}
                   options={ID_TYPES.map((t) => ({ value: t, label: t }))}
@@ -614,7 +614,7 @@ export default function AgentSettingsPage() {
                   only ever produced a name, which left agents unpayable.
                 */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <DashSelectInput
+                  <SelectInputField
                     label="Bank"
                     isBank
                     placeholder="Select your bank"
@@ -632,7 +632,7 @@ export default function AgentSettingsPage() {
                     }
                     required
                   />
-                  <DashTextInput
+                  <TextInputField
                     label="Account Number"
                     placeholder="10-digit account number"
                     inputMode="numeric"
@@ -649,7 +649,7 @@ export default function AgentSettingsPage() {
                     required
                   />
                 </div>
-                <DashTextInput
+                <TextInputField
                   label="Account Name"
                   placeholder="Name on your bank account"
                   value={kycForm.bank_account_name}
@@ -735,7 +735,7 @@ export default function AgentSettingsPage() {
         <div className="flex flex-col gap-4">
           {["Current Password", "New Password", "Confirm New Password"].map(
             (label) => (
-              <DashPasswordInput
+              <PasswordInputField
                 key={label}
                 label={label}
                 placeholder="••••••••"

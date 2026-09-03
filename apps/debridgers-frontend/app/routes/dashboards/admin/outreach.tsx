@@ -13,12 +13,12 @@ import { apiFetch, ApiError } from "@debridgers/api-client";
 import {
   fadeDownVariants,
   transitionBase,
-  DashTextInput,
-  DashNumberInput,
-  DashDateInput,
-  DashSelectInput,
-  DashSelectButton,
-  DashTextareaInput,
+  TextInputField,
+  NumberInputField,
+  DateInputField,
+  SelectInputField,
+  SelectButtonField,
+  TextareaField,
   DataTable,
   TablePrimaryCell,
   TableTextCell,
@@ -483,14 +483,14 @@ export default function AdminOutreachPage() {
             <form onSubmit={handleSave} className="flex flex-col gap-4">
               {/* Row 1 */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <DashTextInput
+                <TextInputField
                   label="Shop / Customer Name"
                   placeholder="e.g. Mama Ngozi's Store"
                   value={form.shop_name}
                   onChange={handleChange("shop_name")}
                   required
                 />
-                <DashTextInput
+                <TextInputField
                   label="Owner / Contact Name"
                   placeholder="e.g. Ngozi Eze"
                   value={form.owner_name}
@@ -500,7 +500,7 @@ export default function AdminOutreachPage() {
 
               {/* Row 2 */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <DashTextInput
+                <TextInputField
                   label="Phone Number"
                   type="tel"
                   inputMode="tel"
@@ -508,7 +508,7 @@ export default function AdminOutreachPage() {
                   value={form.phone}
                   onChange={handleChange("phone")}
                 />
-                <DashSelectInput
+                <SelectInputField
                   label="LGA"
                   placeholder="Select LGA"
                   options={kadunaLgas}
@@ -517,7 +517,7 @@ export default function AdminOutreachPage() {
                     setForm((p) => ({ ...p, lga: e.target.value, area: "" }))
                   }
                 />
-                <DashSelectInput
+                <SelectInputField
                   label="Area"
                   placeholder={
                     form.lga && kadunaAreasByLga[form.lga]
@@ -532,7 +532,7 @@ export default function AdminOutreachPage() {
               </div>
 
               {/* Row 3 */}
-              <DashTextInput
+              <TextInputField
                 label="Address / Landmark"
                 placeholder="e.g. No. 5 Kaura Market, near GTBank"
                 value={form.address}
@@ -541,14 +541,14 @@ export default function AdminOutreachPage() {
 
               {/* Row 4 */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <DashTextInput
+                <TextInputField
                   label="Products Interested In"
                   className="sm:col-span-2"
                   placeholder="e.g. Rice, Palm Oil, Beans"
                   value={form.product_interest}
                   onChange={handleChange("product_interest")}
                 />
-                <DashNumberInput
+                <NumberInputField
                   label="Quantity (bags)"
                   min={1}
                   placeholder="0"
@@ -559,13 +559,13 @@ export default function AdminOutreachPage() {
 
               {/* Row 5 */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <DashTextInput
+                <TextInputField
                   label="Collected By"
                   placeholder="Staff or agent name"
                   value={form.collected_by}
                   onChange={handleChange("collected_by")}
                 />
-                <DashDateInput
+                <DateInputField
                   label="Visit Date"
                   value={form.visit_date}
                   onChange={handleChange("visit_date")}
@@ -573,7 +573,7 @@ export default function AdminOutreachPage() {
               </div>
 
               {/* Notes */}
-              <DashTextareaInput
+              <TextareaField
                 label="Notes / Feedback"
                 rows={3}
                 placeholder="Any additional observations, customer feedback, follow-up needed..."
@@ -619,7 +619,7 @@ export default function AdminOutreachPage() {
            changes or the viewer stays on a page that no longer exists. */
         resetKey={filterLga}
         toolbar={
-          <DashSelectButton
+          <SelectButtonField
             label="Location"
             placeholder="All Locations"
             className="sm:w-64"

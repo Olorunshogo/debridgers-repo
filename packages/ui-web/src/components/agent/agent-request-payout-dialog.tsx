@@ -5,7 +5,7 @@ import { DialogHeader } from "../../lib/dialog/dialog-header";
 import { DialogErrorBanner } from "../../lib/dialog/dialog-error-banner";
 import { DialogSuccessPanel } from "../../lib/dialog/dialog-success-panel";
 import { SubmitButton } from "../submit-button";
-import { DashNumberInput } from "../dash-number-input";
+import { NumberInputField } from "../number-input-field";
 import { formatFromKobo } from "../../utils/format-currency";
 import {
   createWithdrawalSchema,
@@ -96,7 +96,7 @@ export function AgentRequestPayoutDialog({
         className="flex flex-col gap-4"
       >
         <div className="flex flex-col gap-2">
-          <DashNumberInput
+          <NumberInputField
             label="Amount"
             placeholder="0"
             error={errors.amount?.message}
@@ -116,6 +116,7 @@ export function AgentRequestPayoutDialog({
         </div>
 
         <SubmitButton
+          variant="block"
           loading={isSubmitting}
           loadingText="Requesting..."
           className="rounded-full"

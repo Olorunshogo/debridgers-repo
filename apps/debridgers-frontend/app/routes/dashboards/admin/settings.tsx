@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Settings } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
-import { formatFromKobo, DashNumberInput } from "@debridgers/ui-web";
+import { formatFromKobo, NumberInputField } from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -139,7 +139,7 @@ export default function AdminSettings() {
 
         {/* The unit lives in the label, so no adornment is needed. */}
         <div className="flex max-w-80 flex-col gap-1.5">
-          <DashNumberInput
+          <NumberInputField
             label="Commission Rate (%)"
             required
             min={1}
@@ -174,7 +174,7 @@ export default function AdminSettings() {
         </p>
 
         <div className="flex max-w-80 flex-col gap-1.5">
-          <DashNumberInput
+          <NumberInputField
             label="Discount Amount (₦)"
             required
             min={0}

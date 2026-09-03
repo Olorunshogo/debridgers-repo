@@ -12,6 +12,21 @@ export const applyAgentSchema = z
     confirm_password: z.string(),
     // optional fields - can be collected later by admin or in a second step
     referred_by_agent_code: z.string().optional(),
+    /*
+     * Consent to the agent agreement, required exactly as it is on the buyer
+     * register endpoint. The application creates a pending account rather than
+     * an active one, but it is still the moment the terms were shown, so it is
+     * the moment worth recording.
+     *
+     * Multipart, so the values arrive as strings: the checkbox is coerced from
+     * the "true" the form appends rather than compared to a boolean that a
+     * FormData body can never carry.
+     */
+    accepted_terms: z
+      .union([z.literal("true"), z.literal(true)])
+      .transform(() => true as const),
+    terms_document: z.string().min(1).max(64),
+    terms_version: z.string().min(1).max(32),
   })
   .refine((data) => data.password === data.confirm_password, {
     message: "Passwords do not match",

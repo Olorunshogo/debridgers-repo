@@ -127,6 +127,14 @@ export class AuthService {
            */
           referred_by_agent_id:
             role === USER_ROLES.BUYER ? referredByAgentId : null,
+          /*
+           * Stamped here rather than taken from the client. The request says
+           * which document was accepted; when it was accepted is the server's
+           * to record, or the timestamp is worth nothing as evidence.
+           */
+          terms_accepted_at: new Date(),
+          terms_document: dto.terms_document,
+          terms_version: dto.terms_version,
           // Auto-verify email in test mode so e2e tests can login immediately
           is_email_verified: isTestMode,
         })

@@ -54,22 +54,24 @@ export * from "./components/yellow-primary-link";
 // === Base
 export * from "./components/base-input-field";
 
-// === Dashboard inputs
-export * from "./components/dash-text-input";
-export * from "./components/dash-email-input";
-export * from "./components/dash-password-input";
-export * from "./components/dash-number-input";
-export * from "./components/dash-date-input";
-export * from "./components/dash-select-input";
-export * from "./components/dash-select-button";
-export * from "./components/dash-switch-input";
-export * from "./components/dash-search-input";
-export * from "./components/dash-textarea-input";
-export * from "./components/text-input";
-export * from "./components/email-input";
-export * from "./components/textarea-input";
-export * from "./components/dash-select";
-export * from "./components/dash-submit-button";
+/*
+ * Every input in the app, dashboard and marketing alike. The marketing pages
+ * had their own controlled copies of three of these; they now pass
+ * variant="pill" instead, so a fix to a label or an error state lands once.
+ */
+// === Inputs
+export * from "./components/text-input-field";
+export * from "./components/email-input-field";
+export * from "./components/password-input-field";
+export * from "./components/number-input-field";
+export * from "./components/date-input-field";
+export * from "./components/select-input-field";
+export * from "./components/select-button-field";
+export * from "./components/toggle-field";
+export * from "./components/search-input-field";
+export * from "./components/textarea-field";
+export * from "./components/select-field";
+export * from "./components/submit-button";
 
 // === Feedback
 export * from "./components/alert-banner";
@@ -83,17 +85,27 @@ export * from "./components/notifications";
 export * from "./components/confirm-dialog-panel";
 
 // === Uploads
-export * from "./components/file-upload-field";
-export * from "./components/photo-upload-field";
+/*
+ * One component for both. A photo is a file, but the payloads differ: a file
+ * upload hands back the File, a photo upload hands back downscaled base64. The
+ * `kind` prop is a discriminated union so each keeps its exact callback type.
+ */
+export * from "./components/upload-field";
 
 // === Dashboard shell
 export * from "./components/hero-greeting-card";
+
+// === Legal documents
+export * from "./components/legal/legal-document-view";
+export * from "./components/legal/legal-section";
+export * from "./components/legal/legal-block";
+export * from "./components/legal/legal-inline";
+export * from "./components/legal/legal-toc";
 
 // === Other components
 export * from "./components/app-logo";
 export * from "./components/button";
 export * from "./components/whatsapp-link";
-export * from "./components/submit-button";
 export * from "./components/button-primary";
 export * from "./components/button-secondary";
 export * from "./components/product-card";

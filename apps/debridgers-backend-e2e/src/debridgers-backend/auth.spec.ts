@@ -1,4 +1,5 @@
 const BASE = process.env.VITE_API_URL || "http://localhost:4000/api/v1";
+import { TERMS_CONSENT } from "../support/terms-consent";
 
 let accessToken: string;
 const testEmail = `buyer+${Date.now()}@test.com`;
@@ -13,6 +14,7 @@ describe("Auth", () => {
         last_name: "Buyer",
         email: testEmail,
         password: "Password@123",
+        ...TERMS_CONSENT,
       }),
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

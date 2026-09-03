@@ -6,9 +6,9 @@ import { HeroSection } from "../../components/marketing/HeroSection";
 import { Phone, Mail, Clock, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  TextInput,
-  EmailInput,
-  TextareaInput,
+  TextInputField,
+  EmailInputField,
+  TextareaField,
   SubmitButton,
 } from "@debridgers/ui-web";
 import { BASE_BACKEND_URL } from "@debridgers/api-client";
@@ -268,15 +268,12 @@ export default function ContactPage() {
 
   return (
     <>
-      {/* Header */}
-      <div className="sticky top-3 z-500">
-        <Header
-          navLinks={marketingNavLinks}
-          signUpHref="/signup"
-          isAuthenticated={isAuthenticated}
-          dashboardPath={dashboardPath}
-        />
-      </div>
+      <Header
+        navLinks={marketingNavLinks}
+        signUpHref="/signup"
+        isAuthenticated={isAuthenticated}
+        dashboardPath={dashboardPath}
+      />
 
       {/* Hero Section */}
       <div className="relative flex w-full flex-col">
@@ -368,29 +365,30 @@ export default function ContactPage() {
                     noValidate
                     className="flex flex-col gap-10 pb-30 lg:pb-0"
                   >
-                    <TextInput
+                    <TextInputField
+                      variant="pill"
                       label="Full Name"
                       name="fullName"
                       placeholder="Enter your full name"
                       required
                       value={form.fullName}
                       onChange={handleChange("fullName")}
-                      error={!!errors.fullName}
-                      errorMessage={errors.fullName}
+                      error={errors.fullName}
                     />
 
-                    <EmailInput
+                    <EmailInputField
+                      variant="pill"
                       label="Email"
                       name="email"
                       placeholder="Enter your email"
                       required
                       value={form.email}
                       onChange={handleChange("email")}
-                      error={!!errors.email}
-                      errorMessage={errors.email}
+                      error={errors.email}
                     />
 
-                    <TextareaInput
+                    <TextareaField
+                      variant="pill"
                       label="Your Message"
                       name="message"
                       placeholder="Type your message here"
@@ -398,11 +396,11 @@ export default function ContactPage() {
                       rows={5}
                       value={form.message}
                       onChange={handleChange("message")}
-                      error={!!errors.message}
-                      errorMessage={errors.message}
+                      error={errors.message}
                     />
 
                     <SubmitButton
+                      variant="block"
                       loading={loading}
                       loadingText="Sending..."
                       className="mx-auto w-full max-w-125"

@@ -120,6 +120,13 @@ export class AgentService {
           password: hashed,
           role: "agent",
           zone_id: zoneId,
+          /*
+           * Stamped server-side. The request says which document was accepted;
+           * when is the server's to record, or it is worth nothing as evidence.
+           */
+          terms_accepted_at: new Date(),
+          terms_document: dto.terms_document,
+          terms_version: dto.terms_version,
         })
         .returning();
 

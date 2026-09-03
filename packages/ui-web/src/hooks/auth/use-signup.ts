@@ -68,12 +68,26 @@ export function useSignup(options: UseSignupOptions): UseSignupResult {
       lga: "",
       address: "",
       cv: undefined,
+      acceptedTerms: false,
     },
   });
 
   const clearApiError = useCallback((): void => {
     setApiError(null);
   }, []);
+
+  /*
+   * The consent to record, taken from the role's own config rather than from
+   * the form. What the user ticked is a boolean; which document that tick
+   * refers to is a property of the role, and only the role table knows it.
+   */
+  const termsConsent = config.terms
+    ? {
+        accepted_terms: true,
+        terms_document: config.terms.slug,
+        terms_version: config.terms.version,
+      }
+    : {};
 
   const submit = form.handleSubmit(async (values: SignupFormValues) => {
     setApiError(null);
@@ -110,6 +124,7 @@ export function useSignup(options: UseSignupOptions): UseSignupResult {
           role,
           phone: values.phone || undefined,
           referred_by_agent_code: values.referredByAgentCode || undefined,
+          ...termsConsent,
         });
       }
 

@@ -48,6 +48,7 @@ export function AuthCredentialsForm<T extends FieldValues>({
       {footer}
 
       <SubmitButton
+        variant="block"
         loading={isSubmitting}
         loadingText={submittingLabel}
         className="mt-4 rounded-full"

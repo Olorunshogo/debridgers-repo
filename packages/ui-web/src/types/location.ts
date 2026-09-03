@@ -18,7 +18,7 @@ export interface NigerianState {
   lgas: readonly NigerianLga[];
 }
 
-/* Mirrors the local `Option` shape in components/dash-select.tsx so select
+/* Mirrors the local `Option` shape in components/select-field.tsx so select
    options built from this data drop straight into the existing inputs. */
 export interface SelectOption {
   value: string;

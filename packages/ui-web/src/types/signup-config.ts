@@ -18,6 +18,9 @@ export interface SignupFormValues extends SignupValues {
   lga?: string;
   address?: string;
   cv?: File;
+  /* Consent to the active role's terms. `true` rather than boolean once
+     validated, since the schema rejects anything else. */
+  acceptedTerms?: boolean;
 }
 
 /** Name split off the single full-name input, plus the role being created. */
@@ -27,12 +30,26 @@ export interface SignupIdentity {
   role: string;
 }
 
+/** The document a role consents to at signup, and the version it was on. */
+export interface RoleTermsRef {
+  slug: string;
+  version: string;
+}
+
 export interface RoleSignupConfig {
   role: string;
   /** Tab label on the signup page. */
   label: string;
   schema: ZodType<SignupFormValues, SignupFormValues>;
   fields: readonly AuthFieldDescriptor[];
+  /*
+   * The terms this role accepts. Each role has its own document, so the tab
+   * that is active decides both what the checkbox links to and what the
+   * consent record names. A role with no published terms omits this, and the
+   * signup form then collects no consent for it rather than pointing the user
+   * at another role's document.
+   */
+  terms?: RoleTermsRef;
   /** Where to send the user once registration and verification succeed. */
   redirectTo: string;
   /* Post-signup confirmation copy. Lives with the role so a new role brings its

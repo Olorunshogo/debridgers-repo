@@ -46,7 +46,29 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         code?: string;
         detail?: string;
         constraint?: string;
+        type?: string;
       };
+
+      /*
+       * body-parser rejects an oversized request by throwing a plain Error with
+       * a status on it, not an HttpException, so it fell through to a generic
+       * 500. That told an admin uploading delivery photos that the server had
+       * broken, when what happened is that they sent more than it accepts.
+       *
+       * Surfaced as a 413 with a message that says what to do about it.
+       */
+      if (err.type === "entity.too.large") {
+        this.logger.warn(`Request body too large on ${req.method} ${req.url}`);
+        res.status(HttpStatus.PAYLOAD_TOO_LARGE).json({
+          success: false,
+          statusCode: HttpStatus.PAYLOAD_TOO_LARGE,
+          message:
+            "That upload is too large. Please attach fewer or smaller photos and try again.",
+          path: req.url,
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
       this.logger.error(
         `Unhandled: ${exception.message}`,
         isProd ? undefined : exception.stack,

@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import {
-  assertMeetsMinimumOrder,
   computeDeliveryFee,
   computeOrderTotals,
   computeServiceFee,
@@ -14,8 +13,17 @@ import {
   TIER_ONE_PACKAGE_COUNT,
   TIER_ONE_PER_PACKAGE_KOBO,
   TIER_TWO_PER_PACKAGE_KOBO,
-} from "./delivery-fee";
+  intoTaperBand,
+} from "@debridgers/pricing";
 import { remitPerPackageKobo } from "../agent/agent-commission";
+
+/*
+ * Taper expectations are written against the locked schedule and mapped through
+ * the band, exactly as the seeder and migration 0024 do. Writing the banded
+ * figures literally would mean a band change silently needs three separate
+ * edits, and the derivation would stop being visible in the assertion.
+ */
+const taper = (lockedNaira: number): number => intoTaperBand(lockedNaira * 100);
 
 /*
  * The worked examples from docs/business/BusinessModel.md, executable.
@@ -59,18 +67,18 @@ describe("delivery fee", () => {
     ).toBe(naira(4000));
   });
 
-  it("tapers: packages 3 to 6 at ₦700, then ₦400 beyond", () => {
+  it("tapers: packages 3 to 6 at tier one, then tier two beyond", () => {
     // 3 packages: base + one at tier one.
     expect(
       computeDeliveryFee({ zoneFeeKobo: KADUNA_SOUTH, packageCount: 3 })
         .deliveryFeeKobo,
-    ).toBe(naira(4700));
+    ).toBe(KADUNA_SOUTH + taper(700));
 
-    // 8 packages: base + 4 × ₦700 + 2 × ₦400. Worked example E.
+    // 8 packages: base + 4 at tier one + 2 at tier two. Worked example E.
     expect(
       computeDeliveryFee({ zoneFeeKobo: KADUNA_SOUTH, packageCount: 8 })
         .deliveryFeeKobo,
-    ).toBe(naira(7600));
+    ).toBe(KADUNA_SOUTH + 4 * taper(700) + 2 * taper(400));
   });
 
   it("prices the trip, not the bag: the sixth package costs less than the third", () => {
@@ -87,8 +95,11 @@ describe("delivery fee", () => {
       packageCount: 7,
     }).deliveryFeeKobo;
 
-    expect(at6 - at5).toBe(naira(700));
-    expect(at7 - at6).toBe(naira(400));
+    expect(at6 - at5).toBe(taper(700));
+    expect(at7 - at6).toBe(taper(400));
+
+    /* The taper's whole point: the marginal package gets cheaper. */
+    expect(at7 - at6).toBeLessThan(at6 - at5);
   });
 
   it("caps the fee at ₦6,000 above the zone base", () => {
@@ -122,7 +133,7 @@ describe("delivery fee", () => {
     });
 
     expect(fee.deliveryFeeKobo).toBe(0);
-    expect(fee.deliveryFeeBeforePromoKobo).toBe(naira(4700));
+    expect(fee.deliveryFeeBeforePromoKobo).toBe(KADUNA_SOUTH + taper(700));
   });
 });
 
@@ -196,9 +207,12 @@ describe("order totals", () => {
     });
     const totals = computeOrderTotals(items, fee, 8);
 
-    expect(totals.deliveryFeeKobo).toBe(naira(7600));
+    const expectedDelivery: number =
+      KADUNA_SOUTH + 4 * taper(700) + 2 * taper(400);
+
+    expect(totals.deliveryFeeKobo).toBe(expectedDelivery);
     expect(totals.serviceFeeKobo).toBe(naira(5000));
-    expect(totals.totalKobo).toBe(naira(333600));
+    expect(totals.totalKobo).toBe(items + expectedDelivery + naira(5000));
     /* The cap gives up ₦4,630 here: 3% of ₦321,000 is ₦9,630. Deliberate. */
     expect(totals.requiresIndividualQuote).toBe(false);
   });
@@ -231,19 +245,37 @@ describe("order totals", () => {
 });
 
 describe("minimum order", () => {
-  it("refuses a single cheap package that cannot carry the trip", () => {
+  it("flags a small basket for batching instead of refusing the buyer", () => {
     // One 25kg bag of garri: ₦12,000 against a ₦4,000 vehicle.
-    expect(() => assertMeetsMinimumOrder(naira(12000), 1)).toThrow(
-      /Minimum order/,
+    /*
+     * No longer a throw. Refusing a small basket put our per-drop solvency
+     * problem in the buyer's way; the drop is batched instead, and the flag
+     * reaches the buyer admin who batches it.
+     */
+    const tooSmall = computeOrderTotals(
+      naira(12000),
+      computeDeliveryFee({ zoneFeeKobo: KADUNA_SOUTH, packageCount: 1 }),
+      1,
     );
-  });
+    expect(tooSmall.belowMinimumOrder).toBe(true);
+    expect(tooSmall.minimumOrderShortfallKobo).toBe(naira(13000));
 
-  it("accepts a single package that clears the value floor", () => {
-    expect(() => assertMeetsMinimumOrder(PALM_OIL, 1)).not.toThrow();
-  });
+    /* Above the naira floor on one package: fine, and always was. */
+    const oneKeg = computeOrderTotals(
+      PALM_OIL,
+      computeDeliveryFee({ zoneFeeKobo: KADUNA_SOUTH, packageCount: 1 }),
+      1,
+    );
+    expect(oneKeg.belowMinimumOrder).toBe(false);
+    expect(oneKeg.minimumOrderShortfallKobo).toBe(0);
 
-  it("accepts two cheap packages, since the trip is already paid for", () => {
-    expect(() => assertMeetsMinimumOrder(naira(24000), 2)).not.toThrow();
+    /* Two packages satisfies it even below the naira floor: the rule is OR. */
+    const twoCheap = computeOrderTotals(
+      naira(24000),
+      computeDeliveryFee({ zoneFeeKobo: KADUNA_SOUTH, packageCount: 2 }),
+      2,
+    );
+    expect(twoCheap.belowMinimumOrder).toBe(false);
   });
 });
 
@@ -290,14 +322,14 @@ describe("config/public contract", () => {
    * these are what catch that returning.
    */
   const NORTH_TAPER = {
-    tierOnePerPackageKobo: naira(800),
-    tierTwoPerPackageKobo: naira(450),
+    tierOnePerPackageKobo: taper(800),
+    tierTwoPerPackageKobo: taper(450),
     deliveryCapKobo: naira(11000),
   };
 
   const CHIKUN_TAPER = {
-    tierOnePerPackageKobo: naira(1000),
-    tierTwoPerPackageKobo: naira(600),
+    tierOnePerPackageKobo: taper(1000),
+    tierTwoPerPackageKobo: taper(600),
     deliveryCapKobo: naira(14000),
   };
 
@@ -313,9 +345,12 @@ describe("config/public contract", () => {
       ...CHIKUN_TAPER,
     }).deliveryFeeKobo;
 
-    /* Base 4,000 + 4 × 700 against base 6,000 + 4 × 1,000. */
-    expect(south).toBe(naira(6800));
-    expect(chikun).toBe(naira(10000));
+    /* Four tier-one packages on each zone's own rate, over its own base. */
+    expect(south).toBe(KADUNA_SOUTH + 4 * taper(700));
+    expect(chikun).toBe(CHIKUN + 4 * taper(1000));
+
+    /* The point of per-zone rates: the far zone costs more for the same load. */
+    expect(chikun).toBeGreaterThan(south);
   });
 
   it("applies each zone's own ceiling rather than one shared headroom", () => {
@@ -361,8 +396,10 @@ describe("config/public contract", () => {
     expect(SERVICE_FEE_MAX_KOBO).toBe(naira(5000));
     expect(PACKAGES_INCLUDED_IN_BASE).toBe(2);
     expect(TIER_ONE_PACKAGE_COUNT).toBe(4);
-    expect(TIER_ONE_PER_PACKAGE_KOBO).toBe(naira(700));
-    expect(TIER_TWO_PER_PACKAGE_KOBO).toBe(naira(400));
+    expect(TIER_ONE_PER_PACKAGE_KOBO).toBe(taper(700));
+    expect(TIER_TWO_PER_PACKAGE_KOBO).toBe(taper(400));
+    /* Flat or inverted has shipped before; the descent is the contract. */
+    expect(TIER_TWO_PER_PACKAGE_KOBO).toBeLessThan(TIER_ONE_PER_PACKAGE_KOBO);
     expect(DELIVERY_CAP_OVER_BASE_KOBO).toBe(naira(6000));
     expect(MINIMUM_ORDER_KOBO).toBe(naira(25000));
     expect(MINIMUM_ORDER_PACKAGES).toBe(2);

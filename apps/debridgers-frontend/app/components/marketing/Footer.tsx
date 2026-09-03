@@ -172,7 +172,12 @@ export default function Footer() {
           </p>
           <div className="hidden items-center gap-6 md:flex">
             {[
-              { label: "Privacy", to: "/privacy" },
+              /*
+               * Terms, not Privacy. /privacy had no route and 404'd for every
+               * visitor who clicked it. It comes back when there is a privacy
+               * document to point at, as /legal/privacy.
+               */
+              { label: "Terms", to: "/legal/buyer-terms" },
               { label: "Contact", to: "/contact" },
               {
                 label: "WhatsApp",

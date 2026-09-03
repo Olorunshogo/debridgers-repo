@@ -1,7 +1,11 @@
+import { Link } from "react-router";
 import {
+  agentTerms,
+  buyerTerms,
   createRoleSignupSchema,
   createRequiredString,
   referralCodeField,
+  acceptedTermsField,
   lgaField,
   addressField,
   cvField,
@@ -78,6 +82,33 @@ const AGENT_LGA_OPTIONS: readonly string[] = (
   kadunaLgas as { value: string; label: string }[]
 ).map((lga) => lga.label);
 
+/*
+ * The consent tick for a role, linking to that role's own document.
+ *
+ * Built from the document rather than written out, so the slug in the link and
+ * the version in the consent record cannot drift from the text on the page.
+ */
+function termsField(slug: string, label: string): SignupFieldDescriptor {
+  return {
+    name: "acceptedTerms",
+    label: `I accept the ${label}`,
+    type: "checkbox",
+    labelContent: (
+      <>
+        I accept the{" "}
+        <Link
+          to={`/legal/${slug}`}
+          target="_blank"
+          rel="noreferrer"
+          className="text-primary font-semibold underline underline-offset-2"
+        >
+          {label}
+        </Link>
+      </>
+    ),
+  };
+}
+
 // === Role table
 
 export const ROLE_SIGNUP_CONFIG: Record<
@@ -89,6 +120,7 @@ export const ROLE_SIGNUP_CONFIG: Record<
     label: "Buyer",
     schema: createRoleSignupSchema({
       referredByAgentCode: referralCodeField,
+      acceptedTerms: acceptedTermsField,
     }),
     fields: [
       ...BASE_FIELDS,
@@ -104,7 +136,10 @@ export const ROLE_SIGNUP_CONFIG: Record<
       //   type: "text",
       //   optional: true,
       // },
+      /* Last, so consent is the final thing read before the button. */
+      termsField(buyerTerms.slug, buyerTerms.title),
     ],
+    terms: { slug: buyerTerms.slug, version: buyerTerms.version },
     redirectTo: "/buyer-dashboard",
     successTitle: "Account Created",
     successDescription: "Check your email for the verification code.",
@@ -123,6 +158,7 @@ export const ROLE_SIGNUP_CONFIG: Record<
       lga: lgaField,
       address: addressField,
       cv: cvField,
+      acceptedTerms: acceptedTermsField,
     }),
     fields: [
       ...BASE_FIELDS,
@@ -148,7 +184,10 @@ export const ROLE_SIGNUP_CONFIG: Record<
         accept: ".pdf,.doc,.docx",
         hint: "PDF or Word, up to 5MB. You can add this later if you do not have it to hand.",
       },
+      /* Last, so consent is the final thing read before the button. */
+      termsField(agentTerms.slug, agentTerms.title),
     ],
+    terms: { slug: agentTerms.slug, version: agentTerms.version },
     register: async (values, identity) => {
       const form = new FormData();
       form.append("first_name", identity.first_name);
@@ -167,6 +206,16 @@ export const ROLE_SIGNUP_CONFIG: Record<
       if (values.cv) {
         form.append("cv", values.cv);
       }
+
+      /*
+       * Consent, appended as strings because this endpoint is multipart. The
+       * agreement is still a draft, so what is recorded is consent to version
+       * 0.1: the version is exactly what makes that identifiable later, once
+       * the reviewed agreement replaces it.
+       */
+      form.append("accepted_terms", "true");
+      form.append("terms_document", agentTerms.slug);
+      form.append("terms_version", agentTerms.version);
 
       await applyAgent(form);
     },

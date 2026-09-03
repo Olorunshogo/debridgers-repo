@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   Controller,
   type Control,
@@ -6,10 +7,11 @@ import {
   type UseFormRegister,
   type FieldErrors,
 } from "react-hook-form";
-import { DashTextInput } from "../dash-text-input";
-import { DashEmailInput } from "../dash-email-input";
-import { DashPasswordInput } from "../dash-password-input";
-import { DashSelect } from "../dash-select";
+import { TextInputField } from "../text-input-field";
+import { EmailInputField } from "../email-input-field";
+import { PasswordInputField } from "../password-input-field";
+import { SelectField } from "../select-field";
+import { ToggleField } from "../toggle-field";
 
 /*
  * Descriptor-driven field rendering.
@@ -31,7 +33,8 @@ export type AuthFieldType =
   | "tel"
   | "password"
   | "select"
-  | "file";
+  | "file"
+  | "checkbox";
 
 export interface AuthFieldDescriptor {
   /** Must match a key in the form's values type. */
@@ -47,6 +50,15 @@ export interface AuthFieldDescriptor {
   accept?: string;
   /** Help text under the control, for anything the label cannot carry. */
   hint?: string;
+  /*
+   * A rendered label, for `type: "checkbox"`, where the plain string cannot
+   * carry what the label needs: a consent tick has to link to the document
+   * being consented to, and that link must be reachable before ticking.
+   *
+   * `label` stays required and is used as the accessible name, so a descriptor
+   * is never left with only markup to identify it.
+   */
+  labelContent?: ReactNode;
 }
 
 export interface AuthFieldProps<T extends FieldValues> {
@@ -69,7 +81,7 @@ export function AuthField<T extends FieldValues>({
   const required = !field.optional;
 
   /*
-   * DashSelect is a custom controlled component with an
+   * SelectField is a custom controlled component with an
    * `onChange(value: string)` signature, so it needs Controller. Plain inputs
    * use register() - same split as the rest of the codebase.
    */
@@ -79,7 +91,7 @@ export function AuthField<T extends FieldValues>({
         name={name}
         control={control}
         render={({ field: controlled }) => (
-          <DashSelect
+          <SelectField
             label={field.label}
             placeholder={field.placeholder}
             options={(field.options ?? []).map((option) => ({
@@ -131,6 +143,34 @@ export function AuthField<T extends FieldValues>({
     );
   }
 
+  /*
+   * A consent tick, rendered by the same component as a settings switch. It
+   * carries no placeholder and no autocomplete, and its error has to appear
+   * under the row: a checkbox that silently refuses to submit reads as a
+   * broken button.
+   */
+  if (field.type === "checkbox") {
+    return (
+      <Controller
+        name={name}
+        control={control}
+        render={({ field: controlled }) => (
+          <ToggleField
+            variant="checkbox"
+            checked={Boolean(controlled.value)}
+            onCheckedChange={controlled.onChange}
+            onBlur={controlled.onBlur}
+            name={controlled.name}
+            label={field.label}
+            labelContent={field.labelContent}
+            description={field.hint}
+            error={error}
+          />
+        )}
+      />
+    );
+  }
+
   const shared = {
     label: field.label,
     placeholder: field.placeholder,
@@ -140,15 +180,15 @@ export function AuthField<T extends FieldValues>({
   };
 
   if (field.type === "email") {
-    return <DashEmailInput {...shared} {...register(name)} />;
+    return <EmailInputField {...shared} {...register(name)} />;
   }
 
   if (field.type === "password") {
-    return <DashPasswordInput {...shared} {...register(name)} />;
+    return <PasswordInputField {...shared} {...register(name)} />;
   }
 
   return (
-    <DashTextInput
+    <TextInputField
       {...shared}
       type={field.type === "tel" ? "tel" : "text"}
       {...register(name)}

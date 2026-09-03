@@ -1,5 +1,15 @@
 import React from "react";
 
+/*
+ * Which surface the field is sitting on.
+ *
+ * "default" is the dashboard treatment. "pill" is the larger, rounder marketing
+ * treatment that the public forms have always used. It is a variant rather than
+ * a second component because the behaviour is identical and only the size and
+ * radius differ, and two components meant two places to fix a label bug.
+ */
+export type InputVariant = "default" | "pill";
+
 export interface BaseInputFieldProps {
   label: string;
   error?: string;
@@ -14,13 +24,13 @@ export interface BaseInputFieldProps {
    * The label stays required so it can never be dropped entirely.
    */
   hideLabel?: boolean;
+  variant?: InputVariant;
   children: React.ReactNode;
 }
 
 /**
- * Shared wrapper for all dash input fields.
- * Provides uniform label, optional tag, and error display.
- * Every DashXxxInput uses this as its outer shell.
+ * Shared wrapper for every input field in the app, dashboard and marketing
+ * alike. Provides uniform label, optional tag, and error display.
  */
 export function BaseInputField({
   label,
@@ -29,17 +39,26 @@ export function BaseInputField({
   className = "",
   inputId,
   hideLabel = false,
+  variant = "default",
   children,
 }: BaseInputFieldProps) {
+  const isPill = variant === "pill";
+
   return (
-    <div className={`font-syne flex flex-col gap-1.5 ${className}`}>
+    <div
+      className={`font-syne flex flex-col ${isPill ? "gap-2" : "gap-1.5"} ${className}`}
+    >
       <label
         htmlFor={inputId}
         className={
           hideLabel ? "sr-only" : "flex cursor-pointer items-center gap-1"
         }
       >
-        <span className="text-heading font-syne font-medium">{label}</span>
+        <span
+          className={`text-heading font-syne font-medium ${isPill ? "text-body-sm" : ""}`}
+        >
+          {label}
+        </span>
         {/* aria-hidden: the input's own `required` already tells a screen
             reader, so the asterisk is decoration for sighted users. */}
         {required && !hideLabel && (
@@ -59,7 +78,7 @@ export function BaseInputField({
 
 export function getInputStateClass(error?: string): string {
   return error
-    ? "border-input-error-red"
+    ? "border-input-error-red focus:border-input-error-red"
     : "border-input-border focus:border-input-border-focus";
 }
 
@@ -72,3 +91,16 @@ export function getInputStateClass(error?: string): string {
  */
 export const BASE_INPUT_CLASS =
   "placeholder:text-placeholder-text bg-input-bg text-heading font-syne h-11 w-full cursor-pointer rounded-full border px-4 text-sm transition-all duration-300 ease-in-out outline-none focus:cursor-text read-only:bg-light-bg read-only:text-body read-only:cursor-not-allowed read-only:focus:cursor-not-allowed";
+
+/*
+ * The marketing treatment: taller, rounder, larger type. Kept as its own
+ * constant rather than assembled from overrides so the two surfaces can be read
+ * side by side and neither drifts by accident.
+ */
+export const PILL_INPUT_CLASS =
+  "placeholder:text-placeholder-text bg-input-bg text-body font-syne h-13 w-full rounded-3xl border p-6 text-base transition-all duration-300 ease-in-out outline-none";
+
+/** The input className for a variant, before the error state is applied. */
+export function getInputClass(variant: InputVariant = "default"): string {
+  return variant === "pill" ? PILL_INPUT_CLASS : BASE_INPUT_CLASS;
+}

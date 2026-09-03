@@ -64,6 +64,15 @@ export const users = pgTable(
      */
     must_change_password: boolean().notNull().default(false),
     password_changed_at: timestamp("password_changed_at"),
+    /*
+     * The consent recorded at signup: when it was given, which document, and
+     * which version of it. Null for every account created before consent was
+     * collected, which is the truth rather than a default that would claim
+     * they agreed to something they were never shown.
+     */
+    terms_accepted_at: timestamp("terms_accepted_at"),
+    terms_document: varchar("terms_document", { length: 64 }),
+    terms_version: varchar("terms_version", { length: 32 }),
     // Unique API key for admin authentication via header
     admin_api_key: varchar("admin_api_key", { length: 255 }).unique(),
     ...timestamps,

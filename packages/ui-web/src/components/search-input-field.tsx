@@ -1,14 +1,14 @@
 import React, { forwardRef } from "react";
 import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
 
-interface DashSearchInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface SearchInputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   onFilterClick?: () => void;
   loading?: boolean;
 }
 
-export const DashSearchInput = forwardRef<
+export const SearchInputField = forwardRef<
   HTMLInputElement,
-  DashSearchInputProps
+  SearchInputFieldProps
 >(({ className = "", onFilterClick, loading = false, ...props }, ref) => {
   return (
     <div
@@ -40,4 +40,4 @@ export const DashSearchInput = forwardRef<
   );
 });
 
-DashSearchInput.displayName = "DashSearchInput";
+SearchInputField.displayName = "SearchInputField";

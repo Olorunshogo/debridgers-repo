@@ -8,15 +8,15 @@ import {
   getInputStateClass,
 } from "./base-input-field";
 
-interface DashPasswordInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface PasswordInputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   error?: string;
   required?: boolean;
 }
 
-export const DashPasswordInput = forwardRef<
+export const PasswordInputField = forwardRef<
   HTMLInputElement,
-  DashPasswordInputProps
+  PasswordInputFieldProps
 >(({ label, error, id, name, required, className = "", ...props }, ref) => {
   const [show, setShow] = useState<boolean>(false);
   const inputId = id ?? name ?? label.toLowerCase().replace(/\s+/g, "-");
@@ -51,4 +51,4 @@ export const DashPasswordInput = forwardRef<
   );
 });
 
-DashPasswordInput.displayName = "DashPasswordInput";
+PasswordInputField.displayName = "PasswordInputField";

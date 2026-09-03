@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, CheckCircle2 } from "lucide-react";
 import {
-  DashDateInput,
-  DashNumberInput,
-  DashTextInput,
-  DashSelectInput,
-  DashTextareaInput,
+  DateInputField,
+  NumberInputField,
+  TextInputField,
+  SelectInputField,
+  TextareaField,
   SubmitButton,
   getTodayDateString,
   formatCurrency,
@@ -266,13 +266,13 @@ export default function AgentDailyReportPage() {
               <div className="flex flex-col gap-4">
                 {/* Row 1: Date + Bags Sold */}
                 <div className="grid gap-4 md:grid-cols-2">
-                  <DashDateInput
+                  <DateInputField
                     label="Date"
                     required
                     value={form.date}
                     onChange={handleChange("date")}
                   />
-                  <DashNumberInput
+                  <NumberInputField
                     label="Bags Sold Today"
                     required
                     min={0}
@@ -284,14 +284,14 @@ export default function AgentDailyReportPage() {
 
                 {/* Row 2: Cash Collected + Bags Remaining */}
                 <div className="grid gap-4 md:grid-cols-2">
-                  <DashTextInput
+                  <TextInputField
                     label="Cash Collected"
                     required
                     placeholder="e.g. 15,000"
                     value={form.cashCollected}
                     onChange={handleCashCollected}
                   />
-                  <DashNumberInput
+                  <NumberInputField
                     label="Bags Remaining"
                     required
                     min={0}
@@ -302,7 +302,7 @@ export default function AgentDailyReportPage() {
                 </div>
 
                 {/* Area Covered */}
-                <DashSelectInput
+                <SelectInputField
                   label="Area Covered Today"
                   required
                   options={kadunaStateLgas}
@@ -312,7 +312,7 @@ export default function AgentDailyReportPage() {
                 />
 
                 {/* Feedback */}
-                <DashTextareaInput
+                <TextareaField
                   label="Feedback"
                   placeholder="Any issues, customer feedback…"
                   maxWords={300}
@@ -322,7 +322,7 @@ export default function AgentDailyReportPage() {
                 />
 
                 {/* Unsold Reason */}
-                <DashSelectInput
+                <SelectInputField
                   label="Unsold Reason"
                   options={unsoldReasons}
                   placeholder="Select if applicable"
@@ -334,6 +334,7 @@ export default function AgentDailyReportPage() {
               {/* Submit */}
               <div className="mx-auto w-full max-w-102.5">
                 <SubmitButton
+                  variant="block"
                   loading={loading}
                   loadingText="Submitting…"
                   icon={Check}

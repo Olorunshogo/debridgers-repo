@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -8,11 +8,7 @@ import {
   Plus,
   Trash2,
   Package,
-  CheckCircle2,
-  ArrowLeft,
   AlertCircle,
-  Loader2,
-  ArrowRight,
 } from "lucide-react";
 import { Header } from "../../components/marketing/Header";
 import { useAuth } from "../../contexts/AuthContext";
@@ -20,16 +16,8 @@ import {
   setPostAuthRedirect,
   clearPostAuthRedirect,
 } from "../../utils/auth-redirect";
-import {
-  BASE_BACKEND_URL,
-  apiFetch,
-  publicRequest,
-} from "@debridgers/api-client";
-import {
-  useCart,
-  LAST_ORDER_STORAGE_KEY,
-  type CartItem,
-} from "../../features/cart";
+import { BASE_BACKEND_URL } from "@debridgers/api-client";
+import { useCart } from "../../features/cart";
 import {
   Pagination,
   ProductCard,
@@ -37,13 +25,7 @@ import {
   categoryFilterChips,
   ALL_CATEGORIES,
   useDialog,
-  DashTextareaInput,
-  DashSearchInput,
-  DashSelectInput,
-  formatFromKobo,
-  defaultStateName,
-  stateSelectOptions,
-  lgaSelectOptions,
+  SearchInputField,
 } from "@debridgers/ui-web";
 
 import { marketingNavLinks } from "@/components/marketing/data/data";
@@ -118,587 +100,6 @@ const ITEMS_PER_PAGE = 12;
    payment.service.ts on the backend - so this is the one checkout there is. */
 const CHECKOUT_PATH = "/buyer-dashboard/checkout";
 
-interface DeliveryZone {
-  id: number;
-  name: string;
-  delivery_fee: number;
-  free_delivery: boolean;
-  areas: string[];
-}
-
-/* Mirrors the quote endpoint's response - see delivery-fee.ts on the backend. */
-interface OrderQuote {
-  itemsTotalKobo: number;
-  deliveryFeeKobo: number;
-  deliveryFeeBeforePromoKobo: number;
-  handlingFeeKobo: number;
-  totalKobo: number;
-  freeDelivery: boolean;
-  extraPackages: number;
-  package_count: number;
-}
-
-/* Long enough that changing zone or quantity a few times is one request. */
-const QUOTE_DEBOUNCE_MS = 400;
-
-// === CheckoutView
-type CheckoutStep = "delivery" | "confirmed";
-
-interface CheckoutViewProps {
-  cartItems: CartItem[];
-  onBack: () => void;
-  onConfirmed: () => void;
-}
-
-function CheckoutView({ cartItems, onBack, onConfirmed }: CheckoutViewProps) {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { triggerDialog } = useDialog();
-  const [step, setStep] = useState<CheckoutStep>("delivery");
-  /* Verifying the Paystack return, distinct from submitting a new order. */
-  const [confirming, setConfirming] = useState<boolean>(false);
-  const [deliveryAddress, setDeliveryAddress] = useState("");
-  const [deliveryTime, setDeliveryTime] = useState<"today" | "tomorrow">(
-    "today",
-  );
-  const [note, setNote] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [zones, setZones] = useState<DeliveryZone[]>([]);
-  /* State is fixed to the launch state by default; LGA narrows the zone list. */
-  const [stateName, setStateName] = useState<string>(defaultStateName);
-  const [lga, setLga] = useState<string>("");
-  const [zoneId, setZoneId] = useState<string>("");
-  /* Kept while a new quote is in flight so the totals never flash empty. */
-  const [quote, setQuote] = useState<OrderQuote | null>(null);
-  const [quoting, setQuoting] = useState<boolean>(false);
-  const [quoteError, setQuoteError] = useState<string | null>(null);
-
-  /* Read inside the confirmation effect, which must not re-run as the cart
-     changes or it would fire a second confirmation mid-flight. */
-  const cartItemsRef = useRef<CartItem[]>(cartItems);
-  cartItemsRef.current = cartItems;
-
-  /* References already sent for confirmation. Guards against a second POST if
-     the effect is re-armed before the URL is cleaned up. */
-  const handledRefs = useRef<Set<string>>(new Set());
-
-  /*
-   * Return leg from Paystack. Arriving here proves the buyer came back, not
-   * that they paid - Paystack sends the same callback when a card is declined
-   * or the page is abandoned. So the reference is confirmed with the server
-   * before anything is treated as bought, and the cart survives a failure.
-   */
-  useEffect(() => {
-    const ref = searchParams.get("trxref") ?? searchParams.get("reference");
-    if (!ref || handledRefs.current.has(ref)) return;
-    handledRefs.current.add(ref);
-
-    let cancelled = false;
-    setConfirming(true);
-
-    apiFetch<{ order_id: number; payment_status: string }>(
-      "/buyer/orders/confirm-payment",
-      { method: "POST", body: JSON.stringify({ reference: ref }) },
-    )
-      .then(() => {
-        if (cancelled) return;
-        /* Snapshot before clearing so "repeat last order" has something to
-           restore. Taken from the shared cart rather than re-reading storage. */
-        if (cartItemsRef.current.length > 0) {
-          localStorage.setItem(
-            LAST_ORDER_STORAGE_KEY,
-            JSON.stringify(cartItemsRef.current),
-          );
-        }
-        onConfirmed();
-        setStep("confirmed");
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setError(
-          err instanceof Error && err.message
-            ? err.message
-            : "We could not confirm that payment. Your cart has been kept.",
-        );
-      })
-      .finally(() => {
-        if (cancelled) return;
-        setConfirming(false);
-        /* Drop the reference so a refresh cannot replay this confirmation. */
-        setSearchParams(
-          (params) => {
-            params.delete("trxref");
-            params.delete("reference");
-            return params;
-          },
-          { replace: true },
-        );
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [searchParams, setSearchParams, onConfirmed]);
-
-  // === Delivery zones
-  useEffect(() => {
-    publicRequest<DeliveryZone[]>("/zones")
-      .then(setZones)
-      .catch(() => setZones([]));
-  }, []);
-
-  /*
-   * Zones that serve the chosen LGA. The seeded zones are named after LGAs
-   * ("Kaduna South") and also list their areas, so match on either - the same
-   * rule the backend uses to resolve a zone, kept in step deliberately.
-   */
-  const zonesForLga = useMemo(() => {
-    if (!lga) return [];
-    const target = lga.trim().toLowerCase();
-    return zones.filter(
-      (zone) =>
-        zone.name.trim().toLowerCase() === target ||
-        zone.areas.some((area) => area.trim().toLowerCase() === target),
-    );
-  }, [zones, lga]);
-
-  /* Auto-select the only serving zone, and drop a stale one when LGA changes. */
-  useEffect(() => {
-    if (zonesForLga.length === 1) {
-      setZoneId(String(zonesForLga[0].id));
-      return;
-    }
-    setZoneId((current) =>
-      zonesForLga.some((z) => String(z.id) === current) ? current : "",
-    );
-  }, [zonesForLga]);
-
-  /*
-   * Live quote. The server owns the pricing - delivery is a zone base plus a
-   * per-package charge, and a promo can zero it - so the summary asks rather
-   * than recomputing it here and risking a number that differs from the charge.
-   */
-  useEffect(() => {
-    if (!zoneId || cartItems.length === 0) {
-      setQuote(null);
-      return;
-    }
-
-    setQuoting(true);
-    const timer = window.setTimeout(() => {
-      apiFetch<OrderQuote>("/buyer/cart/quote", {
-        method: "POST",
-        body: JSON.stringify({
-          zone_id: Number(zoneId),
-          cart: cartItems.map((i) => ({
-            product_id: Number(i.id),
-            qty: i.qty,
-          })),
-        }),
-      })
-        .then((next) => {
-          setQuote(next);
-          setQuoteError(null);
-        })
-        .catch((err: unknown) => {
-          setQuoteError(
-            err instanceof Error
-              ? err.message
-              : "Could not price this order right now.",
-          );
-        })
-        .finally(() => setQuoting(false));
-    }, QUOTE_DEBOUNCE_MS);
-
-    return () => window.clearTimeout(timer);
-  }, [zoneId, cartItems]);
-
-  const subtotal = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
-
-  function formatNaira(n: number) {
-    return formatCurrency(n);
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (cartItems.length === 0 || !deliveryAddress.trim() || !zoneId) return;
-    setError(null);
-    setLoading(true);
-    try {
-      /*
-       * Step one: reserve the order. It is created pending and unpaid, priced
-       * entirely server-side, and the buyer picks a payment method next.
-       *
-       * Prices are deliberately not sent. The server reads them from the
-       * products table, so anything quoted here would be ignored.
-       */
-      const order = await apiFetch<{
-        order_id: number;
-        items_total_kobo: number;
-        delivery_fee_kobo: number;
-        handling_fee_kobo: number;
-        total_kobo: number;
-      }>("/buyer/orders", {
-        method: "POST",
-        body: JSON.stringify({
-          delivery_address: deliveryAddress.trim(),
-          zone_id: Number(zoneId),
-          delivery_time: deliveryTime,
-          notes: note.trim() || undefined,
-          cart: cartItems.map((i) => ({
-            product_id: Number(i.id),
-            qty: i.qty,
-          })),
-        }),
-      });
-
-      /* Balance is read here rather than in the dialog so the options render
-         already knowing whether the wallet can cover the total. */
-      let walletBalanceKobo = 0;
-      try {
-        const wallet = await apiFetch<{
-          wallet: { available_balance: number };
-        }>("/buyer/wallet");
-        walletBalanceKobo = wallet?.wallet?.available_balance ?? 0;
-      } catch {
-        /* A wallet we cannot read is a wallet the buyer cannot spend from.
-           Paystack stays available, so this is not worth failing checkout for. */
-      }
-
-      setLoading(false);
-      triggerDialog("PAYMENT_METHOD", {
-        orderId: order.order_id,
-        itemsTotalKobo: order.items_total_kobo,
-        deliveryFeeKobo: order.delivery_fee_kobo,
-        handlingFeeKobo: order.handling_fee_kobo,
-        totalKobo: order.total_kobo,
-        walletBalanceKobo,
-        onPaid: () => {
-          onConfirmed();
-          setStep("confirmed");
-        },
-      });
-      return;
-    } catch (err) {
-      /* Surface the server's reason where there is one. "Try again" is useless
-         advice for "this product is no longer available". */
-      setError(
-        err instanceof Error && err.message
-          ? err.message
-          : "Could not start checkout. Please try again.",
-      );
-      setLoading(false);
-    }
-  }
-
-  if (confirming) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 p-8 text-center">
-        <Loader2 size={40} className="text-primary animate-spin" />
-        <p className="text-body text-sm">Confirming your payment...</p>
-      </div>
-    );
-  }
-
-  if (step === "confirmed") {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-6 p-8 text-center">
-        <CheckCircle2 size={64} className="text-primary" />
-        <h2 className="font-syne text-heading text-2xl font-bold">
-          Order Confirmed!
-        </h2>
-        <p className="text-body max-w-80 text-sm">
-          Your payment was received. We&apos;ll notify you when your order is
-          picked up.
-        </p>
-        <button
-          onClick={onBack}
-          className="bg-primary rounded-full px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-        >
-          Continue Shopping
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex h-full flex-col">
-      {/* Top bar */}
-      <div className="border-line flex shrink-0 items-center gap-3 border-b px-6 py-4">
-        <button
-          type="button"
-          onClick={onBack}
-          className="text-body flex cursor-pointer items-center gap-1.5 text-sm hover:opacity-70"
-        >
-          <ArrowLeft size={16} /> Back
-        </button>
-        <h2 className="font-syne text-heading font-bold">Checkout</h2>
-      </div>
-
-      {/* Scrollable form */}
-      <div className="flex-1 overflow-y-auto p-6">
-        <form
-          onSubmit={handleSubmit}
-          className="grid gap-6 lg:grid-cols-[1fr_320px]"
-        >
-          {/* Left: delivery fields */}
-          <div className="flex flex-col gap-5">
-            <div className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5">
-              <h3 className="font-syne text-heading font-semibold">
-                Delivery Address
-              </h3>
-
-              {/* State -> LGA -> Zone, narrowing at each step for a precise address */}
-              <div className="grid gap-4 lg:grid-cols-2">
-                <DashSelectInput
-                  label="State"
-                  required
-                  value={stateName}
-                  options={stateSelectOptions()}
-                  onChange={(e) => {
-                    setStateName(e.target.value);
-                    /* LGAs are state-specific, so a stale one must not survive. */
-                    setLga("");
-                    setZoneId("");
-                  }}
-                />
-
-                <DashSelectInput
-                  label="LGA"
-                  required
-                  value={lga}
-                  placeholder="Choose your LGA"
-                  options={lgaSelectOptions(stateName)}
-                  onChange={(e) => setLga(e.target.value)}
-                />
-              </div>
-
-              <DashSelectInput
-                label="Delivery area"
-                required
-                value={zoneId}
-                placeholder={
-                  !lga
-                    ? "Choose an LGA first"
-                    : zonesForLga.length === 0
-                      ? "We do not deliver here yet"
-                      : "Choose your area"
-                }
-                disabled={!lga || zonesForLga.length === 0}
-                options={zonesForLga.map((zone) => ({
-                  value: String(zone.id),
-                  label: zone.free_delivery
-                    ? `${zone.name} - free delivery`
-                    : `${zone.name} - ${formatFromKobo(zone.delivery_fee)}`,
-                }))}
-                onChange={(e) => setZoneId(e.target.value)}
-              />
-
-              {lga && zonesForLga.length === 0 && (
-                <p className="text-status-cancelled-fg text-xs">
-                  We do not deliver to {lga} yet. Pick another LGA or contact
-                  support.
-                </p>
-              )}
-
-              <DashTextareaInput
-                label="Full delivery address"
-                required
-                value={deliveryAddress}
-                onChange={(e) => setDeliveryAddress(e.target.value)}
-                placeholder="Enter your full delivery address..."
-                rows={3}
-              />
-            </div>
-
-            <div className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5">
-              <h3 className="font-syne text-heading font-semibold">
-                Delivery Time
-              </h3>
-              <div className="flex gap-3">
-                {[
-                  {
-                    key: "today" as const,
-                    label: "Today",
-                    sub: "Before 12pm",
-                  },
-                  {
-                    key: "tomorrow" as const,
-                    label: "Tomorrow",
-                    sub: "Between 9am and 5pm",
-                  },
-                ].map((opt) => (
-                  <label
-                    key={opt.key}
-                    className={`flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-3 transition-colors ${
-                      deliveryTime === opt.key
-                        ? "border-primary bg-dash-quick-action-hover"
-                        : "border-line bg-transparent"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="deliveryTime"
-                      value={opt.key}
-                      checked={deliveryTime === opt.key}
-                      onChange={() => setDeliveryTime(opt.key)}
-                      className="accent-primary"
-                    />
-                    <div>
-                      <p className="text-heading text-sm font-medium">
-                        {opt.label}
-                      </p>
-                      <p className="text-body text-xs">{opt.sub}</p>
-                    </div>
-                  </label>
-                ))}
-              </div>
-
-              <DashTextareaInput
-                label="Delivery Note"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="E.g. Call me when you arrive..."
-                rows={2}
-              />
-            </div>
-          </div>
-
-          {/* Right: order summary */}
-          <div className="border-line flex h-fit flex-col gap-4 rounded-2xl border bg-white p-5">
-            <h3 className="font-syne text-heading font-semibold">
-              Order Summary
-            </h3>
-
-            <div className="flex flex-col gap-3">
-              {cartItems.length === 0 ? (
-                <p className="text-body text-sm">
-                  Your cart is empty.{" "}
-                  <button
-                    type="button"
-                    onClick={onBack}
-                    className="text-primary underline underline-offset-2"
-                  >
-                    Go back to shop
-                  </button>
-                </p>
-              ) : (
-                cartItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between text-sm"
-                  >
-                    <span className="text-body">
-                      {item.name} x{item.qty} {item.unit}
-                    </span>
-                    <span className="text-heading">
-                      {formatNaira(item.price * item.qty)}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {cartItems.length > 0 && (
-              <div className="border-line flex flex-col gap-2 border-t pt-3">
-                <div className="text-body flex justify-between text-sm">
-                  <span>Subtotal</span>
-                  <span>
-                    {quote
-                      ? formatFromKobo(quote.itemsTotalKobo)
-                      : formatNaira(subtotal)}
-                  </span>
-                </div>
-
-                {/*
-                  Delivery is priced server-side and only known once an area is
-                  chosen. Saying "Free" before then, as this used to, showed a
-                  total that was not what the buyer went on to be charged.
-                */}
-                <div className="text-body flex justify-between gap-3 text-sm">
-                  <span>
-                    Delivery
-                    {quote && quote.extraPackages > 0 && (
-                      <span className="text-placeholder-text">
-                        {" "}
-                        ({quote.package_count} packages)
-                      </span>
-                    )}
-                  </span>
-                  {!zoneId ? (
-                    <span className="text-placeholder-text">
-                      Choose an area
-                    </span>
-                  ) : quote?.freeDelivery ? (
-                    <span className="flex items-center gap-1.5">
-                      <s className="text-placeholder-text">
-                        {formatFromKobo(quote.deliveryFeeBeforePromoKobo)}
-                      </s>
-                      <span className="text-status-delivered-fg font-semibold">
-                        FREE
-                      </span>
-                    </span>
-                  ) : quote ? (
-                    <span>{formatFromKobo(quote.deliveryFeeKobo)}</span>
-                  ) : (
-                    <span className="text-placeholder-text">...</span>
-                  )}
-                </div>
-
-                {quote && (
-                  <div className="text-body flex justify-between text-sm">
-                    <span>Handling</span>
-                    <span>{formatFromKobo(quote.handlingFeeKobo)}</span>
-                  </div>
-                )}
-
-                <div className="font-syne text-heading flex justify-between text-lg font-bold">
-                  <span>Total</span>
-                  <span className={quoting ? "opacity-50" : undefined}>
-                    {quote
-                      ? formatFromKobo(quote.totalKobo)
-                      : formatNaira(subtotal)}
-                  </span>
-                </div>
-
-                {quoteError && (
-                  <p className="text-status-cancelled-fg text-xs">
-                    {quoteError}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {error && (
-              <p className="bg-status-cancelled text-status-cancelled-fg rounded-xl px-4 py-3 text-sm">
-                {error}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={
-                loading ||
-                cartItems.length === 0 ||
-                !deliveryAddress.trim() ||
-                !zoneId
-              }
-              className="bg-primary flex items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-            >
-              {loading ? "Reserving your order..." : "Continue to payment"}
-              {!loading && <ArrowRight size={16} />}
-            </button>
-            <p className="text-body text-center text-xs">
-              You&apos;ll choose wallet or card on the next step. Nothing is
-              charged until then.
-            </p>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
 // === Public Shop
 export default function PublicShop() {
   const {
@@ -707,7 +108,6 @@ export default function PublicShop() {
     addItem,
     updateQuantity: updateQty,
     removeItem,
-    clear,
     quantityOf,
   } = useCart();
   const { triggerDialog } = useDialog();
@@ -724,22 +124,14 @@ export default function PublicShop() {
 
   const { isAuthenticated, isLoading, dashboardPath } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
   const [products, setProducts] = useState<ApiProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [cartOpen, setCartOpen] = useState(false);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState<boolean>(false);
   const [search, setSearch] = useState<string>("");
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORIES);
   const [currentPage, setCurrentPage] = useState<number>(1);
-
-  // Re-open checkout in confirmed state when Paystack redirects back
-  useEffect(() => {
-    const ref = searchParams.get("trxref") ?? searchParams.get("reference");
-    if (ref) setCheckoutOpen(true);
-  }, [searchParams]);
 
   // Load products from public endpoint (no auth required)
   const loadProducts = useCallback((): void => {
@@ -803,23 +195,14 @@ export default function PublicShop() {
    *
    * The marketing shop is browse-and-collect: it fills the cart, gates on auth,
    * and hands over. Paystack already returns every buyer to
-   * /buyer-dashboard/checkout (see payment.service.ts), so a second checkout
-   * out here could take a payment it could never confirm.
+   * /buyer-dashboard/checkout (see payment.service.ts and
+   * buyer-payment.service.ts, which both set that callback_url), so the second
+   * checkout that used to live here could take a payment it could never
+   * confirm. It has been removed rather than kept in step by hand.
    *
    * The cart travels by itself - CartProvider persists it and merges it with
    * the server copy once the session exists.
    */
-  function handleCheckoutBack() {
-    setCheckoutOpen(false);
-    navigate("/shop", { replace: true });
-  }
-
-  /* Stable identity: it is a dependency of the confirmation effect, and a new
-     function each render would re-arm that effect mid-flight. */
-  const handleCheckoutConfirmed = useCallback((): void => {
-    clear();
-  }, [clear]);
-
   function handleCheckout() {
     setCartOpen(false);
 
@@ -844,16 +227,21 @@ export default function PublicShop() {
   return (
     <>
       <div className="flex min-h-screen flex-col bg-white">
-        {/* Header - outside the relative container so drawer never covers it */}
-        <div className="z-40 shrink-0 bg-white pt-3">
-          <Header
-            navLinks={marketingNavLinks}
-            signUpHref="/signup"
-            dashboardPath={dashboardPath}
-            isAuthenticated={isAuthenticated}
-            surface="solid"
-          />
-        </div>
+        <Header
+          navLinks={marketingNavLinks}
+          signUpHref="/signup"
+          dashboardPath={dashboardPath}
+          isAuthenticated={isAuthenticated}
+          surface="solid"
+          /* The cart bar sits in the flow below the catalogue, which grows with
+             the product count, so it is out of reach on any real page of
+             products. The header is the one thing always on screen. */
+          cartCount={cartProductCount}
+          onCartClick={() => setCartOpen(true)}
+          /* Order Now defaults to WhatsApp, which is wrong on the one page with
+             a live cart in it. */
+          orderNowHref="#top"
+        />
 
         <section
           aria-label="Product catalog"
@@ -873,7 +261,7 @@ export default function PublicShop() {
               </div>
 
               {/* Search */}
-              <DashSearchInput
+              <SearchInputField
                 className="w-full"
                 placeholder="Search products..."
                 value={search}
@@ -1127,26 +515,6 @@ export default function PublicShop() {
                     </div>
                   </motion.div>
                 </>
-              )}
-            </AnimatePresence>
-
-            {/* Checkout panel */}
-            <AnimatePresence>
-              {checkoutOpen && (
-                <motion.div
-                  key="checkout"
-                  initial={{ x: "100%" }}
-                  animate={{ x: 0 }}
-                  exit={{ x: "100%" }}
-                  transition={{ type: "tween", duration: 0.28 }}
-                  className="absolute inset-0 z-30 cursor-pointer bg-white"
-                >
-                  <CheckoutView
-                    cartItems={cart}
-                    onBack={handleCheckoutBack}
-                    onConfirmed={handleCheckoutConfirmed}
-                  />
-                </motion.div>
               )}
             </AnimatePresence>
           </div>

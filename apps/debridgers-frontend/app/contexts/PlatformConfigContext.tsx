@@ -39,11 +39,30 @@ interface PublicPricingResponse {
   minimum_order_packages: number;
 }
 
+/*
+ * The running free-delivery campaign, or null when none is. Served publicly so
+ * the shop and the zone picker can announce it before anyone signs in.
+ *
+ * `zone_ids` is served rather than derived: a zone-scoped campaign covers one
+ * zone, a global or first-order one covers every active zone, and re-deriving
+ * that rule on the client is how the two ends drift apart.
+ */
+export type DeliveryPromotionScope = "global" | "zone" | "first_order";
+
+export interface DeliveryPromotion {
+  name: string;
+  scope: DeliveryPromotionScope;
+  /* ISO string over the wire; the API types it as a Date server-side. */
+  ends_at: string;
+  zone_ids: number[];
+}
+
 interface PublicConfigResponse {
   agent_commission_rate: number;
   buyer_referral_discount_kobo: number;
   buyer_referral_discount_type: string;
   currency: string;
+  delivery_promotion?: DeliveryPromotion | null;
   pricing?: PublicPricingResponse;
 }
 
@@ -88,6 +107,12 @@ interface PlatformConfigContextType {
    * fee rules is worse than one that refuses to render.
    */
   pricing: PricingRules | null;
+  /*
+   * The running free-delivery campaign, or null. Null both when no campaign is
+   * running and before the first response lands, so gate on `isLoading` before
+   * concluding there is no promotion.
+   */
+  deliveryPromotion: DeliveryPromotion | null;
   /* True until the first fetch settles, so callers can hold off on rendering
      a number rather than flashing a placeholder that is wrong. */
   isLoading: boolean;
@@ -152,6 +177,7 @@ export function PlatformConfigProvider({ children }: { children: ReactNode }) {
         referralDiscountType: config.buyer_referral_discount_type,
         currency: config.currency,
         pricing: config.pricing ? toPricingRules(config.pricing) : null,
+        deliveryPromotion: config.delivery_promotion ?? null,
         isLoading,
         error,
       }}

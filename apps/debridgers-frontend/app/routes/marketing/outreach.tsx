@@ -5,10 +5,10 @@ import { Header } from "../../components/marketing/Header";
 import {
   SubmitButton,
   WhatsAppLink,
-  DashTextInput,
-  DashNumberInput,
-  DashSelectInput,
-  DashTextareaInput,
+  TextInputField,
+  NumberInputField,
+  SelectInputField,
+  TextareaField,
 } from "@debridgers/ui-web";
 import { useAuth } from "../../contexts/AuthContext";
 import { BASE_BACKEND_URL } from "@debridgers/api-client";
@@ -150,15 +150,13 @@ export default function OutreachPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
-      <div className="sticky top-3 z-50 bg-white">
-        <Header
-          navLinks={marketingNavLinks}
-          signUpHref="/signup"
-          isAuthenticated={isAuthenticated}
-          dashboardPath={dashboardPath}
-          surface="solid"
-        />
-      </div>
+      <Header
+        navLinks={marketingNavLinks}
+        signUpHref="/signup"
+        isAuthenticated={isAuthenticated}
+        dashboardPath={dashboardPath}
+        surface="solid"
+      />
 
       <section
         aria-label="Page header"
@@ -240,7 +238,7 @@ export default function OutreachPage() {
 
                     {/* Row 1: Name + Phone */}
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <DashTextInput
+                      <TextInputField
                         label="Full Name"
                         required
                         value={form.owner_name}
@@ -250,7 +248,7 @@ export default function OutreachPage() {
                         }
                         placeholder="Amina Musa"
                       />
-                      <DashTextInput
+                      <TextInputField
                         label="Phone Number"
                         required
                         type="tel"
@@ -262,7 +260,7 @@ export default function OutreachPage() {
                       />
                     </div>
 
-                    <DashTextInput
+                    <TextInputField
                       label="Business / Shop Name"
                       value={form.shop_name}
                       onChange={(e) =>
@@ -273,7 +271,7 @@ export default function OutreachPage() {
 
                     {/* LGA + Area */}
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <DashSelectInput
+                      <SelectInputField
                         label="LGA"
                         placeholder="Select LGA"
                         options={lgas.map((lga) => ({
@@ -289,7 +287,7 @@ export default function OutreachPage() {
                           }))
                         }
                       />
-                      <DashSelectInput
+                      <SelectInputField
                         label="Area"
                         placeholder="Select area"
                         options={areas.map((area) => ({
@@ -302,7 +300,7 @@ export default function OutreachPage() {
                       />
                     </div>
 
-                    <DashTextInput
+                    <TextInputField
                       label="Products you're interested in"
                       value={form.product_interest}
                       onChange={(e) =>
@@ -313,7 +311,7 @@ export default function OutreachPage() {
 
                     {/* Quantity + How heard */}
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <DashNumberInput
+                      <NumberInputField
                         label="Estimated quantity needed"
                         min={1}
                         value={form.quantity}
@@ -322,7 +320,7 @@ export default function OutreachPage() {
                         }
                         placeholder="e.g. 5 bags"
                       />
-                      <DashSelectInput
+                      <SelectInputField
                         label="How did you hear about us?"
                         placeholder="Select one"
                         options={HOW_HEARD_OPTIONS.map((o) => ({
@@ -336,7 +334,7 @@ export default function OutreachPage() {
                       />
                     </div>
 
-                    <DashTextareaInput
+                    <TextareaField
                       label="Notes / message"
                       rows={3}
                       value={form.notes}
@@ -345,6 +343,7 @@ export default function OutreachPage() {
                     />
 
                     <SubmitButton
+                      variant="block"
                       loading={loading}
                       loadingText="Sending..."
                       className="mt-1 rounded-full"

@@ -38,10 +38,22 @@ export default function SignupPage() {
     onRequiresVerification: (email: string) => setRegisteredEmail(email),
   });
 
+  /*
+   * Agent applications are closed until the field programme launches, so the
+   * role is shown and refused rather than removed. Reopening it is deleting the
+   * two lines below, and nothing else: the role's fields, schema and endpoint
+   * are all still in ROLE_SIGNUP_CONFIG and untouched.
+   */
+  const CLOSED_ROLES: Partial<Record<SelfRegisterableRole, string>> = {
+    agent: "Agent applications open soon. You can create a buyer account now.",
+  };
+
   const roleTabs = SIGNUP_ROLES.map((role) => ({
     value: role,
     label: ROLE_SIGNUP_CONFIG[role].label,
     fields: ROLE_SIGNUP_CONFIG[role].fields,
+    disabled: Boolean(CLOSED_ROLES[role]),
+    disabledNote: CLOSED_ROLES[role],
   }));
 
   return (

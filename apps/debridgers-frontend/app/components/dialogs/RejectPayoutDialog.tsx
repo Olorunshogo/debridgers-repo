@@ -3,7 +3,7 @@ import { Loader2 } from "lucide-react";
 import {
   DialogHeader,
   DialogErrorBanner,
-  DashTextInput,
+  TextInputField,
   useDialog,
   useDialogSubmission,
 } from "@debridgers/ui-web";
@@ -52,7 +52,7 @@ export default function RejectPayoutDialog({
       <DialogErrorBanner message={error} />
 
       <div className="flex flex-col gap-2">
-        <DashTextInput
+        <TextInputField
           label="Reason (shown to the agent)"
           id="reject-payout-reason"
           value={reason}

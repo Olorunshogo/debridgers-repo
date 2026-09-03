@@ -15,7 +15,7 @@ import {
 /* Canonical shape lives in types/location and is exported from the package root. */
 import type { SelectOption } from "../types/location";
 
-export interface DashSelectInputProps {
+export interface SelectInputFieldProps {
   label: string;
   options: SelectOption[];
   placeholder?: string;
@@ -53,7 +53,7 @@ export interface DashSelectInputProps {
   hideLabel?: boolean;
 }
 
-export function DashSelectInput({
+export function SelectInputField({
   label,
   options,
   placeholder,
@@ -70,7 +70,7 @@ export function DashSelectInput({
   required,
   disabled,
   hideLabel = false,
-}: DashSelectInputProps) {
+}: SelectInputFieldProps) {
   const inputId = id ?? name ?? label.toLowerCase().replace(/\s+/g, "-");
   const isControlled = value !== undefined;
 
@@ -351,4 +351,4 @@ export function DashSelectInput({
   );
 }
 
-DashSelectInput.displayName = "DashSelectInput";
+SelectInputField.displayName = "SelectInputField";

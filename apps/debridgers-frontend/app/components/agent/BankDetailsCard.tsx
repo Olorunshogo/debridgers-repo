@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Landmark, CheckCircle2, Pencil, ShieldCheck, X } from "lucide-react";
 import { apiFetch, ApiError } from "@debridgers/api-client";
 import {
-  DashSelectInput,
-  DashTextInput,
+  SelectInputField,
+  TextInputField,
   SubmitButton,
   fadeUpVariants,
   fadeDownVariants,
@@ -274,7 +274,7 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
       {editing ? (
         <form onSubmit={handleSave} noValidate className="flex flex-col gap-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <DashSelectInput
+            <SelectInputField
               label="Bank"
               isBank
               placeholder="Select your bank"
@@ -283,7 +283,7 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
               onChange={(e) => handleBankChange(e.target.value)}
               required
             />
-            <DashTextInput
+            <TextInputField
               label="Account Number"
               placeholder="10 digits"
               inputMode="numeric"
@@ -324,6 +324,7 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
 
           <div className="flex flex-col gap-3 sm:flex-row-reverse">
             <SubmitButton
+              variant="block"
               loading={saving}
               loadingText="Saving..."
               className="rounded-full sm:w-fit sm:px-8"

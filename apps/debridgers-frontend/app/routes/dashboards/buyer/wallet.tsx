@@ -15,10 +15,10 @@ import { apiFetch, ApiError } from "@debridgers/api-client";
 import {
   formatCurrency,
   formatFromKobo,
-  DashNumberInput,
-  DashSubmitButton,
-  DashSelectInput,
-  DashTextInput,
+  NumberInputField,
+  SubmitButton,
+  SelectInputField,
+  TextInputField,
   DataTable,
   TablePrimaryCell,
   TableTextCell,
@@ -769,15 +769,15 @@ export default function BuyerWallet() {
           </div>
         </div>
         <div className="mt-6 flex flex-wrap gap-3">
-          <DashSubmitButton
+          <SubmitButton
             variant="tertiary"
             type="button"
             icon={Plus}
             onClick={() => setShowFundModal(true)}
           >
             Add Funds
-          </DashSubmitButton>
-          {/* <DashSubmitButton
+          </SubmitButton>
+          {/* <SubmitButton
             variant="tertiary"
             type="button"
             icon={ArrowUpRight}
@@ -785,7 +785,7 @@ export default function BuyerWallet() {
             onClick={openWithdrawModal}
           >
             Withdraw
-          </DashSubmitButton> */}
+          </SubmitButton> */}
         </div>
         {!payoutAccountLoading && !payoutAccount && (
           <p className="mt-3 text-xs text-white/70">
@@ -830,14 +830,14 @@ export default function BuyerWallet() {
             <p className="text-body text-sm">
               No payout account on file yet. Add one to enable withdrawals.
             </p>
-            <DashSubmitButton
+            <SubmitButton
               variant="secondary"
               type="button"
               icon={Landmark}
               onClick={openPayoutModal}
             >
               Add bank account
-            </DashSubmitButton>
+            </SubmitButton>
           </div>
         )}
       </div> */}
@@ -990,7 +990,7 @@ export default function BuyerWallet() {
               ) : (
                 <form onSubmit={handleFund} className="flex flex-col gap-4">
                   <p className="text-body text-xs">Or pay with a card:</p>
-                  <DashNumberInput
+                  <NumberInputField
                     label="Amount"
                     min={100}
                     value={fundAmount}
@@ -999,22 +999,22 @@ export default function BuyerWallet() {
                     required
                   />
                   <div className="flex gap-3">
-                    <DashSubmitButton
+                    <SubmitButton
                       variant="secondary"
                       type="button"
                       onClick={() => setShowFundModal(false)}
                       className="flex-1 py-3"
                     >
                       Cancel
-                    </DashSubmitButton>
-                    <DashSubmitButton
+                    </SubmitButton>
+                    <SubmitButton
                       variant="primary"
                       loading={funding}
                       loadingText="Processing..."
                       className="flex-1"
                     >
                       Add Funds
-                    </DashSubmitButton>
+                    </SubmitButton>
                   </div>
                 </form>
               )}
@@ -1057,13 +1057,13 @@ export default function BuyerWallet() {
                       {confirmedAccountName}
                     </p>
                   </div>
-                  <DashSubmitButton
+                  <SubmitButton
                     variant="primary"
                     type="button"
                     onClick={() => setShowPayoutModal(false)}
                   >
                     Done
-                  </DashSubmitButton>
+                  </SubmitButton>
                 </div>
               ) : (
                 <form
@@ -1075,7 +1075,7 @@ export default function BuyerWallet() {
                       {payoutAccountError}
                     </p>
                   )}
-                  <DashSelectInput
+                  <SelectInputField
                     label="Bank"
                     isBank
                     placeholder={
@@ -1092,7 +1092,7 @@ export default function BuyerWallet() {
                     }
                     required
                   />
-                  <DashTextInput
+                  <TextInputField
                     label="Account Number"
                     inputMode="numeric"
                     maxLength={10}
@@ -1104,22 +1104,22 @@ export default function BuyerWallet() {
                     required
                   />
                   <div className="flex gap-3">
-                    <DashSubmitButton
+                    <SubmitButton
                       variant="secondary"
                       type="button"
                       onClick={() => setShowPayoutModal(false)}
                       className="flex-1 py-3"
                     >
                       Cancel
-                    </DashSubmitButton>
-                    <DashSubmitButton
+                    </SubmitButton>
+                    <SubmitButton
                       variant="primary"
                       loading={savingPayoutAccount}
                       loadingText="Verifying..."
                       className="flex-1"
                     >
                       Save
-                    </DashSubmitButton>
+                    </SubmitButton>
                   </div>
                 </form>
               )}
@@ -1166,13 +1166,13 @@ export default function BuyerWallet() {
                       pending until the transfer is confirmed.
                     </p>
                   </div>
-                  <DashSubmitButton
+                  <SubmitButton
                     variant="primary"
                     type="button"
                     onClick={() => setShowWithdrawModal(false)}
                   >
                     Done
-                  </DashSubmitButton>
+                  </SubmitButton>
                 </div>
               ) : (
                 <form onSubmit={handleWithdraw} className="flex flex-col gap-4">
@@ -1187,7 +1187,7 @@ export default function BuyerWallet() {
                       {withdrawError}
                     </p>
                   )}
-                  <DashNumberInput
+                  <NumberInputField
                     label="Amount"
                     min={1}
                     max={data.availableBalance}
@@ -1196,29 +1196,29 @@ export default function BuyerWallet() {
                     placeholder="e.g. 5000"
                     required
                   />
-                  <DashTextInput
+                  <TextInputField
                     label="Reason (optional)"
                     value={withdrawReason}
                     onChange={(e) => setWithdrawReason(e.target.value)}
                     placeholder="e.g. Cashing out"
                   />
                   <div className="flex gap-3">
-                    <DashSubmitButton
+                    <SubmitButton
                       variant="secondary"
                       type="button"
                       onClick={() => setShowWithdrawModal(false)}
                       className="flex-1 py-3"
                     >
                       Cancel
-                    </DashSubmitButton>
-                    <DashSubmitButton
+                    </SubmitButton>
+                    <SubmitButton
                       variant="primary"
                       loading={withdrawing}
                       loadingText="Processing..."
                       className="flex-1"
                     >
                       Withdraw
-                    </DashSubmitButton>
+                    </SubmitButton>
                   </div>
                 </form>
               )}

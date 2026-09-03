@@ -1,19 +1,31 @@
 import React, { forwardRef } from "react";
 import {
   BaseInputField,
-  BASE_INPUT_CLASS,
+  getInputClass,
   getInputStateClass,
+  type InputVariant,
 } from "./base-input-field";
 
-interface DashTextInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface TextInputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   error?: string;
   required?: boolean;
+  /** "pill" is the marketing treatment. Defaults to the dashboard one. */
+  variant?: InputVariant;
 }
 
-export const DashTextInput = forwardRef<HTMLInputElement, DashTextInputProps>(
+export const TextInputField = forwardRef<HTMLInputElement, TextInputFieldProps>(
   (
-    { label, error, id, name, required = false, className = "", ...props },
+    {
+      label,
+      error,
+      id,
+      name,
+      required = false,
+      className = "",
+      variant = "default",
+      ...props
+    },
     ref,
   ) => {
     const inputId = id ?? name ?? label.toLowerCase().replace(/\s+/g, "-");
@@ -24,13 +36,14 @@ export const DashTextInput = forwardRef<HTMLInputElement, DashTextInputProps>(
         required={required}
         className={className}
         inputId={inputId}
+        variant={variant}
       >
         <input
           ref={ref}
           id={inputId}
           name={name ?? inputId}
           type="text"
-          className={`${BASE_INPUT_CLASS} ${getInputStateClass(error)}`}
+          className={`${getInputClass(variant)} ${getInputStateClass(error)}`}
           {...props}
         />
       </BaseInputField>
@@ -38,4 +51,4 @@ export const DashTextInput = forwardRef<HTMLInputElement, DashTextInputProps>(
   },
 );
 
-DashTextInput.displayName = "DashTextInput";
+TextInputField.displayName = "TextInputField";

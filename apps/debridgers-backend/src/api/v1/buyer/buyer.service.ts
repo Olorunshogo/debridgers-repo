@@ -19,15 +19,17 @@ import { CreateOrderDto } from "./dto/create-order.dto";
 import { SyncCartDto } from "./dto/sync-cart.dto";
 import { InitializeOrderPaymentDto } from "./dto/initialize-order-payment.dto";
 import { QuoteCartDto } from "./dto/quote-cart.dto";
-import {
-  assertMeetsMinimumOrder,
-  computeDeliveryFee,
-  computeOrderTotals,
-} from "./delivery-fee";
+import { computeDeliveryFee, computeOrderTotals } from "@debridgers/pricing";
 import { PaymentService } from "../payment/payment.service";
 import { PaystackInvoiceService } from "../payment/paystack-invoice.service";
 import { ConfigService } from "@nestjs/config";
 import { SystemSettingsService } from "../settings/system-settings.service";
+import { DeliveryPromotionService } from "../admin/pricing/delivery-promotion.service";
+import { NotificationsService } from "./notifications.service";
+
+/* Alerts are read by people, so they are the one place naira appears. */
+const formatKobo = (kobo: number): string =>
+  `\u20a6${Math.round(kobo / 100).toLocaleString("en-NG")}`;
 
 @Injectable()
 export class BuyerService {
@@ -41,6 +43,8 @@ export class BuyerService {
     private readonly config: ConfigService,
     private readonly settings: SystemSettingsService,
     private readonly emailService: EmailService,
+    private readonly promotions: DeliveryPromotionService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   private generateOrderReference(): string {
@@ -145,7 +149,11 @@ export class BuyerService {
     }
 
     const zoneId = await this.resolveDeliveryZone(user, dto.zone_id);
-    const { lines, totals } = await this.priceBasket(dto.cart, zoneId);
+    const { lines, totals, promotion } = await this.priceBasket(
+      dto.cart,
+      zoneId,
+      user.sub,
+    );
     const totalQuantity = lines.reduce((sum, l) => sum + l.quantity, 0);
 
     const order = await this.db.transaction(async (tx) => {
@@ -160,6 +168,10 @@ export class BuyerService {
           unit_price: Math.round(totals.itemsTotalKobo / totalQuantity),
           handling_fee: totals.handlingFeeKobo,
           delivery_fee: totals.deliveryFeeKobo,
+          /* Recorded on every order, discounted or not, so a campaign's cost
+             is one query afterwards. */
+          delivery_fee_before_promo: totals.deliveryFeeBeforePromoKobo,
+          delivery_promotion_id: promotion?.id ?? null,
           total_amount: totals.totalKobo,
           order_mode: "referral",
           status: "pending",
@@ -180,6 +192,28 @@ export class BuyerService {
 
       return created;
     });
+
+    /*
+     * A drop that does not pay for its own trip is an operational problem, not
+     * the buyer's, so nothing was said to them about it. The buyer admins are
+     * told instead, because batching this drop with another in the same zone is
+     * what recovers the trip cost, and they are the ones who do it.
+     *
+     * Fire-and-forget for the same reason the invoice call below is: an alert
+     * that fails must never cost us the order it was about.
+     */
+    if (totals.belowMinimumOrder) {
+      void this.notifications.notifyBuyerAdmins({
+        type: "order",
+        title: `Batch order ${order.order_reference}`,
+        description:
+          `${formatKobo(totals.itemsTotalKobo)} of goods over ` +
+          `${totalQuantity} package${totalQuantity === 1 ? "" : "s"}, which is ` +
+          `${formatKobo(totals.minimumOrderShortfallKobo)} below the level at ` +
+          `which one drop pays for its own trip. Batch it with another delivery ` +
+          `in the same zone.`,
+      });
+    }
 
     // Create Paystack invoice (fire-and-forget - Paystack outage won't fail order)
     this.invoice
@@ -666,9 +700,14 @@ export class BuyerService {
   }
 
   /*
-   * Free-delivery promotion window. Stored as an ISO timestamp under
-   * `free_delivery_until` in system_settings so it can be switched on from the
-   * admin UI without a deploy. Absent or past means normal pricing.
+   * DEPRECATED. Superseded by the `delivery_promotions` table, which can
+   * express a window with two ends, scope to a zone or to a buyer's first
+   * order, and be joined to the orders it discounted.
+   *
+   * This key was never writable in any case: admin.service.updateSetting has an
+   * allowlist that does not include it, so nothing could ever turn it on. It is
+   * read for one release only, in case a row was set directly in the database,
+   * and should be deleted with the next migration that touches settings.
    */
   private async isFreeDeliveryActive(): Promise<boolean> {
     const value = await this.settings.get("free_delivery_until");
@@ -688,6 +727,7 @@ export class BuyerService {
   private async priceBasket(
     lines: readonly { product_id: number; qty: number }[],
     zoneId: number,
+    buyerId: number,
   ) {
     const productIds = lines.map((line) => line.product_id);
     const catalogue = await this.db
@@ -743,17 +783,28 @@ export class BuyerService {
       .limit(1);
 
     /*
-     * Free either because this zone is standing policy, or because a global
-     * time-boxed promo is running. Zone-level wins independently of the promo
-     * window, so a permanently-free area does not start charging when the
-     * campaign ends.
+     * Free either because this zone is standing policy, or because a campaign
+     * covers this basket. Zone-level wins independently of any campaign window,
+     * so a permanently-free area does not start charging when the campaign
+     * ends.
      */
+    const zoneIsStandingFree = Boolean(zone?.free_delivery);
+    const promotion = await this.promotions.resolve(zoneId, buyerId);
     const freeDelivery =
-      Boolean(zone?.free_delivery) || (await this.isFreeDeliveryActive());
+      zoneIsStandingFree ||
+      promotion !== null ||
+      /* Deprecated fallback, one release only. See isFreeDeliveryActive. */
+      (await this.isFreeDeliveryActive());
 
-    /* Refused on the quote as well as the charge, so the buyer learns why
-       before reaching payment rather than after. */
-    assertMeetsMinimumOrder(itemsTotalKobo, packageCount);
+    /*
+     * The minimum order is no longer enforced against the buyer.
+     *
+     * It is a solvency rule about a single drop, and refusing a keg of oil to
+     * defend it puts our operating problem in the buyer's way. The trip cost is
+     * recovered by batching the drop with another in the same zone instead, so
+     * the flag travels on the totals and reaches the buyer admin who does the
+     * batching. See computeOrderTotals.belowMinimumOrder.
+     */
 
     const fee = computeDeliveryFee({
       zoneFeeKobo: zone?.delivery_fee ?? 0,
@@ -768,6 +819,12 @@ export class BuyerService {
       lines: priced,
       totals: computeOrderTotals(itemsTotalKobo, fee, packageCount),
       packageCount,
+      /*
+       * Attributed to a campaign only when the zone was not already free.
+       * Crediting a campaign for an order in a permanently-free area would
+       * overstate what the campaign actually gave away.
+       */
+      promotion: zoneIsStandingFree ? null : promotion,
     };
   }
 
@@ -820,11 +877,22 @@ export class BuyerService {
   /** Live pricing for the cart summary, so the buyer sees fees before paying. */
   async quoteCart(dto: QuoteCartDto, user: JwtPayload) {
     const zoneId = await this.resolveDeliveryZone(user, dto.zone_id);
-    const { totals, packageCount } = await this.priceBasket(dto.cart, zoneId);
+    const { totals, packageCount, promotion } = await this.priceBasket(
+      dto.cart,
+      zoneId,
+      user.sub,
+    );
 
     return {
       message: "Quote generated",
-      data: { ...totals, zone_id: zoneId, package_count: packageCount },
+      data: {
+        ...totals,
+        zone_id: zoneId,
+        package_count: packageCount,
+        /* Named so the delivery line can say which campaign struck the fee
+           through, rather than only that it is free. */
+        delivery_promotion: promotion,
+      },
     };
   }
 
@@ -849,7 +917,11 @@ export class BuyerService {
 
     const zoneId = await this.resolveDeliveryZone(user, dto.zone_id);
     /* Same pricing path as the quote, so what was shown is what is charged. */
-    const { lines, totals } = await this.priceBasket(dto.cart, zoneId);
+    const { lines, totals, promotion } = await this.priceBasket(
+      dto.cart,
+      zoneId,
+      user.sub,
+    );
     const totalQuantity = lines.reduce((sum, l) => sum + l.quantity, 0);
 
     const order = await this.db.transaction(async (tx) => {
@@ -864,6 +936,10 @@ export class BuyerService {
           unit_price: Math.round(totals.itemsTotalKobo / totalQuantity),
           handling_fee: totals.handlingFeeKobo,
           delivery_fee: totals.deliveryFeeKobo,
+          /* Recorded on every order, discounted or not, so a campaign's cost
+             is one query afterwards. */
+          delivery_fee_before_promo: totals.deliveryFeeBeforePromoKobo,
+          delivery_promotion_id: promotion?.id ?? null,
           total_amount: totals.totalKobo,
           order_mode: "referral",
           status: "pending",

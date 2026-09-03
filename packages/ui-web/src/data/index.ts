@@ -6,3 +6,6 @@ export * from "./product-categories";
 
 // === Support contact details
 export * from "./support";
+
+// === Legal documents
+export * from "./legal";

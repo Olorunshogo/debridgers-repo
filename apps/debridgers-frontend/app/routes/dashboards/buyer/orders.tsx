@@ -4,9 +4,9 @@ import { X, Package } from "lucide-react";
 import { apiFetch, ApiError } from "@debridgers/api-client";
 import {
   formatFromKobo,
-  DashSubmitButton,
-  DashTextareaInput,
-  DashSelectButton,
+  SubmitButton,
+  TextareaField,
+  SelectButtonField,
   DataTable,
   TablePrimaryCell,
   TableTextCell,
@@ -304,7 +304,7 @@ export default function BuyerOrders() {
            exists. */
         resetKey={activeTab}
         toolbar={
-          <DashSelectButton
+          <SelectButtonField
             label="Status"
             showInlineLabel
             size="sm"
@@ -371,13 +371,13 @@ export default function BuyerOrders() {
                   tone={STATUS_PRESENTATION[selected.status].tone}
                 />
                 {isTrackable(selected.status) && (
-                  <DashSubmitButton
+                  <SubmitButton
                     variant="primary"
                     type="button"
                     className="px-3 py-1 text-xs font-medium"
                   >
                     Track
-                  </DashSubmitButton>
+                  </SubmitButton>
                 )}
               </div>
 
@@ -385,7 +385,7 @@ export default function BuyerOrders() {
                 <div className="border-line mt-5 flex flex-col gap-3 border-t pt-5">
                   {confirmingCancel ? (
                     <>
-                      <DashTextareaInput
+                      <TextareaField
                         label="Why are you cancelling?"
                         name="cancelReason"
                         rows={3}
@@ -395,7 +395,7 @@ export default function BuyerOrders() {
                         error={cancelError ?? undefined}
                       />
                       <div className="flex flex-wrap items-center gap-2">
-                        <DashSubmitButton
+                        <SubmitButton
                           variant="secondary"
                           type="button"
                           disabled={cancelling}
@@ -403,8 +403,8 @@ export default function BuyerOrders() {
                           className="text-xs"
                         >
                           Keep order
-                        </DashSubmitButton>
-                        <DashSubmitButton
+                        </SubmitButton>
+                        <SubmitButton
                           variant="primary"
                           type="button"
                           loading={cancelling}
@@ -414,19 +414,19 @@ export default function BuyerOrders() {
                           className="px-4 py-2 text-xs"
                         >
                           Confirm cancellation
-                        </DashSubmitButton>
+                        </SubmitButton>
                       </div>
                     </>
                   ) : (
                     <>
-                      <DashSubmitButton
+                      <SubmitButton
                         variant="secondary"
                         type="button"
                         onClick={() => setConfirmingCancel(true)}
                         className="w-fit text-xs"
                       >
                         Cancel order
-                      </DashSubmitButton>
+                      </SubmitButton>
                       <p className="text-body text-xs">
                         Only unpaid orders can be cancelled here. Once an order
                         is paid, contact support to request a refund.

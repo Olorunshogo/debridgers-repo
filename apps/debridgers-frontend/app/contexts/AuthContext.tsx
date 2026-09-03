@@ -56,12 +56,18 @@ function readUserFromToken(): AuthUser | null {
   };
 }
 
-function dashboardForRole(role: string, adminTier?: string): string {
+function dashboardForRole(role: string, _adminTier?: string): string {
   switch (role) {
     case "admin":
-      return adminTier === "super"
-        ? "/admin-dashboard"
-        : "/buyer-admin-dashboard";
+      /*
+       * One admin dashboard for both tiers; the nav narrows for a sub-admin
+       * rather than sending them somewhere else.
+       *
+       * A second top-level dashboard meant two places disagreed about what a
+       * sub-admin is. `tiers` in use-dashboard-nav is the single answer, and
+       * a domain surface lives at /admin-dashboard/<domain> inside this one.
+       */
+      return "/admin-dashboard";
     case "agent":
       return "/agent-dashboard";
     default:

@@ -227,15 +227,12 @@ export default function AgentsPage() {
 
   return (
     <>
-      {/* Header */}
-      <div className="sticky top-3 z-50">
-        <Header
-          navLinks={marketingNavLinks}
-          signUpHref="/signup?role=agent"
-          isAuthenticated={isAuthenticated}
-          dashboardPath={dashboardPath}
-        />
-      </div>
+      <Header
+        navLinks={marketingNavLinks}
+        signUpHref="/signup?role=agent"
+        isAuthenticated={isAuthenticated}
+        dashboardPath={dashboardPath}
+      />
 
       {/* Hero */}
       <div className="relative flex w-full flex-col">

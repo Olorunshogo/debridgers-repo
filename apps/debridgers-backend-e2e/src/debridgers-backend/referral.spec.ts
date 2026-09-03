@@ -1,5 +1,6 @@
 import { apiFetch, JSON_HEADERS, authHeaders } from "../support/api-client";
 import { loginAdmin, registerBuyer } from "../support/buyer-fixture";
+import { TERMS_CONSENT } from "../support/terms-consent";
 
 /*
  * Regression locks for the referral attribution bugs fixed in Phase 0.
@@ -51,6 +52,7 @@ async function registerAgent(emailPrefix: string): Promise<string> {
       email,
       password: AGENT_PASSWORD,
       role: "agent",
+      ...TERMS_CONSENT,
     }),
   });
 
@@ -192,6 +194,7 @@ describe("Referral attribution", () => {
         password: "Password@123",
         role: "buyer",
         referred_by_agent_code: buyerCode,
+        ...TERMS_CONSENT,
       }),
     });
 
@@ -220,6 +223,7 @@ describe("Referral attribution", () => {
         password: "Password@123",
         role: "buyer",
         referred_by_agent_code: "BUYER-NOTREAL1",
+        ...TERMS_CONSENT,
       }),
     });
 

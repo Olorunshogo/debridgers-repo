@@ -28,7 +28,8 @@ import {
   TIER_ONE_PACKAGE_COUNT,
   TIER_ONE_PER_PACKAGE_KOBO,
   TIER_TWO_PER_PACKAGE_KOBO,
-} from "../buyer/delivery-fee";
+} from "@debridgers/pricing";
+import { DeliveryPromotionService } from "../admin/pricing/delivery-promotion.service";
 
 const webLeadSchema = z.object({
   owner_name: z.string().min(2, "Name required"),
@@ -52,6 +53,7 @@ export class PublicController {
     private readonly db: NodePgDatabase<typeof schema>,
     private readonly settings: SystemSettingsService,
     private readonly taxonomy: TaxonomyService,
+    private readonly promotions: DeliveryPromotionService,
   ) {}
 
   @Get("products")
@@ -115,6 +117,16 @@ export class PublicController {
         delivery_fee: schema.zones.delivery_fee,
         free_delivery: schema.zones.free_delivery,
         areas: schema.zones.areas,
+        /*
+         * The taper and the ceiling belong to the zone, not to the defaults in
+         * /config/public. A client that quoted from those defaults was pricing
+         * a far zone at the near zone's rates, which is how the buying desk
+         * came to compute walk-away prices against a schedule checkout does not
+         * charge.
+         */
+        tier_one_per_package_kobo: schema.zones.tier_one_per_package_kobo,
+        tier_two_per_package_kobo: schema.zones.tier_two_per_package_kobo,
+        delivery_cap_kobo: schema.zones.delivery_cap_kobo,
       })
       .from(schema.zones)
       .where(eq(schema.zones.is_active, true))
@@ -149,6 +161,13 @@ export class PublicController {
       50000,
     );
 
+    /*
+     * The running free-delivery campaign, or null. Served publicly because the
+     * shop and the zone picker announce it before anyone signs in, and because
+     * a campaign nobody can see is a discount given away for nothing.
+     */
+    const promotion = await this.promotions.running();
+
     return {
       message: "Config retrieved",
       data: {
@@ -156,8 +175,9 @@ export class PublicController {
         buyer_referral_discount_kobo: discountKobo,
         buyer_referral_discount_type: "flat",
         currency: "NGN",
+        delivery_promotion: promotion,
         /*
-         * Imported from delivery-fee.ts rather than restated here. Anything
+         * Imported from @debridgers/pricing rather than restated here. Anything
          * that re-types these numbers is a place they can drift from the
          * charge, which is exactly how a ₦1,400 unit price outlived the
          * product it described.

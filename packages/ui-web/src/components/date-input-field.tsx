@@ -5,7 +5,7 @@ import {
   getInputStateClass,
 } from "./base-input-field";
 
-interface DashDateInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface DateInputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   error?: string;
   required?: boolean;
@@ -16,7 +16,7 @@ export function getTodayDateString(): string {
   return new Date().toISOString().split("T")[0]!;
 }
 
-export const DashDateInput = forwardRef<HTMLInputElement, DashDateInputProps>(
+export const DateInputField = forwardRef<HTMLInputElement, DateInputFieldProps>(
   (
     {
       label,
@@ -59,4 +59,4 @@ export const DashDateInput = forwardRef<HTMLInputElement, DashDateInputProps>(
   },
 );
 
-DashDateInput.displayName = "DashDateInput";
+DateInputField.displayName = "DateInputField";

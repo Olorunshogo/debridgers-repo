@@ -3,8 +3,8 @@ import {
   DialogHeader,
   DialogErrorBanner,
   DialogSuccessPanel,
-  DashTextInput,
-  DashSubmitButton,
+  TextInputField,
+  SubmitButton,
   useDialog,
   useDialogSubmission,
   DIALOG_SUCCESS_CLOSE_DELAY_MS,
@@ -77,7 +77,7 @@ export default function InviteVerificationDialog({
       {error && <DialogErrorBanner message={error} />}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <DashTextInput
+        <TextInputField
           label="Invite code"
           name="invite_code"
           required
@@ -87,14 +87,14 @@ export default function InviteVerificationDialog({
           onChange={(e) => setInviteCode(e.target.value)}
         />
 
-        <DashSubmitButton
+        <SubmitButton
           variant="primary"
           loading={isSubmitting}
           loadingText="Verifying..."
           disabled={!inviteCode.trim()}
         >
           Verify code
-        </DashSubmitButton>
+        </SubmitButton>
       </form>
     </div>
   );

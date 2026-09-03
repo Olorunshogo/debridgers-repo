@@ -10,7 +10,7 @@ import { TableCards } from "./table-cards";
 import { TableToolbar } from "./table-toolbar";
 import { TableEmptyState, TableErrorState } from "./table-states";
 import { useTableState, type UseTableStateOptions } from "./use-table-state";
-import { DashSelectButton } from "../../components/dash-select-button";
+import { SelectButtonField } from "../../components/select-button-field";
 import type {
   BulkAction,
   RowAction,
@@ -178,7 +178,7 @@ export function DataTableView<TRow>({
 
           <div className="flex items-center gap-3">
             {pageSizeOptions && pageSizeOptions.length > 0 && (
-              <DashSelectButton
+              <SelectButtonField
                 label="Per page"
                 showInlineLabel
                 size="sm"

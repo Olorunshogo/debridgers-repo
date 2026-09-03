@@ -40,6 +40,22 @@ export const registerSchema = z.object({
     .enum(SELF_REGISTERABLE_ROLES as unknown as [string, ...string[]])
     .default(USER_ROLES.BUYER),
   referred_by_agent_code: z.string().optional(),
+  /*
+   * Consent to the terms shown at signup.
+   *
+   * Required, and required to be `true`: this endpoint creates an active
+   * account for a role whose terms are published, so a request without consent
+   * is a client that skipped the tick rather than a user who accepted.
+   *
+   * The document and version are recorded because each role signs a different
+   * text, and a consent that names neither cannot answer which one, or which
+   * revision of it, the account holder actually saw.
+   */
+  accepted_terms: z.literal(true, {
+    error: "You must accept the Terms and Conditions",
+  }),
+  terms_document: z.string().min(1).max(64),
+  terms_version: z.string().min(1).max(32),
 });
 
 export type RegisterDto = z.infer<typeof registerSchema>;

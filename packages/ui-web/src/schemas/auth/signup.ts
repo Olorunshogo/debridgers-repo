@@ -60,6 +60,17 @@ export const addressField = z
   .min(5, "Enter your address, at least 5 characters");
 
 /*
+ * Acceptance of a role's terms.
+ *
+ * `z.literal(true)` rather than a boolean, so an unticked box fails validation
+ * with a message instead of submitting `false` and leaving the account with a
+ * consent record that says the customer declined.
+ */
+export const acceptedTermsField = z.literal(true, {
+  error: "You must accept the Terms and Conditions",
+});
+
+/*
  * A CV, optional. Constrained here as well as on the server because a rejected
  * 5MB upload is a wasted round trip on a phone connection.
  */

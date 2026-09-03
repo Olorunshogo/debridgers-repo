@@ -2,10 +2,10 @@ import { useState } from "react";
 import { DialogHeader } from "../../lib/dialog/dialog-header";
 import { DialogErrorBanner } from "../../lib/dialog/dialog-error-banner";
 import { DialogSuccessPanel } from "../../lib/dialog/dialog-success-panel";
-import { DashTextInput } from "../dash-text-input";
-import { DashEmailInput } from "../dash-email-input";
-import { DashTextareaInput } from "../dash-textarea-input";
-import { DashSubmitButton } from "../dash-submit-button";
+import { TextInputField } from "../text-input-field";
+import { EmailInputField } from "../email-input-field";
+import { TextareaField } from "../textarea-field";
+import { SubmitButton } from "../submit-button";
 
 // === Types
 
@@ -123,7 +123,7 @@ export function SupportTicketDialog({
 
       <DialogErrorBanner message={error} />
 
-      <DashTextInput
+      <TextInputField
         label="Your name"
         name="fullName"
         required
@@ -137,7 +137,7 @@ export function SupportTicketDialog({
         address whatever is typed here, so an editable box would be inviting the
         buyer to enter an address we are not going to write to.
       */}
-      <DashEmailInput
+      <EmailInputField
         label="Email"
         name="email"
         required
@@ -153,7 +153,7 @@ export function SupportTicketDialog({
         </p>
       )}
 
-      <DashTextareaInput
+      <TextareaField
         label="How can we help?"
         name="message"
         required
@@ -164,13 +164,9 @@ export function SupportTicketDialog({
         error={fieldErrors.message}
       />
 
-      <DashSubmitButton
-        fullWidth
-        loading={isSubmitting}
-        loadingText="Sending..."
-      >
+      <SubmitButton fullWidth loading={isSubmitting} loadingText="Sending...">
         Send message
-      </DashSubmitButton>
+      </SubmitButton>
     </form>
   );
 }

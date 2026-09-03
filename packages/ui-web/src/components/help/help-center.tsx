@@ -9,8 +9,8 @@ import {
   SearchX,
 } from "lucide-react";
 import { useId, useMemo, useState } from "react";
-import { DashSearchInput } from "../dash-search-input";
-import { DashSubmitButton } from "../dash-submit-button";
+import { SearchInputField } from "../search-input-field";
+import { SubmitButton } from "../submit-button";
 import {
   SUPPORT,
   supportMailtoHref,
@@ -286,7 +286,7 @@ export function HelpCenter({
           Frequently Asked Questions
         </h3>
 
-        <DashSearchInput
+        <SearchInputField
           placeholder="Search for an answer..."
           aria-label="Search frequently asked questions"
           value={query}
@@ -325,9 +325,9 @@ export function HelpCenter({
                 Try a different word, or send us the question directly.
               </p>
             </div>
-            <DashSubmitButton type="button" onClick={openTicket}>
+            <SubmitButton type="button" onClick={openTicket}>
               Contact support
-            </DashSubmitButton>
+            </SubmitButton>
           </div>
         ) : (
           filtered.map((item, i) => (
@@ -357,9 +357,9 @@ export function HelpCenter({
               Send us a message and we will reply by email.
             </p>
           </div>
-          <DashSubmitButton type="button" onClick={openTicket}>
+          <SubmitButton type="button" onClick={openTicket}>
             Contact support
-          </DashSubmitButton>
+          </SubmitButton>
         </div>
       )}
     </div>

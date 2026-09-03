@@ -1,4 +1,5 @@
 export {};
+import { TERMS_CONSENT } from "../support/terms-consent";
 
 /**
  * Speed benchmark for the Debridgers backend.
@@ -45,6 +46,7 @@ beforeAll(async () => {
       last_name: "User",
       email: buyerEmail,
       password: buyerPassword,
+      ...TERMS_CONSENT,
     }),
   });
 

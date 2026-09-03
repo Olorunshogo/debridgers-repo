@@ -101,6 +101,7 @@ export default function VerifyEmailPage() {
               />
 
               <SubmitButton
+                variant="block"
                 loading={isSubmitting}
                 loadingText="Verifying..."
                 className="rounded-full"

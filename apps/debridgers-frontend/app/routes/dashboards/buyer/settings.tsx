@@ -3,13 +3,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
 import { CheckCircle2, Pencil } from "lucide-react";
 import {
-  DashTextInput,
-  DashPasswordInput,
-  DashSelectInput,
-  DashSwitchInput,
+  TextInputField,
+  PasswordInputField,
+  SelectInputField,
+  ToggleField,
   SubmitButton,
-  DashTextareaInput,
-  DashSubmitButton,
+  TextareaField,
 } from "@debridgers/ui-web";
 import {
   apiFetch,
@@ -397,7 +396,7 @@ export default function BuyerSettings() {
             </div>
           )}
           <div className="flex flex-col gap-2">
-            <DashSubmitButton
+            <SubmitButton
               variant="secondary"
               type="button"
               loading={avatarUploading}
@@ -405,7 +404,7 @@ export default function BuyerSettings() {
               onClick={() => fileRef.current?.click()}
             >
               Change Photo
-            </DashSubmitButton>
+            </SubmitButton>
             <input
               ref={fileRef}
               type="file"
@@ -418,7 +417,7 @@ export default function BuyerSettings() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {editing.has("userName") ? (
-            <DashTextInput
+            <TextInputField
               label="User Name"
               placeholder="Abdul-Malik"
               value={form.userName}
@@ -441,7 +440,7 @@ export default function BuyerSettings() {
       <Section title="Preference">
         <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
           {editing.has("currency") ? (
-            <DashSelectInput
+            <SelectInputField
               label="Currency"
               options={currencyOptions}
               placeholder="Select currency"
@@ -463,7 +462,7 @@ export default function BuyerSettings() {
             />
           )}
           {editing.has("country") ? (
-            <DashSelectInput
+            <SelectInputField
               label="Country"
               options={countryOptions}
               placeholder="Select your country"
@@ -486,7 +485,7 @@ export default function BuyerSettings() {
           )}
           <div className="sm:col-span-2">
             {editing.has("deliveryAddress") ? (
-              <DashTextareaInput
+              <TextareaField
                 label="Delivery Address"
                 required
                 rows={5}
@@ -514,14 +513,14 @@ export default function BuyerSettings() {
       <Section title="Change Password">
         {passwordOpen ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <DashPasswordInput
+            <PasswordInputField
               label="Old Password"
               placeholder="Current password"
               value={form.oldPassword ?? ""}
               onChange={handleText("oldPassword")}
               error={errors.oldPassword}
             />
-            <DashPasswordInput
+            <PasswordInputField
               label="New Password"
               placeholder="New password"
               value={form.newPassword ?? ""}
@@ -543,19 +542,19 @@ export default function BuyerSettings() {
       {/* Notification Preference */}
       <Section title="Notification Preference">
         <div className="flex flex-col gap-5">
-          <DashSwitchInput
+          <ToggleField
             label="Email Notification"
             description="Receive sign-in alerts and message confirmations. Account and security emails are always sent."
             checked={form.emailNotification}
             onCheckedChange={handleSwitch("emailNotification")}
           />
-          <DashSwitchInput
+          <ToggleField
             label="SMS Notification"
             description="Receive update via SMS"
             checked={form.smsNotification}
             onCheckedChange={handleSwitch("smsNotification")}
           />
-          <DashSwitchInput
+          <ToggleField
             label="Two-factor Authentication"
             description="Add an extra layer of security to your account"
             checked={form.twoFactor}
@@ -567,6 +566,7 @@ export default function BuyerSettings() {
       {/* Submit */}
       <div className="flex justify-end">
         <SubmitButton
+          variant="block"
           loading={loading}
           loadingText="Saving..."
           disabled={!isDirty}

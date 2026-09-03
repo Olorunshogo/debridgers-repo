@@ -16,7 +16,7 @@ interface Option {
  * Extends div attributes, not input attributes: this renders a button-and-list
  * combobox, so an input's props were never spreadable onto anything here.
  */
-interface DashSelectProps extends Omit<
+interface SelectFieldProps extends Omit<
   React.HTMLAttributes<HTMLDivElement>,
   "onChange"
 > {
@@ -30,7 +30,7 @@ interface DashSelectProps extends Omit<
   className?: string;
 }
 
-export const DashSelect = forwardRef<HTMLDivElement, DashSelectProps>(
+export const SelectField = forwardRef<HTMLDivElement, SelectFieldProps>(
   (
     {
       label,
@@ -99,7 +99,7 @@ export const DashSelect = forwardRef<HTMLDivElement, DashSelectProps>(
         className={`font-syne relative ${className}`}
         {...props}
       >
-        {/* Trigger - styled like DashTextInput */}
+        {/* Trigger - styled like TextInputField */}
         <div className="flex flex-col gap-1.5">
           <label className="flex cursor-pointer items-center gap-1">
             <span className="text-heading font-medium">{label}</span>
@@ -161,4 +161,4 @@ export const DashSelect = forwardRef<HTMLDivElement, DashSelectProps>(
   },
 );
 
-DashSelect.displayName = "DashSelect";
+SelectField.displayName = "SelectField";

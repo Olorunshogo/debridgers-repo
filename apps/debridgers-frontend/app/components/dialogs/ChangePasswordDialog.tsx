@@ -3,8 +3,8 @@ import {
   DialogHeader,
   DialogErrorBanner,
   DialogSuccessPanel,
-  DashPasswordInput,
-  DashSubmitButton,
+  PasswordInputField,
+  SubmitButton,
   useDialog,
   useDialogSubmission,
   DIALOG_SUCCESS_CLOSE_DELAY_MS,
@@ -114,7 +114,7 @@ export default function ChangePasswordDialog({
       {error && <DialogErrorBanner message={error} />}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <DashPasswordInput
+        <PasswordInputField
           label="Temporary password"
           name="current_password"
           required
@@ -126,7 +126,7 @@ export default function ChangePasswordDialog({
           onChange={(e) => update("current_password", e.target.value)}
         />
 
-        <DashPasswordInput
+        <PasswordInputField
           label="New password"
           name="new_password"
           required
@@ -138,7 +138,7 @@ export default function ChangePasswordDialog({
           onChange={(e) => update("new_password", e.target.value)}
         />
 
-        <DashPasswordInput
+        <PasswordInputField
           label="Confirm new password"
           name="confirm_password"
           required
@@ -150,13 +150,13 @@ export default function ChangePasswordDialog({
           onChange={(e) => update("confirm_password", e.target.value)}
         />
 
-        <DashSubmitButton
+        <SubmitButton
           variant="primary"
           loading={isSubmitting}
           loadingText="Updating..."
         >
           Update password
-        </DashSubmitButton>
+        </SubmitButton>
       </form>
 
       <p className="text-body text-center text-xs">

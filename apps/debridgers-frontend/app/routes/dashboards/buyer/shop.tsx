@@ -14,7 +14,7 @@ import {
   categoryFilterChips,
   ALL_CATEGORIES,
   formatFromKobo,
-  DashSearchInput,
+  SearchInputField,
 } from "@debridgers/ui-web";
 
 export function meta() {
@@ -176,7 +176,7 @@ export default function BuyerShop() {
         )}
 
         {/* Search bar */}
-        <DashSearchInput
+        <SearchInputField
           className="w-full"
           placeholder="Search products..."
           value={search}

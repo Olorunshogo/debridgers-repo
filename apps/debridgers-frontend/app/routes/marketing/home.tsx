@@ -479,16 +479,13 @@ export default function Home() {
   ];
   return (
     <>
-      {/* Header */}
-      <div className="sticky top-3 z-50">
-        <Header
-          navLinks={marketingNavLinks}
-          signUpHref="/signup"
-          heroSectionId="hero-section"
-          isAuthenticated={isAuthenticated}
-          dashboardPath={dashboardPath}
-        />
-      </div>
+      <Header
+        navLinks={marketingNavLinks}
+        signUpHref="/signup"
+        heroSectionId="hero-section"
+        isAuthenticated={isAuthenticated}
+        dashboardPath={dashboardPath}
+      />
 
       {/* Hero Section */}
       <div className="relative flex w-full flex-col">

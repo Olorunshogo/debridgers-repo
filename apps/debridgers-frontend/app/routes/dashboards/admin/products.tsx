@@ -17,9 +17,9 @@ import {
   BASE_BACKEND_URL,
 } from "@debridgers/api-client";
 import {
-  DashSelectInput,
-  DashTextInput,
-  DashNumberInput,
+  SelectInputField,
+  TextInputField,
+  NumberInputField,
   DataTable,
   TablePrimaryCell,
   TableAmountCell,
@@ -544,7 +544,7 @@ export default function AdminProductsPage() {
             )}
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <DashTextInput
+              <TextInputField
                 label="Product Name"
                 required
                 placeholder="e.g. Rice, Palm Oil"
@@ -553,7 +553,7 @@ export default function AdminProductsPage() {
                   setForm((p) => ({ ...p, name: e.target.value }))
                 }
               />
-              <DashTextInput
+              <TextInputField
                 label="Unit / Size"
                 required
                 placeholder="e.g. Modu, Half Bag, Full Bag"
@@ -562,7 +562,7 @@ export default function AdminProductsPage() {
                   setForm((p) => ({ ...p, unit: e.target.value }))
                 }
               />
-              <DashNumberInput
+              <NumberInputField
                 label="Price (₦)"
                 required
                 min={1}
@@ -572,7 +572,7 @@ export default function AdminProductsPage() {
                   setForm((p) => ({ ...p, price: e.target.value }))
                 }
               />
-              <DashTextInput
+              <TextInputField
                 label="Description"
                 placeholder="Optional note"
                 value={form.description}
@@ -585,7 +585,7 @@ export default function AdminProductsPage() {
                 distinguishable as garri or beans. Searchable because the leaf
                 list grows with every variety added.
               */}
-              <DashSelectInput
+              <SelectInputField
                 label="Category"
                 name="category_id"
                 placeholder="Select a category"
@@ -600,7 +600,7 @@ export default function AdminProductsPage() {
                 }
               />
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <DashNumberInput
+                <NumberInputField
                   label="Measure Value"
                   id="measure-value"
                   min={0}
@@ -610,7 +610,7 @@ export default function AdminProductsPage() {
                     setForm((p) => ({ ...p, measure_value: e.target.value }))
                   }
                 />
-                <DashSelectInput
+                <SelectInputField
                   label="Measure Unit"
                   name="measure_unit"
                   options={measureUnitOptions}
@@ -624,7 +624,7 @@ export default function AdminProductsPage() {
                 />
                 {/* Shipping weight. The column existed with no way to set it,
                     so every product read as weightless to delivery pricing. */}
-                <DashNumberInput
+                <NumberInputField
                   label="Weight (grams)"
                   id="weight-grams"
                   min={0}
@@ -745,7 +745,7 @@ export default function AdminProductsPage() {
               </div>
 
               {/* Manual URL fallback */}
-              <DashTextInput
+              <TextInputField
                 label="Image URL"
                 id="image-url"
                 placeholder="https://... or /images/products/rice-bowl.jpg"

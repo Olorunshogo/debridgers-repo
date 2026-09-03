@@ -1,21 +1,27 @@
 import React, { forwardRef } from "react";
-import { BaseInputField, getInputStateClass } from "./base-input-field";
+import {
+  BaseInputField,
+  getInputStateClass,
+  type InputVariant,
+} from "./base-input-field";
 
-interface DashTextareaInputProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+interface TextareaFieldProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label: string;
   error?: string;
   required?: boolean;
   maxWords?: number;
   resizable?: boolean;
+  /** "pill" is the marketing treatment. Defaults to the dashboard one. */
+  variant?: InputVariant;
 }
 
 function countWords(text: string): number {
   return text.trim() === "" ? 0 : text.trim().split(/\s+/).length;
 }
 
-export const DashTextareaInput = forwardRef<
+export const TextareaField = forwardRef<
   HTMLTextAreaElement,
-  DashTextareaInputProps
+  TextareaFieldProps
 >(
   (
     {
@@ -27,6 +33,7 @@ export const DashTextareaInput = forwardRef<
       className = "",
       maxWords = 300,
       resizable = false,
+      variant = "default",
       value,
       onChange,
       ...props
@@ -72,13 +79,18 @@ export const DashTextareaInput = forwardRef<
         required={required}
         className={className}
         inputId={inputId}
+        variant={variant}
       >
         <textarea
           ref={ref}
           id={inputId}
           name={name ?? inputId}
           rows={4}
-          className={`placeholder:text-placeholder-text bg-input-bg text-heading font-syne min-h-25 w-full rounded-2xl border px-4 py-3 text-sm transition-all duration-300 ease-in-out outline-none ${resizable ? "resize-y" : "resize-none"} ${getInputStateClass(displayError)}`}
+          className={`placeholder:text-placeholder-text bg-input-bg font-syne w-full border transition-all duration-300 ease-in-out outline-none ${
+            variant === "pill"
+              ? "text-body min-h-32 rounded-3xl p-6 text-base"
+              : "text-heading min-h-25 rounded-2xl px-4 py-3 text-sm"
+          } ${resizable ? "resize-y" : "resize-none"} ${getInputStateClass(displayError)}`}
           value={value}
           onChange={handleChange}
           {...props}
@@ -94,4 +106,4 @@ export const DashTextareaInput = forwardRef<
   },
 );
 
-DashTextareaInput.displayName = "DashTextareaInput";
+TextareaField.displayName = "TextareaField";

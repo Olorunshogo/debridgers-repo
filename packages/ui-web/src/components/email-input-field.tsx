@@ -1,22 +1,34 @@
 import React, { forwardRef } from "react";
 import {
   BaseInputField,
-  BASE_INPUT_CLASS,
+  getInputClass,
   getInputStateClass,
+  type InputVariant,
 } from "./base-input-field";
 
-interface DashNumberInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface EmailInputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   error?: string;
   required?: boolean;
+  /** "pill" is the marketing treatment. Defaults to the dashboard one. */
+  variant?: InputVariant;
 }
 
-export const DashNumberInput = forwardRef<
+export const EmailInputField = forwardRef<
   HTMLInputElement,
-  DashNumberInputProps
+  EmailInputFieldProps
 >(
   (
-    { label, error, id, name, required = false, className = "", ...props },
+    {
+      label,
+      error,
+      id,
+      name,
+      required,
+      className = "",
+      variant = "default",
+      ...props
+    },
     ref,
   ) => {
     const inputId = id ?? name ?? label.toLowerCase().replace(/\s+/g, "-");
@@ -27,13 +39,14 @@ export const DashNumberInput = forwardRef<
         required={required}
         className={className}
         inputId={inputId}
+        variant={variant}
       >
         <input
           ref={ref}
           id={inputId}
           name={name ?? inputId}
-          type="number"
-          className={`${BASE_INPUT_CLASS} ${getInputStateClass(error)}`}
+          type="email"
+          className={`${getInputClass(variant)} ${getInputStateClass(error)}`}
           {...props}
         />
       </BaseInputField>
@@ -41,4 +54,4 @@ export const DashNumberInput = forwardRef<
   },
 );
 
-DashNumberInput.displayName = "DashNumberInput";
+EmailInputField.displayName = "EmailInputField";

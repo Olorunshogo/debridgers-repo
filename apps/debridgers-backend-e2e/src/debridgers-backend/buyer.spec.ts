@@ -1,4 +1,5 @@
 const BASE = process.env.VITE_API_URL || "http://localhost:4000/api/v1";
+import { TERMS_CONSENT } from "../support/terms-consent";
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@debridgers.com";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Admin@2026!";
 
@@ -20,6 +21,7 @@ describe("Buyer", () => {
         last_name: "Buyer",
         email: testEmail,
         password: "Password@123",
+        ...TERMS_CONSENT,
       }),
     });
     expect(regRes.status).toBe(201);
