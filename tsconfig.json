@@ -3,10 +3,23 @@
   "extends": "./tsconfig.base.json",
   "files": [],
   "references": [
-    { "path": "./apps/debridgers-frontend" },
-    { "path": "./apps/debridgers-backend" },
-    { "path": "./apps/debridgers-backend-e2e" },
-    { "path": "./packages/ui-web" },
-    { "path": "./packages/ui-app" }
+    {
+      "path": "./apps/debridgers-backend"
+    },
+    {
+      "path": "./apps/debridgers-backend-e2e"
+    },
+    {
+      "path": "./apps/debridgers-frontend"
+    },
+    {
+      "path": "./packages/pricing"
+    },
+    {
+      "path": "./packages/ui-app"
+    },
+    {
+      "path": "./packages/ui-web"
+    }
   ]
 }

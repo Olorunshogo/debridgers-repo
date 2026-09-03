@@ -83,3 +83,11 @@ docs/*-snippets.md
 # Specs and test support files are never consumed as types, so any .d.ts
 # beside them is build residue.
 apps/debridgers-backend-e2e/src/**/*.d.ts
+
+# Build output must never sit beside its source: a stale compiled copy in
+# packages/*/src wins module resolution over the .ts next to it, so an edited
+# rate silently has no effect. Compiled output belongs in dist/.
+packages/*/src/**/*.js
+packages/*/src/**/*.d.ts
+packages/*/src/**/*.js.map
+packages/*/src/**/*.d.ts.map
