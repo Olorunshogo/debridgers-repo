@@ -156,10 +156,11 @@ jobs:
 
       - name: Login to Codeberg Container Registry on target VPS
         env:
-          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+          CODEBERG_USERNAME: ${{ secrets.CODEBERG_USERNAME }}
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin" <<< "$REGISTRY_TOKEN"
+            "docker login ${{ env.REGISTRY }} -u $CODEBERG_USERNAME --password-stdin" <<< "$CODEBERG_TOKEN"
 
       - name: Run deploy
         run: |
@@ -233,10 +234,11 @@ jobs:
 
       - name: Login to Codeberg Container Registry on target VPS
         env:
-          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+          CODEBERG_USERNAME: ${{ secrets.CODEBERG_USERNAME }}
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin" <<< "$REGISTRY_TOKEN"
+            "docker login ${{ env.REGISTRY }} -u $CODEBERG_USERNAME --password-stdin" <<< "$CODEBERG_TOKEN"
 
       - name: Run deploy
         run: |
