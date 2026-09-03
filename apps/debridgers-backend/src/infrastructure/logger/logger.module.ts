@@ -5,7 +5,8 @@ import path from "path";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let FileStreamRotator: any;
 try {
-  FileStreamRotator = require("file-stream-rotator");
+  const mod = require("file-stream-rotator");
+  FileStreamRotator = mod && (mod.default || mod);
 } catch {
   FileStreamRotator = null;
 }
