@@ -15,8 +15,8 @@ on:
   workflow_dispatch: {}
 
 env:
-  REGISTRY: codeberg.org
-  IMAGE_NAME: debridgers_ltd/debridgers-backend
+  REGISTRY: docker.io
+  IMAGE_NAME: 1techhunter/debridgers
 
 jobs:
   lint:
@@ -105,12 +105,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Codeberg Registry
+      - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.CODEBERG_USERNAME }}
-          password: ${{ secrets.CODEBERG_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
@@ -181,13 +180,13 @@ jobs:
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "cat > /opt/debridgers/cloudflared/creds.json && chmod 600 /opt/debridgers/cloudflared/creds.json" <<< "$TUNNEL_CREDENTIALS"
 
-      - name: Login to Codeberg Container Registry on target VPS
+      - name: Login to Docker Hub on target VPS
         env:
-          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
-          CODEBERG_USERNAME: ${{ secrets.CODEBERG_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "docker login ${{ env.REGISTRY }} -u $CODEBERG_USERNAME --password-stdin" <<< "$CODEBERG_TOKEN"
+            "docker login -u $DOCKERHUB_USERNAME --password-stdin" <<< "$DOCKERHUB_TOKEN"
 
       - name: Run deploy
         run: |
@@ -253,13 +252,13 @@ jobs:
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "cat > /opt/debridgers/cloudflared/creds.json && chmod 600 /opt/debridgers/cloudflared/creds.json" <<< "$TUNNEL_CREDENTIALS"
 
-      - name: Login to Codeberg Container Registry on target VPS
+      - name: Login to Docker Hub on target VPS
         env:
-          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
-          CODEBERG_USERNAME: ${{ secrets.CODEBERG_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "docker login ${{ env.REGISTRY }} -u $CODEBERG_USERNAME --password-stdin" <<< "$CODEBERG_TOKEN"
+            "docker login -u $DOCKERHUB_USERNAME --password-stdin" <<< "$DOCKERHUB_TOKEN"
 
       - name: Run deploy
         run: |
