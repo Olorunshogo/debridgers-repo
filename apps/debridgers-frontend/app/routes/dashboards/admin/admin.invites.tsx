@@ -4,8 +4,8 @@ import { Copy, Check, Plus, MailPlus } from "lucide-react";
 import {
   AlertBanner,
   DataTable,
-  DashEmailInput,
-  DashSubmitButton,
+  EmailInputField,
+  SubmitButton,
   TableTextCell,
   TableDateCell,
   TableStatusBadge,
@@ -209,7 +209,7 @@ export default function AdminInvites() {
           onSubmit={handleSendInvite}
           className="flex flex-col gap-3 sm:flex-row sm:items-end"
         >
-          <DashEmailInput
+          <EmailInputField
             label="Email address"
             placeholder="admin@example.com"
             value={email}
@@ -217,13 +217,9 @@ export default function AdminInvites() {
             className="flex-1"
             required
           />
-          <DashSubmitButton
-            icon={Plus}
-            loading={sending}
-            loadingText="Sending..."
-          >
+          <SubmitButton icon={Plus} loading={sending} loadingText="Sending...">
             Send Invite
-          </DashSubmitButton>
+          </SubmitButton>
         </form>
 
         <AnimatePresence>

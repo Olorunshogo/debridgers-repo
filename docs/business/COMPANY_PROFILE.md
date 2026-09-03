@@ -85,13 +85,15 @@ Four people, none salaried. All four currently perform the field agent function,
 
 ## VISION
 
-A Nigeria where every family and business pays the true price of food, with no exploitation, no information gap, and no unnecessary intermediation.
+<!-- A Nigeria where every family and business pays the true price of food, with no exploitation, no information gap, and no unnecessary intermediation. -->
+To become the world's most trusted and innovative agricultural supply company owning every step of the process, from seed to delivery, through technology, integrity and excellence.
 
 ---
 
 ## MISSION
 
-To make the movement of food from producer to table transparent, measurable, and lower in cost, by connecting supply directly to consumers and businesses through technology, trusted agents, and published pricing.
+<!-- To make the movement of food from producer to table transparent, measurable, and lower in cost, by connecting supply directly to consumers and businesses through technology, trusted agents, and published pricing. -->
+To source and deliver the world's essential food commodities directly from trusted local farmers to every household, business, and institution on the planet  building toward a supply chain we own end to end.
 
 ---
 
@@ -624,3 +626,7 @@ Price is the trap: goods are sold at market reference, so this business will not
 Types worth covering: Central Market wholesalers, cash-and-carry, formal distributors, supermarkets, informal aggregators, and any online seller delivering into Kaduna.
 
 Ten to fifteen rows is enough. **Ask the two existing customers who else they buy from** - that will beat desk research, and it doubles as a retention conversation.
+
+## Resources
+1. [Debridgers - Customers Terms and Conditions](https://docs.google.com/document/d/16atOOEH0A48k6eEZzx2MN5IyqQc_sCt9UlMxn-MP-xU/edit?tab=t.w8b0m4yhnxnb)
+2. [Debridgers - Survey Requirement Document - Vision & Mission](https://docs.google.com/document/d/1zUt2aIv7dfdd97VtxlNlBIKFy--r42Wjw96rpKnKLIs/edit?tab=t.zhmlw19u52yo#heading=h.5d2nkwa6yf3n)

@@ -1552,8 +1552,12 @@ pattern Phase 3 removes, roughly doubling the eventual cleanup.
 
 ### Phase 6 is the last phase in this document
 
-There is no Phase 7. Work that surfaced during the audit but sits outside this
-plan's scope is recorded where it belongs rather than appended here:
+There is no Phase 7 in this plan's own numbering. The dashboard reorganisation
+by role, tracked as Phase 7 in `docs/frontend/Refactor.md`, is a separate piece
+of work and has since landed: `dashboards/buyer-admin/` is gone, and its pages
+now live under `dashboards/admin/buyer/`. Work that surfaced during the audit
+but sits outside this plan's scope is recorded where it belongs rather than
+appended here:
 
 - **Buyer checkout payment-method modal, abandoned-order recovery, and the
   "forgotten orders" endpoint** are specified in `docs/frontend/TASKS.md` under

@@ -22,9 +22,9 @@ nx.
 **Never restate a money figure.** Every rate, floor, cap, taper and threshold
 lives in `packages/pricing` and is imported. A second copy is exactly how a
 ₦1,400 placeholder unit price survived in three documents and two code paths for
-months. The backend's `api/v1/buyer/delivery-fee.ts` is a thin wrapper that
-exists only to turn the package's framework-free error into a Nest
-`BadRequestException`; it adds no numbers of its own.
+months. Backend callers import `@debridgers/pricing` directly and turn its
+framework-free errors into a Nest `BadRequestException` themselves; nothing in
+the backend adds numbers of its own.
 
 **Seeders do not touch existing rows.** They populate an empty table and skip
 otherwise. Fixing a price, a unit or a zone in `catalog.ts` or `seeder.ts`

@@ -4,15 +4,16 @@ import { motion } from "framer-motion";
 import { CheckCircle2, ArrowRight, Loader2 } from "lucide-react";
 import { apiFetch, publicRequest } from "@debridgers/api-client";
 import { useCart, LAST_ORDER_STORAGE_KEY } from "../../../features/cart";
+import { usePlatformConfig } from "../../../contexts/PlatformConfigContext";
 import {
   formatCurrency,
   formatFromKobo,
-  DashSelectInput,
+  SelectInputField,
   defaultStateName,
   stateSelectOptions,
   lgaSelectOptions,
-  DashTextareaInput,
-  DashSubmitButton,
+  TextareaField,
+  SubmitButton,
 } from "@debridgers/ui-web";
 
 export function meta() {
@@ -42,11 +43,22 @@ interface OrderQuote {
   itemsTotalKobo: number;
   deliveryFeeKobo: number;
   deliveryFeeBeforePromoKobo: number;
+  /*
+   * The cost-to-serve fee. `handlingFeeKobo` is the same value under the name
+   * the orders table still uses; prefer this one in new code.
+   */
+  serviceFeeKobo: number;
   handlingFeeKobo: number;
   totalKobo: number;
   freeDelivery: boolean;
   extraPackages: number;
   package_count: number;
+  /*
+   * Set when the basket is past the tapered table and the delivery fee no
+   * longer covers the vehicle. Computed and returned all along, and read by
+   * nothing, so checkout sold these orders below cost in silence.
+   */
+  requiresIndividualQuote: boolean;
 }
 
 /* Long enough that changing zone or quantity a few times is one request. */
@@ -86,6 +98,15 @@ export default function BuyerCheckout() {
   const [lga, setLga] = useState<string>("");
   const [zoneId, setZoneId] = useState<string>("");
   /* Kept while a new quote is in flight so the totals never flash empty. */
+  /*
+   * The running campaign and the minimum order, from the one place that knows
+   * them. Both were already fetched by this provider and rendered nowhere.
+   */
+  const { deliveryPromotion } = usePlatformConfig();
+
+  const promotionCoversZone = (zone: number): boolean =>
+    !!deliveryPromotion && deliveryPromotion.zone_ids.includes(zone);
+
   const [quote, setQuote] = useState<OrderQuote | null>(null);
   const [quoting, setQuoting] = useState<boolean>(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
@@ -184,6 +205,9 @@ export default function BuyerCheckout() {
           setQuoteError(null);
         })
         .catch((err: unknown) => {
+          /* Drop the stale quote: showing the previous total next to an error
+             is how a buyer ends up believing a price the server just refused. */
+          setQuote(null);
           setQuoteError(
             err instanceof Error
               ? err.message
@@ -469,7 +493,7 @@ export default function BuyerCheckout() {
 
             {/* State -> LGA -> Zone, narrowing at each step for a precise address */}
             <div className="grid gap-4 lg:grid-cols-2">
-              <DashSelectInput
+              <SelectInputField
                 label="State"
                 required
                 value={stateName}
@@ -482,7 +506,7 @@ export default function BuyerCheckout() {
                 }}
               />
 
-              <DashSelectInput
+              <SelectInputField
                 label="LGA"
                 required
                 value={lga}
@@ -492,7 +516,7 @@ export default function BuyerCheckout() {
               />
             </div>
 
-            <DashSelectInput
+            <SelectInputField
               label="Delivery area"
               required
               value={zoneId}
@@ -504,11 +528,17 @@ export default function BuyerCheckout() {
                     : "Choose your area"
               }
               disabled={!lga || zonesForLga.length === 0}
+              /*
+                A running campaign is reflected here, not only once a quote
+                returns. The picker used to read zone.free_delivery alone, so a
+                global campaign was invisible at the moment of choosing.
+              */
               options={zonesForLga.map((zone) => ({
                 value: String(zone.id),
-                label: zone.free_delivery
-                  ? `${zone.name} - free delivery`
-                  : `${zone.name} - ${formatFromKobo(zone.delivery_fee)}`,
+                label:
+                  zone.free_delivery || promotionCoversZone(zone.id)
+                    ? `${zone.name} - free delivery`
+                    : `${zone.name} - ${formatFromKobo(zone.delivery_fee)}`,
               }))}
               onChange={(e) => setZoneId(e.target.value)}
             />
@@ -519,7 +549,7 @@ export default function BuyerCheckout() {
                 support.
               </p>
             )}
-            <DashTextareaInput
+            <TextareaField
               label="Full delivery address"
               required
               aria-required="true"
@@ -618,7 +648,7 @@ export default function BuyerCheckout() {
               ))}
             </div>
 
-            <DashTextareaInput
+            <TextareaField
               label="Delivery Note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
@@ -688,9 +718,19 @@ export default function BuyerCheckout() {
                     </span>
                   )}
                 </span>
+                {/*
+                  Four distinct states, not three. This used to render a bare
+                  "..." for everything that was not a finished quote, so a
+                  failed one sat there for ever while the reason appeared in
+                  small red text underneath.
+                */}
                 {!zoneId ? (
                   <span className="text-placeholder-text">Choose an area</span>
-                ) : quote?.freeDelivery ? (
+                ) : quoteError ? (
+                  <span className="text-status-cancelled-fg">Unavailable</span>
+                ) : quoting || !quote ? (
+                  <span className="text-placeholder-text">Calculating…</span>
+                ) : quote.freeDelivery ? (
                   <span className="flex items-center gap-1.5">
                     <s className="text-placeholder-text">
                       {formatFromKobo(quote.deliveryFeeBeforePromoKobo)}
@@ -699,31 +739,60 @@ export default function BuyerCheckout() {
                       FREE
                     </span>
                   </span>
-                ) : quote ? (
-                  <span>{formatFromKobo(quote.deliveryFeeKobo)}</span>
                 ) : (
-                  <span className="text-placeholder-text">...</span>
+                  <span>{formatFromKobo(quote.deliveryFeeKobo)}</span>
                 )}
               </div>
 
+              {/*
+                Named for what it pays for. It was "Handling", which is why it
+                was once set at 100 naira: it is not a charge for lifting a bag,
+                it covers the payment rail and the admin around the order.
+              */}
               {quote && (
                 <div className="text-body flex justify-between text-sm">
-                  <span>Handling</span>
-                  <span>{formatFromKobo(quote.handlingFeeKobo)}</span>
+                  <span>Service fee</span>
+                  <span>{formatFromKobo(quote.serviceFeeKobo)}</span>
                 </div>
               )}
 
               <div className="font-syne text-heading flex justify-between text-lg font-bold">
                 <span>Total</span>
+                {/*
+                  No subtotal fallback. Falling back to the items total showed a
+                  figure that excluded delivery and the service fee, so a buyer
+                  whose quote had failed was shown less than they would be
+                  charged. Better to show nothing than a number that is wrong.
+                */}
                 <span className={quoting ? "opacity-50" : undefined}>
-                  {quote
-                    ? formatFromKobo(quote.totalKobo)
-                    : formatCurrency(subtotal)}
+                  {quote ? (
+                    formatFromKobo(quote.totalKobo)
+                  ) : (
+                    <span className="text-placeholder-text text-sm font-normal">
+                      {quoteError ? "Unavailable" : "Calculating…"}
+                    </span>
+                  )}
                 </span>
               </div>
 
               {quoteError && (
                 <p className="text-status-cancelled-fg text-xs">{quoteError}</p>
+              )}
+
+              {/*
+                Past the tapered table the delivery fee stops covering the
+                vehicle, so the order is quoted by hand instead of being sold
+                below cost. The flag was computed and returned all along.
+              */}
+              {quote?.requiresIndividualQuote && (
+                <div className="border-status-pending-fg/25 bg-status-pending text-status-pending-fg mt-1 rounded-xl border px-3 py-2.5 text-xs">
+                  <strong className="font-semibold">
+                    This order needs a quote from us.
+                  </strong>{" "}
+                  It is large enough that our standard delivery rate no longer
+                  covers the trip. Place it and we will confirm the delivery
+                  cost with you, or message us and we will price it now.
+                </div>
               )}
             </div>
           )}
@@ -734,7 +803,7 @@ export default function BuyerCheckout() {
             </p>
           )}
 
-          <DashSubmitButton
+          <SubmitButton
             variant="primary"
             loading={loading}
             loadingText={`Processing ${paymentMethod === "wallet" ? "wallet" : "card"} payment...`}
@@ -748,7 +817,7 @@ export default function BuyerCheckout() {
           >
             {paymentMethod === "wallet" ? "Pay with Wallet" : "Pay with Card"}
             <ArrowRight size={16} />
-          </DashSubmitButton>
+          </SubmitButton>
           <p className="text-body text-center text-xs">
             {paymentMethod === "wallet"
               ? "Payment will be deducted from your wallet."

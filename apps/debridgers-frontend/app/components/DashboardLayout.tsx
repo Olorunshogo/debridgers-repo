@@ -5,7 +5,7 @@ import { Menu, X, Bell, LogOut } from "lucide-react";
 import {
   useDialog,
   AppLogo,
-  DashSearchInput,
+  SearchInputField,
   PrimaryButton,
   ActionRequiredChip,
   NotificationComponent,
@@ -51,15 +51,13 @@ const titleMaps: Record<string, Record<string, string>> = {
     "/admin-dashboard/assisted-checkout": "Assisted Checkout",
     "/admin-dashboard/admin-invites": "Admin Invites",
     "/admin-dashboard/deliveries": "Deliveries",
-    "/admin-dashboard/buyer-management": "Buyer Management",
+    "/admin-dashboard/pricing": "Pricing & Delivery",
+    "/admin-dashboard/procurement-targets": "Procurement Targets",
     "/admin-dashboard/notifications": "Notifications",
     "/admin-dashboard/settings": "Settings",
-  },
-  "/buyer-admin-dashboard": {
-    "/buyer-admin-dashboard": "Overview",
-    "/buyer-admin-dashboard/buyers": "Manage Buyers",
-    "/buyer-admin-dashboard/deliveries": "Track Deliveries",
-    "/buyer-admin-dashboard/settings": "Settings",
+    /* The buyer-admin domain, inside the one admin dashboard. */
+    "/admin-dashboard/buyer": "Buyer Desk",
+    "/admin-dashboard/buyer/deliveries": "Order Tracking",
   },
 };
 
@@ -84,15 +82,8 @@ export default function DashboardLayout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { user, isLoading, dashboardPath } = useAuth();
-  const {
-    groups,
-    isActive,
-    basePath,
-    isAgent,
-    isBuyer,
-    isAdmin,
-    isBuyerAdmin,
-  } = useDashboardNav(user?.admin_tier ?? null);
+  const { groups, isActive, basePath, isAgent, isBuyer, isAdmin, isSubAdmin } =
+    useDashboardNav(user?.admin_tier ?? null);
   /*
    * The flags above come from useDashboardNav, which reads them off the URL -
    * they say which dashboard is being viewed, not who is viewing it. The real
@@ -156,10 +147,10 @@ export default function DashboardLayout() {
   }, [mustChangePassword, openPasswordDialog]);
 
   useEffect(() => {
-    if (isAdmin || isBuyerAdmin) {
+    if (isAdmin) {
       const token = getAccessToken();
       const payload = token ? decodeJwtPayload<{ email: string }>(token) : null;
-      const name = isBuyerAdmin ? "Buyer Admin" : "Debridgers Admin";
+      const name = isSubAdmin ? "Buyer Admin" : "Debridgers Admin";
       setUserProfile({ name, sub: payload?.email ?? "" });
 
       /*
@@ -192,7 +183,7 @@ export default function DashboardLayout() {
         setUserProfile({ name, sub, avatar_url: p.avatar_url });
       })
       .catch(() => {});
-  }, [isAgent, isBuyer, isAdmin, isBuyerAdmin]);
+  }, [isAgent, isBuyer, isAdmin, isSubAdmin]);
 
   /*
    * Every dashboard now uses the plural path, so this is no longer a per-role
@@ -400,7 +391,7 @@ export default function DashboardLayout() {
                 </h1>
               </div>
 
-              <DashSearchInput
+              <SearchInputField
                 placeholder="Search..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

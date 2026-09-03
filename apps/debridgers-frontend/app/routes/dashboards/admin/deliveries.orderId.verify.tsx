@@ -5,11 +5,12 @@ import { CheckCircle, MapPin, User, Phone, DollarSign } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import {
   AlertBanner,
-  DashTextareaInput,
-  DashSubmitButton,
+  TextInputField,
+  TextareaField,
+  SubmitButton,
   TableStatusBadge,
 } from "@debridgers/ui-web";
-import { PhotoUploadField, type PhotoUpload } from "@debridgers/ui-web";
+import { UploadField, type PhotoUpload } from "@debridgers/ui-web";
 
 export function meta() {
   return [
@@ -52,6 +53,12 @@ export default function VerifyDelivery() {
   const [loading, setLoading] = useState<boolean>(true);
   const [photos, setPhotos] = useState<PhotoUpload[]>([]);
   const [notes, setNotes] = useState<string>("");
+  /*
+   * Who actually took delivery. Left blank rather than prefilled with the
+   * buyer's name: this used to send the buyer regardless of who was standing at
+   * the gate, which is the one detail proof of delivery exists to record.
+   */
+  const [recipientName, setRecipientName] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<boolean>(false);
@@ -91,8 +98,8 @@ export default function VerifyDelivery() {
         method: "POST",
         body: JSON.stringify({
           photos: photos.map((p) => p.dataUrl),
-          notes,
-          recipient_name: order?.buyer_name,
+          notes: notes.trim() || undefined,
+          recipient_name: recipientName.trim() || undefined,
         }),
       });
 
@@ -133,13 +140,13 @@ export default function VerifyDelivery() {
             "This order may have been removed, or the link is out of date."
           }
         />
-        <DashSubmitButton
+        <SubmitButton
           type="button"
           variant="secondary"
           onClick={() => navigate("/admin-dashboard/deliveries")}
         >
           Back to Deliveries
-        </DashSubmitButton>
+        </SubmitButton>
       </div>
     );
   }
@@ -155,13 +162,13 @@ export default function VerifyDelivery() {
             order.delivery_verified_at,
           ).toLocaleDateString("en-NG")}.`}
         />
-        <DashSubmitButton
+        <SubmitButton
           type="button"
           variant="secondary"
           onClick={() => navigate("/admin-dashboard/deliveries")}
         >
           Back to Deliveries
-        </DashSubmitButton>
+        </SubmitButton>
       </div>
     );
   }
@@ -242,7 +249,8 @@ export default function VerifyDelivery() {
       {/* Verification Form */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <div className="border-line rounded-2xl border bg-white p-6">
-          <PhotoUploadField
+          <UploadField
+            kind="photo"
             label="Upload Proof of Delivery"
             required
             photos={photos}
@@ -252,7 +260,16 @@ export default function VerifyDelivery() {
         </div>
 
         <div className="border-line rounded-2xl border bg-white p-6">
-          <DashTextareaInput
+          <TextInputField
+            label="Received by"
+            placeholder="Name of the person who took delivery"
+            value={recipientName}
+            onChange={(e) => setRecipientName(e.target.value)}
+          />
+        </div>
+
+        <div className="border-line rounded-2xl border bg-white p-6">
+          <TextareaField
             label="Delivery Notes"
             rows={4}
             placeholder="Add any notes about the delivery (e.g. 'Left with security guard', 'Partial delivery')."
@@ -262,15 +279,15 @@ export default function VerifyDelivery() {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row">
-          <DashSubmitButton
+          <SubmitButton
             type="button"
             variant="secondary"
             fullWidth
             onClick={() => navigate("/admin-dashboard/deliveries")}
           >
             Cancel
-          </DashSubmitButton>
-          <DashSubmitButton
+          </SubmitButton>
+          <SubmitButton
             fullWidth
             icon={CheckCircle}
             loading={submitting}
@@ -278,7 +295,7 @@ export default function VerifyDelivery() {
             disabled={photos.length === 0}
           >
             Confirm Delivery
-          </DashSubmitButton>
+          </SubmitButton>
         </div>
       </form>
     </div>

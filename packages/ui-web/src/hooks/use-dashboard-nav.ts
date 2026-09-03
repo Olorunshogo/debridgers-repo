@@ -14,13 +14,38 @@ import {
   Package,
   MapPin,
   Banknote,
+  Calculator,
   Mail,
   Truck,
+  Users,
   PhoneCall,
 } from "lucide-react";
 import { supportWhatsAppHref } from "../data/support";
 
 export type AdminTier = "super" | "sub";
+
+/**
+ * Which part of the business an admin looks after.
+ *
+ * Distinct from `AdminTier`, and deliberately so. A tier is a privilege level
+ * and is an auth credential: `admin_tier` is checked by admin-key.guard against
+ * the SUPER_ADMIN_KEY env values, so it must stay small and boring. A domain is
+ * an area of responsibility, several can apply to one person, and they carry no
+ * ordering.
+ *
+ * Today this only records which domain owns a nav item; `tiers` still does the
+ * gating. When `users` grows a domains column, gating moves here and the
+ * mapping is already written down.
+ */
+export type AdminDomain =
+  | "buyer"
+  | "agent"
+  | "supply"
+  | "finance"
+  | "catalogue"
+  | "fulfilment"
+  | "support"
+  | "growth";
 
 export interface NavItem {
   label: string;
@@ -34,6 +59,12 @@ export interface NavItem {
    * overview, buyers and settings that had to be kept in step by hand.
    */
   tiers?: readonly AdminTier[];
+  /*
+   * The domain that owns this surface, where one does. Metadata only for now:
+   * nothing reads it to decide visibility yet. Items with no domain are the
+   * shared admin surface.
+   */
+  domain?: AdminDomain;
   /* Marks a surface that is routed and readable but not yet built. */
   badge?: string;
 }
@@ -158,6 +189,7 @@ const adminNavGroups: NavGroup[] = [
         icon: User,
         href: "/admin-dashboard/agents",
         tiers: ["super"],
+        domain: "agent",
       },
       { label: "Buyers", icon: ShoppingCart, href: "/admin-dashboard/buyers" },
       { label: "Deliveries", icon: Truck, href: "/admin-dashboard/deliveries" },
@@ -166,24 +198,61 @@ const adminNavGroups: NavGroup[] = [
         icon: Package,
         href: "/admin-dashboard/products",
         tiers: ["super"],
+        domain: "catalogue",
       },
       {
         label: "Outreach",
         icon: MapPin,
         href: "/admin-dashboard/outreach",
         tiers: ["super"],
+        domain: "growth",
       },
       {
         label: "Payouts",
         icon: Banknote,
         href: "/admin-dashboard/payouts",
         tiers: ["super"],
+        domain: "finance",
+      },
+      {
+        label: "Pricing & Delivery",
+        icon: Wallet,
+        href: "/admin-dashboard/pricing",
+        tiers: ["super"],
+        domain: "catalogue",
       },
       {
         label: "Admin Invites",
         icon: Mail,
         href: "/admin-dashboard/admin-invites",
         tiers: ["super"],
+      },
+      {
+        label: "Procurement Targets",
+        icon: Calculator,
+        href: "/admin-dashboard/procurement-targets",
+        tiers: ["super"],
+        domain: "supply",
+      },
+      /*
+       * The buyer domain. Visible to a sub-admin because it is their desk, and
+       * to a super admin because a super admin sees everything.
+       *
+       * `domain` records ownership and gates nothing yet; `tiers` still decides
+       * visibility. When users grows a domains column, this is where the switch
+       * happens.
+       */
+      {
+        label: "Buyer Desk",
+        icon: ClipboardList,
+        href: "/admin-dashboard/buyer",
+        domain: "buyer",
+      },
+      {
+        label: "Order Tracking",
+        icon: Truck,
+        href: "/admin-dashboard/buyer/deliveries",
+        domain: "buyer",
       },
       {
         label: "Assisted Checkout",
@@ -203,49 +272,6 @@ const adminNavGroups: NavGroup[] = [
         href: "/admin-dashboard/notifications",
       },
       { label: "Settings", icon: User, href: "/admin-dashboard/settings" },
-    ],
-  },
-  {
-    label: "SUPPORT",
-    items: [
-      {
-        label: "WhatsApp Support",
-        icon: MessageCircle,
-        href: supportWhatsAppHref(),
-      },
-    ],
-  },
-];
-
-const buyerAdminNavGroups: NavGroup[] = [
-  {
-    label: "MAIN",
-    items: [
-      {
-        label: "Overview",
-        icon: LayoutDashboard,
-        href: "/buyer-admin-dashboard",
-      },
-      {
-        label: "Buyers",
-        icon: ShoppingCart,
-        href: "/buyer-admin-dashboard/buyers",
-      },
-      {
-        label: "Deliveries",
-        icon: Truck,
-        href: "/buyer-admin-dashboard/deliveries",
-      },
-    ],
-  },
-  {
-    label: "ACCOUNT",
-    items: [
-      {
-        label: "Settings",
-        icon: User,
-        href: "/buyer-admin-dashboard/settings",
-      },
     ],
   },
   {
@@ -282,7 +308,12 @@ export function useDashboardNav(adminTier?: AdminTier | null) {
   const isBuyer = pathname.startsWith("/buyer-dashboard");
   const isAgent = pathname.startsWith("/agent-dashboard");
   const isAdmin = pathname.startsWith("/admin-dashboard");
-  const isBuyerAdmin = pathname.startsWith("/buyer-admin-dashboard");
+  /*
+   * A sub-admin is identified by their tier, not by where they are standing.
+   * This used to be a path check against /buyer-admin-dashboard, which no
+   * longer exists: that surface is now a domain inside the one admin dashboard,
+   * so a super admin visiting it is still a super admin.
+   */
 
   /*
    * Tier comes from the session, not the URL.
@@ -294,21 +325,19 @@ export function useDashboardNav(adminTier?: AdminTier | null) {
    */
   const tier: AdminTier = adminTier === "super" ? "super" : "sub";
 
+  const isSubAdmin: boolean = isAdmin && tier === "sub";
+
   const groups = isAdmin
     ? navForTier(adminNavGroups, tier)
     : isAgent
       ? agentNavGroups
-      : isBuyerAdmin
-        ? buyerAdminNavGroups
-        : buyerNavGroups;
+      : buyerNavGroups;
 
   const basePath = isAdmin
     ? "/admin-dashboard"
     : isAgent
       ? "/agent-dashboard"
-      : isBuyerAdmin
-        ? "/buyer-admin-dashboard"
-        : "/buyer-dashboard";
+      : "/buyer-dashboard";
 
   const allItems = groups.flatMap((g) => g.items);
 
@@ -329,6 +358,6 @@ export function useDashboardNav(adminTier?: AdminTier | null) {
     isBuyer,
     isAgent,
     isAdmin,
-    isBuyerAdmin,
+    isSubAdmin,
   };
 }

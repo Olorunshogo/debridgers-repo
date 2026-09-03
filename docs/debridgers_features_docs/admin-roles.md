@@ -653,7 +653,9 @@ Shows:
 
 ### Role-Specific Dashboards
 
-- Buyer Admin: Buyer management, orders, disputes
+- Buyer Admin: not a separate dashboard. A sub-admin lands on the one admin
+  dashboard and sees a narrower set of pages, including buyer management,
+  orders and disputes under an `admin/buyer/` domain folder
 - Agent Admin: Agent approvals, KYC review, performance
 - Financial Admin: Commissions, payouts, reports
 - Outreach Admin: Campaigns, analytics, team assignments

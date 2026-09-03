@@ -9,10 +9,18 @@ export default [
   // === Marketing Page Routes
   layout("routes/marketing/layout.tsx", [
     index("routes/marketing/home.tsx"),
+    route("about", "routes/marketing/about.tsx"),
     route("shop", "routes/marketing/shop.tsx"),
     route("outreach", "routes/marketing/outreach.tsx"),
     route("contact", "routes/marketing/contact.tsx"),
     route("agents", "routes/marketing/agents.tsx"),
+    /*
+     * One route for every legal document, resolved from a registry by slug.
+     * Terms, the agent agreement and the privacy policy are the same renderer
+     * over different data, so publishing another one is a content file and a
+     * registry entry rather than a route and a page.
+     */
+    route("legal/:slug", "routes/marketing/legal.$slug.tsx"),
   ]),
 
   // === Auth Routes
@@ -86,6 +94,7 @@ export default [
     route("admin-dashboard/products", "routes/dashboards/admin/products.tsx"),
     route("admin-dashboard/outreach", "routes/dashboards/admin/outreach.tsx"),
     route("admin-dashboard/payouts", "routes/dashboards/admin/payouts.tsx"),
+    route("admin-dashboard/pricing", "routes/dashboards/admin/pricing.tsx"),
     route(
       "admin-dashboard/assisted-checkout",
       "routes/dashboards/admin/assisted-checkout.tsx",
@@ -104,28 +113,32 @@ export default [
       "admin-dashboard/deliveries/:orderId/verify",
       "routes/dashboards/admin/deliveries.orderId.verify.tsx",
     ),
+    /*
+     * The buyer-admin surface, inside the one admin dashboard rather than
+     * beside it.
+     *
+     * A sub-admin is a narrower admin, not a different role, so they land on
+     * /admin-dashboard and see fewer items. That is what use-dashboard-nav
+     * already implements with `tiers`; a second top-level dashboard meant the
+     * two disagreed about which was true. It also mirrors the backend, where
+     * this lives at api/v1/admin/buyer-admin as a subfolder of admin.
+     *
+     * Folders under a role are per admin domain, not per feature: agent/,
+     * supply/ and finance/ arrive here as those admins do. URLs follow the
+     * folder, so a new domain is a directory and three lines rather than a
+     * naming argument.
+     *
+     * `admin-dashboard/buyer-management` is gone with the page it pointed at.
+     * That page read `{ buyers, total }` from an endpoint that returns a plain
+     * array, so it rendered nothing; the working list lives here now.
+     */
     route(
-      "admin-dashboard/buyer-management",
-      "routes/dashboards/admin/buyer-management.tsx",
+      "admin-dashboard/buyer",
+      "routes/dashboards/admin/buyer/overview.tsx",
     ),
-  ]),
-  // === Buyer Admin Dashboard
-  layout("routes/dashboards/buyer-admin/layout.tsx", [
     route(
-      "buyer-admin-dashboard",
-      "routes/dashboards/buyer-admin/overview.tsx",
-    ),
-    route(
-      "buyer-admin-dashboard/buyers",
-      "routes/dashboards/buyer-admin/buyers.tsx",
-    ),
-    route(
-      "buyer-admin-dashboard/deliveries",
-      "routes/dashboards/buyer-admin/deliveries.tsx",
-    ),
-    route(
-      "buyer-admin-dashboard/settings",
-      "routes/dashboards/buyer-admin/settings.tsx",
+      "admin-dashboard/buyer/deliveries",
+      "routes/dashboards/admin/buyer/deliveries.tsx",
     ),
   ]),
 ] satisfies RouteConfig;

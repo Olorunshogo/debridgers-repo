@@ -1,11 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ComingSoon } from "@debridgers/ui-web";
 import { Calculator, Landmark } from "lucide-react";
+import { publicRequest } from "@debridgers/api-client";
 import {
-  buyPriceForMargin,
-  computeOrder,
-  sellPriceForMargin,
-  type OrderBreakdown,
+  procurementTargets,
+  LOADING_50KG_KOBO,
+  LOADING_100KG_KOBO,
+  type ProcurementTargets,
+  type ProcurementTargetsInput,
   type PricingRules,
 } from "@debridgers/pricing";
 import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
@@ -19,10 +21,10 @@ import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
  * has to be, which means prices get agreed against a feeling about whether they
  * leave room.
  *
- * The calculator is live and works today; it is arithmetic, not a feature
- * waiting on a backend. What is still a proposal is everything needing data the
- * company does not yet record: last price paid per supplier, achieved spread
- * over time, and an alert when a purchase breaches the walk-away price.
+ * The desk states two things, the cost and the target margin, and one call to
+ * `procurementTargets` derives the rest. It used to solve each output through a
+ * separate call that assembled its own arguments, which is how two figures on
+ * one screen came to be computed against different assumptions.
  *
  * Derivation in docs/business/BusinessModel.md.
  */
@@ -42,12 +44,35 @@ export function meta() {
 
 type Direction = "fromMarket" | "fromFarmer";
 
+type PackageSize = "50kg" | "100kg";
+
+/* What GET /zones serves. The taper and the ceiling are the zone's own. */
+interface DeliveryZone {
+  id: number;
+  name: string;
+  delivery_fee: number;
+  free_delivery: boolean;
+  areas: string[];
+  tier_one_per_package_kobo: number;
+  tier_two_per_package_kobo: number;
+  delivery_cap_kobo: number;
+}
+
 // === Helpers
 
-const naira = (n: number): string =>
-  `₦${Math.round(n).toLocaleString("en-NG")}`;
+const naira = (kobo: number): string =>
+  `₦${Math.round(kobo / 100).toLocaleString("en-NG")}`;
 
-const pct = (n: number): string => `${(n * 100).toFixed(1)}%`;
+const pct = (fraction: number): string => `${(fraction * 100).toFixed(1)}%`;
+
+/* The only place a typed naira figure becomes the kobo everything else uses. */
+const toKobo = (nairaAmount: number): number =>
+  Math.round((Number.isFinite(nairaAmount) ? nairaAmount : 0) * 100);
+
+const LOADING_PER_PACKAGE_KOBO: Record<PackageSize, number> = {
+  "50kg": LOADING_50KG_KOBO.value,
+  "100kg": LOADING_100KG_KOBO.value,
+};
 
 // === Presentation
 
@@ -120,32 +145,80 @@ function NumberField({
   );
 }
 
+function SelectField({
+  label,
+  value,
+  onChange,
+  note,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  note?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-body text-xs font-medium">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="border-line text-heading cursor-pointer rounded-xl border bg-white px-3 py-2 text-sm"
+      >
+        {children}
+      </select>
+      {note ? <span className="text-body/60 text-xs">{note}</span> : null}
+    </label>
+  );
+}
+
 // === Page
 
 export default function ProcurementTargets() {
   const { pricing, isLoading, error } = usePlatformConfig();
+
   const [direction, setDirection] = useState<Direction>("fromMarket");
-  const [marketPrice, setMarketPrice] = useState<number>(98000);
-  const [farmerPrice, setFarmerPrice] = useState<number>(90000);
-  const [targetMargin, setTargetMargin] = useState<number>(10);
+  const [marketPriceNaira, setMarketPriceNaira] = useState<number>(98000);
+  const [farmerPriceNaira, setFarmerPriceNaira] = useState<number>(90000);
+  const [targetMarginPercent, setTargetMarginPercent] = useState<number>(10);
   const [packages, setPackages] = useState<number>(1);
-  const [zoneBase, setZoneBase] = useState<number>(4000);
   const [dropsPerTrip, setDropsPerTrip] = useState<number>(1);
-  const [loadingPerPackage, setLoadingPerPackage] = useState<number>(300);
-  const [inboundHaulage, setInboundHaulage] = useState<number>(0);
+  const [packageSize, setPackageSize] = useState<PackageSize>("50kg");
+  const [inboundHaulageNaira, setInboundHaulageNaira] = useState<number>(0);
+  const [zones, setZones] = useState<DeliveryZone[]>([]);
+  const [zoneId, setZoneId] = useState<number | null>(null);
+  const [zonesLoading, setZonesLoading] = useState<boolean>(true);
+  const [zonesError, setZonesError] = useState<string | null>(null);
 
-  const shared = useMemo(
-    () => ({
-      packages,
-      zoneBase,
-      dropsPerTrip,
-      loadingPerPackage,
-      inboundHaulage,
-    }),
-    [packages, zoneBase, dropsPerTrip, loadingPerPackage, inboundHaulage],
+  // === Zones
+  useEffect(() => {
+    let cancelled: boolean = false;
+
+    publicRequest<DeliveryZone[]>("/zones")
+      .then((rows) => {
+        if (cancelled) return;
+        setZones(rows);
+        setZoneId(rows[0]?.id ?? null);
+        setZonesError(null);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setZonesError("Could not load the delivery zones.");
+      })
+      .finally(() => {
+        if (!cancelled) setZonesLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const zone: DeliveryZone | null = useMemo<DeliveryZone | null>(
+    () => zones.find((z) => z.id === zoneId) ?? null,
+    [zones, zoneId],
   );
-
-  const margin: number = targetMargin / 100;
 
   /*
    * The fee rules come from the API, never from a local copy, so this page
@@ -153,52 +226,55 @@ export default function ProcurementTargets() {
    */
   const rules: PricingRules | null = pricing;
 
-  /* One price is given; the other is solved for the target margin. */
-  const solvedBuy: number = useMemo(
-    () =>
-      rules
-        ? buyPriceForMargin(
-            { ...shared, sellPrice: marketPrice },
-            margin,
-            rules,
-          )
-        : 0,
-    [shared, marketPrice, margin, rules],
-  );
+  /* One call. Every figure on the screen is read off its result. */
+  const targets = useMemo<ProcurementTargets | null>(() => {
+    if (!rules || !zone) return null;
 
-  const solvedSell: number = useMemo(
-    () =>
-      rules
-        ? sellPriceForMargin(
-            { ...shared, buyPrice: farmerPrice },
-            margin,
-            rules,
-          )
-        : 0,
-    [shared, farmerPrice, margin, rules],
-  );
+    const context = {
+      packages,
+      zoneBaseKobo: zone.delivery_fee,
+      dropsPerTrip,
+      loadingPerPackageKobo: LOADING_PER_PACKAGE_KOBO[packageSize],
+      inboundHaulageKobo: toKobo(inboundHaulageNaira),
+      tierOnePerPackageKobo: zone.tier_one_per_package_kobo,
+      tierTwoPerPackageKobo: zone.tier_two_per_package_kobo,
+      deliveryCapKobo: zone.delivery_cap_kobo,
+      targetMarginPercent,
+    };
 
-  const sellPrice: number =
-    direction === "fromMarket" ? marketPrice : solvedSell;
-  const buyPrice: number = direction === "fromMarket" ? solvedBuy : farmerPrice;
+    const input: ProcurementTargetsInput =
+      direction === "fromMarket"
+        ? {
+            ...context,
+            known: "marketPrice",
+            marketPriceKobo: toKobo(marketPriceNaira),
+          }
+        : {
+            ...context,
+            known: "farmerPrice",
+            farmerPriceKobo: toKobo(farmerPriceNaira),
+          };
 
-  const order: OrderBreakdown | null = useMemo(
-    () =>
-      rules ? computeOrder({ ...shared, sellPrice, buyPrice }, rules) : null,
-    [shared, sellPrice, buyPrice, rules],
-  );
-
-  const walkAway: number = useMemo(
-    () => (rules ? buyPriceForMargin({ ...shared, sellPrice }, 0, rules) : 0),
-    [shared, sellPrice, rules],
-  );
+    return procurementTargets(input, rules);
+  }, [
+    rules,
+    zone,
+    packages,
+    dropsPerTrip,
+    packageSize,
+    inboundHaulageNaira,
+    targetMarginPercent,
+    direction,
+    marketPriceNaira,
+    farmerPriceNaira,
+  ]);
 
   /*
    * Deliberately refuses to render numbers rather than falling back to a local
-   * copy of the fee rules. A buying desk quoting against invented fees is worse
-   * than a buying desk that has to wait for a page load.
+   * copy of the fee rules or a typed zone base. A buying desk quoting against
+   * invented fees is worse than a buying desk that has to wait for a page load.
    */
-  if (isLoading || !rules || !order) {
+  if (isLoading || zonesLoading || !rules || !zone || !targets) {
     return (
       <div className="flex flex-col gap-6 p-4 sm:p-6">
         <section className="border-line rounded-2xl border bg-white p-6 sm:p-8">
@@ -206,19 +282,25 @@ export default function ProcurementTargets() {
             Procurement Targets
           </h1>
           <p className="text-body text-sm">
-            {error ?? "Loading the live fee rules from the server."}
+            {error ??
+              zonesError ??
+              "Loading the live fee rules and delivery zones from the server."}
           </p>
-          {error ? (
+          {(error ?? zonesError) ? (
             <p className="text-body/70 mt-2 text-xs">
               Targets are not shown without them: quoting a farmer against a fee
-              structure the buyer is not billed under is how a price gets agreed
-              that cannot be honoured.
+              structure the buyer is not billed under, or against a zone&rsquo;s
+              rates read off some other zone, is how a price gets agreed that
+              cannot be honoured.
             </p>
           ) : null}
         </section>
       </div>
     );
   }
+
+  const feesCarryTheOrder: boolean =
+    targets.walkAwayPriceKobo >= targets.sellPriceKobo;
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6">
@@ -267,25 +349,25 @@ export default function ProcurementTargets() {
             <NumberField
               label="Market price, per package"
               suffix="₦"
-              value={marketPrice}
-              onChange={setMarketPrice}
+              value={marketPriceNaira}
+              onChange={setMarketPriceNaira}
               note="What the buyer would pay at market"
             />
           ) : (
             <NumberField
               label="Farmer price, per package"
               suffix="₦"
-              value={farmerPrice}
-              onChange={setFarmerPrice}
+              value={farmerPriceNaira}
+              onChange={setFarmerPriceNaira}
               note="What we pay, before haulage"
             />
           )}
           <NumberField
             label="Target margin"
             suffix="% of order"
-            value={targetMargin}
+            value={targetMarginPercent}
             step={1}
-            onChange={setTargetMargin}
+            onChange={setTargetMarginPercent}
           />
           <NumberField
             label="Packages in the order"
@@ -300,27 +382,37 @@ export default function ProcurementTargets() {
             onChange={setDropsPerTrip}
             note="The trip cost splits across these"
           />
-          <NumberField
-            label="Zone base"
-            suffix="₦"
-            value={zoneBase}
-            onChange={setZoneBase}
-            note="South 4,000 / North 4,500 / Chikun 6,000"
-          />
-          <NumberField
-            label="Loading, per package"
-            suffix="₦"
-            value={loadingPerPackage}
-            step={100}
-            onChange={setLoadingPerPackage}
-            note="300 for 50kg, 500 for 100kg"
-          />
+          <SelectField
+            label="Delivery zone"
+            value={String(zoneId ?? "")}
+            onChange={(v) => setZoneId(Number(v))}
+            note={`Base ${naira(zone.delivery_fee)}, taper ${naira(
+              zone.tier_one_per_package_kobo,
+            )} then ${naira(zone.tier_two_per_package_kobo)}, cap ${naira(
+              zone.delivery_cap_kobo,
+            )}`}
+          >
+            {zones.map((z) => (
+              <option key={z.id} value={z.id}>
+                {z.name}
+              </option>
+            ))}
+          </SelectField>
+          <SelectField
+            label="Package size"
+            value={packageSize}
+            onChange={(v) => setPackageSize(v as PackageSize)}
+            note={`Loading ${naira(LOADING_PER_PACKAGE_KOBO[packageSize])} per package`}
+          >
+            <option value="50kg">50kg, a one-person lift</option>
+            <option value="100kg">100kg, a two-person lift</option>
+          </SelectField>
           <NumberField
             label="Inbound haulage, per package"
             suffix="₦"
-            value={inboundHaulage}
+            value={inboundHaulageNaira}
             step={250}
-            onChange={setInboundHaulage}
+            onChange={setInboundHaulageNaira}
             note="Supplier to warehouse. Unmeasured"
           />
         </div>
@@ -333,22 +425,50 @@ export default function ProcurementTargets() {
                 : "Sell at or above"}
             </h2>
             <p className="text-status-delivered-fg font-syne text-3xl font-semibold tabular-nums">
-              {naira(direction === "fromMarket" ? solvedBuy : solvedSell)}
+              {naira(targets.solvedPriceKobo)}
             </p>
             <p className="text-body mt-1 text-sm">
               {direction === "fromMarket"
-                ? `${pct(order.procurementSpread)} below the ${naira(marketPrice)} market price`
-                : `${pct((solvedSell - farmerPrice) / farmerPrice)} above the ${naira(farmerPrice)} farmer price`}
+                ? `${pct(targets.procurementSpread)} below the ${naira(
+                    targets.sellPriceKobo,
+                  )} market price`
+                : `${pct(
+                    targets.buyPriceKobo > 0
+                      ? (targets.sellPriceKobo - targets.buyPriceKobo) /
+                          targets.buyPriceKobo
+                      : 0,
+                  )} above the ${naira(targets.buyPriceKobo)} farmer price`}
             </p>
 
             <div className="border-line mt-4 border-t pt-3">
               <Row
                 label="Walk-away price"
                 note="Pay above this and the order loses money"
-                value={naira(walkAway)}
-                tone={walkAway >= sellPrice ? "result" : "cost"}
+                value={naira(targets.walkAwayPriceKobo)}
+                tone={feesCarryTheOrder ? "result" : "cost"}
               />
-              {walkAway >= sellPrice ? (
+              <Row
+                label="Modelled landed cost"
+                note={targets.landedCost.basis}
+                value={naira(targets.landedCost.value)}
+                tone={
+                  targets.landedCost.status === "measured" ? "result" : "plain"
+                }
+              />
+              {direction === "fromFarmer" ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFarmerPriceNaira(
+                      Math.round(targets.landedCost.value / 100),
+                    )
+                  }
+                  className="text-primary mt-2 cursor-pointer text-xs font-semibold hover:opacity-70"
+                >
+                  Use the modelled landed cost as the farmer price
+                </button>
+              ) : null}
+              {feesCarryTheOrder ? (
                 <p className="text-body/70 mt-2 text-xs">
                   Above the sell price, so the fees alone carry the order: it
                   clears even paying full market price for the goods.
@@ -363,58 +483,65 @@ export default function ProcurementTargets() {
             </h2>
             <Row
               label="Goods, what the buyer pays"
-              value={naira(order.itemsTotal)}
+              value={naira(targets.itemsTotalKobo)}
             />
             <Row
               label="Delivery fee charged"
-              value={naira(order.deliveryFee)}
+              note={`${zone.name}, ${packages} package${packages === 1 ? "" : "s"}`}
+              value={naira(targets.deliveryFeeKobo)}
             />
             <Row
               label="Cost-to-serve fee charged"
-              note={`${(rules.serviceFeeRate * 100).toFixed(1)}%, floor ${naira(rules.serviceFeeMin)}, cap ${naira(rules.serviceFeeMax)}`}
-              value={naira(order.serviceFee)}
+              note={`${(rules.serviceFeeRate * 100).toFixed(1)}%, floor ${naira(
+                toKobo(rules.serviceFeeMin),
+              )}, cap ${naira(toKobo(rules.serviceFeeMax))}`}
+              value={naira(targets.serviceFeeKobo)}
             />
-            <Row label="Buyer pays" value={naira(order.revenue)} tone="total" />
+            <Row
+              label="Buyer pays"
+              value={naira(targets.revenueKobo)}
+              tone="total"
+            />
 
             <div className="mt-3" />
             <Row
               label="Landed cost of goods"
               note="Farmer price plus inbound haulage"
-              value={`(${naira(order.landedGoods)})`}
+              value={`(${naira(targets.landedGoodsKobo)})`}
               tone="cost"
             />
             <Row
               label="Paystack, local card"
               note="1.5% + ₦100, capped ₦2,000"
-              value={`(${naira(order.paystack)})`}
+              value={`(${naira(targets.paystackKobo)})`}
               tone="cost"
             />
             <Row
               label="Delivery vehicle"
               note={
                 dropsPerTrip > 1
-                  ? `${naira(zoneBase)} split across ${dropsPerTrip} drops`
+                  ? `${naira(zone.delivery_fee)} split across ${dropsPerTrip} drops`
                   : "Dedicated trip"
               }
-              value={`(${naira(order.vehicle)})`}
+              value={`(${naira(targets.vehicleKobo)})`}
               tone="cost"
             />
             <Row
               label="Loading and offloading"
-              value={`(${naira(order.loading)})`}
+              value={`(${naira(targets.loadingKobo)})`}
               tone="cost"
             />
             <Row
               label="Total cost"
-              value={`(${naira(order.totalCost)})`}
+              value={`(${naira(targets.totalCostKobo)})`}
               tone="total"
             />
 
             <div className="border-line mt-3 border-t pt-3">
               <Row
                 label="Contribution"
-                note={`${pct(order.marginOnRevenue)} of what the buyer paid`}
-                value={naira(order.contribution)}
+                note={`${pct(targets.marginOnRevenue)} of what the buyer paid`}
+                value={naira(targets.contributionKobo)}
                 tone="result"
               />
             </div>
@@ -444,6 +571,12 @@ export default function ProcurementTargets() {
               several products stop clearing on fees alone.
             </li>
             <li>
+              <strong>The zone sets its own delivery rates.</strong> The base,
+              the taper and the ceiling all come from the zone row the checkout
+              charges against, so a far zone is never quoted at a near
+              zone&rsquo;s schedule.
+            </li>
+            <li>
               <strong>
                 Margin here is contribution over what the buyer paid
               </strong>
@@ -471,7 +604,8 @@ export default function ProcurementTargets() {
           <li>
             <strong>A supplier register.</strong> Name, location, products,
             capacity per cycle, lead time, quality outcome, payment terms,
-            relationship owner, and the last three prices paid with dates.
+            relationship owner, and the last three prices paid with dates. It is
+            what turns the modelled landed cost above into a measured one.
           </li>
           <li>
             <strong>Inbound haulage recorded per purchase</strong>, so landed
@@ -492,11 +626,6 @@ export default function ProcurementTargets() {
             <strong>Achieved spread over the last 30 days</strong>, per product.
             The only honest answer to whether the 6% assumption under every
             projection in the business model is real.
-          </li>
-          <li>
-            <strong>Zone bases served from the API.</strong> The fee rules now
-            come from <code>GET /config/public</code>, but the zone base is
-            still typed in by hand. It should be picked from the live zone list.
           </li>
         </ul>
       </ComingSoon>

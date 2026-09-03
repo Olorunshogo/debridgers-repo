@@ -54,25 +54,25 @@ export default function BuyerAdminOverview() {
           label: "Total Buyers",
           value: stats.total_buyers,
           icon: Users,
-          href: "/buyer-admin-dashboard/buyers",
+          href: "/admin-dashboard/buyers",
         },
         {
           label: "Active Buyers",
           value: stats.active_buyers,
           icon: Users,
-          href: "/buyer-admin-dashboard/buyers",
+          href: "/admin-dashboard/buyers",
         },
         {
           label: "Pending Deliveries",
           value: stats.pending_deliveries,
           icon: Truck,
-          href: "/buyer-admin-dashboard/deliveries",
+          href: "/admin-dashboard/buyer/deliveries",
         },
         {
           label: "Total Orders",
           value: stats.total_orders,
           icon: ShoppingBag,
-          href: "/buyer-admin-dashboard/deliveries",
+          href: "/admin-dashboard/buyer/deliveries",
         },
       ]
     : [];
@@ -119,13 +119,13 @@ export default function BuyerAdminOverview() {
         </h3>
         <div className="flex flex-wrap gap-3">
           <Link
-            to="/buyer-admin-dashboard/buyers"
+            to="/admin-dashboard/buyers"
             className="border-line text-heading rounded-full border px-4 py-2 text-sm font-medium transition-colors"
           >
             Manage Buyers
           </Link>
           <Link
-            to="/buyer-admin-dashboard/deliveries"
+            to="/admin-dashboard/buyer/deliveries"
             className="border-line text-heading rounded-full border px-4 py-2 text-sm font-medium transition-colors"
           >
             Track Deliveries

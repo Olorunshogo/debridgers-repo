@@ -1132,7 +1132,7 @@ Lock all four together, because each one alone leaves a hole:
 | ---------------------------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Goods**                                            | Market reference price            | Unchanged. Target procurement spread 6% to 10%                                                                                                                                                                                                                          |
 | **Cost-to-serve fee**, currently misnamed "handling" | ₦100 flat                         | **3% of items subtotal, floor ₦500, cap ₦5,000**                                                                                                                                                                                                                        |
-| **Delivery**                                         | ₦500 base, ₦500 per extra package | **Zone base covering 2 packages, set to the measured trip cost, then a taper.** Kaduna South ₦4,000 / ₦700 / ₦400, capped ₦10,000. North ₦4,500 / ₦800 / ₦450, capped ₦11,000. Chikun ₦6,000 / ₦1,000 / ₦600, capped ₦14,000, and the Chikun zone areas need correcting |
+| **Delivery**                                         | ₦500 base, ₦500 per extra package | **Zone base covering 2 packages, set to the measured trip cost, then a taper.** Kaduna South ₦4,000 / ₦700 / ₦400, capped ₦10,000. North ₦4,500 / ₦800 / ₦450, capped ₦11,000. Chikun ₦6,000 / ₦1,000 / ₦600, capped ₦14,000, and the Chikun zone areas need correcting. These are the locked figures; the live taper currently runs a shallower operating band, `TAPER_BAND_MIN_KOBO` and `TAPER_BAND_MAX_KOBO` in `packages/pricing/src/delivery-fee.ts`, pending a second delivery cost measurement |
 | **Minimum order**                                    | None                              | **₦25,000 or 2 packages** for delivery. Below that, pickup or same-zone add-on                                                                                                                                                                                          |
 
 Rationale in one line each: the 3% cost-to-serve fee sits deliberately above the 2.10% rate at which the cheapest hero order merely pays for its own card processing, and the surplus funds the order admin nobody is currently costing; the delivery base is set to the **measured** ₦4,000 trip cost rather than an estimate, and the taper prices the trip rather than the bag, which is what the cost actually is; both caps protect the large accounts the segment decision depends on; the minimum stops the company selling below cost.
@@ -1141,17 +1141,15 @@ Rationale in one line each: the 3% cost-to-serve fee sits deliberately above the
 
 **Above 20 packages or ₦750,000 of goods, quote individually:** delivery at actual cost plus 20%, cost-to-serve negotiated as a contract rate. The standard table breaks at that size, as Worked Example F shows.
 
-**Code changes this implied**, all shipped:
+**Code changes this implied**, shipped:
 
-- `HANDLING_FEE_KOBO` is now `computeServiceFee`, 3% of subtotal with a ₦500 floor and ₦5,000 cap, in `apps/debridgers-backend/src/api/v1/buyer/delivery-fee.ts`, renamed to the cost-to-serve fee it actually is
+- `HANDLING_FEE_KOBO` is now `computeServiceFee`, 3% of subtotal with a floor and a cap, in `packages/pricing/src/delivery-fee.ts`, renamed to the cost-to-serve fee it actually is, and imported directly rather than through a backend wrapper
 - `PER_EXTRA_PACKAGE_KOBO` is a taper in the same file
 - `PACKAGES_INCLUDED_IN_BASE` moved from 1 to 2
-- Zone `delivery_fee` rows updated in `seeder.ts` and in the database to ₦4,000 / ₦4,500 / ₦6,000, and the Chikun zone's areas corrected, by migration `0021_catalogue_and_zone_corrections.sql`
-- The taper and the ceiling moved onto the zone table as `tier_one_per_package_kobo`, `tier_two_per_package_kobo` and `delivery_cap_kobo`, by migration `0022_zone_taper_order_source_millet.sql`. One shared taper under-charged the far zones on every package past the second, because distance changes what a marginal package costs and not only what the trip costs
+- Zone `delivery_fee` rows and the taper corrected in `seeder.ts` and in the database, and the Chikun zone's areas corrected, by migration `0024_zone_catalogue_data.sql`. The original `0021` and `0022` migrations that first shipped this were superseded and removed from the journal when the migration set was regenerated in Phase 0 of `docs/frontend/Refactor.md`, and `0024` restores what they dropped
+- The taper and the ceiling live on the zone table as `tier_one_per_package_kobo`, `tier_two_per_package_kobo` and `delivery_cap_kobo`. One shared taper under-charged the far zones on every package past the second, because distance changes what a marginal package costs and not only what the trip costs
 - Product `unit` strings corrected where bags are 100kg, and millet either listed or dropped
 - A minimum-order check in the quote and checkout paths
-- The hardcoded `130000` in `product.service.ts:279` replaced with the real product price
-- The `140000` default on `orders.unit_price` removed
 
 That is a half-day of work and it is the only engineering the halt should permit, because it is a pricing decision, not a feature.
 

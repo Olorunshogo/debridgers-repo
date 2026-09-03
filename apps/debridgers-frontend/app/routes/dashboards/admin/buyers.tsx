@@ -24,7 +24,13 @@ export function meta() {
   ];
 }
 
-type BuyerStatus = "active" | "inactive";
+/*
+ * Blocked and suspended are different fields on the user row and mean different
+ * things: blocking is permanent, suspension is a hold. This list used to show
+ * only blocking while the buyer-admin list showed only suspension, so neither
+ * screen told the whole truth about an account.
+ */
+type BuyerStatus = "active" | "suspended" | "blocked";
 
 interface BuyerRow {
   id: number;
@@ -44,6 +50,7 @@ interface ApiBuyer {
   phone: string;
   is_email_verified: boolean;
   is_blocked: boolean;
+  is_suspended: boolean;
   joined_at: string;
 }
 
@@ -54,7 +61,8 @@ function mapBuyer(b: ApiBuyer): BuyerRow {
     email: b.email,
     phone: b.phone ?? "",
     verified: b.is_email_verified,
-    status: b.is_blocked ? "inactive" : "active",
+    /* Blocking outranks suspension: it is the stronger and permanent state. */
+    status: b.is_blocked ? "blocked" : b.is_suspended ? "suspended" : "active",
     joinedDate: new Date(b.joined_at).toLocaleDateString("en-NG", {
       month: "short",
       day: "numeric",
@@ -65,7 +73,8 @@ function mapBuyer(b: ApiBuyer): BuyerRow {
 
 const STATUS_BADGE: Record<BuyerStatus, { tone: StatusTone; label: string }> = {
   active: { tone: "active", label: "Active" },
-  inactive: { tone: "danger", label: "Blocked" },
+  suspended: { tone: "warning", label: "Suspended" },
+  blocked: { tone: "danger", label: "Blocked" },
 };
 
 /*
