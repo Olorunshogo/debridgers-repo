@@ -17,7 +17,14 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 export const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   pending: ["confirmed", "cancelled"],
-  confirmed: ["out_for_delivery", "delivered", "cancelled"], // TODO: Remove "delivered" after testing
+  /*
+   * No confirmed -> delivered shortcut. It existed so that an order could be
+   * marked delivered while the admin queue still filtered on "confirmed" alone,
+   * but it let an order reach delivered having never been dispatched, which is
+   * the audit gap recording dispatch exists to close. The queue now accepts
+   * out_for_delivery, so the shortcut has nothing left to work around.
+   */
+  confirmed: ["out_for_delivery", "cancelled"],
   out_for_delivery: ["delivered", "cancelled"],
   delivered: [],
   cancelled: [],

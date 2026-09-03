@@ -13,6 +13,11 @@ import { RolesGuard } from "../../../shared/guards/roles.guard";
 import { AdminKeyGuard } from "../../../shared/guards/admin-key.guard";
 import { Roles } from "../../../shared/decorators/roles.decorator";
 import { DeliveryAdminService } from "./delivery-admin.service";
+import { ZodValidationPipe } from "../../../../infrastructure/pipeline/validation.pipeline";
+import {
+  verifyDeliverySchema,
+  type VerifyDeliveryDto,
+} from "./dto/verify-delivery.dto";
 
 @Controller("admin/deliveries")
 @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
@@ -33,12 +38,7 @@ export class DeliveryAdminController {
   @Post(":orderId/verify")
   async verifyDelivery(
     @Param("orderId", ParseIntPipe) orderId: number,
-    @Body()
-    data: {
-      photos: string[];
-      notes?: string;
-      recipient_name?: string;
-    },
+    @Body(new ZodValidationPipe(verifyDeliverySchema)) data: VerifyDeliveryDto,
     @Request() req: { user: { id: number } },
   ) {
     return this.deliveryAdminService.verifyDelivery(orderId, data, req.user.id);

@@ -17,6 +17,9 @@ import { AdminInviteController } from "./admin-invite/admin-invite.controller";
 import { AdminInviteService } from "./admin-invite/admin-invite.service";
 import { EmailModule } from "../../../notification/features/email/email.module";
 import { AgentWalletService } from "../wallet/agent-wallet.service";
+import { PricingAdminController } from "./pricing/pricing-admin.controller";
+import { ZoneAdminService } from "./pricing/zone-admin.service";
+import { DeliveryPromotionModule } from "./pricing/delivery-promotion.module";
 
 @Module({
   imports: [
@@ -25,6 +28,7 @@ import { AgentWalletService } from "../wallet/agent-wallet.service";
     AgentModule,
     AuditModule,
     EmailModule,
+    DeliveryPromotionModule,
   ],
   controllers: [
     AdminController,
@@ -32,6 +36,7 @@ import { AgentWalletService } from "../wallet/agent-wallet.service";
     DeliveryAdminController,
     NotificationsAdminController,
     AdminInviteController,
+    PricingAdminController,
   ],
   providers: [
     AdminService,
@@ -42,6 +47,7 @@ import { AgentWalletService } from "../wallet/agent-wallet.service";
     NotificationsService,
     AdminInviteService,
     AgentWalletService,
+    ZoneAdminService,
     // Remove EmailService - it comes from EmailModule
   ],
   exports: [
