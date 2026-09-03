@@ -1,7 +1,14 @@
 import { Module } from "@nestjs/common";
 import { LoggerModule as PinoLoggerModule } from "nestjs-pino";
-import FileStreamRotator from "file-stream-rotator";
 import path from "path";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let FileStreamRotator: any;
+try {
+  FileStreamRotator = require("file-stream-rotator");
+} catch {
+  FileStreamRotator = null;
+}
 
 const isDev = process.env.NODE_ENV !== "production";
 
@@ -17,16 +24,17 @@ const isDev = process.env.NODE_ENV !== "production";
               options: { colorize: true, singleLine: false },
             }
           : undefined,
-        stream: isDev
-          ? undefined
-          : FileStreamRotator.getStream({
-              filename: path.join(process.cwd(), "logs", "app-%DATE%.log"),
-              frequency: "daily",
-              max_logs: "14d",
-              size: "5m",
-              audit_file: path.join(process.cwd(), "logs", ".audit.json"),
-              date_format: "YYYY-MM-DD",
-            }),
+        stream:
+          isDev || !FileStreamRotator
+            ? undefined
+            : FileStreamRotator.getStream({
+                filename: path.join(process.cwd(), "logs", "app-%DATE%.log"),
+                frequency: "daily",
+                max_logs: "14d",
+                size: "5m",
+                audit_file: path.join(process.cwd(), "logs", ".audit.json"),
+                date_format: "YYYY-MM-DD",
+              }),
       },
     }),
   ],
