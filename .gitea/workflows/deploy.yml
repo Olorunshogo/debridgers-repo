@@ -15,7 +15,7 @@ on:
   workflow_dispatch: {}
 
 env:
-  REGISTRY: code.codeberg.org
+  REGISTRY: codeberg.org
   IMAGE_NAME: debridgers_ltd/debridgers-backend
 
 jobs:
