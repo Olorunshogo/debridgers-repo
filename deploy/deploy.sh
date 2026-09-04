@@ -45,17 +45,18 @@ docker image prune -f
 echo "==> Current status"
 IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml ps
 
-echo "==> Checking backend health locally"
-for attempt in $(seq 1 12); do
-  if IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml exec -T debridgers-backend curl -sf http://localhost:4001/api/v1/health >/dev/null 2>&1; then
-    echo "==> ✅ Deployment successful: backend is healthy"
-    exit 0
-  fi
-  echo "    attempt ${attempt}/12: backend not ready, retrying in 5s"
-  sleep 5
-done
+echo "==> Checking backend health status"
+sleep 3
 
-echo "==> ❌ Deployment FAILED: backend health check failed" >&2
+# Check if backend container is healthy (Docker healthcheck)
+if IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml ps debridgers-backend | grep -q "healthy"; then
+  echo "==> ✅ Deployment successful: backend is healthy"
+  exit 0
+fi
+
+echo "==> ❌ Backend is not healthy" >&2
+echo "==> Backend status:" >&2
+IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml ps debridgers-backend >&2
 echo "==> Recent backend logs:" >&2
-IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml logs --tail 40 debridgers-backend >&2 || true
+IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml logs --tail 30 debridgers-backend >&2 || true
 exit 1
