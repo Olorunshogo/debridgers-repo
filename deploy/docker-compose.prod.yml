@@ -32,9 +32,9 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: debridgers-cloudflared
     restart: unless-stopped
-    command: tunnel --no-autoupdate --protocol http2 --config /etc/cloudflared/config.yml run
-    volumes:
-      - /opt/debridgers/deploy/cloudflared:/etc/cloudflared:ro
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_CREDENTIALS}
+    environment:
+      - CLOUDFLARE_TUNNEL_CREDENTIALS=${CLOUDFLARE_TUNNEL_CREDENTIALS}
     depends_on:
       debridgers-backend:
         condition: service_healthy
