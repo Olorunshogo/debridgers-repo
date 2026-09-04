@@ -34,7 +34,7 @@ services:
     restart: unless-stopped
     command: tunnel --no-autoupdate --protocol http2 --config /etc/cloudflared/config.yml run
     volumes:
-      - ./deploy/cloudflared:/etc/cloudflared:ro
+      - /opt/debridgers/deploy/cloudflared:/etc/cloudflared:ro
     depends_on:
       debridgers-backend:
         condition: service_healthy
