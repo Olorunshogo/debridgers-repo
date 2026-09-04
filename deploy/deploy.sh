@@ -45,23 +45,22 @@ else
 fi
 
 echo "==> Pulling latest images"
-export IMAGE_TAG
-docker compose -f deploy/docker-compose.prod.yml pull debridgers-backend
+IMAGE_TAG="${IMAGE_TAG}" docker compose -f deploy/docker-compose.prod.yml pull debridgers-backend
 
 echo "==> Starting services"
-docker compose -f deploy/docker-compose.prod.yml up -d --remove-orphans
+IMAGE_TAG="${IMAGE_TAG}" docker compose -f deploy/docker-compose.prod.yml up -d --remove-orphans
 
 # Cloudflared needs to be recreated when config changes
-docker compose -f deploy/docker-compose.prod.yml up -d --force-recreate cloudflared
+IMAGE_TAG="${IMAGE_TAG}" docker compose -f deploy/docker-compose.prod.yml up -d --force-recreate cloudflared
 
 echo "==> Running database migrations"
-docker compose -f deploy/docker-compose.prod.yml exec -T debridgers-backend pnpm db:migrate
+IMAGE_TAG="${IMAGE_TAG}" docker compose -f deploy/docker-compose.prod.yml exec -T debridgers-backend pnpm db:migrate
 
 echo "==> Pruning old images"
 docker image prune -f
 
 echo "==> Current status"
-docker compose -f deploy/docker-compose.prod.yml ps
+IMAGE_TAG="${IMAGE_TAG}" docker compose -f deploy/docker-compose.prod.yml ps
 
 echo "==> Smoke test https://api-test.debridgers.com/api/v1/health"
 for attempt in $(seq 1 12); do
