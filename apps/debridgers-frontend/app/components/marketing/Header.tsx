@@ -206,7 +206,7 @@ export function Header({
      *
      * Owning both here means no page can get it wrong again.
      */
-    <div className="sticky top-3 z-50">
+    <div className="sticky top-3 z-999">
       <motion.header
         className={`font-syne h-navbar-h mx-auto flex w-4/5 max-w-232 rounded-full p-4 xl:max-w-260 ${
           isSolid ? "border-line border shadow-sm" : "shadow-md"

@@ -15,6 +15,8 @@ A single factual reference for what the company is, how it works, and where it i
 - **Registration:** Registered with the Corporate Affairs Commission. **RC number:** `!todo()`
 - **Location:** Kaduna, Nigeria. Operating in Kaduna metropolis, currently focused on Kaduna South
 - **Stage:** Early revenue. Single city. 10+ orders to 2 B2B customers
+- **Funding stage:** Bootstrapped, pre-seed. No external capital raised, no priced or SAFE round closed, founders self-funding. Ruled out: seed (no round closed, unit economics still unmeasured), Series A (needs proven scaling revenue), Series B+ (needs market-leadership scale)
+- **Solution category:** B2B agri-food procurement and distribution platform. Considered and rejected as the primary label: agri-supply chain / farm-to-business marketplace (this is the target-state chain, not today's), B2B commerce plus last-mile delivery platform (undersells the sourcing side), agent-based distribution network for FMCG staples (the agent layer is built but unused)
 - **Founded:** 2025. `!todo()` exact month, and whether this dates from incorporation, from the first line of code, or from the first sale. Investors will ask which one
 - **Founders:** Nwankwo Stephanie, BAMTEFA Olorunshogo Moses
 - **Team:** Four people. Core team member agreement is **signed**
@@ -86,6 +88,7 @@ Four people, none salaried. All four currently perform the field agent function,
 ## VISION
 
 <!-- A Nigeria where every family and business pays the true price of food, with no exploitation, no information gap, and no unnecessary intermediation. -->
+
 To become the world's most trusted and innovative agricultural supply company owning every step of the process, from seed to delivery, through technology, integrity and excellence.
 
 ---
@@ -93,7 +96,8 @@ To become the world's most trusted and innovative agricultural supply company ow
 ## MISSION
 
 <!-- To make the movement of food from producer to table transparent, measurable, and lower in cost, by connecting supply directly to consumers and businesses through technology, trusted agents, and published pricing. -->
-To source and deliver the world's essential food commodities directly from trusted local farmers to every household, business, and institution on the planet  building toward a supply chain we own end to end.
+
+To source and deliver the world's essential food commodities directly from trusted local farmers to every household, business, and institution on the planet building toward a supply chain we own end to end.
 
 ---
 
@@ -628,5 +632,6 @@ Types worth covering: Central Market wholesalers, cash-and-carry, formal distrib
 Ten to fifteen rows is enough. **Ask the two existing customers who else they buy from** - that will beat desk research, and it doubles as a retention conversation.
 
 ## Resources
+
 1. [Debridgers - Customers Terms and Conditions](https://docs.google.com/document/d/16atOOEH0A48k6eEZzx2MN5IyqQc_sCt9UlMxn-MP-xU/edit?tab=t.w8b0m4yhnxnb)
 2. [Debridgers - Survey Requirement Document - Vision & Mission](https://docs.google.com/document/d/1zUt2aIv7dfdd97VtxlNlBIKFy--r42Wjw96rpKnKLIs/edit?tab=t.zhmlw19u52yo#heading=h.5d2nkwa6yf3n)
