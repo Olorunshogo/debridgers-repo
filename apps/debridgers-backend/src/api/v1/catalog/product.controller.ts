@@ -22,13 +22,10 @@ import {
   ProductService,
   CreateProductDto,
   UpdateProductDto,
-  CreateStockRequestDto,
 } from "./product.service";
 import { AuthGuard } from "../../shared/guards/auth.guard";
 import { RolesGuard } from "../../shared/guards/roles.guard";
 import { Roles } from "../../shared/decorators/roles.decorator";
-import { CurrentUser } from "../../shared/decorators/current-user.decorator";
-import { JwtPayload } from "../../../interfaces/users/jwt.type";
 
 @ApiTags("Catalog - Products")
 @Controller("catalog")
@@ -103,43 +100,5 @@ export class ProductController {
   @ApiOperation({ summary: "Get product details" })
   async getProduct(@Param("id", ParseIntPipe) productId: number) {
     return this.productService.getProductById(productId);
-  }
-
-  /**
-   * Agent: Request stock for a product
-   */
-  @Post("stock-requests")
-  @HttpCode(HttpStatus.CREATED)
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth("access-token")
-  @ApiOperation({ summary: "Request stock (Agent only)" })
-  async requestStock(
-    @CurrentUser() agent: JwtPayload,
-    @Body() dto: CreateStockRequestDto,
-  ) {
-    return this.productService.requestStock(agent.sub, dto);
-  }
-
-  /**
-   * Admin: Get all stock requests
-   */
-  @Get("stock-requests")
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles("admin")
-  @ApiBearerAuth("access-token")
-  @ApiOperation({ summary: "Get stock requests (Admin only)" })
-  @ApiQuery({ name: "page", required: false, example: 1 })
-  @ApiQuery({ name: "limit", required: false, example: 20 })
-  @ApiQuery({ name: "status", required: false, example: "pending" })
-  async getStockRequests(
-    @Query("page") page?: string,
-    @Query("limit") limit?: string,
-    @Query("status") status?: string,
-  ) {
-    const pageNum = page ? parseInt(page, 10) : 1;
-    const limitNum = limit ? Math.min(parseInt(limit, 10), 100) : 20;
-
-    return this.productService.getStockRequests(pageNum, limitNum, status);
   }
 }

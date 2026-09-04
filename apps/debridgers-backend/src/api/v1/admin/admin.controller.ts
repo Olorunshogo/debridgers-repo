@@ -881,8 +881,10 @@ export class AdminController {
             email: "amina@example.com",
             kyc_status: "submitted",
             id_type: "NIN",
-            id_front_url: "/tmp/uploads/id_front.jpg",
-            id_selfie_url: "/tmp/uploads/id_selfie.jpg",
+            id_front_url:
+              "https://res.cloudinary.com/debridgers/image/upload/v1/debridgers/kyc/id_front.jpg",
+            id_selfie_url:
+              "https://res.cloudinary.com/debridgers/image/upload/v1/debridgers/kyc/id_selfie.jpg",
             bank_name: "GTBank",
             bank_account_number: "0123456789",
             bank_account_name: "Amina Yusuf",
