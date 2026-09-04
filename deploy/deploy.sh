@@ -50,8 +50,13 @@ IMAGE_TAG="${IMAGE_TAG}" docker compose -f deploy/docker-compose.prod.yml pull d
 echo "==> Starting services"
 IMAGE_TAG="${IMAGE_TAG}" docker compose -f deploy/docker-compose.prod.yml up -d --remove-orphans
 
-# Cloudflared needs to be recreated when config changes
-IMAGE_TAG="${IMAGE_TAG}" docker compose -f deploy/docker-compose.prod.yml up -d --force-recreate cloudflared
+# Stop and remove cloudflared container before recreating (config changed)
+echo "==> Removing old cloudflared container"
+docker compose -f deploy/docker-compose.prod.yml rm -f cloudflared || true
+
+# Recreate cloudflared with new config
+echo "==> Starting cloudflared with new config"
+IMAGE_TAG="${IMAGE_TAG}" docker compose -f deploy/docker-compose.prod.yml up -d cloudflared
 
 echo "==> Skipping database migrations (run locally before deployment)"
 
