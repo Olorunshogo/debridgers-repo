@@ -136,7 +136,12 @@ describe("procurementTargets", () => {
 
   it("prices a far zone at its own taper, not the near zone's", () => {
     const near = procurementTargets(
-      { ...KOBO_CONTEXT, packages: 8, known: "farmerPrice", farmerPriceKobo: 9_000_000 },
+      {
+        ...KOBO_CONTEXT,
+        packages: 8,
+        known: "farmerPrice",
+        farmerPriceKobo: 9_000_000,
+      },
       RULES,
     );
     const far = procurementTargets(
@@ -260,13 +265,23 @@ describe("procurementTargets", () => {
 
   it("clamps a margin typed outside 0 to 100", () => {
     const over = procurementTargets(
-      { ...KOBO_CONTEXT, targetMarginPercent: 900, known: "marketPrice", marketPriceKobo: 9_800_000 },
+      {
+        ...KOBO_CONTEXT,
+        targetMarginPercent: 900,
+        known: "marketPrice",
+        marketPriceKobo: 9_800_000,
+      },
       RULES,
     );
     expect(over.targetMargin).toBe(1);
 
     const under = procurementTargets(
-      { ...KOBO_CONTEXT, targetMarginPercent: -5, known: "marketPrice", marketPriceKobo: 9_800_000 },
+      {
+        ...KOBO_CONTEXT,
+        targetMarginPercent: -5,
+        known: "marketPrice",
+        marketPriceKobo: 9_800_000,
+      },
       RULES,
     );
     expect(under.targetMargin).toBe(0);

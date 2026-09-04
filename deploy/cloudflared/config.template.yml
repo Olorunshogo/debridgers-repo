@@ -1,0 +1,16 @@
+# Cloudflare Tunnel ingress, rendered by deploy/deploy.sh into
+# /opt/debridgers/cloudflared/config.yml with TUNNEL_ID
+# substituted from /opt/debridgers/.env.
+#
+# Routing lives here rather than in the Cloudflare dashboard so that it is
+# reviewable in a PR and reproduced automatically on a rebuilt host.
+
+tunnel: __TUNNEL_ID__
+credentials-file: /etc/cloudflared/creds.json
+
+# cloudflared resolves debridgers-backend and debridgers-frontend over the
+# compose network, so they publish no host ports.
+ingress:
+  - hostname: api-test.debridgers.com
+    service: http://debridgers-backend:4001
+  - service: http_status:404

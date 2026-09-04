@@ -7,7 +7,7 @@ import {
   staggerItemVariants,
   staggerDelay,
   transitionBase,
-  DashTextInput,
+  TextInputField,
 } from "@debridgers/ui-web";
 
 export function meta() {
@@ -341,11 +341,13 @@ export default function AdminKycPage() {
                             transition={transitionBase}
                             className="bg-bg-light flex flex-col gap-2 rounded-xl p-3"
                           >
-                            <DashTextInput
+                            <TextInputField
                               label="Reason (shown to the agent)"
                               id={`reason-${row.id}`}
                               value={rejectReason}
-                              onChange={(e) => setRejectReason(e.target.value)}
+                              onChange={(
+                                e: React.ChangeEvent<HTMLInputElement>,
+                              ) => setRejectReason(e.target.value)}
                               placeholder="e.g. Selfie photo is unclear, please retake"
                             />
                             <div className="flex flex-wrap gap-2">

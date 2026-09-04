@@ -1,0 +1,250 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+    paths:
+      - 'apps/debridgers-backend/**'
+      - 'packages/**'
+      - 'deploy/**'
+      - '.gitea/workflows/deploy.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'docker/backend.Dockerfile'
+  workflow_dispatch: {}
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: 1techhunter/debridgers
+
+jobs:
+  lint:
+    runs-on: codeberg-small
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.32.1"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+  build:
+    runs-on: codeberg-small
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.32.1"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+  test:
+    runs-on: codeberg-small
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.32.1"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build backend
+        run: pnpm build:backend
+
+  deploy-dev:
+    needs: [build, test]
+    if: github.ref == 'refs/heads/develop'
+    runs-on: codeberg-small
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add host to known_hosts
+        run: mkdir -p ~/.ssh && ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to VPS (build + push + deploy)
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+          TUNNEL_CREDENTIALS: ${{ secrets.CLOUDFLARE_TUNNEL_CREDENTIALS }}
+        run: |
+          # Calculate git SHA for image tag
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          BRANCH_TAG="develop"
+
+          # Copy deploy files and source code
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /opt/debridgers/cloudflared"
+          tar --exclude=node_modules --exclude=.git --exclude=dist -czf /tmp/code.tar.gz .
+          scp /tmp/code.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/code.tar.gz
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /opt/debridgers && tar -xzf /tmp/code.tar.gz && rm -f /tmp/code.tar.gz"
+
+          # Copy deploy scripts
+          scp deploy/docker-compose.prod.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/docker-compose.yml
+          scp deploy/deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/deploy.sh
+          scp deploy/cloudflared/config.template.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/cloudflared/config.template.yml
+
+          # Install environment and credentials
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} '
+            set -eu
+            cd /opt/debridgers
+            cat > .env.incoming
+            if [ ! -s .env.incoming ]; then
+              echo "incoming env is empty — refusing to replace .env" >&2
+              rm -f .env.incoming
+              exit 1
+            fi
+            if [ -f .env ]; then
+              cp -a .env ".env.bak.$(date +%s)"
+              for k in IMAGE_TAG; do
+                grep -h "^${k}=" .env >> .env.incoming || true
+              done
+              ls -1t .env.bak.* 2>/dev/null | tail -n +6 | xargs -r rm -f
+            fi
+            install -m 600 .env.incoming .env
+            rm -f .env.incoming
+          ' <<< "$ENV_FILE"
+
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /opt/debridgers/cloudflared"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "cat > /opt/debridgers/cloudflared/creds.json && chmod 600 /opt/debridgers/cloudflared/creds.json" <<< "$TUNNEL_CREDENTIALS"
+
+          # Build and push on VPS
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "docker login -u '$DOCKERHUB_USERNAME' --password-stdin" <<< "$DOCKERHUB_TOKEN"
+
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /opt/debridgers && \
+            docker build --target=prod \
+              -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${SHORT_SHA} \
+              -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${BRANCH_TAG} \
+              -f ./docker/backend.Dockerfile . && \
+            docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${SHORT_SHA} && \
+            docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${BRANCH_TAG}"
+
+          # Deploy
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "chmod +x /opt/debridgers/deploy.sh && /opt/debridgers/deploy.sh ${SHORT_SHA}"
+
+  deploy-production:
+    needs: [build, test]
+    if: github.ref == 'refs/heads/main'
+    runs-on: codeberg-small
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add host to known_hosts
+        run: mkdir -p ~/.ssh && ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to VPS (build + push + deploy)
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+          TUNNEL_CREDENTIALS: ${{ secrets.CLOUDFLARE_TUNNEL_CREDENTIALS }}
+        run: |
+          # Calculate git SHA for image tag
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          BRANCH_TAG="latest"
+
+          # Copy deploy files and source code
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /opt/debridgers/cloudflared"
+          tar --exclude=node_modules --exclude=.git --exclude=dist -czf /tmp/code.tar.gz .
+          scp /tmp/code.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/code.tar.gz
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /opt/debridgers && tar -xzf /tmp/code.tar.gz && rm -f /tmp/code.tar.gz"
+
+          # Copy deploy scripts
+          scp deploy/docker-compose.prod.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/docker-compose.yml
+          scp deploy/deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/deploy.sh
+          scp deploy/cloudflared/config.template.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/cloudflared/config.template.yml
+
+          # Install environment and credentials
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} '
+            set -eu
+            cd /opt/debridgers
+            cat > .env.incoming
+            if [ ! -s .env.incoming ]; then
+              echo "incoming env is empty — refusing to replace .env" >&2
+              rm -f .env.incoming
+              exit 1
+            fi
+            if [ -f .env ]; then
+              cp -a .env ".env.bak.$(date +%s)"
+              for k in IMAGE_TAG; do
+                grep -h "^${k}=" .env >> .env.incoming || true
+              done
+              ls -1t .env.bak.* 2>/dev/null | tail -n +6 | xargs -r rm -f
+            fi
+            install -m 600 .env.incoming .env
+            rm -f .env.incoming
+          ' <<< "$ENV_FILE"
+
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /opt/debridgers/cloudflared"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "cat > /opt/debridgers/cloudflared/creds.json && chmod 600 /opt/debridgers/cloudflared/creds.json" <<< "$TUNNEL_CREDENTIALS"
+
+          # Build and push on VPS
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "docker login -u '$DOCKERHUB_USERNAME' --password-stdin" <<< "$DOCKERHUB_TOKEN"
+
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /opt/debridgers && \
+            docker build --target=prod \
+              -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${SHORT_SHA} \
+              -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${BRANCH_TAG} \
+              -f ./docker/backend.Dockerfile . && \
+            docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${SHORT_SHA} && \
+            docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${BRANCH_TAG}"
+
+          # Deploy
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "chmod +x /opt/debridgers/deploy.sh && /opt/debridgers/deploy.sh ${SHORT_SHA}"

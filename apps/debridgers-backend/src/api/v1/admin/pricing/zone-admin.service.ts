@@ -9,11 +9,7 @@ import { eq } from "drizzle-orm";
 import * as schema from "../../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../../infrastructure/database/database.provider";
 import { AuditLogService } from "../../../../infrastructure/audit/audit-log.service";
-import {
-  CreateZoneDto,
-  UpdateZoneDto,
-  TAPER_MESSAGE,
-} from "./dto/zone.dto";
+import { CreateZoneDto, UpdateZoneDto, TAPER_MESSAGE } from "./dto/zone.dto";
 
 /**
  * Zone delivery rates as data rather than as migrations.

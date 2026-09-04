@@ -33,16 +33,14 @@ const zoneFields = {
   is_active: z.boolean().default(true),
 };
 
-export const createZoneSchema = z
-  .object(zoneFields)
-  .refine(
-    (value) =>
-      taperDescends({
-        tier_one: value.tier_one_per_package_kobo,
-        tier_two: value.tier_two_per_package_kobo,
-      }),
-    { message: TAPER_MESSAGE, path: ["tier_two_per_package_kobo"] },
-  );
+export const createZoneSchema = z.object(zoneFields).refine(
+  (value) =>
+    taperDescends({
+      tier_one: value.tier_one_per_package_kobo,
+      tier_two: value.tier_two_per_package_kobo,
+    }),
+  { message: TAPER_MESSAGE, path: ["tier_two_per_package_kobo"] },
+);
 
 export type CreateZoneDto = z.infer<typeof createZoneSchema>;
 

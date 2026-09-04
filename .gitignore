@@ -91,3 +91,6 @@ packages/*/src/**/*.js
 packages/*/src/**/*.d.ts
 packages/*/src/**/*.js.map
 packages/*/src/**/*.d.ts.map
+
+# Tunnel credentials for the self-hosted deploy, never committed.
+~/credentials.json
