@@ -54,7 +54,7 @@ IMAGE_TAG="${IMAGE_TAG}" docker compose -f deploy/docker-compose.prod.yml up -d 
 IMAGE_TAG="${IMAGE_TAG}" docker compose -f deploy/docker-compose.prod.yml up -d --force-recreate cloudflared
 
 echo "==> Running database migrations"
-IMAGE_TAG="${IMAGE_TAG}" docker compose -f deploy/docker-compose.prod.yml exec -T debridgers-backend pnpm db:migrate
+IMAGE_TAG="${IMAGE_TAG}" docker compose -f deploy/docker-compose.prod.yml exec -T debridgers-backend pnpm debridgers-backend:migrate
 
 echo "==> Pruning old images"
 docker image prune -f
