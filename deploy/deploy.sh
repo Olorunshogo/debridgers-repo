@@ -53,8 +53,7 @@ IMAGE_TAG="${IMAGE_TAG}" docker compose -f deploy/docker-compose.prod.yml up -d 
 # Cloudflared needs to be recreated when config changes
 IMAGE_TAG="${IMAGE_TAG}" docker compose -f deploy/docker-compose.prod.yml up -d --force-recreate cloudflared
 
-echo "==> Running database migrations"
-IMAGE_TAG="${IMAGE_TAG}" docker compose -f deploy/docker-compose.prod.yml exec -T debridgers-backend pnpm debridgers-backend:migrate
+echo "==> Skipping database migrations (run locally before deployment)"
 
 echo "==> Pruning old images"
 docker image prune -f
