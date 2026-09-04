@@ -39,8 +39,8 @@ FROM base AS prod
 RUN pnpm --filter @debridgers/pricing build && \
     pnpm --filter @debridgers/debridgers-backend build
 
-# Install tsx globally for database migrations
-RUN pnpm add -g tsx
+# Install tsx for database migrations
+RUN npm install -g tsx --no-save
 
 EXPOSE 4001
 
