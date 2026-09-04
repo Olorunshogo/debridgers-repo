@@ -47,16 +47,11 @@ fi
 echo "==> Pulling latest images"
 IMAGE_TAG="${IMAGE_TAG}" docker compose -f deploy/docker-compose.prod.yml pull debridgers-backend
 
+echo "==> Removing old containers if they exist"
+docker rm -f debridgers-backend debridgers-cloudflared || true
+
 echo "==> Starting services"
 IMAGE_TAG="${IMAGE_TAG}" docker compose -f deploy/docker-compose.prod.yml up -d --remove-orphans
-
-# Stop and remove cloudflared container before recreating (config changed)
-echo "==> Removing old cloudflared container"
-docker compose -f deploy/docker-compose.prod.yml rm -f cloudflared || true
-
-# Recreate cloudflared with new config
-echo "==> Starting cloudflared with new config"
-IMAGE_TAG="${IMAGE_TAG}" docker compose -f deploy/docker-compose.prod.yml up -d cloudflared
 
 echo "==> Skipping database migrations (run locally before deployment)"
 
