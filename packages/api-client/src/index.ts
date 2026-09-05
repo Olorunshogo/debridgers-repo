@@ -23,3 +23,6 @@ export * from "./types/pagination";
 
 // === Buyer cart
 export * from "./services/buyer/cart";
+
+// === Newsletter
+export * from "./services/newsletter";

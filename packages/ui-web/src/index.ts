@@ -4,6 +4,9 @@ export * from "./lib/utils";
 // === Href helpers
 export * from "./lib/is-external-href";
 
+// === Email validation
+export * from "./lib/is-valid-email";
+
 // === Formatting helpers
 export * from "./utils";
 

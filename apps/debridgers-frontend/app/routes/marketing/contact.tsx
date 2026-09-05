@@ -10,9 +10,12 @@ import {
   EmailInputField,
   TextareaField,
   SubmitButton,
+  isValidEmail,
+  SUPPORT,
+  supportMailtoHref,
+  supportTelHref,
 } from "@debridgers/ui-web";
 import { BASE_BACKEND_URL } from "@debridgers/api-client";
-import { SUPPORT, supportMailtoHref, supportTelHref } from "@debridgers/ui-web";
 /*
  * Leaflet ships its own stylesheet and marker images and is a real dependency,
  * so both are bundled rather than fetched from unpkg. Pulling them from a CDN
@@ -98,8 +101,7 @@ function validate(form: ContactForm): FormErrors {
     errors.fullName = "Name must be at least 2 characters.";
   }
 
-  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!form.email.trim() || !emailRe.test(form.email)) {
+  if (!form.email.trim() || !isValidEmail(form.email)) {
     errors.email = "Please enter a valid email address.";
   }
 

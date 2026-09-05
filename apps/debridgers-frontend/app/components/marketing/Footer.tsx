@@ -2,11 +2,14 @@ import { useState } from "react";
 import { Link } from "react-router";
 import {
   SUPPORT,
+  SubmitButton,
+  isValidEmail,
   partnerMailtoHref,
   supportMailtoHref,
   supportTelHref,
   supportWhatsAppHref,
 } from "@debridgers/ui-web";
+import { ApiError, subscribeToNewsletter } from "@debridgers/api-client";
 
 import { marketingNavLinks } from "./data/data";
 // === Footer Woodmark component
@@ -45,8 +48,39 @@ function FooterWordmark({
   );
 }
 
+type NewsletterStatus = "idle" | "submitting" | "success" | "error";
+
 export default function Footer() {
   const [email, setEmail] = useState<string>("");
+  const [status, setStatus] = useState<NewsletterStatus>("idle");
+  const [feedback, setFeedback] = useState<string>("");
+
+  async function handleNewsletterSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!isValidEmail(email)) {
+      setStatus("error");
+      setFeedback("Enter a valid email address.");
+      return;
+    }
+
+    setStatus("submitting");
+    setFeedback("");
+
+    try {
+      await subscribeToNewsletter(email);
+      setStatus("success");
+      setFeedback("You're subscribed. Watch your inbox for market updates.");
+      setEmail("");
+    } catch (err) {
+      setStatus("error");
+      setFeedback(
+        err instanceof ApiError
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
+    }
+  }
 
   return (
     <footer className="bg-primary py-section-py sm:py-section-py-sm lg:py-section-py-lg relative overflow-hidden text-white">
@@ -147,21 +181,39 @@ export default function Footer() {
             <h3 className="font-open-sans text-sm font-semibold tracking-widest text-white uppercase">
               Keep in Touch
             </h3>
-            <div className="flex w-full overflow-hidden rounded-full bg-white p-3 shadow-[0px_4px_32px_5px_#FAF2F23B]">
+            <form
+              onSubmit={handleNewsletterSubmit}
+              noValidate
+              className="flex w-full overflow-hidden rounded-full bg-white p-3 shadow-[0px_4px_32px_5px_#FAF2F23B]"
+            >
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (status !== "idle") setStatus("idle");
+                }}
                 placeholder="Enter your email address"
                 className="text-primary placeholder:text-primary min-w-0 flex-1 bg-transparent text-sm focus:outline-none"
               />
-              <button
-                type="button"
-                className="bg-primary cursor-pointer rounded-full px-8 py-2.5 text-sm text-white transition-opacity duration-300 hover:opacity-90"
+              <SubmitButton
+                variant="primary"
+                loading={status === "submitting"}
+                loadingText="Submit"
+                className="px-8 py-2.5"
               >
                 Submit
-              </button>
-            </div>
+              </SubmitButton>
+            </form>
+            {feedback && (
+              <p
+                className={`font-open-sans text-sm ${
+                  status === "error" ? "text-red-300" : "text-white/80"
+                }`}
+              >
+                {feedback}
+              </p>
+            )}
           </div>
         </div>
 

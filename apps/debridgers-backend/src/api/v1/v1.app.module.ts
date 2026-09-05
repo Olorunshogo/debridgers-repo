@@ -7,6 +7,7 @@ import { AgentModule } from "./agent/agent.module";
 import { BuyerModule } from "./buyer/buyer.module";
 import { PaymentModule } from "./payment/payment.module";
 import { ContactModule } from "./contact/contact.module";
+import { NewsletterModule } from "./newsletter/newsletter.module";
 import { CommissionModule } from "./commission/commission.module";
 import { SystemSettingsModule } from "./settings/system-settings.module";
 import { PublicModule } from "./public/public.module";
@@ -25,6 +26,7 @@ import { CatalogModule } from "./catalog/catalog.module";
     BuyerModule,
     PaymentModule,
     ContactModule,
+    NewsletterModule,
     CommissionModule,
     SystemSettingsModule,
     PublicModule,
