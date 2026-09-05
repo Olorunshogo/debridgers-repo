@@ -4,7 +4,11 @@
   "type": "module",
   "scripts": {
     "build": "react-router typegen && tsc --noEmit && react-router build",
+    "build:staging": "react-router typegen && tsc --noEmit && react-router build --mode staging",
+    "build:production": "react-router typegen && tsc --noEmit && react-router build --mode production",
     "dev": "react-router dev",
+    "dev:staging": "react-router dev --mode staging",
+    "dev:production": "react-router dev --mode production",
     "start": "react-router-serve ./build/server/index.js",
     "typecheck": "react-router typegen && tsc",
     "lint": "eslint .",

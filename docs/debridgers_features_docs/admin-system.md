@@ -105,7 +105,7 @@ Headers: X-Admin-Key-1, X-Admin-Key-2
 Body:
 {
   "email": "admin@debridgers.com",
-  "password": "Admin@2026!"
+  "password": "WGxMWQP8RfIMjNWVTpJo"
 }
 ```
 

@@ -13,7 +13,7 @@ import { TERMS_CONSENT } from "../support/terms-consent";
 
 const BASE = process.env.VITE_API_URL || "http://localhost:4000/api/v1";
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@debridgers.com";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Admin@2026!";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "WGxMWQP8RfIMjNWVTpJo";
 const AGENT_PASSWORD = "Password@123";
 
 // === Types

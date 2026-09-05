@@ -133,7 +133,7 @@ jobs:
       PORT: "4000"
       ALLOWED_ORIGINS: "http://localhost:5173"
       ADMIN_EMAIL: admin@debridgers.com
-      ADMIN_PASSWORD: "Admin@2026!"
+      ADMIN_PASSWORD: "WGxMWQP8RfIMjNWVTpJo"
       # Dummy values are fine here: nothing signed with them is trusted outside this CI run, and
       # requiring a real secret to run CI would be worse than a literal test value.
       ACCESS_TOKEN_SECRET: ci-access-token-secret-not-for-production

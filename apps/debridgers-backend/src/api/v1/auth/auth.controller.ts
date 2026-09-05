@@ -137,7 +137,7 @@ export class AuthController {
       required: ["email", "password"],
       properties: {
         email: { type: "string", example: "admin@debridgers.com" },
-        password: { type: "string", example: "Admin@2026!" },
+        password: { type: "string", example: "WGxMWQP8RfIMjNWVTpJo" },
       },
     },
   })
@@ -192,7 +192,7 @@ export class AuthController {
       required: ["email", "password"],
       properties: {
         email: { type: "string", example: "admin@debridgers.com" },
-        password: { type: "string", example: "Admin@2026!" },
+        password: { type: "string", example: "WGxMWQP8RfIMjNWVTpJo" },
       },
     },
   })

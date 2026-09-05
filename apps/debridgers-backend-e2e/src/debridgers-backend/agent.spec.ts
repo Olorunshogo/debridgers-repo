@@ -1,6 +1,8 @@
+import { AGENT_TERMS_CONSENT } from "../support/terms-consent";
+
 const BASE = process.env.VITE_API_URL || "http://localhost:4000/api/v1";
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@debridgers.com";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Admin@2026!";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "WGxMWQP8RfIMjNWVTpJo";
 
 const testEmail = `agent+${Date.now()}@test.com`;
 let agentId: number;
@@ -31,6 +33,9 @@ describe("Agent", () => {
     formData.append("address", "12 Barnawa Market Road, Kaduna");
     formData.append("password", "Password@123");
     formData.append("confirm_password", "Password@123");
+    formData.append("accepted_terms", AGENT_TERMS_CONSENT.accepted_terms);
+    formData.append("terms_document", AGENT_TERMS_CONSENT.terms_document);
+    formData.append("terms_version", AGENT_TERMS_CONSENT.terms_version);
 
     const res = await fetch(`${BASE}/agent/apply`, {
       method: "POST",
@@ -197,6 +202,21 @@ describe("Agent", () => {
   });
 
   it("POST /agent/stock/request should succeed after KYC approval", async () => {
+    /*
+     * Seeded products carry no warehouse stock (stock_quantity defaults to 0
+     * until an admin stocks the warehouse), so the happy path has to put some
+     * there first, the same way a real admin would before an agent can be
+     * fulfilled.
+     */
+    await fetch(`${BASE}/admin/products/${productId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify({ stock_quantity: 100 }),
+    });
+
     const res = await fetch(`${BASE}/agent/stock/request`, {
       method: "POST",
       headers: {

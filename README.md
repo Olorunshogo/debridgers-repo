@@ -12,6 +12,7 @@ A pnpm monorepo for Debridgers, a marketplace connecting farmers directly with b
 - [Libs](#libs)
 - [Getting Started](#getting-started)
 - [Development Workflow](#development-workflow)
+  - [Running against dev, staging and production](#running-against-dev-staging-and-production)
 - [Scripts](#scripts)
 - [Import Aliases](#import-aliases)
 - [Workspace Paths](#workspace-paths)
@@ -145,6 +146,15 @@ cp apps/debridgers-frontend/.env.example apps/debridgers-frontend/.env
 
 Update the `.env` values for your local environment.
 
+`apps/debridgers-frontend` additionally has one example file per environment -
+`.env.development.example`, `.env.staging.example`, `.env.production.example`.
+Copy each to its real name (`.env.development`, `.env.staging`,
+`.env.production`) the same way. All three point at the deployed test backend
+today (see the real URL in `.env.development.example`), since that is the
+only backend currently deployed - swap the `VITE_API_URL` value in the
+relevant file once a real staging or production backend exists. See
+[Running against dev, staging and production](#running-against-dev-staging-and-production).
+
 ### Local database
 
 The backend uses PostgreSQL. For local development, use Docker.
@@ -192,6 +202,30 @@ pnpm dev:ui-web
 pnpm watch:ui-web
 ```
 
+### Running against dev, staging and production
+
+The frontend never needs the backend or Postgres running locally - it talks
+to whichever backend `VITE_API_URL` points at, chosen by which env file Vite
+loads for the given mode. Only the frontend has this; the backend has no
+staging/production distinction of its own, since only one instance is
+deployed today.
+
+| Command                          | Mode          | Env file loaded    |
+| -------------------------------- | ------------- | ------------------ |
+| `pnpm dev:frontend`              | `development` | `.env.development` |
+| `pnpm dev:frontend:staging`      | `staging`     | `.env.staging`     |
+| `pnpm dev:frontend:production`   | `production`  | `.env.production`  |
+| `pnpm build:frontend`            | `production`  | `.env.production`  |
+| `pnpm build:frontend:staging`    | `staging`     | `.env.staging`     |
+| `pnpm build:frontend:production` | `production`  | `.env.production`  |
+
+All three currently carry the same `VITE_API_URL` (the test backend), so
+which one you run doesn't change behavior yet - the distinction exists so
+that swapping in a real staging or production backend later is a one-line
+edit to the matching `.env.*` file, not a script or CI change. `.env.development`
+is worth pointing at `http://localhost:4001/api/v1` instead if you are
+actively changing backend code and need to hit your own local instance.
+
 ---
 
 ## Scripts
@@ -207,8 +241,12 @@ pnpm watch:ui-web
 | `pnpm lint`                             | Lint all projects                                   |
 | `pnpm lint:fix`                         | Lint + auto-fix all projects                        |
 | `pnpm analyze`                          | Run bundle analysis for frontend                    |
-| `pnpm dev:frontend`                     | Run frontend dev server                             |
-| `pnpm build:frontend`                   | Build frontend                                      |
+| `pnpm dev:frontend`                     | Run frontend dev server (development mode)          |
+| `pnpm dev:frontend:staging`             | Run frontend dev server (staging mode)              |
+| `pnpm dev:frontend:production`          | Run frontend dev server (production mode)           |
+| `pnpm build:frontend`                   | Build frontend (production mode)                    |
+| `pnpm build:frontend:staging`           | Build frontend (staging mode)                       |
+| `pnpm build:frontend:production`        | Build frontend (production mode)                    |
 | `pnpm start:frontend`                   | Serve frontend production build                     |
 | `pnpm typecheck:frontend`               | Frontend type check                                 |
 | `pnpm lint:frontend`                    | Frontend lint                                       |

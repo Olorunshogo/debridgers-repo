@@ -16,7 +16,7 @@ All paths are relative to `apps/debridgers-backend/` unless stated otherwise.
 | Step                       | Where                                      | Detail                                                                           |
 | -------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------- |
 | Credentials come from env  | `src/infrastructure/seeders/seeder.ts:169` | `ADMIN_EMAIL` defaulting to `admin@debridgers.com`                               |
-| Password from env          | `seeder.ts:170`                            | `ADMIN_PASSWORD` defaulting to the literal `Admin@2026!`                         |
+| Password from env          | `seeder.ts:170`                            | `ADMIN_PASSWORD` defaulting to the literal `WGxMWQP8RfIMjNWVTpJo`                |
 | Lookup by lowercased email | `seeder.ts:173`                            | `select ... where lower(email) = ...`                                            |
 | Hash                       | `seeder.ts:179`                            | `bcrypt.hash(password, 12)`                                                      |
 | Insert if absent           | `seeder.ts:181`                            | `role: "admin"`, `is_email_verified: true`, name hardcoded to `Debridgers Admin` |
@@ -730,12 +730,12 @@ destroyed.
 `src/infrastructure/seeders/seeder.ts` is the only code path that creates an
 admin:
 
-| Line            | Behaviour                                            | Problem under this design                                                                               |
-| --------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `seeder.ts:169` | `ADMIN_EMAIL` defaulting to `admin@debridgers.com`   | A known address in every environment                                                                    |
-| `seeder.ts:170` | `ADMIN_PASSWORD` defaulting to `Admin@2026!`         | A known password, committed in the fallback                                                             |
-| `seeder.ts:182` | inserts `role: "admin"`, `is_email_verified: true`   | No `admin_level`, so after the migration this row is an admin with a null tier and cannot invite anyone |
-| `seeder.ts:192` | unconditionally overwrites the password on every run | A re-run silently resets a live admin's password to whatever that environment's env file holds          |
+| Line            | Behaviour                                             | Problem under this design                                                                               |
+| --------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `seeder.ts:169` | `ADMIN_EMAIL` defaulting to `admin@debridgers.com`    | A known address in every environment                                                                    |
+| `seeder.ts:170` | `ADMIN_PASSWORD` defaulting to `WGxMWQP8RfIMjNWVTpJo` | A known password, committed in the fallback                                                             |
+| `seeder.ts:182` | inserts `role: "admin"`, `is_email_verified: true`    | No `admin_level`, so after the migration this row is an admin with a null tier and cannot invite anyone |
+| `seeder.ts:192` | unconditionally overwrites the password on every run  | A re-run silently resets a live admin's password to whatever that environment's env file holds          |
 
 The admin insert sits in the same `seed()` function as the zone and product
 seeding (`seeder.ts:200`, `seeder.ts:212`), which are genuinely idempotent and
@@ -782,7 +782,7 @@ readable in the catcher inbox within the window.
 **Staging.** Same seeder, distinct `ADMIN_EMAIL`, and an `ADMIN_PASSWORD` pulled
 from the deployment secret store. The seeder must **refuse to start** when
 `NODE_ENV !== "development"` and `ADMIN_PASSWORD` is unset or equal to
-`Admin@2026!`, rather than silently seeding a known credential. The seeded row
+`WGxMWQP8RfIMjNWVTpJo`, rather than silently seeding a known credential. The seeded row
 gets `must_change_password: true` with a **null** `password_expires_at`. This is
 the case the two column split in 3.4 exists for: the credential never touched a
 mailbox so there is nothing to time out, but the person who ends up using the

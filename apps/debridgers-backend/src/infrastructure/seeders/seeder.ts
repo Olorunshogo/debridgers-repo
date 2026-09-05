@@ -196,7 +196,7 @@ async function seed() {
   const db = drizzle(pool, { schema });
 
   const adminEmail = process.env.ADMIN_EMAIL || "admin@debridgers.com";
-  const adminPassword = process.env.ADMIN_PASSWORD || "Admin@2026!";
+  const adminPassword = process.env.ADMIN_PASSWORD || "WGxMWQP8RfIMjNWVTpJo";
 
   // === Admin
   const existing = await db

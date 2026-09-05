@@ -88,7 +88,7 @@ export default async function globalSetup(): Promise<void> {
   runSeed(backendRoot, {
     databaseUrl: testDatabaseUrl,
     adminEmail: process.env.ADMIN_EMAIL ?? "admin@debridgers.com",
-    adminPassword: process.env.ADMIN_PASSWORD ?? "Admin@2026!",
+    adminPassword: process.env.ADMIN_PASSWORD ?? "WGxMWQP8RfIMjNWVTpJo",
   });
   console.log(`✓ Test database ready\n`);
 

@@ -14,10 +14,42 @@
         "cwd": "apps/debridgers-frontend"
       }
     },
+    "build:staging": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "outputs": ["{projectRoot}/build"],
+      "options": {
+        "command": "pnpm run build:staging",
+        "cwd": "apps/debridgers-frontend"
+      }
+    },
+    "build:production": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "outputs": ["{projectRoot}/build"],
+      "options": {
+        "command": "pnpm run build:production",
+        "cwd": "apps/debridgers-frontend"
+      }
+    },
     "dev": {
       "executor": "nx:run-commands",
       "options": {
         "command": "pnpm run dev",
+        "cwd": "apps/debridgers-frontend"
+      }
+    },
+    "dev:staging": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run dev:staging",
+        "cwd": "apps/debridgers-frontend"
+      }
+    },
+    "dev:production": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run dev:production",
         "cwd": "apps/debridgers-frontend"
       }
     },

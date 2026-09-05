@@ -100,7 +100,7 @@ Untouched:
 | Swagger         | `http://localhost:4001/api/docs`, JSON at `/api/docs-json`                |
 | Postgres        | docker, `debridgers-postgres-1`, port 5432, 4 migrations applied in order |
 | Redis           | docker, `debridgers-redis-1`, port 6379, verified working                 |
-| Admin login     | `admin@debridgers.com` / `Admin@2026!` from `.env`                        |
+| Admin login     | `admin@debridgers.com` / `WGxMWQP8RfIMjNWVTpJo` from `.env`               |
 | Seeded accounts | `@seed.test` domain, password `Dev@2026!`                                 |
 
 Start the infrastructure with `cd docker && docker compose up -d postgres redis`.
@@ -204,7 +204,7 @@ pnpm dev:backend
 # defaults are seeded by src/infrastructure/seeders/seeder.ts
 curl -X POST http://localhost:4001/api/v1/auth/admin/login \
   -H 'Content-Type: application/json' \
-  -d '{"email":"admin@debridgers.com","password":"Admin@2026!"}'
+  -d '{"email":"admin@debridgers.com","password":"WGxMWQP8RfIMjNWVTpJo"}'
 
 # full route inventory
 curl -s http://localhost:4001/api/docs-json | jq '.paths | keys[] | select(contains("admin"))'

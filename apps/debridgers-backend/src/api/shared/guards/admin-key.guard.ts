@@ -27,6 +27,19 @@ export class AdminKeyGuard implements CanActivate {
       throw new UnauthorizedException("User not authenticated");
     }
 
+    /*
+     * This guard's admin_tier check is specific to the admin role. A route
+     * with a `@Roles` override - e.g. `POST /admin/outreach` also allowing
+     * "agent" - runs this guard before RolesGuard, so an agent (who has no
+     * admin_tier by definition) was rejected here with 401 before RolesGuard
+     * ever got to allow them. Deferring non-admin roles to RolesGuard lets it
+     * make the actual admission decision, and a role that isn't allowed still
+     * ends up correctly rejected there with 403, not misreported as 401 here.
+     */
+    if (user.role !== "admin") {
+      return true;
+    }
+
     // Get admin key and tier from headers (optional for JWT-authenticated users)
     const adminKey = request.headers["x-admin-key"];
     const adminTier = request.headers["x-admin-tier"];

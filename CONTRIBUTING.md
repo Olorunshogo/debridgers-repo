@@ -10,6 +10,7 @@ This guide covers everything you need to work effectively in this repo - from se
   - [Table of Contents](#table-of-contents)
   - [Prerequisites](#prerequisites)
   - [Setup](#setup)
+  - [Environments](#environments)
   - [Branch Naming](#branch-naming)
     - [Format](#format)
     - [Allowed Prefixes](#allowed-prefixes)
@@ -44,6 +45,31 @@ cd debridgers-repo
 # Install all workspace dependencies
 pnpm install
 ```
+
+---
+
+## Environments
+
+Copy `apps/debridgers-frontend/.env.development.example`,
+`.env.staging.example` and `.env.production.example` to their real names
+(`.env.development`, `.env.staging`, `.env.production`). You do not need
+Postgres or the backend running locally to work on the frontend - all three
+files point at the deployed test backend by default (see the real URL in
+`.env.development.example`), since that is the only backend deployed today.
+
+Which file gets loaded depends on the `--mode` the command runs with:
+
+```bash
+pnpm dev:frontend               # development mode -> .env.development
+pnpm dev:frontend:staging       # staging mode     -> .env.staging
+pnpm dev:frontend:production    # production mode  -> .env.production
+```
+
+All three carry the same `VITE_API_URL` for now. When a real staging or
+production backend exists, change the `VITE_API_URL` value in the matching
+file - nothing about the scripts or CI needs to change. If you are actively
+changing backend code, point `.env.development`'s `VITE_API_URL` at
+`http://localhost:4001/api/v1` instead so you hit your own local instance.
 
 ---
 
