@@ -31,11 +31,11 @@ set +a
 echo "==> Pulling latest images"
 IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml pull debridgers-backend
 
-echo "==> Removing old containers if they exist"
-docker rm -f debridgers-backend debridgers-cloudflared || true
+echo "==> Stopping and removing old containers"
+IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml down || true
 
 echo "==> Starting services"
-IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml up -d --remove-orphans
+IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml up -d
 
 echo "==> Skipping database migrations (run locally before deployment)"
 
