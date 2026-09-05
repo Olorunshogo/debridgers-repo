@@ -8,6 +8,7 @@ import {
   BadRequestException,
   Headers,
   Inject,
+  Logger,
   Req,
   RawBodyRequest,
 } from "@nestjs/common";
@@ -26,6 +27,8 @@ import { LedgerService } from "./ledger.service";
 
 @Controller("webhook")
 export class PaystackWebhookController {
+  private readonly logger = new Logger(PaystackWebhookController.name);
+
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
@@ -94,7 +97,7 @@ export class PaystackWebhookController {
       }
 
       try {
-        console.error(`📍 WEBHOOK PAYSTACK_REFERENCE: ${data.reference}`);
+        this.logger.log(`📍 WEBHOOK PAYSTACK_REFERENCE: ${data.reference}`);
 
         // Look for order with matching payment_reference
         const [order] = await this.db
@@ -104,7 +107,7 @@ export class PaystackWebhookController {
           .limit(1);
 
         if (order) {
-          console.error(
+          this.logger.log(
             `✅ ORDER FOUND: id=${order.id}, payment_ref=${order.payment_reference}, status=${order.payment_status}`,
           );
 
@@ -114,11 +117,11 @@ export class PaystackWebhookController {
             await this.orderService.updatePaymentStatus(order.id, "paid");
             await this.orderService.updateOrderStatus(order.id, "confirmed");
 
-            console.error(
+            this.logger.log(
               `✅ Order #${order.id} CONFIRMED: payment_status=paid, status=confirmed`,
             );
           } else {
-            console.error(
+            this.logger.log(
               `ℹ️ Order #${order.id} already confirmed (idempotent)`,
             );
           }
@@ -127,7 +130,7 @@ export class PaystackWebhookController {
         }
 
         // No order found with this reference - check if it's a wallet deposit
-        console.error(
+        this.logger.warn(
           `⚠ No order found for reference: ${data.reference} - checking if wallet deposit...`,
         );
 
@@ -147,12 +150,14 @@ export class PaystackWebhookController {
             : undefined;
 
           if (!data.amount || data.amount <= 0) {
-            console.error(`⚠ DVA transfer ${data.reference} carried no amount`);
+            this.logger.warn(
+              `⚠ DVA transfer ${data.reference} carried no amount`,
+            );
             return { statusCode: 200, message: "Webhook processed" };
           }
 
           if (!wallet) {
-            console.error(
+            this.logger.warn(
               `⚠ DVA transfer ${data.reference} matched no wallet (customer ${customerCode ?? "unknown"})`,
             );
             return { statusCode: 200, message: "Webhook processed" };
@@ -186,20 +191,25 @@ export class PaystackWebhookController {
           this.emailService
             .sendDepositConfirmation(email, name, amount, data.reference)
             .catch((err) => {
-              console.error("Failed to send deposit confirmation email:", err);
+              this.logger.error(
+                "Failed to send deposit confirmation email:",
+                err,
+              );
             });
 
-          console.error(`✓ Wallet deposit confirmed for ${data.reference}`);
+          this.logger.log(`✓ Wallet deposit confirmed for ${data.reference}`);
           return { statusCode: 200, message: "Deposit confirmed" };
         } catch {
-          console.error(
+          this.logger.warn(
             `⚠ Not a valid order payment or wallet deposit: ${data.reference}`,
           );
           return { statusCode: 200, message: "Webhook processed" };
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.error(`Webhook processing error for ${data.reference}: ${msg}`);
+        this.logger.error(
+          `Webhook processing error for ${data.reference}: ${msg}`,
+        );
         return { statusCode: 200, message: "Webhook processed" };
       }
     }
@@ -225,19 +235,19 @@ export class PaystackWebhookController {
       }
 
       try {
-        console.error(
+        this.logger.log(
           `📍 WITHDRAWAL WEBHOOK: ${data.reference} (${typedEvent.event})`,
         );
         await this.withdrawalService.handleWithdrawalWebhook(
           typedEvent as Record<string, unknown>,
         );
-        console.error(
+        this.logger.log(
           `✅ Withdrawal ${data.reference} status updated to ${data.status}`,
         );
         return { statusCode: 200, message: "Withdrawal processed" };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.error(
+        this.logger.error(
           `Withdrawal webhook processing error for ${data.reference}: ${msg}`,
         );
         return { statusCode: 200, message: "Webhook processed" };

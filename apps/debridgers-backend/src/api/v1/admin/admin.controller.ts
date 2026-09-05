@@ -6,6 +6,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Logger,
   Param,
   ParseIntPipe,
   Patch,
@@ -131,6 +132,8 @@ type CreateOutreachDto = z.infer<typeof createOutreachSchema>;
 @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
 @Roles("admin")
 export class AdminController {
+  private readonly logger = new Logger(AdminController.name);
+
   constructor(
     private readonly adminService: AdminService,
     private readonly bankDetailsService: BankDetailsService,
@@ -1030,7 +1033,7 @@ export class AdminController {
       return await this.adminService.listProducts();
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      console.error("❌ ADMIN PRODUCTS ERROR:", msg);
+      this.logger.error(`ADMIN PRODUCTS ERROR: ${msg}`);
       throw error;
     }
   }

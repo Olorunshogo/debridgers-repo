@@ -138,12 +138,6 @@ jobs:
       # requiring a real secret to run CI would be worse than a literal test value.
       ACCESS_TOKEN_SECRET: ci-access-token-secret-not-for-production
       REFRESH_TOKEN_SECRET: ci-refresh-token-secret-not-for-production
-      # keys.guard.ts requires every one of these to be set or the route it gates becomes unreachable.
-      REQUEST_KEY: ci-request-key
-      ADMIN_KEY_1: ci-admin-key-1
-      ADMIN_KEY_2: ci-admin-key-2
-      PAYMENT_KEY_1: ci-payment-key-1
-      PAYMENT_KEY_2: ci-payment-key-2
       # Genuinely sensitive, so it comes from a secret. Empty is fine: PAYSTACK_SECRET_KEY is
       # optional at boot and only read lazily by payment routes.
       PAYSTACK_SECRET_KEY: ${{ secrets.PAYSTACK_SECRET_KEY }}

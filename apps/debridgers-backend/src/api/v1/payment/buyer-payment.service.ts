@@ -3,6 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
   ForbiddenException,
+  Logger,
 } from "@nestjs/common";
 import { Inject } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -20,6 +21,7 @@ import { PaystackInvoiceService } from "./paystack-invoice.service";
 
 @Injectable()
 export class BuyerPaymentService {
+  private readonly logger = new Logger(BuyerPaymentService.name);
   private readonly PAYSTACK_IPS = [
     "52.31.139.75",
     "52.49.173.169",
@@ -103,7 +105,7 @@ export class BuyerPaymentService {
       this.invoice
         .markInvoiceAsPaid(order.paystack_invoice_code, "wallet")
         .catch((err) => {
-          console.error(
+          this.logger.error(
             `Failed to mark invoice as paid in Paystack: ${
               err instanceof Error ? err.message : String(err)
             }`,
@@ -196,7 +198,7 @@ export class BuyerPaymentService {
     );
 
     const paystackReference = initiateResponse.data.reference;
-    console.error(
+    this.logger.log(
       `💾 PAYSTACK INITIALIZED: order_id=${orderId}, paystack_ref=${paystackReference}, amount=${amount}`,
     );
 
@@ -206,7 +208,7 @@ export class BuyerPaymentService {
       .set({ payment_reference: paystackReference })
       .where(eq(schema.orders.id, orderId));
 
-    console.error(
+    this.logger.log(
       `✅ PAYMENT REFERENCE STORED ON ORDER: order_id=${orderId}, ref=${paystackReference}`,
     );
 
@@ -363,7 +365,7 @@ export class BuyerPaymentService {
           message?: string;
         };
         const msg = `Paystack API error: ${error.message || "Failed to initialize payment"}`;
-        console.error(msg);
+        this.logger.error(msg);
         throw new BadRequestException(msg);
       }
 
@@ -379,7 +381,7 @@ export class BuyerPaymentService {
       return data;
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      console.error("Paystack initialization error:", msg);
+      this.logger.error(`Paystack initialization error: ${msg}`);
       if (error instanceof BadRequestException) throw error;
       throw new BadRequestException(`Paystack initialization failed: ${msg}`);
     }

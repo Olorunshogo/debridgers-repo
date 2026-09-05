@@ -20,6 +20,15 @@ coverage
 !.env.*.example
 .kiro
 
+# Keys and certificates. debridgers_data_config/ carried real committed private
+# keys and hex secrets with nothing in the codebase referencing them - removed
+# 2026-09-05. This rule is here so that mistake cannot repeat quietly.
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
 
 # IDE
 .idea

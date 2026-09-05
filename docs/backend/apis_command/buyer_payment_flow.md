@@ -6,12 +6,12 @@ curl -s -X POST http://localhost:4001/api/v1/auth/login \ ─╯
 "password": "SecurePass@123"
 }' | jq '.data.accessToken'
 
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoiZmF0aW1hQGV4YW1wbGUuY29tIiwicm9sZSI6ImJ1eWVyIiwiaWF0IjoxNzg2MDA2ODU0LCJleHAiOjE3ODYwMDc3NTR9.1C6klZIX6fFKaL4blttqQT-1-YQYtP_XvgbZSvJ_A24"
+"eyJhbGciOiJIUzI1NiIs..."
 
 # Test 1: Missing X-Request-Key
 
 curl -s -X POST http://localhost:4001/api/v1/buyer/orders/initialize-payment \
- -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoiZmF0aW1hQGV4YW1wbGUuY29tIiwicm9sZSI6ImJ1eWVyIiwiaWF0IjoxNzg2MDA2ODU0LCJleHAiOjE3ODYwMDc3NTR9.1C6klZIX6fFKaL4blttqQT-1-YQYtP_XvgbZSvJ_A24" \
+ -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
  -H "X-Payment-Key: payment_key_1_change_in_production" \
  -H "X-Payment-Key_2: payment_key_2_change_in_production" \
  -H "Content-Type: application/json" \
@@ -27,7 +27,7 @@ curl -s -X POST http://localhost:4001/api/v1/buyer/orders/initialize-payment \
 # Test 2: Missing X-Payment-Key
 
 curl -s -X POST http://localhost:4001/api/v1/buyer/orders/initialize-payment \
- -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoiZmF0aW1hQGV4YW1wbGUuY29tIiwicm9sZSI6ImJ1eWVyIiwiaWF0IjoxNzg2MDA2ODU0LCJleHAiOjE3ODYwMDc3NTR9.1C6klZIX6fFKaL4blttqQT-1-YQYtP_XvgbZSvJ_A24" \
+ -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
  -H "X-Request-Key: request_key_change_in_production" \
  -H "X-Payment-Key_2: payment_key_2_change_in_production" \
  -H "Content-Type: application/json" \
@@ -43,7 +43,7 @@ curl -s -X POST http://localhost:4001/api/v1/buyer/orders/initialize-payment \
 # Test 3: Missing X-Payment-Key_2
 
 curl -s -X POST http://localhost:4001/api/v1/buyer/orders/initialize-payment \
- -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoiZmF0aW1hQGV4YW1wbGUuY29tIiwicm9sZSI6ImJ1eWVyIiwiaWF0IjoxNzg2MDA2ODU0LCJleHAiOjE3ODYwMDc3NTR9.1C6klZIX6fFKaL4blttqQT-1-YQYtP_XvgbZSvJ_A24" \
+ -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
  -H "X-Request-Key: request_key_change_in_production" \
  -H "X-Payment-Key: payment_key_1_change_in_production" \
  -H "Content-Type: application/json" \
@@ -59,7 +59,7 @@ curl -s -X POST http://localhost:4001/api/v1/buyer/orders/initialize-payment \
 # Test 4: All 3 headers present
 
 curl -s -X POST http://localhost:4001/api/v1/buyer/orders/initialize-payment \
- -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoiZmF0aW1hQGV4YW1wbGUuY29tIiwicm9sZSI6ImJ1eWVyIiwiaWF0IjoxNzg2MDA2ODU0LCJleHAiOjE3ODYwMDc3NTR9.1C6klZIX6fFKaL4blttqQT-1-YQYtP_XvgbZSvJ_A24" \
+ -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
  -H "X-Request-Key: request_key_change_in_production" \
  -H "X-Payment-Key: payment_key_1_change_in_production" \
  -H "X-Payment-Key_2: payment_key_2_change_in_production" \

@@ -155,6 +155,16 @@ only backend currently deployed - swap the `VITE_API_URL` value in the
 relevant file once a real staging or production backend exists. See
 [Running against dev, staging and production](#running-against-dev-staging-and-production).
 
+**Never put `VITE_API_URL` (or `NODE_ENV`/`PORT`) in the plain
+`apps/debridgers-frontend/.env`.** Vite loads that file for every mode in
+addition to the mode-specific one, and a key set there is not overridden by
+the same key in `.env.[mode]` - it wins regardless of mode, silently
+defeating all three files at once. `.env.example` is deliberately empty of
+these for that reason. A startup log (`[Debridgers] mode=... apiBaseUrl=...`,
+in the browser console and the server's own output) prints the URL Vite
+actually resolved, so a wrong value here is visible immediately instead of
+showing up only as a failed request.
+
 ### Local database
 
 The backend uses PostgreSQL. For local development, use Docker.

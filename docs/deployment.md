@@ -104,13 +104,6 @@ ALLOWED_ORIGINS="https://api-test.debridgers.com"
 ADMIN_EMAIL="admin@debridgers.com"
 ADMIN_PASSWORD="<strong-password>"
 
-# Security Keys (generate random strings: `openssl rand -base64 32`)
-REQUEST_KEY="<random>"
-ADMIN_KEY_1="<random>"
-ADMIN_KEY_2="<random>"
-PAYMENT_KEY_1="<random>"
-PAYMENT_KEY_2="<random>"
-
 # Analytics (optional)
 POSTHOG_API_KEY="phc_..."
 POSTHOG_HOST="https://us.i.posthog.com"

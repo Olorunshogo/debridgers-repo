@@ -37,9 +37,12 @@ const ALLOWED_ORIGINS = (
   .map((o) => o.trim());
 
 async function bootstrap() {
-  console.log("🟢 [1] Bootstrap starting...");
+  Logger.log("🟢 [1] Bootstrap starting...", "Bootstrap");
   const isProd = process.env.NODE_ENV === "production";
-  console.log("🟢 [2] Environment:", isProd ? "production" : "development");
+  Logger.log(
+    `🟢 [2] Environment: ${isProd ? "production" : "development"}`,
+    "Bootstrap",
+  );
 
   // === Fail fast on missing secrets
   const requiredEnv = [
@@ -78,9 +81,9 @@ async function bootstrap() {
     process.exit(1);
   }
 
-  console.log("🟢 [3] Env vars validated");
+  Logger.log("🟢 [3] Env vars validated", "Bootstrap");
 
-  console.log("🟢 [4] Creating NestFactory app...");
+  Logger.log("🟢 [4] Creating NestFactory app...", "Bootstrap");
   /*
    * rawBody is needed by the Paystack webhook: the signature is an HMAC over
    * the exact bytes Paystack sent, and re-serialising the parsed body with
@@ -102,7 +105,22 @@ async function bootstrap() {
     bufferLogs: true,
     rawBody: true,
   });
-  console.log("🟢 [5] App created, setting up middleware...");
+  Logger.log("🟢 [5] App created, setting up middleware...", "Bootstrap");
+
+  /*
+   * Deploy runs cloudflared on the host network, forwarding to this
+   * container at 127.0.0.1. Without this, every request's req.ip is the
+   * tunnel's own loopback connection, not the real caller - which meant the
+   * Paystack webhook's IP allowlist in payment.controller.ts could never
+   * match a real Paystack call, since it always saw 127.0.0.1 instead.
+   *
+   * "loopback" trusts only a request whose immediate peer is 127.0.0.1/::1 -
+   * exactly cloudflared, nothing further out. An external caller's own TCP
+   * connection is never from loopback, so a spoofed X-Forwarded-For header on
+   * a direct request is ignored; only the header cloudflared itself sets,
+   * carrying Cloudflare's edge-verified client IP, is trusted.
+   */
+  app.set("trust proxy", "loopback");
 
   /*
    * Both parsers are raised, not just JSON. Raising one and not the other is
@@ -201,15 +219,15 @@ async function bootstrap() {
     );
   }
 
-  console.log("🟢 [6] Middleware setup complete");
+  Logger.log("🟢 [6] Middleware setup complete", "Bootstrap");
   const port = process.env.PORT || 4001;
 
-  console.log("🟢 [7] Starting server...");
+  Logger.log("🟢 [7] Starting server...", "Bootstrap");
   await app.listen(port);
   Logger.log(`✅ Server running on: http://localhost:${port}/api/v1`);
 }
 
 bootstrap().catch((err) => {
-  console.error("❌ Bootstrap failed:", err);
+  Logger.error("❌ Bootstrap failed:", err, "Bootstrap");
   process.exit(1);
 });

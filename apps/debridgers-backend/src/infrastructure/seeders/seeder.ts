@@ -198,6 +198,25 @@ async function seed() {
   const adminEmail = process.env.ADMIN_EMAIL || "admin@debridgers.com";
   const adminPassword = process.env.ADMIN_PASSWORD || "WGxMWQP8RfIMjNWVTpJo";
 
+  /*
+   * This literal has already leaked once - it lived in a committed doc with a
+   * live login that worked against the deployed test API. Dev and CI/test
+   * both rely on it intentionally for a reproducible seed, so the guard is
+   * production specifically, not "not development": refuse to silently seed
+   * a known, public password onto a database anyone can actually reach.
+   */
+  if (
+    process.env.NODE_ENV === "production" &&
+    (!process.env.ADMIN_PASSWORD ||
+      process.env.ADMIN_PASSWORD === "WGxMWQP8RfIMjNWVTpJo")
+  ) {
+    throw new Error(
+      "Refusing to seed the admin account in production with an unset or " +
+        "known-leaked ADMIN_PASSWORD. Set a real secret in the deployment's " +
+        "env before running db:seed.",
+    );
+  }
+
   // === Admin
   const existing = await db
     .select()

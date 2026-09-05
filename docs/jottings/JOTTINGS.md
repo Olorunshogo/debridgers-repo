@@ -33,31 +33,13 @@ backlog item. Anything here that becomes real work moves to
 
 ## Credentials
 
-**These are test accounts on a non-production environment.**
-
-| Role  | Address                                 |
-| ----- | --------------------------------------- |
-| Buyer | `reeach.olorunshogo@gmail.com`          |
-| Buyer | `0x0dgp@gmail.com`                      |
-| Buyer | `5871graceful@emalupe.com`, 09132432456 |
-| Agent | `yusiomone@gmail.com`                   |
-
-Shared password: `Password001@`
-
-**This block violates a KPI the company sets for itself:** no plaintext
-credentials committed. Moving the file did not fix that, because the password is
-already in git history and stays there.
-
-What actually fixes it:
-
-1. **Rotate the password now** if any of these accounts exist in production, or
-   share a password with one that does
-2. Move the values to an untracked `.env` or a secrets manager, and gitignore
-   whatever holds them
-3. Scrub the history only if these credentials ever guarded anything real. For
-   throwaway seed accounts on a dev database, rotating and untracking is enough
-
-Until step 1 and 2 happen, `KPI.md` section 6 stays marked not met.
+Removed 2026-09-05: this section listed real personal email addresses, a
+phone number, and a shared plaintext password for test accounts. Same class
+of issue as `docs/backend/apis_command/CREDENTIALS.md`, which was deleted the
+same day - see that removal for the reasoning. The listed accounts' password
+should still be rotated if any of them exist anywhere real, since the value
+stays readable from git history regardless of this edit. `KPI.md` section 6
+stays not met until that rotation happens.
 
 ---
 
