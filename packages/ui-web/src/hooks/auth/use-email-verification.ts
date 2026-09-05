@@ -34,6 +34,8 @@ export interface UseEmailVerificationResult {
   cooldown: number;
   canResend: boolean;
   maxResendsReached: boolean;
+  /** True once every digit is entered, for gating the submit button. */
+  isCodeComplete: boolean;
 }
 
 const OTP_LENGTH = 6;
@@ -146,5 +148,6 @@ export function useEmailVerification(
     cooldown,
     canResend,
     maxResendsReached,
+    isCodeComplete: code.length === OTP_LENGTH,
   };
 }

@@ -51,6 +51,10 @@ export function AuthCredentialsForm<T extends FieldValues>({
         variant="block"
         loading={isSubmitting}
         loadingText={submittingLabel}
+        /* Same reasoning as the signup form: mode: "onChange" on every hook
+           this component serves (login, forgot-password, reset-password)
+           keeps isValid live from the first keystroke. */
+        disabled={!formState.isValid}
         className="mt-4 rounded-full"
       >
         {submitLabel}

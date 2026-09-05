@@ -144,6 +144,13 @@ export function AuthSignupForm<T extends FieldValues>({
           variant="block"
           loading={isSubmitting}
           loadingText={submittingLabel}
+          /*
+           * mode: "onChange" on the form (see use-signup.ts) keeps isValid
+           * accurate from the first keystroke, not just after a submit
+           * attempt - so this can gate the button from the start rather than
+           * only preventing a resubmit once something is already wrong.
+           */
+          disabled={!formState.isValid}
           className="mt-4 rounded-full"
         >
           {submitLabel}
