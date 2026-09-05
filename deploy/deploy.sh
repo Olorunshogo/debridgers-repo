@@ -45,8 +45,8 @@ docker image prune -f
 echo "==> Current status"
 IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml ps
 
-echo "==> Checking backend health status"
-sleep 3
+echo "==> Checking backend health status (waiting for startup...)"
+sleep 65
 
 # Check if backend container is healthy (Docker healthcheck)
 if IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml ps debridgers-backend | grep -q "healthy"; then
