@@ -84,6 +84,9 @@ export * from "./components/coming-soon";
 // === Notifications
 export * from "./components/notifications";
 
+// === Product sorting
+export * from "./components/sort-menu";
+
 // === Confirmation
 export * from "./components/confirm-dialog-panel";
 

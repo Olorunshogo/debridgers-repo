@@ -208,7 +208,7 @@ export function Header({
      */
     <div className="sticky top-3 z-999">
       <motion.header
-        className={`font-syne h-navbar-h mx-auto flex w-4/5 max-w-232 rounded-full p-4 xl:max-w-260 ${
+        className={`font-syne h-navbar-h mx-auto flex w-9/10 max-w-232 rounded-full py-4 pr-4 pl-8 xl:max-w-260 ${
           isSolid ? "border-line border shadow-sm" : "shadow-md"
         }`}
         animate={{ backgroundColor: pillBg, backdropFilter: pillBlur }}

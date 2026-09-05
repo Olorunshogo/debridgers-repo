@@ -155,9 +155,9 @@
     ".env": ".env.development, .env.development.example, .env.example, .env.production, .env.production.example, .env.staging, .env.staging.example",
     "package.json": "pnpm-workspace.yaml, package-lock.json, .npmrc, .nvmrc, .node-version, pnpm-lock.yaml, project.json",
     "vite.config.*": "vite-env.d.ts",
-    ".prettierrc": "tailwind.config.*, prettier.config.*, .config.*, .editorconfig, .lintstagedrc, eslint.config.*",
+    ".prettierrc": "tailwind.config.*, prettier.config.*, .config.*, .editorconfig, .lintstagedrc, eslint.config.*, .eslintrc.cjs",
     ".gitignore*": ".prettierignore, .dockerignore",
-    "README.md": "CONTRIBUTING.md, LICENSE.md, CLAUDE.md"
+    "README.md": "CONTRIBUTING.md, LICENSE, CLAUDE.md"
   },
   "cSpell.words": ["debridgers", "nx", "pnpm"],
   "compile-hero.disable-compile-files-on-did-save-code": false,

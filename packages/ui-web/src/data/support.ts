@@ -12,7 +12,7 @@ export interface SupportChannels {
   /* Human-readable form of the same number, for display only. */
   phoneDisplay: string;
   supportEmail: string;
-  partnerEmail: string;
+  partnerEmail?: string;
   /* Plain-language availability, shown next to the phone and chat channels. */
   hours: string;
 }
@@ -23,7 +23,7 @@ export const SUPPORT: SupportChannels = {
   phone: "+2347012288798",
   phoneDisplay: "+234 701 228 8798",
   supportEmail: "support@debridgers.com",
-  partnerEmail: "partner@debridgers.com",
+  // partnerEmail: "partner@debridgers.com",
   hours: "Mon - Fri, 9am - 5pm",
 };
 

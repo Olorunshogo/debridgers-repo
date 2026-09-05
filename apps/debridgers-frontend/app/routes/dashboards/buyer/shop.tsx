@@ -15,6 +15,9 @@ import {
   ALL_CATEGORIES,
   formatFromKobo,
   SearchInputField,
+  SortMenu,
+  sortProducts,
+  type ProductSortKey,
 } from "@debridgers/ui-web";
 
 export function meta() {
@@ -72,6 +75,7 @@ export default function BuyerShop() {
   const [cartOpen, setCartOpen] = useState<boolean>(false);
   const [search, setSearch] = useState<string>("");
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORIES);
+  const [sortBy, setSortBy] = useState<ProductSortKey>("category");
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   useEffect(() => {
@@ -103,8 +107,8 @@ export default function BuyerShop() {
           p.name.toLowerCase().includes(q) || p.unit.toLowerCase().includes(q),
       );
     }
-    return list;
-  }, [products, search, activeCategory]);
+    return sortProducts(list, sortBy);
+  }, [products, search, activeCategory, sortBy]);
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginatedProducts = filtered.slice(
@@ -186,28 +190,37 @@ export default function BuyerShop() {
           }}
         />
 
-        {/* Category filter pills */}
-        {!loading && categories.length > 1 && (
-          <div className="flex flex-wrap gap-2">
-            {categories.map((cat) => {
-              const active = cat === activeCategory;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => {
-                    setActiveCategory(cat);
-                    setCurrentPage(1);
-                  }}
-                  className={`cursor-pointer rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
-                    active
-                      ? "border-primary bg-primary text-white"
-                      : "border-line text-heading bg-white"
-                  }`}
-                >
-                  {cat}
-                </button>
-              );
-            })}
+        {/* Category filter pills + sort */}
+        {!loading && (categories.length > 1 || products.length > 0) && (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => {
+                const active = cat === activeCategory;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => {
+                      setActiveCategory(cat);
+                      setCurrentPage(1);
+                    }}
+                    className={`cursor-pointer rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
+                      active
+                        ? "border-primary bg-primary text-white"
+                        : "border-line text-heading bg-white"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
+            <SortMenu
+              value={sortBy}
+              onChange={(next) => {
+                setSortBy(next);
+                setCurrentPage(1);
+              }}
+            />
           </div>
         )}
 

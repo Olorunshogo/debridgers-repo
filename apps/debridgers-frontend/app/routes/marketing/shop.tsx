@@ -26,6 +26,9 @@ import {
   ALL_CATEGORIES,
   useDialog,
   SearchInputField,
+  SortMenu,
+  sortProducts,
+  type ProductSortKey,
 } from "@debridgers/ui-web";
 
 import { marketingNavLinks } from "@/components/marketing/data/data";
@@ -131,6 +134,7 @@ export default function PublicShop() {
   const [cartOpen, setCartOpen] = useState<boolean>(false);
   const [search, setSearch] = useState<string>("");
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORIES);
+  const [sortBy, setSortBy] = useState<ProductSortKey>("category");
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   // Load products from public endpoint (no auth required)
@@ -173,8 +177,8 @@ export default function PublicShop() {
           p.name.toLowerCase().includes(q) || p.unit.toLowerCase().includes(q),
       );
     }
-    return list;
-  }, [products, search, activeCategory]);
+    return sortProducts(list, sortBy);
+  }, [products, search, activeCategory, sortBy]);
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginatedProducts = filtered.slice(
@@ -271,25 +275,34 @@ export default function PublicShop() {
                 }}
               />
 
-              {/* Category pills */}
-              {!loading && categories.length > 1 && (
-                <div className="mb-4 flex flex-wrap gap-2">
-                  {categories.map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => {
-                        setActiveCategory(cat);
-                        setCurrentPage(1);
-                      }}
-                      className={`cursor-pointer rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
-                        cat === activeCategory
-                          ? "border-primary bg-primary text-white"
-                          : "border-line text-heading bg-white"
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
+              {/* Category pills + sort */}
+              {!loading && (categories.length > 1 || products.length > 0) && (
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    {categories.map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => {
+                          setActiveCategory(cat);
+                          setCurrentPage(1);
+                        }}
+                        className={`cursor-pointer rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
+                          cat === activeCategory
+                            ? "border-primary bg-primary text-white"
+                            : "border-line text-heading bg-white"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                  <SortMenu
+                    value={sortBy}
+                    onChange={(next) => {
+                      setSortBy(next);
+                      setCurrentPage(1);
+                    }}
+                  />
                 </div>
               )}
 
