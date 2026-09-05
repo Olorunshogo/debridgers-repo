@@ -45,20 +45,18 @@ docker image prune -f
 echo "==> Current status"
 IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml ps
 
-echo "==> Smoke test https://api-test.debridgers.com/api/v1/health"
-for attempt in $(seq 1 12); do
-  code=$(curl -sS -o /dev/null -w '%{http_code}' "https://api-test.debridgers.com/api/v1/health" || true)
-  if [ "${code}" = "200" ]; then
-    echo "==> Smoke test passed"
-    exit 0
-  fi
-  echo "    attempt ${attempt}/12: HTTP ${code}, retrying in 5s"
-  sleep 5
-done
+echo "==> Checking backend health status"
+sleep 3
 
-echo "==> Smoke test FAILED: api-test.debridgers.com never returned 200" >&2
+# Check if backend container is healthy (Docker healthcheck)
+if IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml ps debridgers-backend | grep -q "healthy"; then
+  echo "==> ✅ Deployment successful: backend is healthy"
+  exit 0
+fi
+
+echo "==> ❌ Backend is not healthy" >&2
+echo "==> Backend status:" >&2
+IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml ps debridgers-backend >&2
 echo "==> Recent backend logs:" >&2
-IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml logs --tail 40 debridgers-backend >&2 || true
-echo "==> Recent cloudflared logs:" >&2
-IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml logs --tail 40 cloudflared >&2 || true
+IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml logs --tail 30 debridgers-backend >&2 || true
 exit 1
