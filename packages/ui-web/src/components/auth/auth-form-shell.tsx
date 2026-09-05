@@ -32,9 +32,15 @@ export function AuthFormShell({
   children,
 }: AuthFormShellProps) {
   return (
-    <div className="flex min-h-screen w-full">
-      {/* Brand panel */}
-      <div className="bg-primary hidden flex-col justify-center p-12 lg:flex lg:w-100">
+    /*
+     * h-screen + overflow-hidden here, deliberately: this is the one place
+     * that hands scrolling to exactly one child below, not the accidental
+     * kind (see IntroAnimation's body-lock). The brand panel never needs to
+     * scroll; the form panel is the only one that can outgrow the viewport.
+     */
+    <div className="flex h-screen w-full overflow-hidden">
+      {/* Brand panel - fixed at 100vh, stays put while the form scrolls */}
+      <div className="bg-primary hidden h-screen flex-col justify-center p-12 lg:flex lg:w-100">
         <div className="flex w-full flex-col gap-12">
           <Link to="/" className="flex w-fit items-center gap-2">
             <AppLogo variant="white" />
@@ -45,36 +51,45 @@ export function AuthFormShell({
         </div>
       </div>
 
-      {/* Form panel */}
-      <div className="py-section-py sm:py-section-py-sm lg:py-section-py-lg flex min-h-screen flex-1 flex-col items-center justify-center bg-white px-6 lg:px-16">
-        <div className="flex w-full max-w-125 flex-col gap-6">
-          <Link to="/" className="flex justify-center lg:hidden">
-            <AppLogo />
-          </Link>
+      {/* Form panel - the only scrollable region */}
+      <div className="h-screen flex-1 overflow-y-auto bg-white px-6 lg:px-16">
+        {/*
+         * min-h-full, not h-full: centers short content (login) exactly as
+         * before, but lets tall content (signup) grow past the viewport
+         * instead of fighting the centering, which is what clips or strands
+         * the top of the content when overflow and justify-center land on
+         * the same scrolling element.
+         */}
+        <div className="py-section-py sm:py-section-py-sm lg:py-section-py-lg flex min-h-full flex-col items-center justify-center">
+          <div className="flex w-full max-w-125 flex-col gap-6">
+            <Link to="/" className="flex justify-center lg:hidden">
+              <AppLogo />
+            </Link>
 
-          <div className="flex flex-col gap-1">
-            <h1 className="font-syne text-heading text-2xl font-bold">
-              {heading}
-            </h1>
-            {subheading && <p className="text-body text-sm">{subheading}</p>}
+            <div className="flex flex-col gap-1">
+              <h1 className="font-syne text-heading text-2xl font-bold">
+                {heading}
+              </h1>
+              {subheading && <p className="text-body text-sm">{subheading}</p>}
+            </div>
+
+            <AnimatePresence>
+              {apiError && (
+                <motion.div
+                  variants={fadeDownVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  transition={transitionBase}
+                  className="bg-status-cancelled text-status-cancelled-fg rounded-xl px-4 py-3 text-sm"
+                >
+                  {apiError}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {children}
           </div>
-
-          <AnimatePresence>
-            {apiError && (
-              <motion.div
-                variants={fadeDownVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={transitionBase}
-                className="bg-status-cancelled text-status-cancelled-fg rounded-xl px-4 py-3 text-sm"
-              >
-                {apiError}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {children}
         </div>
       </div>
     </div>

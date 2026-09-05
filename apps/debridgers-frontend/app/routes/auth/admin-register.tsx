@@ -26,6 +26,19 @@ export default function AdminRegister() {
   const [apiKey, setApiKey] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
 
+  /*
+   * No schema library here (see the file's own note: plain useState, not
+   * react-hook-form), so validity is the same required/minLength constraints
+   * already on the inputs below, computed once for the submit button rather
+   * than left to the browser's own validation on click.
+   */
+  const isFormValid =
+    formData.email.trim() !== "" &&
+    formData.first_name.trim() !== "" &&
+    formData.last_name.trim() !== "" &&
+    formData.password.length >= 8 &&
+    formData.invite_code.trim() !== "";
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -225,7 +238,7 @@ export default function AdminRegister() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !isFormValid}
             className="mt-6 w-full rounded-lg bg-blue-600 py-2 font-medium text-white transition hover:bg-blue-700 disabled:bg-gray-400"
           >
             {loading ? "Creating Account..." : "Create Admin Account"}

@@ -47,6 +47,7 @@ export default function VerifyEmailPage() {
     cooldown,
     canResend,
     maxResendsReached,
+    isCodeComplete,
   } = useEmailVerification({ email, maxResends: MAX_RESENDS });
 
   /*
@@ -104,6 +105,7 @@ export default function VerifyEmailPage() {
                 variant="block"
                 loading={isSubmitting}
                 loadingText="Verifying..."
+                disabled={!isCodeComplete}
                 className="rounded-full"
               >
                 Verify email

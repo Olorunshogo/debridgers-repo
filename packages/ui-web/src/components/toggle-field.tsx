@@ -1,6 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Check } from "lucide-react";
+import { cn } from "../lib/utils";
 
 /*
  * One boolean control, two appearances.
@@ -57,24 +59,48 @@ export function ToggleField({
     id ?? name ?? label?.toLowerCase().replace(/\s+/g, "-") ?? variant;
 
   if (variant === "checkbox") {
+    /*
+     * The native box (accent-primary + a bare border) rendered fine once
+     * ticked but looked like a rendering glitch before that, since an
+     * unchecked native checkbox's exact look is up to the OS/browser, not
+     * this stylesheet. appearance-none takes that decision away entirely: the
+     * real input stays for click/keyboard/screen-reader behaviour, sized and
+     * positioned exactly over a decorative box this component fully owns in
+     * both states.
+     */
     return (
       <div className="font-syne flex flex-col gap-1">
         <label
           htmlFor={controlId}
           className="flex cursor-pointer items-start gap-3"
         >
-          <input
-            type="checkbox"
-            id={controlId}
-            name={name ?? controlId}
-            checked={checked}
-            disabled={disabled}
-            onChange={(event) => onCheckedChange(event.target.checked)}
-            onBlur={onBlur}
-            aria-label={label}
-            aria-invalid={error ? true : undefined}
-            className="accent-primary border-line mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border disabled:cursor-not-allowed"
-          />
+          <span className="relative mt-0.5 inline-flex h-4 w-4 shrink-0">
+            <input
+              type="checkbox"
+              id={controlId}
+              name={name ?? controlId}
+              checked={checked}
+              disabled={disabled}
+              onChange={(event) => onCheckedChange(event.target.checked)}
+              onBlur={onBlur}
+              aria-label={label}
+              aria-invalid={error ? true : undefined}
+              className="peer absolute inset-0 h-4 w-4 cursor-pointer appearance-none disabled:cursor-not-allowed"
+            />
+            <span
+              aria-hidden="true"
+              className={cn(
+                "pointer-events-none flex h-4 w-4 items-center justify-center rounded border transition-colors",
+                "peer-focus-visible:ring-primary/40 peer-focus-visible:ring-2 peer-focus-visible:ring-offset-1",
+                checked ? "bg-primary border-primary" : "border-line bg-white",
+                disabled && "opacity-60",
+              )}
+            >
+              {checked && (
+                <Check size={11} strokeWidth={3} className="text-white" />
+              )}
+            </span>
+          </span>
           <span className="text-body text-sm">{labelContent ?? label}</span>
         </label>
         {description && <p className="text-body text-xs">{description}</p>}
