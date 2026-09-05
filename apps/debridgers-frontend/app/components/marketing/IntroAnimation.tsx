@@ -226,7 +226,23 @@ export function IntroAnimation() {
   useEffect(() => {
     if (!visible) return;
     document.body.style.overflow = "hidden";
+
+    /*
+     * Cleanup below covers the normal path (visible flips false once the
+     * splash finishes). This timer is the fallback for anything that stops
+     * that from happening - a thrown error mid-animation, a Strict Mode
+     * double-invoke ordering quirk - so the page is never left permanently
+     * unscrollable. Comfortably past the real animation's own end.
+     */
+    const safety = setTimeout(
+      () => {
+        document.body.style.overflow = "";
+      },
+      TOTAL_DURATION_MS + PHASE_DURATIONS.done + 1000,
+    );
+
     return () => {
+      clearTimeout(safety);
       document.body.style.overflow = "";
     };
   }, [visible]);
