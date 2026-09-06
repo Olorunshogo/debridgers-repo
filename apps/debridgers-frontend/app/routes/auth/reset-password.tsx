@@ -60,7 +60,7 @@ export default function ResetPasswordPage() {
 
   return (
     <AuthFormShell
-      heading={done ? "Password updated" : "Set a new password"}
+      heading={done ? "Password updated" : "Reset password"}
       apiError={
         missingToken && !done
           ? "Reset token is missing. Please use the link from your email."
@@ -98,8 +98,8 @@ export default function ResetPasswordPage() {
               form={form}
               onSubmit={submit}
               isSubmitting={isSubmitting}
-              submitLabel="Update password"
-              submittingLabel="Updating..."
+              submitLabel="Reset password"
+              submittingLabel="Resetting..."
             />
           )}
         </motion.div>

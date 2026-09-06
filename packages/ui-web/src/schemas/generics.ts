@@ -65,24 +65,42 @@ export function createNameSchema(
 // === Phone
 
 /*
- * Digits only, minimum 10. Deliberately not using libphonenumber-js: it is not
- * a dependency of this package, and the backend accepts a plain string. If real
- * international parsing is ever needed, change it here and every form inherits.
+ * Accepts the three shapes a Nigerian number reasonably arrives in: local with
+ * a leading 0 (09012345678), international with a plus (+2349012345678), or
+ * international without one (2349012345678). Deliberately not using
+ * libphonenumber-js: it is not a dependency of this package, and the backend
+ * accepts a plain string. If real international parsing is ever needed, change
+ * it here and every form inherits.
+ *
+ * Format-only. normalizeNigerianPhone below produces the single shape every
+ * caller actually stores, so the schema does not also carry a transform.
  */
+const NIGERIA_PHONE_PATTERN = /^(?:0\d{10}|\+?234\d{10})$/;
+
 export function createPhoneSchema(
   options: FieldSchemaOptions = {},
 ): z.ZodString {
   const {
     requiredMessage = "Phone number is required",
-    invalidMessage = "Digits only",
+    invalidMessage = "Enter a valid Nigerian phone number",
   } = options;
 
   return z
     .string()
     .min(1, requiredMessage)
-    .min(10, "Phone must be at least 10 digits")
-    .max(20, "Phone must be at most 20 digits")
-    .regex(/^\d+$/, invalidMessage);
+    .regex(NIGERIA_PHONE_PATTERN, invalidMessage);
+}
+
+/**
+ * Normalizes any of the three accepted shapes to the local 11-digit form
+ * (leading 0), so every consumer downstream works with one shape regardless of
+ * what the user typed.
+ */
+export function normalizeNigerianPhone(value: string): string {
+  const digits: string = value.replace(/\D/g, "");
+  return digits.startsWith("234") && digits.length === 13
+    ? `0${digits.slice(3)}`
+    : digits;
 }
 
 // === Password

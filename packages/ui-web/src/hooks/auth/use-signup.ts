@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { useForm, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuthAdapter } from "./auth-adapter";
+import { normalizeNigerianPhone } from "../../schemas/generics";
 import type {
   RoleSignupConfig,
   SignupFormValues,
@@ -122,7 +123,9 @@ export function useSignup(options: UseSignupOptions): UseSignupResult {
           email: values.email,
           password: values.password,
           role,
-          phone: values.phone || undefined,
+          phone: values.phone
+            ? normalizeNigerianPhone(values.phone)
+            : undefined,
           referred_by_agent_code: values.referredByAgentCode || undefined,
           ...termsConsent,
         });

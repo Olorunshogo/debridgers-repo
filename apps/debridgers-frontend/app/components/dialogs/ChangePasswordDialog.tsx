@@ -6,26 +6,15 @@ import {
   PasswordInputField,
   SubmitButton,
   useDialog,
-  useDialogSubmission,
+  useUpdatePassword,
   DIALOG_SUCCESS_CLOSE_DELAY_MS,
 } from "@debridgers/ui-web";
-import { apiMutate } from "@debridgers/api-client";
-import { useState } from "react";
-import {
-  validatePasswordForm,
-  type ChangePasswordForm,
-} from "../../utils/password-validation";
 
 /*
- * Admin password change, on the dialog engine.
- *
- * Was a hand-rolled overlay that painted its own backdrop and carried its own
- * copy of the max-w-md bug. Going through the engine gives it focus trapping,
- * scroll locking and the shared panel width for free.
- *
- * Dismissable: backdrop, Escape and the X closer all work. It is a prompt, not
- * a gate. An admin who cannot get past it cannot use the dashboard they just
- * signed in to.
+ * Update password, on the shared useUpdatePassword hook from @debridgers/ui-web.
+ * One dialog, reused by every role's settings screen and by the app's own
+ * "you're still on a temporary password" nag (DashboardLayout), which is the
+ * only caller that overrides the copy below.
  *
  * Registered as CHANGE_PASSWORD in app/providers/dialog-registry.ts.
  */
@@ -33,23 +22,29 @@ import {
 interface ChangePasswordDialogProps {
   /** Fires once the new password is accepted, so the caller can stop asking. */
   onChanged?: () => void;
+  title?: string;
+  description?: string;
+  successTitle?: string;
+  successDescription?: string;
 }
 
-const EMPTY_FORM: ChangePasswordForm = {
-  current_password: "",
-  new_password: "",
-  confirm_password: "",
-};
+const DEFAULT_TITLE = "Update password";
+const DEFAULT_DESCRIPTION = "Enter your current password and choose a new one.";
+const DEFAULT_SUCCESS_TITLE = "Password updated";
+const DEFAULT_SUCCESS_DESCRIPTION =
+  "Use the new password the next time you sign in.";
 
 export default function ChangePasswordDialog({
   onChanged,
+  title = DEFAULT_TITLE,
+  description = DEFAULT_DESCRIPTION,
+  successTitle = DEFAULT_SUCCESS_TITLE,
+  successDescription = DEFAULT_SUCCESS_DESCRIPTION,
 }: ChangePasswordDialogProps) {
   const { closeDialog, setDialogLoading } = useDialog();
-  const { status, error, run, isSubmitting } = useDialogSubmission<void>();
-  const [form, setForm] = useState<ChangePasswordForm>(EMPTY_FORM);
-  const [fieldErrors, setFieldErrors] = useState<Partial<ChangePasswordForm>>(
-    {},
-  );
+  const { form, submit, apiError, isSubmitting, done } = useUpdatePassword({
+    onSuccess: onChanged,
+  });
 
   /* Blocks dismissal mid-request; a half-submitted password change is not
      something to close out from under. */
@@ -58,102 +53,73 @@ export default function ChangePasswordDialog({
   }, [isSubmitting, setDialogLoading]);
 
   useEffect(() => {
-    if (status !== "success") return;
-    onChanged?.();
+    if (!done) return;
     const timer = window.setTimeout(closeDialog, DIALOG_SUCCESS_CLOSE_DELAY_MS);
     return () => window.clearTimeout(timer);
-  }, [status, closeDialog, onChanged]);
+  }, [done, closeDialog]);
 
-  function update(field: keyof ChangePasswordForm, value: string): void {
-    setForm((current) => ({ ...current, [field]: value }));
-    setFieldErrors((current) => ({ ...current, [field]: undefined }));
-  }
-
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
-    if (isSubmitting) return;
-
-    const validationErrors = validatePasswordForm(form);
-    if (Object.keys(validationErrors).length > 0) {
-      setFieldErrors(validationErrors);
-      return;
-    }
-    setFieldErrors({});
-
-    void run(async () => {
-      await apiMutate("/admin/password/change", {
-        method: "PATCH",
-        body: JSON.stringify({
-          current_password: form.current_password,
-          new_password: form.new_password,
-        }),
-      });
-    });
-  }
-
-  if (status === "success") {
+  if (done) {
     return (
       <div className="flex flex-col gap-4">
-        <DialogHeader title="Password updated" showCloser={false} />
+        <DialogHeader title={successTitle} showCloser={false} />
         <DialogSuccessPanel
-          title="Your password has been changed"
-          description="Use the new password the next time you sign in."
+          title={successTitle}
+          description={successDescription}
         />
       </div>
     );
   }
 
+  const { register, formState } = form;
+
   return (
     <div className="flex flex-col gap-5">
       <DialogHeader
-        title="Secure your account"
-        description="You are still on the temporary password you were invited with. Set a permanent one to keep the account yours."
+        title={title}
+        description={description}
         onClose={closeDialog}
       />
 
-      {error && <DialogErrorBanner message={error} />}
+      {apiError && <DialogErrorBanner message={apiError} />}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form onSubmit={submit} className="flex flex-col gap-4">
         <PasswordInputField
-          label="Temporary password"
-          name="current_password"
+          label="Current password"
           required
           autoComplete="current-password"
-          placeholder="The password from your invite"
-          value={form.current_password}
-          error={fieldErrors.current_password}
+          placeholder="Your current password"
           disabled={isSubmitting}
-          onChange={(e) => update("current_password", e.target.value)}
+          error={formState.errors.currentPassword?.message}
+          {...register("currentPassword")}
         />
 
         <PasswordInputField
           label="New password"
-          name="new_password"
           required
           autoComplete="new-password"
           placeholder="Create a new password"
-          value={form.new_password}
-          error={fieldErrors.new_password}
           disabled={isSubmitting}
-          onChange={(e) => update("new_password", e.target.value)}
+          error={formState.errors.password?.message}
+          {...register("password")}
         />
 
         <PasswordInputField
           label="Confirm new password"
-          name="confirm_password"
           required
           autoComplete="new-password"
           placeholder="Type it again"
-          value={form.confirm_password}
-          error={fieldErrors.confirm_password}
           disabled={isSubmitting}
-          onChange={(e) => update("confirm_password", e.target.value)}
+          error={formState.errors.confirmPassword?.message}
+          {...register("confirmPassword")}
         />
 
         <SubmitButton
           variant="primary"
           loading={isSubmitting}
           loadingText="Updating..."
+          /* mode: "onChange" in useUpdatePassword keeps isValid live from the
+             first keystroke, same reasoning as the shared auth forms. */
+          disabled={!formState.isValid}
         >
           Update password
         </SubmitButton>

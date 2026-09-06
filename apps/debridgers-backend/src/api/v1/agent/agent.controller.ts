@@ -35,6 +35,10 @@ import { CloudinaryService } from "../../../infrastructure/cloudinary/cloudinary
 import { ZodValidationPipe } from "../../../infrastructure/pipeline/validation.pipeline";
 import { applyAgentSchema, ApplyAgentDto } from "./dto/apply-agent.dto";
 import {
+  changePasswordSchema,
+  ChangePasswordDto,
+} from "./dto/change-password.dto";
+import {
   requestWithdrawalSchema,
   RequestWithdrawalDto,
 } from "./dto/request-withdrawal.dto";
@@ -265,6 +269,23 @@ export class AgentController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.agentService.updateProfile(dto, user);
+  }
+
+  @Patch("password/change")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard, RolesGuard)
+  @ApiBearerAuth("access-token")
+  @ApiOperation({
+    summary: "Change agent password (requires current password)",
+  })
+  @ApiResponse({ status: 200, description: "Password updated" })
+  @ApiResponse({ status: 401, description: "Current password incorrect" })
+  changePassword(
+    @Body(new ZodValidationPipe(changePasswordSchema))
+    dto: ChangePasswordDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.agentService.changePassword(dto, user);
   }
 
   @Post("avatar")

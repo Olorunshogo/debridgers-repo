@@ -18,10 +18,10 @@ import {
   SelectInputField,
   TextInputField,
   EmailInputField,
-  PasswordInputField,
   defaultStateName,
   stateSelectOptions,
   lgaSelectOptions,
+  useDialog,
 } from "@debridgers/ui-web";
 
 export function meta() {
@@ -86,6 +86,8 @@ const ID_TYPES = ["NIN", "Passport", "Drivers License"] as const;
 
 // === Page
 export default function AgentSettingsPage() {
+  const { triggerDialog } = useDialog();
+
   // === Avatar state
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState<boolean>(false);
@@ -719,7 +721,7 @@ export default function AgentSettingsPage() {
         )}
       </motion.div>
 
-      {/* Password - coming soon */}
+      {/* Password */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -732,27 +734,13 @@ export default function AgentSettingsPage() {
             Change Password
           </h3>
         </div>
-        <div className="flex flex-col gap-4">
-          {["Current Password", "New Password", "Confirm New Password"].map(
-            (label) => (
-              <PasswordInputField
-                key={label}
-                label={label}
-                placeholder="••••••••"
-                disabled
-                required
-                className="opacity-50"
-              />
-            ),
-          )}
-          <button
-            type="button"
-            disabled
-            className="bg-primary cursor-not-allowed self-start rounded-full px-6 py-2.5 text-sm font-semibold text-white opacity-50"
-          >
-            Update Password (coming soon)
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => triggerDialog("CHANGE_PASSWORD", {})}
+          className="bg-primary cursor-pointer self-start rounded-full px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          Update password
+        </button>
       </motion.div>
     </div>
   );

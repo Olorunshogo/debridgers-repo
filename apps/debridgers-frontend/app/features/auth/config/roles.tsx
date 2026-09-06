@@ -4,6 +4,7 @@ import {
   buyerTerms,
   createRoleSignupSchema,
   createRequiredString,
+  normalizeNigerianPhone,
   referralCodeField,
   acceptedTermsField,
   lgaField,
@@ -193,7 +194,10 @@ export const ROLE_SIGNUP_CONFIG: Record<
       form.append("first_name", identity.first_name);
       form.append("last_name", identity.last_name);
       form.append("email", values.email);
-      form.append("phone", values.phone ?? "");
+      form.append(
+        "phone",
+        values.phone ? normalizeNigerianPhone(values.phone) : "",
+      );
       form.append("lga", values.lga ?? "");
       form.append("address", values.address ?? "");
       form.append("password", values.password);

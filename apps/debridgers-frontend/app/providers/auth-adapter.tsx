@@ -12,10 +12,29 @@ import {
   verifyEmail as verifyEmailRequest,
   resendOtp as resendOtpRequest,
   storeTokens,
+  apiMutate,
 } from "@debridgers/api-client";
 import { useAuth } from "../contexts/AuthContext";
 import { redirectAfterAuth } from "../utils/auth-redirect";
 import { splitFullName } from "../utils/name";
+
+/*
+ * One endpoint per role, all PATCH .../password/change. Buyer's DTO predates
+ * this and stayed on old_password rather than being renamed on a live path;
+ * agent and admin use current_password. useUpdatePassword itself never
+ * branches on role - only this map does.
+ */
+const PASSWORD_CHANGE_PATH: Record<string, string> = {
+  buyer: "/buyer/password/change",
+  agent: "/agent/password/change",
+  admin: "/admin/password/change",
+};
+
+const CURRENT_PASSWORD_FIELD: Record<string, string> = {
+  buyer: "old_password",
+  agent: "current_password",
+  admin: "current_password",
+};
 
 /*
  * Wires the shared auth hooks in @debridgers/ui-web to this app's real
@@ -27,7 +46,7 @@ import { splitFullName } from "../utils/name";
  */
 export function AppAuthAdapterProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
-  const { login, syncUserFromToken } = useAuth();
+  const { login, syncUserFromToken, user } = useAuth();
 
   const adapter = useMemo<AuthAdapter>(
     () => ({
@@ -40,6 +59,19 @@ export function AppAuthAdapterProvider({ children }: { children: ReactNode }) {
 
       resetPassword: (token, password) =>
         resetPasswordRequest({ token, password }),
+
+      updatePassword: (currentPassword, newPassword) => {
+        const role = user?.role ?? "buyer";
+        const path = PASSWORD_CHANGE_PATH[role];
+        const currentPasswordField = CURRENT_PASSWORD_FIELD[role];
+        return apiMutate(path, {
+          method: "PATCH",
+          body: JSON.stringify({
+            [currentPasswordField]: currentPassword,
+            new_password: newPassword,
+          }),
+        });
+      },
 
       verifyEmail: (email, otp) => verifyEmailRequest({ email, otp }),
 
@@ -63,7 +95,7 @@ export function AppAuthAdapterProvider({ children }: { children: ReactNode }) {
 
       splitFullName,
     }),
-    [login, navigate, syncUserFromToken],
+    [login, navigate, syncUserFromToken, user],
   );
 
   return (

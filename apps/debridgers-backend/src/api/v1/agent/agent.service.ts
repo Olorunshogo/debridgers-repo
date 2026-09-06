@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  UnauthorizedException,
 } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -257,6 +258,34 @@ export class AgentService {
     }
 
     return { message: "Profile updated", data: null };
+  }
+
+  /* Mirrors BuyerService.changePassword exactly - same shape, same rules. */
+  async changePassword(
+    dto: { current_password: string; new_password: string },
+    user: JwtPayload,
+  ) {
+    const [agent] = await this.db
+      .select({ id: schema.users.id, password: schema.users.password })
+      .from(schema.users)
+      .where(eq(schema.users.id, user.sub))
+      .limit(1);
+
+    if (!agent) throw new NotFoundException("Agent not found");
+    if (!agent.password)
+      throw new BadRequestException("No password set on this account");
+
+    const valid = await bcrypt.compare(dto.current_password, agent.password);
+    if (!valid)
+      throw new UnauthorizedException("Current password is incorrect");
+
+    const hashed = await bcrypt.hash(dto.new_password, 12);
+    await this.db
+      .update(schema.users)
+      .set({ password: hashed })
+      .where(eq(schema.users.id, user.sub));
+
+    return { message: "Password updated successfully", data: null };
   }
 
   async updateAvatar(url: string, user: JwtPayload) {

@@ -167,7 +167,7 @@ export class BuyerController {
    * feeding "mark-all" to ParseIntPipe and making mark-all-read unreachable.
    */
 
-  @Patch("password")
+  @Patch("password/change")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Change buyer password (requires current password)",

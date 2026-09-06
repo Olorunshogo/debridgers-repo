@@ -63,11 +63,14 @@ export default function VerifyEmailPage() {
       heading={verified ? "Email verified" : "Verify your email"}
       apiError={apiError}
       subheading={
-        verified
-          ? undefined
-          : email
-            ? `Enter the 6-digit code we sent to ${email}.`
-            : "Enter the 6-digit code we sent to your email."
+        verified ? undefined : email ? (
+          <>
+            Enter the 6-digit code we sent to{" "}
+            <span className="font-semibold">{email}</span>.
+          </>
+        ) : (
+          "Enter the 6-digit code we sent to your email."
+        )
       }
     >
       <AnimatePresence mode="wait">
@@ -101,15 +104,38 @@ export default function VerifyEmailPage() {
                 disabled={isSubmitting}
               />
 
-              <SubmitButton
-                variant="block"
-                loading={isSubmitting}
-                loadingText="Verifying..."
-                disabled={!isCodeComplete}
-                className="rounded-full"
-              >
-                Verify email
-              </SubmitButton>
+              <div className="flex flex-col gap-3">
+                <SubmitButton
+                  variant="block"
+                  loading={isSubmitting}
+                  loadingText="Verifying..."
+                  disabled={!isCodeComplete}
+                  className="rounded-full"
+                >
+                  Verify email
+                </SubmitButton>
+
+                {!maxResendsReached && (
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => void resend()}
+                      disabled={!canResend || isResending}
+                      className={`text-xs font-medium underline underline-offset-2 ${
+                        canResend && !isResending
+                          ? "text-primary cursor-pointer"
+                          : "text-placeholder-text cursor-not-allowed"
+                      }`}
+                    >
+                      {isResending
+                        ? "Sending..."
+                        : cooldown > 0
+                          ? `Resend code in ${cooldown}s`
+                          : "Resend code"}
+                    </button>
+                  </div>
+                )}
+              </div>
 
               <div className="flex flex-col items-center gap-2 text-center">
                 {resent && (
@@ -118,27 +144,10 @@ export default function VerifyEmailPage() {
                   </p>
                 )}
 
-                {maxResendsReached ? (
+                {maxResendsReached && (
                   <p className="text-body text-xs">
                     Resend limit reached. Please contact support.
                   </p>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => void resend()}
-                    disabled={!canResend || isResending}
-                    className={`text-xs font-medium underline underline-offset-2 ${
-                      canResend && !isResending
-                        ? "text-primary cursor-pointer"
-                        : "text-placeholder-text cursor-not-allowed"
-                    }`}
-                  >
-                    {isResending
-                      ? "Sending..."
-                      : cooldown > 0
-                        ? `Resend code in ${cooldown}s`
-                        : "Resend code"}
-                  </button>
                 )}
 
                 <Link

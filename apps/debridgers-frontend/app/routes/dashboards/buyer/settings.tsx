@@ -4,11 +4,11 @@ import { z } from "zod";
 import { CheckCircle2, Pencil } from "lucide-react";
 import {
   TextInputField,
-  PasswordInputField,
   SelectInputField,
   ToggleField,
   SubmitButton,
   TextareaField,
+  useDialog,
 } from "@debridgers/ui-web";
 import {
   apiFetch,
@@ -31,34 +31,16 @@ export function meta() {
   ];
 }
 
-const schema = z
-  .object({
-    userName: z.string().min(2, "Name must be at least 2 characters"),
-    email: z.string().email("Invalid email"),
-    currency: z.string().min(1, "Select a currency"),
-    country: z.string().min(1, "Select a country"),
-    deliveryAddress: z.string().optional().or(z.literal("")),
-    oldPassword: z.string().optional(),
-    newPassword: z
-      .string()
-      .min(8, "New password must be at least 8 characters")
-      .optional()
-      .or(z.literal("")),
-    emailNotification: z.boolean(),
-    smsNotification: z.boolean(),
-    twoFactor: z.boolean(),
-  })
-  .refine(
-    (d) => {
-      if (d.newPassword && !d.oldPassword) return false;
-      if (d.oldPassword && !d.newPassword) return false;
-      return true;
-    },
-    {
-      message: "Both old and new passwords are required",
-      path: ["newPassword"],
-    },
-  );
+const schema = z.object({
+  userName: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email"),
+  currency: z.string().min(1, "Select a currency"),
+  country: z.string().min(1, "Select a country"),
+  deliveryAddress: z.string().optional().or(z.literal("")),
+  emailNotification: z.boolean(),
+  smsNotification: z.boolean(),
+  twoFactor: z.boolean(),
+});
 
 type SettingsForm = z.infer<typeof schema>;
 type FormErrors = Partial<Record<keyof SettingsForm, string>>;
@@ -81,8 +63,6 @@ const initialForm: SettingsForm = {
   currency: "NGN",
   country: "NG",
   deliveryAddress: "",
-  oldPassword: "",
-  newPassword: "",
   emailNotification: true,
   smsNotification: false,
   twoFactor: false,
@@ -151,13 +131,13 @@ function ReadOnlyRow({ label, value }: { label: string; value: string }) {
 }
 
 export default function BuyerSettings() {
+  const { triggerDialog } = useDialog();
   const fileRef = useRef<HTMLInputElement>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [form, setForm] = useState<SettingsForm>(initialForm);
   const [original, setOriginal] = useState<SettingsForm>(initialForm);
   const [editing, setEditing] = useState<Set<string>>(new Set());
-  const [passwordOpen, setPasswordOpen] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState<boolean>(false);
   const [saved, setSaved] = useState<boolean>(false);
@@ -183,9 +163,7 @@ export default function BuyerSettings() {
       (form.deliveryAddress ?? "") !== (original.deliveryAddress ?? "") ||
       form.emailNotification !== original.emailNotification ||
       form.smsNotification !== original.smsNotification ||
-      form.twoFactor !== original.twoFactor ||
-      !!form.oldPassword ||
-      !!form.newPassword
+      form.twoFactor !== original.twoFactor
     );
   }, [form, original]);
 
@@ -304,16 +282,6 @@ export default function BuyerSettings() {
         }),
       });
 
-      if (result.data.oldPassword && result.data.newPassword) {
-        await apiFetch("/buyer/password", {
-          method: "PATCH",
-          body: JSON.stringify({
-            old_password: result.data.oldPassword,
-            new_password: result.data.newPassword,
-          }),
-        });
-      }
-
       const saved = result.data;
       setOriginal((p) => ({
         ...p,
@@ -325,18 +293,14 @@ export default function BuyerSettings() {
         smsNotification: saved.smsNotification,
         twoFactor: saved.twoFactor,
       }));
-      setForm((p) => ({ ...p, oldPassword: "", newPassword: "" }));
       setEditing(new Set());
-      setPasswordOpen(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
-      const msg =
+      setApiError(
         err instanceof Error
           ? err.message
-          : "Failed to save changes. Please try again.";
-      setApiError(
-        msg.includes("incorrect") ? "Current password is incorrect." : msg,
+          : "Failed to save changes. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -511,32 +475,13 @@ export default function BuyerSettings() {
 
       {/* Change Password */}
       <Section title="Change Password">
-        {passwordOpen ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <PasswordInputField
-              label="Old Password"
-              placeholder="Current password"
-              value={form.oldPassword ?? ""}
-              onChange={handleText("oldPassword")}
-              error={errors.oldPassword}
-            />
-            <PasswordInputField
-              label="New Password"
-              placeholder="New password"
-              value={form.newPassword ?? ""}
-              onChange={handleText("newPassword")}
-              error={errors.newPassword}
-            />
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setPasswordOpen(true)}
-            className="text-primary w-fit cursor-pointer text-sm font-medium hover:underline"
-          >
-            Change password
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => triggerDialog("CHANGE_PASSWORD", {})}
+          className="text-primary w-fit cursor-pointer text-sm font-medium hover:underline"
+        >
+          Change password
+        </button>
       </Section>
 
       {/* Notification Preference */}

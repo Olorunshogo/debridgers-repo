@@ -48,6 +48,11 @@ export interface AuthAdapter {
   register: (payload: RegisterPayload) => Promise<unknown>;
   forgotPassword: (email: string) => Promise<unknown>;
   resetPassword: (token: string, password: string) => Promise<unknown>;
+  /** For a user who knows their current password and wants to set a new one. */
+  updatePassword: (
+    currentPassword: string,
+    newPassword: string,
+  ) => Promise<unknown>;
   verifyEmail: (email: string, otp: string) => Promise<VerifiedSession>;
   resendOtp: (email: string) => Promise<unknown>;
   /** Persists a session returned by email verification, if one was issued. */

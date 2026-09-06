@@ -121,6 +121,9 @@ export default function DashboardLayout() {
 
   const openPasswordDialog = useCallback((): void => {
     triggerDialog("CHANGE_PASSWORD", {
+      title: "Secure your account",
+      description:
+        "You are still on the temporary password you were invited with. Set a permanent one to keep the account yours.",
       /* The server clears must_change_password in the same write as the
          password, so the reminder retires on success and nowhere else. */
       onChanged: () => setMustChangePassword(false),
