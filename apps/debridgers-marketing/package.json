@@ -1,0 +1,55 @@
+{
+  "name": "@debridgers/debridgers-marketing",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "react-router typegen && tsc --noEmit && react-router build",
+    "build:staging": "react-router typegen && tsc --noEmit && react-router build --mode staging",
+    "build:production": "react-router typegen && tsc --noEmit && react-router build --mode production",
+    "dev": "react-router dev",
+    "dev:staging": "react-router dev --mode staging",
+    "dev:production": "react-router dev --mode production",
+    "start": "PORT=${PORT:-5173} react-router-serve ./build/server/index.js",
+    "typecheck": "react-router typegen && tsc",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "analyze": "vite-bundle-visualizer"
+  },
+  "dependencies": {
+    "@debridgers/api-client": "workspace:*",
+    "@debridgers/pricing": "workspace:*",
+    "@debridgers/shared-theme": "workspace:*",
+    "@debridgers/ui-web": "workspace:*",
+    "@hookform/resolvers": "^5.4.3",
+    "@iconify/react": "^6.0.2",
+    "@react-router/node": "7.13.2",
+    "@react-router/serve": "7.13.2",
+    "axios": "^1.14.0",
+    "framer-motion": "^12.38.0",
+    "isbot": "^5.1.36",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^0.469.0",
+    "react": "^18.3.1",
+    "react-confetti": "^6.4.0",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.83.0",
+    "react-router": "7.13.2",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@react-router/dev": "7.13.2",
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/leaflet": "^1.9.21",
+    "@types/node": "^22",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.7",
+    "vite-bundle-visualizer": "^1.2.1",
+    "vite-tsconfig-paths": "^5.1.4"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}

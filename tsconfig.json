@@ -10,7 +10,16 @@
       "path": "./apps/debridgers-backend-e2e"
     },
     {
-      "path": "./apps/debridgers-frontend"
+      "path": "./apps/debridgers-marketing"
+    },
+    {
+      "path": "./apps/debridgers-buyer"
+    },
+    {
+      "path": "./apps/debridgers-agent"
+    },
+    {
+      "path": "./apps/debridgers-admin"
     },
     {
       "path": "./packages/pricing"

@@ -1,3 +1,6 @@
+// === Session (app-wide auth state, backed by @debridgers/api-client tokens)
+export * from "./auth-context";
+
 // === Adapter (apps supply this once)
 export * from "./auth-adapter";
 

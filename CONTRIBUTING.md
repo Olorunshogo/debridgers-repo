@@ -50,7 +50,7 @@ pnpm install
 
 ## Environments
 
-Copy `apps/debridgers-frontend/.env.development.example`,
+Copy `apps/debridgers-marketing/.env.development.example`,
 `.env.staging.example` and `.env.production.example` to their real names
 (`.env.development`, `.env.staging`, `.env.production`). You do not need
 Postgres or the backend running locally to work on the frontend - all three

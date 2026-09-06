@@ -4,19 +4,23 @@ import {
   Inject,
   Post,
   Body,
+  Param,
   HttpCode,
   UsePipes,
+  NotFoundException,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
 import { SkipThrottle } from "@nestjs/throttler";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
+import * as crypto from "crypto";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
 import { z } from "zod";
 import { ZodValidationPipe } from "../../../infrastructure/pipeline/validation.pipeline";
 import { SystemSettingsService } from "../settings/system-settings.service";
 import { TaxonomyService } from "../catalog/taxonomy.service";
+import { RedisService } from "../../../infrastructure/redis/features/redis.service";
 import {
   DELIVERY_CAP_OVER_BASE_KOBO,
   MINIMUM_ORDER_KOBO,
@@ -45,6 +49,36 @@ const webLeadSchema = z.object({
 
 type WebLeadDto = z.infer<typeof webLeadSchema>;
 
+/*
+ * One hour: long enough to cover a signup-plus-email-verification detour,
+ * short enough that a stale, unclaimed cart does not linger in Redis forever.
+ */
+const STAGED_CART_TTL_MS = 60 * 60 * 1000;
+
+/*
+ * The full display shape a cart item carries client-side (id, name, price,
+ * unit, image), not the narrower { product_id, quantity } the authenticated
+ * merge endpoint takes. Staging happens before anyone is signed in, so there
+ * is no account to fetch product details against on the other side - the
+ * guest's own already-fetched product data is what gets staged, and the
+ * buyer app hydrates its cart directly from it, with zero extra requests.
+ */
+const stagedCartItemSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  price: z.number(),
+  unit: z.string().min(1),
+  image_url: z.string().nullable(),
+  qty: z.number().int().min(1).max(999),
+});
+
+const stageCartSchema = z.object({
+  items: z.array(stagedCartItemSchema).max(200),
+});
+
+type StageCartDto = z.infer<typeof stageCartSchema>;
+type StagedCartItem = z.infer<typeof stagedCartItemSchema>;
+
 @ApiTags("Public")
 @Controller()
 export class PublicController {
@@ -54,6 +88,7 @@ export class PublicController {
     private readonly settings: SystemSettingsService,
     private readonly taxonomy: TaxonomyService,
     private readonly promotions: DeliveryPromotionService,
+    private readonly redis: RedisService,
   ) {}
 
   @Get("products")
@@ -201,6 +236,51 @@ export class PublicController {
         },
       },
     };
+  }
+
+  /*
+   * The cross-subdomain checkout handoff.
+   *
+   * debridgers-marketing has no buyer session to attach a cart to, so it
+   * stages the guest cart here before redirecting to buyer.debridgers.com for
+   * login/signup, and hands the returned token along as a query param. The
+   * buyer app claims it once authenticated - GET this token, then
+   * POST /buyer/cart/merge with the items, exactly as a returning buyer's
+   * local cart already merges on login. This endpoint only stores the
+   * reference; it never touches a buyer's real saved cart.
+   */
+
+  @Post("cart/stage")
+  @HttpCode(200)
+  @SkipThrottle({ short: true })
+  @UsePipes(new ZodValidationPipe(stageCartSchema))
+  @ApiOperation({
+    summary: "Stage a guest cart ahead of cross-subdomain signup/login",
+    description:
+      "No auth required. Returns a single-use token valid for one hour.",
+  })
+  async stageCart(@Body() dto: StageCartDto) {
+    const token = crypto.randomUUID();
+    await this.redis.set(`staged_cart:${token}`, dto.items, STAGED_CART_TTL_MS);
+    return { message: "Cart staged", data: { token } };
+  }
+
+  @Get("cart/stage/:token")
+  @SkipThrottle({ short: true })
+  @ApiOperation({
+    summary: "Retrieve and consume a staged cart",
+    description:
+      "No auth required. Single-use: the record is deleted on read, so a stale or replayed link cannot resurrect an old cart.",
+  })
+  async getStagedCart(@Param("token") token: string) {
+    const items = await this.redis.get<StagedCartItem[]>(
+      `staged_cart:${token}`,
+    );
+    if (!items) {
+      throw new NotFoundException("Cart link has expired or was already used");
+    }
+    await this.redis.del(`staged_cart:${token}`);
+    return { message: "Staged cart retrieved", data: items };
   }
 
   @Post("outreach/submit")

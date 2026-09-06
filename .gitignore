@@ -104,3 +104,9 @@ packages/*/src/**/*.d.ts.map
 
 # Tunnel credentials for the self-hosted deploy, never committed.
 ~/credentials.json
+
+# React Router's generated route types, per app. Each app's own .gitignore
+# already carries this too, but a build cache left behind at a stale path
+# (e.g. after a rename) has no per-app .gitignore of its own to be caught by -
+# this blanket rule is the backstop for exactly that case.
+**/.react-router/

@@ -10,7 +10,10 @@ nx.
 | Path                                     | What it is                                                                                                            |
 | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `apps/debridgers-backend`                | Nest API, Drizzle schema, migrations, seeders                                                                         |
-| `apps/debridgers-frontend`               | React Router 7 app                                                                                                    |
+| `apps/debridgers-marketing`              | React Router 7 app: marketing site and auth entry point (login, signup, password flows). Ports 5173                   |
+| `apps/debridgers-buyer`                  | React Router 7 app: buyer dashboard, its own login. Port 5174                                                         |
+| `apps/debridgers-agent`                  | React Router 7 app: agent dashboard, its own login. Port 5175                                                         |
+| `apps/debridgers-admin`                  | React Router 7 app: admin dashboard, its own login. Port 5176                                                         |
 | `packages/pricing`                       | **Money rules. The source of truth.** Delivery, cost-to-serve, minimum order, procurement maths, business assumptions |
 | `packages/ui-web`                        | Shared components and hooks. Anything used by more than one role belongs here                                         |
 | `packages/api-client`                    | Fetch layer, auth tokens, cookies                                                                                     |
@@ -67,7 +70,22 @@ Idempotency for unsolicited credits rests on the unique index over
 not app code. `app/routes/dashboards/` holds routes and nothing else - there is
 no `shared/` directory there. `DashboardLayout` is the one deliberate exception,
 because it owns session state and pushing it into the package would mean
-threading auth through every role layout.
+threading auth through every role layout - each of `debridgers-buyer`,
+`debridgers-agent` and `debridgers-admin` keeps its own copy, simplified to
+guard on that app's single role rather than switching between dashboards.
+
+**Each dashboard is its own app, with its own session.** `debridgers-marketing`,
+`debridgers-buyer`, `debridgers-agent` and `debridgers-admin` are separate
+Vite/React Router builds, meant to be served from separate subdomains. There is
+deliberately no shared cookie domain across them - each manages its own login
+independently, which is why every dashboard app carries a minimal `/login`
+route rather than pointing at the marketing app's. `AuthProvider`/`useAuth`
+moved to `packages/ui-web` because all four apps need it; the app-shell glue
+around it (`PlatformConfigContext`, the dialog registry and its dialogs, the
+auth/payment adapters, `features/auth`, `features/cart`) is still duplicated
+per app rather than hoisted, since only `debridgers-marketing` needs some of it
+(the public shop's cart, the auth-gate dialog) and pushing all of it into
+`ui-web` was out of scope for the split itself.
 
 ## Commands
 
@@ -75,7 +93,10 @@ threading auth through every role layout.
 pnpm docker:up                  # postgres + redis
 pnpm db:migrate                 # apply migrations
 pnpm dev:backend                # nx serve, builds workspace deps first
-pnpm dev:frontend
+pnpm dev:marketing              # port 5173
+pnpm dev:buyer                  # port 5174
+pnpm dev:agent                  # port 5175
+pnpm dev:admin                  # port 5176
 pnpm --filter @debridgers/debridgers-backend exec vitest run   # 8 suites
 pnpm --filter @debridgers/pricing test
 ```

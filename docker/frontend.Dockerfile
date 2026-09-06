@@ -12,7 +12,7 @@ COPY pnpm-workspace.yaml ./
 # node_modules symlink trees, so `pnpm --filter <member>` finds no binaries.
 COPY apps/debridgers-backend/package.json apps/debridgers-backend/
 COPY apps/debridgers-backend-e2e/package.json apps/debridgers-backend-e2e/
-COPY apps/debridgers-frontend/package.json apps/debridgers-frontend/
+COPY apps/debridgers-marketing/package.json apps/debridgers-marketing/
 COPY packages/api-client/package.json packages/api-client/
 COPY packages/ui-app/package.json packages/ui-app/
 COPY packages/ui-web/package.json packages/ui-web/
@@ -28,14 +28,14 @@ FROM base AS dev
 
 EXPOSE 5173
 
-CMD ["pnpm", "--filter", "@debridgers/debridgers-frontend", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+CMD ["pnpm", "--filter", "@debridgers/debridgers-marketing", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
 
 # === Production
 # Last stage, so a build with no explicit target still produces this.
 FROM base AS prod
 
-RUN pnpm --filter @debridgers/debridgers-frontend build
+RUN pnpm --filter @debridgers/debridgers-marketing build
 
 EXPOSE 3000
 
-CMD ["pnpm", "--filter", "@debridgers/debridgers-frontend", "start"]
+CMD ["pnpm", "--filter", "@debridgers/debridgers-marketing", "start"]

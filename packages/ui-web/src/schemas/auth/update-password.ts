@@ -14,7 +14,7 @@ import {
  * who is asking.
  */
 const updatePasswordObject = z.object({
-  currentPassword: createRequiredString("Current password"),
+  currentPassword: createRequiredString("Old password"),
   password: createPasswordSchema(),
   confirmPassword: createConfirmPasswordSchema(),
 });
@@ -22,7 +22,7 @@ const updatePasswordObject = z.object({
 export const updatePasswordSchema = updatePasswordObject
   .refine(passwordsMatch, PASSWORDS_MATCH_ERROR)
   .refine((data) => data.currentPassword !== data.password, {
-    message: "New password must be different from your current password",
+    message: "New password must be different from your old password",
     path: ["password"],
   });
 

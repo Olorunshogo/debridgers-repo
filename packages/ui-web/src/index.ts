@@ -28,6 +28,7 @@ export * from "./lib/dialog";
 
 // === Table engine
 export * from "./lib/table";
+export * from "./lib/seo/build-page-meta";
 
 // === Auth hooks
 export * from "./hooks";

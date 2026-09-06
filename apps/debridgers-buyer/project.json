@@ -1,0 +1,78 @@
+{
+  "name": "debridgers-buyer",
+  "root": "apps/debridgers-buyer",
+  "sourceRoot": "apps/debridgers-buyer/app",
+  "projectType": "application",
+  "tags": ["scope:frontend", "type:app"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "outputs": ["{projectRoot}/build"],
+      "options": {
+        "command": "pnpm run build",
+        "cwd": "apps/debridgers-buyer"
+      }
+    },
+    "build:staging": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "outputs": ["{projectRoot}/build"],
+      "options": {
+        "command": "pnpm run build:staging",
+        "cwd": "apps/debridgers-buyer"
+      }
+    },
+    "build:production": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "outputs": ["{projectRoot}/build"],
+      "options": {
+        "command": "pnpm run build:production",
+        "cwd": "apps/debridgers-buyer"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run dev",
+        "cwd": "apps/debridgers-buyer"
+      }
+    },
+    "dev:staging": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run dev:staging",
+        "cwd": "apps/debridgers-buyer"
+      }
+    },
+    "dev:production": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run dev:production",
+        "cwd": "apps/debridgers-buyer"
+      }
+    },
+    "start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run start",
+        "cwd": "apps/debridgers-buyer"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run lint",
+        "cwd": "apps/debridgers-buyer"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run typecheck",
+        "cwd": "apps/debridgers-buyer"
+      }
+    }
+  }
+}

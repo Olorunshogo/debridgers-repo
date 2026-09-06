@@ -24,5 +24,8 @@ export * from "./types/pagination";
 // === Buyer cart
 export * from "./services/buyer/cart";
 
+// === Cross-subdomain checkout handoff
+export * from "./services/public/cart-stage";
+
 // === Newsletter
 export * from "./services/newsletter";

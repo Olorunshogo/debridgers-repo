@@ -27,7 +27,10 @@ A pnpm monorepo for Debridgers, a marketplace connecting farmers directly with b
 debridgers-repo/
 ├── api/                         # Vercel serverless API entrypoint
 ├── apps/
-│   ├── debridgers-frontend/      # React Router v7 SSR frontend app
+│   ├── debridgers-marketing/      # React Router v7 app - marketing site + auth entry point
+│   ├── debridgers-buyer/          # React Router v7 app - buyer dashboard, own login
+│   ├── debridgers-agent/          # React Router v7 app - agent dashboard, own login
+│   ├── debridgers-admin/          # React Router v7 app - admin dashboard, own login
 │   ├── debridgers-backend/       # NestJS REST backend
 │   └── debridgers-backend-e2e/   # Backend E2E test suite (Jest)
 ├── packages/
@@ -52,16 +55,19 @@ debridgers-repo/
 
 ## Apps
 
-### `apps/debridgers-frontend`
+### `apps/debridgers-marketing`
 
-Frontend web application built with React Router v7, Tailwind CSS v4, and TypeScript. It supports SSR and uses shared workspace packages for UI components and backend API access.
+Frontend web application built with React Router v7, Tailwind CSS v4, and TypeScript. It supports SSR and uses shared workspace packages for UI components and backend API access. Marketing site and the full auth flow - the buyer, agent and admin dashboards are separate apps (see below).
 
 Key features:
 
 - Landing pages and marketing site
-- Auth flows (`/login`, `/signup`, `/forgot-password`, `/verify-email`)
-- Buyer, agent, and admin dashboards
+- Auth flows (`/login`, `/signup`, `/forgot-password`, `/verify-email`, admin login and register)
 - Shared API client via `@debridgers/api-client`
+
+### `apps/debridgers-buyer`, `apps/debridgers-agent`, `apps/debridgers-admin`
+
+One React Router v7 app per role, each an independent build meant to be served from its own subdomain (`buyer.`, `agent.`, `admin.debridgers.com`) with no shared cookie domain - a user logs in separately on each. Each app carries only that role's dashboard routes plus a minimal `/login` screen built from the same shared form in `@debridgers/ui-web` that the marketing app uses. There is no `/signup` or `/forgot-password` here; those stay on `debridgers-marketing`.
 
 ### `apps/debridgers-backend`
 
@@ -106,7 +112,7 @@ Shared API client and auth helpers. This package exports the backend URL, typed 
 import { apiFetch, BASE_BACKEND_URL, JwtPayload } from "@debridgers/api-client";
 ```
 
-This package is consumed by `apps/debridgers-frontend` via a Vite alias that points directly to `packages/api-client/src`.
+This package is consumed by `apps/debridgers-marketing` via a Vite alias that points directly to `packages/api-client/src`.
 
 ---
 
@@ -141,12 +147,12 @@ Copy example env files as needed:
 
 ```bash
 cp apps/debridgers-backend/.env.example apps/debridgers-backend/.env
-cp apps/debridgers-frontend/.env.example apps/debridgers-frontend/.env
+cp apps/debridgers-marketing/.env.example apps/debridgers-marketing/.env
 ```
 
 Update the `.env` values for your local environment.
 
-`apps/debridgers-frontend` additionally has one example file per environment -
+`apps/debridgers-marketing` additionally has one example file per environment -
 `.env.development.example`, `.env.staging.example`, `.env.production.example`.
 Copy each to its real name (`.env.development`, `.env.staging`,
 `.env.production`) the same way. All three point at the deployed test backend
@@ -156,7 +162,7 @@ relevant file once a real staging or production backend exists. See
 [Running against dev, staging and production](#running-against-dev-staging-and-production).
 
 **Never put `VITE_API_URL` (or `NODE_ENV`/`PORT`) in the plain
-`apps/debridgers-frontend/.env`.** Vite loads that file for every mode in
+`apps/debridgers-marketing/.env`.** Vite loads that file for every mode in
 addition to the mode-specific one, and a key set there is not overridden by
 the same key in `.env.[mode]` - it wins regardless of mode, silently
 defeating all three files at once. `.env.example` is deliberately empty of
@@ -283,16 +289,16 @@ actively changing backend code and need to hit your own local instance.
 
 ## Import Aliases
 
-`apps/debridgers-frontend` uses path aliases for workspace packages and app sources.
+`apps/debridgers-marketing` uses path aliases for workspace packages and app sources.
 
-| Alias                      | Resolves to                      |
-| -------------------------- | -------------------------------- |
-| `@/*`                      | `apps/debridgers-frontend/app/*` |
-| `@debridgers/ui-web`       | `packages/ui-web/src`            |
-| `@debridgers/ui-app`       | `packages/ui-app/src`            |
-| `@debridgers/api-client`   | `packages/api-client/src`        |
-| `@debridgers/shared-theme` | `libs/shared-theme/src`          |
-| `@debridgers/shared-utils` | `libs/shared-utils/src`          |
+| Alias                      | Resolves to                       |
+| -------------------------- | --------------------------------- |
+| `@/*`                      | `apps/debridgers-marketing/app/*` |
+| `@debridgers/ui-web`       | `packages/ui-web/src`             |
+| `@debridgers/ui-app`       | `packages/ui-app/src`             |
+| `@debridgers/api-client`   | `packages/api-client/src`         |
+| `@debridgers/shared-theme` | `libs/shared-theme/src`           |
+| `@debridgers/shared-utils` | `libs/shared-utils/src`           |
 
 Example:
 

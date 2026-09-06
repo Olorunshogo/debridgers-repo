@@ -5,7 +5,7 @@ on:
     branches: [develop, main]
     paths:
       - 'apps/debridgers-backend/**'
-      - 'apps/debridgers-frontend/**'
+      - 'apps/debridgers-marketing/**'
       - 'packages/**'
       - 'docker/**'
       - 'deploy/**'
@@ -15,7 +15,7 @@ on:
 env:
   REGISTRY: ghcr.io
   BACKEND_IMAGE: ${{ github.repository }}/debridgers-backend
-  FRONTEND_IMAGE: ${{ github.repository }}/debridgers-frontend
+  FRONTEND_IMAGE: ${{ github.repository }}/debridgers-marketing
 
 jobs:
   build-and-push:

@@ -8,7 +8,7 @@
 tunnel: __TUNNEL_ID__
 credentials-file: /etc/cloudflared/creds.json
 
-# cloudflared resolves debridgers-backend and debridgers-frontend over the
+# cloudflared resolves debridgers-backend and debridgers-marketing over the
 # compose network, so they publish no host ports.
 ingress:
   - hostname: api-test.debridgers.com
