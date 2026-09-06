@@ -26,8 +26,10 @@ import {
   TableEmptyState,
   type TableColumn,
   type RowAction,
+  kadunaLgas,
+  kadunaAreas,
+  kadunaAreasByLga,
 } from "@debridgers/ui-web";
-import { kadunaLgas, kadunaAreas, kadunaAreasByLga } from "@/models/models";
 
 import { buildPageMeta } from "../../../lib/seo";
 export function meta() {

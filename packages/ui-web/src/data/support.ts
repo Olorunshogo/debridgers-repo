@@ -21,7 +21,7 @@ export interface SupportChannels {
 
 export const SUPPORT: SupportChannels = {
   phone: "+2347012288798",
-  phoneDisplay: "+234 701 228 8798",
+  phoneDisplay: "0701 228 8798",
   supportEmail: "support@debridgers.com",
   // partnerEmail: "partner@debridgers.com",
   hours: "Mon - Fri, 9am - 5pm",

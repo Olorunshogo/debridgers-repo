@@ -471,7 +471,7 @@ export default function AgentSettingsPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, phone: e.target.value }))
                 }
-                placeholder="+234 800 000 0000"
+                placeholder="+234 801 234 4567"
               />
               <TextInputField
                 label="Home Address"

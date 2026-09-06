@@ -8,13 +8,13 @@ import {
   addressField,
   cvField,
   normalizeNigerianPhone,
+  lgaSelectOptions,
   type AuthFieldDescriptor,
   type RoleSignupConfig,
   type SignupFormValues,
 } from "@debridgers/ui-web";
 import type { SelfRegisterableRole } from "@debridgers/api-client";
 import { applyAgent } from "@debridgers/api-client";
-import { kadunaLgas } from "@/models/models";
 
 /*
  * The single place this app's self-registerable role is described.
@@ -74,11 +74,13 @@ const BASE_FIELDS: readonly SignupFieldDescriptor[] = [
 
 /*
  * Labels, not slugs: the API stores the LGA as free text and admin screens
- * display it, so "Kaduna North" is the value worth persisting.
+ * display it, so "Kaduna North" is the value worth persisting. Agents are
+ * Kaduna-only for now, so this is the one state's LGA list, not the full
+ * country the shared dataset also carries.
  */
-const AGENT_LGA_OPTIONS: readonly string[] = (
-  kadunaLgas as { value: string; label: string }[]
-).map((lga) => lga.label);
+const AGENT_LGA_OPTIONS: readonly string[] = lgaSelectOptions("Kaduna").map(
+  (lga) => lga.label,
+);
 
 /*
  * The consent tick for a role, linking to that role's own document.

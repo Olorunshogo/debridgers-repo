@@ -10,10 +10,11 @@ import {
   NumberInputField,
   SelectInputField,
   TextareaField,
+  useAuth,
+  kadunaLgas,
+  kadunaAreasByLga,
 } from "@debridgers/ui-web";
-import { useAuth } from "@debridgers/ui-web";
 import { BASE_BACKEND_URL } from "@debridgers/api-client";
-import { kadunaLgas, kadunaAreasByLga } from "../../models/models";
 
 import { marketingNavLinks } from "@/components/marketing/data/data";
 export function meta() {
@@ -24,11 +25,6 @@ export function meta() {
     path: "/outreach",
     keywords: ["register interest Debridgers", "Debridgers waitlist Kaduna"],
   });
-}
-
-interface LgaOption {
-  value: string;
-  label: string;
 }
 
 const HOW_HEARD_OPTIONS = [
@@ -75,15 +71,11 @@ export default function OutreachPage() {
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  const lgas = (kadunaLgas as LgaOption[]).map((l) =>
-    typeof l === "string" ? l : (l as { value: string }).value,
-  );
+  const lgas = kadunaLgas.map((l) => l.value);
 
   const areas =
-    form.lga && form.lga in (kadunaAreasByLga as Record<string, unknown[]>)
-      ? ((kadunaAreasByLga as Record<string, LgaOption[]>)[form.lga] ?? []).map(
-          (a) => (typeof a === "string" ? a : (a as { value: string }).value),
-        )
+    form.lga && form.lga in kadunaAreasByLga
+      ? (kadunaAreasByLga[form.lga] ?? []).map((a) => a.value)
       : [];
 
   function handleChange(field: keyof typeof form, value: string) {

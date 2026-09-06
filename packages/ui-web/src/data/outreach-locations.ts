@@ -1,9 +1,35 @@
-// === Models
-import type { Object } from "@/types/modelTypes";
+import type { SelectOption } from "../types/location";
 
-// === LGAs
+/*
+ * === Outreach location identifiers
+ *
+ * NOT a geography source - see `nigerian-states.ts` for that. This is the
+ * outreach feature's own slug scheme: the `value` on each option is what
+ * gets persisted (submitted by the public form in debridgers-marketing,
+ * matched against for filtering in debridgers-admin's outreach table), so it
+ * cannot be regenerated from `nigerian-states.ts`'s plain display names
+ * without risking a mismatch against records already stored under these
+ * exact slugs.
+ *
+ * Two disambiguations exist on purpose and would NOT fall out of a generic
+ * slugify(label):
+ *   - "Jema'a" -> "jema-a" (apostrophe, not a plain slugify of the label)
+ *   - Kaduna North's "Sabo" -> "sabo-north", to avoid colliding with
+ *     Chikun's "Sabo" -> "sabo"
+ *   - Zaria's "Sabon Gari" -> "sabon-gari-zaria" and "Tudun Wada" ->
+ *     "tudun-wada-zaria", to avoid colliding with the top-level "Sabon Gari"
+ *     LGA and Kaduna South's "Tudun Wada" area
+ *
+ * This single copy replaces what used to be two independent app-local
+ * `models.ts` files (debridgers-marketing and debridgers-admin) that had to
+ * be hand-kept in sync - the actual duplication risk this file removes.
+ *
+ * Labels here (Kaduna South getting Kakuri/Barnawa/Narayi, not Chikun) match
+ * nigerian-states.ts and the backend zone seeder - keep those three in sync
+ * if this ever needs a real-geography correction again.
+ */
 
-export const kadunaLgas: Object[] = [
+export const kadunaLgas: SelectOption[] = [
   { value: "chikun", label: "Chikun" },
   { value: "kaduna-north", label: "Kaduna North" },
   { value: "kaduna-south", label: "Kaduna South" },
@@ -29,13 +55,8 @@ export const kadunaLgas: Object[] = [
   { value: "zangon-kataf", label: "Zangon Kataf" },
 ];
 
-// === Areas by LGA
-
-export const kadunaAreasByLga: Record<string, Object[]> = {
+export const kadunaAreasByLga: Record<string, SelectOption[]> = {
   chikun: [
-    { value: "kakuri", label: "Kakuri" },
-    { value: "barnawa", label: "Barnawa" },
-    { value: "narayi", label: "Narayi" },
     { value: "sabon-tasha", label: "Sabon Tasha" },
     { value: "sabo", label: "Sabo" },
     { value: "kamazou", label: "Kamazou" },
@@ -53,7 +74,15 @@ export const kadunaAreasByLga: Record<string, Object[]> = {
     { value: "sabo-north", label: "Sabo" },
     { value: "kawo", label: "Kawo" },
   ],
+  /*
+   * Kakuri, Barnawa and Narayi are Kaduna South LGA, not Chikun - matches
+   * nigerian-states.ts and the backend zone seeder's own grouping
+   * (infrastructure/seeders/seeder.ts's "Kaduna South" zone).
+   */
   "kaduna-south": [
+    { value: "kakuri", label: "Kakuri" },
+    { value: "barnawa", label: "Barnawa" },
+    { value: "narayi", label: "Narayi" },
     { value: "tudun-wada", label: "Tudun Wada" },
     { value: "katuru", label: "Katuru" },
     { value: "mando", label: "Mando" },
@@ -80,21 +109,6 @@ export const kadunaAreasByLga: Record<string, Object[]> = {
   ],
 };
 
-// Flat list of all areas (for components that need a simple list)
-export const kadunaAreas: Object[] = Object.values(kadunaAreasByLga).flat();
-
-// Legacy flat list used by agent signup and daily report selects
-export const kadunaStateLgas: Object[] = [...kadunaLgas];
-
-// === Unsold Reasons
-
-export const unsoldReasons: Object[] = [
-  { value: "no_customers", label: "No customers today" },
-  { value: "price_too_high", label: "Price too high" },
-  { value: "product_quality", label: "Product quality issue" },
-  { value: "bad_weather", label: "Bad weather / flooding" },
-  { value: "market_closed", label: "Market was closed" },
-  { value: "personal_emergency", label: "Personal emergency" },
-  { value: "stock_damaged", label: "Stock was damaged" },
-  { value: "other", label: "Other" },
-];
+/** Flat list of every area, for components that need one combined picker. */
+export const kadunaAreas: SelectOption[] =
+  Object.values(kadunaAreasByLga).flat();

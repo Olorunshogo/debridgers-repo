@@ -32,9 +32,6 @@ const KADUNA_LGAS: readonly NigerianLga[] = [
   {
     name: "Chikun",
     areas: [
-      "Kakuri",
-      "Barnawa",
-      "Narayi",
       "Sabon Tasha",
       "Sabo",
       "Kamazou",
@@ -57,9 +54,17 @@ const KADUNA_LGAS: readonly NigerianLga[] = [
       "Unguwan Mu'azu",
     ],
   },
+  /*
+   * Kakuri, Barnawa and Narayi are Kaduna South, not Chikun - matches the
+   * backend zone seeder's own grouping (infrastructure/seeders/seeder.ts's
+   * "Kaduna South" zone), which already had this right.
+   */
   {
     name: "Kaduna South",
     areas: [
+      "Kakuri",
+      "Barnawa",
+      "Narayi",
       "Tudun Wada",
       "Katuru",
       "Mando",

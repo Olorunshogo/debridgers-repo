@@ -10,8 +10,9 @@ import {
   SubmitButton,
   getTodayDateString,
   formatCurrency,
+  lgaSelectOptions,
 } from "@debridgers/ui-web";
-import { kadunaStateLgas, unsoldReasons } from "@/models/models";
+import { unsoldReasons } from "../../../data/unsold-reasons";
 import { apiFetch, ApiError } from "@debridgers/api-client";
 
 import { buildPageMeta } from "../../../lib/seo";
@@ -302,7 +303,7 @@ export default function AgentDailyReportPage() {
                 <SelectInputField
                   label="Area Covered Today"
                   required
-                  options={kadunaStateLgas}
+                  options={lgaSelectOptions("Kaduna")}
                   placeholder="Select area"
                   value={form.areaCovered}
                   onChange={handleChange("areaCovered")}
