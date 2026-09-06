@@ -311,16 +311,17 @@ export default function AdminOutreachPage() {
       await apiFetch("/admin/outreach", {
         method: "POST",
         body: JSON.stringify({
-          shop_name: form.shop_name.trim(),
-          owner_name: form.owner_name.trim() || undefined,
+          full_name: form.owner_name.trim() || form.shop_name.trim(),
           phone: form.phone.trim() || undefined,
+          shop_name: form.shop_name.trim(),
           lga: form.lga || undefined,
           area: form.area || undefined,
-          address: form.address.trim() || undefined,
           product_interest: form.product_interest.trim() || undefined,
-          quantity: form.quantity ? parseInt(form.quantity, 10) : undefined,
+          estimated_quantity: form.quantity
+            ? parseInt(form.quantity, 10)
+            : undefined,
+          how_heard: form.collected_by.trim() || undefined,
           notes: form.notes.trim() || undefined,
-          collected_by: form.collected_by.trim() || undefined,
           visit_date: form.visit_date,
         }),
       });

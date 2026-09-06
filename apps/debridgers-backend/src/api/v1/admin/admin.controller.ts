@@ -110,7 +110,7 @@ const createOutreachSchema = z.object({
   lga: z.string().optional(),
   area: z.string().optional(),
   product_interest: z.string().optional(),
-  estimated_quantity: z.number().optional(),
+  estimated_quantity: z.coerce.number().optional(),
   how_heard: z.string().optional(),
   notes: z.string().optional(),
   visit_date: z.string().optional(),
@@ -841,6 +841,7 @@ export class AdminController {
       owner_name: dto.full_name,
       phone: dto.phone,
       lga: dto.lga,
+      area: dto.area,
       product_interest: dto.product_interest,
       quantity: dto.estimated_quantity,
       notes:

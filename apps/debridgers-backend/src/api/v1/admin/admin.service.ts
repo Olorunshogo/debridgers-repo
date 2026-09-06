@@ -1354,6 +1354,7 @@ export class AdminService {
     owner_name?: string;
     phone?: string;
     lga?: string;
+    area?: string;
     address?: string;
     product_interest?: string;
     quantity?: number;
