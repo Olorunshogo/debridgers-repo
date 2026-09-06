@@ -11,6 +11,7 @@ import {
   swappedContentTransition,
 } from "@debridgers/ui-web";
 import { useEmailVerification } from "../../features/auth";
+import { AUTH_IMAGES } from "../../features/auth/auth-image";
 
 export function meta() {
   return buildPageMeta({
@@ -58,6 +59,7 @@ export default function VerifyEmailPage() {
   return (
     <AuthFormShell
       heading={verified ? "Email verified" : "Verify your email"}
+      images={AUTH_IMAGES}
       apiError={apiError}
       subheading={
         verified ? undefined : email ? (

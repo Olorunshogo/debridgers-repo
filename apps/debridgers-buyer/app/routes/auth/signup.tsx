@@ -5,6 +5,7 @@ import { AnimatePresence } from "framer-motion";
 import { AuthFormShell, AuthSignupForm } from "@debridgers/ui-web";
 import AuthSuccessModal from "../../components/auth/AuthSuccessModal";
 import { useSignup, ROLE_SIGNUP_CONFIG } from "../../features/auth";
+import { AUTH_IMAGES } from "../../features/auth/auth-image";
 
 export function meta() {
   return buildPageMeta({
@@ -45,6 +46,7 @@ export default function SignupPage() {
 
       <AuthFormShell
         heading="Create your account"
+        images={AUTH_IMAGES}
         apiError={apiError}
         subheading={
           <>

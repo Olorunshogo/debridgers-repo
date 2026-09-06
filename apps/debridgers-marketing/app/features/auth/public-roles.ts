@@ -1,3 +1,5 @@
+import { ShoppingBag, Bike } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { dashboardAppUrl } from "../../utils/app-urls";
 
 /*
@@ -11,6 +13,7 @@ export interface PublicRoleOption {
   value: PublicRole;
   label: string;
   description: string;
+  icon: LucideIcon;
 }
 
 export const PUBLIC_ROLES: readonly PublicRoleOption[] = [
@@ -18,11 +21,13 @@ export const PUBLIC_ROLES: readonly PublicRoleOption[] = [
     value: "buyer",
     label: "Buyer",
     description: "Order fresh foodstuff at market prices, delivered to you.",
+    icon: ShoppingBag,
   },
   {
     value: "agent",
     label: "Agent",
     description: "Sell in the field and earn commission.",
+    icon: Bike,
   },
 ];
 

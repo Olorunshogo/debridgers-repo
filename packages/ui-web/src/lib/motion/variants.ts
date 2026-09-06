@@ -54,6 +54,12 @@ export const transitionBase: Transition = {
   ease: motionEase,
 };
 
+/** Large surfaces that should feel scenic rather than snappy: a rotating hero image. */
+export const transitionSlow: Transition = {
+  duration: motionDuration.slow,
+  ease: motionEase,
+};
+
 // === Fades
 
 export const fadeVariants: Variants = {

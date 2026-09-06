@@ -46,6 +46,7 @@ export * from "./components/help/help-center";
 export * from "./components/auth/auth-field";
 export * from "./components/auth/auth-otp-input";
 export * from "./components/auth/auth-form-shell";
+export * from "./components/auth/auth-role-button";
 export * from "./components/auth/auth-credentials-form";
 export * from "./components/auth/auth-signup-form";
 export * from "./components/auth/auth-tab-panel";

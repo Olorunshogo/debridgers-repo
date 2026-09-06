@@ -5,6 +5,7 @@ import {
   type AuthFieldDescriptor,
 } from "@debridgers/ui-web";
 import { useLogin, type LoginVariant } from "../../features/auth";
+import { AUTH_IMAGES } from "../../features/auth/auth-image";
 
 import { buildPageMeta } from "../../lib/seo";
 export function meta() {
@@ -54,6 +55,7 @@ export default function LoginPage({ variant = "admin" }: LoginPageProps) {
   return (
     <AuthFormShell
       heading="Log in to your account"
+      images={AUTH_IMAGES}
       apiError={apiError}
       subheading={
         <>

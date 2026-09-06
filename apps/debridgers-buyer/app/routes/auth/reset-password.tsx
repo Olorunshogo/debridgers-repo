@@ -10,6 +10,7 @@ import {
   type AuthFieldDescriptor,
 } from "@debridgers/ui-web";
 import { useResetPassword } from "../../features/auth";
+import { AUTH_IMAGES } from "../../features/auth/auth-image";
 
 export function meta() {
   return buildPageMeta({
@@ -58,6 +59,7 @@ export default function ResetPasswordPage() {
   return (
     <AuthFormShell
       heading={done ? "Password updated" : "Reset password"}
+      images={AUTH_IMAGES}
       apiError={
         missingToken && !done
           ? "Reset token is missing. Please use the link from your email."

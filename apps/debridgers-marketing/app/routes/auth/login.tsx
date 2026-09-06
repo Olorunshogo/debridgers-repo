@@ -1,9 +1,10 @@
 import { buildPageMeta } from "../../lib/seo";
-import { AuthFormShell } from "@debridgers/ui-web";
+import { AuthFormShell, AuthRoleButton } from "@debridgers/ui-web";
 import {
   PUBLIC_ROLES,
   publicRoleAppPath,
 } from "../../features/auth/public-roles";
+import { AUTH_IMAGES } from "../../features/auth/auth-images";
 
 export function meta() {
   return buildPageMeta({
@@ -22,22 +23,18 @@ export function meta() {
  */
 export default function LoginPage() {
   return (
-    <AuthFormShell heading="Log in to your account">
+    <AuthFormShell heading="Log in to your account" images={AUTH_IMAGES}>
       <div className="flex flex-col gap-3">
         {PUBLIC_ROLES.map((role) => (
-          <button
+          <AuthRoleButton
             key={role.value}
-            type="button"
+            icon={role.icon}
+            label={role.label}
+            description={role.description}
             onClick={() => {
               window.location.href = publicRoleAppPath(role.value, "login");
             }}
-            className="hover:border-primary flex cursor-pointer flex-col gap-1 rounded-2xl border border-gray-300 px-5 py-4 text-left transition-colors"
-          >
-            <span className="font-syne text-heading font-semibold">
-              {role.label}
-            </span>
-            <span className="text-body text-xs">{role.description}</span>
-          </button>
+          />
         ))}
       </div>
     </AuthFormShell>

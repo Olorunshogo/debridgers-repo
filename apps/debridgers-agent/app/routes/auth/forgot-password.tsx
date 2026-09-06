@@ -10,6 +10,7 @@ import {
   type AuthFieldDescriptor,
 } from "@debridgers/ui-web";
 import { useForgotPassword } from "../../features/auth";
+import { AUTH_IMAGES } from "../../features/auth/auth-image";
 
 export function meta() {
   return buildPageMeta({
@@ -44,6 +45,7 @@ export default function ForgotPasswordPage() {
   return (
     <AuthFormShell
       heading="Forgot your password?"
+      images={AUTH_IMAGES}
       apiError={request.apiError}
       subheading={
         request.sent ? undefined : (
