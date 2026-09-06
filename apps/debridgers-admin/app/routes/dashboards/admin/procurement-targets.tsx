@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ComingSoon } from "@debridgers/ui-web";
 import { Calculator, Landmark } from "lucide-react";
-import { publicRequest } from "@debridgers/api-client";
+import { apiFetch, publicRequest } from "@debridgers/api-client";
 import {
   procurementTargets,
   LOADING_50KG_KOBO,
@@ -182,6 +182,16 @@ export default function ProcurementTargets() {
   const [marketPriceNaira, setMarketPriceNaira] = useState<number>(98000);
   const [farmerPriceNaira, setFarmerPriceNaira] = useState<number>(90000);
   const [targetMarginPercent, setTargetMarginPercent] = useState<number>(10);
+  /*
+   * The margin persisted in system_settings, once loaded. The field above stays
+   * freely editable for what-if runs; only "Save as default" writes it back, and
+   * the button only appears while the two disagree.
+   */
+  const [persistedMarginPercent, setPersistedMarginPercent] = useState<
+    number | null
+  >(null);
+  const [marginSaving, setMarginSaving] = useState<boolean>(false);
+  const [marginSaveError, setMarginSaveError] = useState<string | null>(null);
   const [packages, setPackages] = useState<number>(1);
   const [dropsPerTrip, setDropsPerTrip] = useState<number>(1);
   const [packageSize, setPackageSize] = useState<PackageSize>("50kg");
@@ -214,6 +224,49 @@ export default function ProcurementTargets() {
       cancelled = true;
     };
   }, []);
+
+  // === Persisted target margin
+  useEffect(() => {
+    let cancelled: boolean = false;
+
+    apiFetch<{ procurement_target_margin_percent: number }>("/admin/settings")
+      .then((data) => {
+        if (cancelled) return;
+        const stored: number = data.procurement_target_margin_percent;
+        if (!Number.isFinite(stored)) return;
+        setPersistedMarginPercent(stored);
+        setTargetMarginPercent(stored);
+      })
+      .catch(() => {
+        /* A missing setting is not fatal here: the field keeps its default and
+           the "Save as default" affordance simply never shows. */
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function saveMarginDefault(): Promise<void> {
+    setMarginSaving(true);
+    setMarginSaveError(null);
+    try {
+      await apiFetch("/admin/settings", {
+        method: "PATCH",
+        body: JSON.stringify({
+          key: "procurement_target_margin_percent",
+          value: String(targetMarginPercent),
+        }),
+      });
+      setPersistedMarginPercent(targetMarginPercent);
+    } catch (err) {
+      setMarginSaveError(
+        err instanceof Error ? err.message : "Could not save the default.",
+      );
+    } finally {
+      setMarginSaving(false);
+    }
+  }
 
   const zone: DeliveryZone | null = useMemo<DeliveryZone | null>(
     () => zones.find((z) => z.id === zoneId) ?? null,
@@ -268,6 +321,30 @@ export default function ProcurementTargets() {
     marketPriceNaira,
     farmerPriceNaira,
   ]);
+
+  /*
+   * A finished request that returned no zones is its own state, not a slow one.
+   * Without this branch `!zone` below keeps the loading copy on screen forever
+   * once an empty `/zones` response comes back.
+   */
+  const zonesLoadedEmpty: boolean =
+    !isLoading && !zonesLoading && !error && !zonesError && zones.length === 0;
+
+  if (zonesLoadedEmpty) {
+    return (
+      <div className="flex flex-col gap-6 p-4 sm:p-6">
+        <section className="border-line rounded-2xl border bg-white p-6 sm:p-8">
+          <h1 className="font-syne text-heading mb-2 text-xl font-semibold">
+            Procurement Targets
+          </h1>
+          <p className="text-body text-sm">
+            No delivery zones are configured yet. Add one on the Pricing and
+            Delivery screen, then the buying desk can quote against its rates.
+          </p>
+        </section>
+      </div>
+    );
+  }
 
   /*
    * Deliberately refuses to render numbers rather than falling back to a local
@@ -362,13 +439,33 @@ export default function ProcurementTargets() {
               note="What we pay, before haulage"
             />
           )}
-          <NumberField
-            label="Target margin"
-            suffix="% of order"
-            value={targetMarginPercent}
-            step={1}
-            onChange={setTargetMarginPercent}
-          />
+          <div className="flex flex-col gap-1">
+            <NumberField
+              label="Target margin"
+              suffix="% of order"
+              value={targetMarginPercent}
+              step={1}
+              onChange={setTargetMarginPercent}
+            />
+            {persistedMarginPercent !== null &&
+            targetMarginPercent !== persistedMarginPercent ? (
+              <button
+                type="button"
+                onClick={() => void saveMarginDefault()}
+                disabled={marginSaving}
+                className="text-primary self-start text-xs font-semibold hover:opacity-70 disabled:opacity-50"
+              >
+                {marginSaving
+                  ? "Saving..."
+                  : `Save ${targetMarginPercent}% as the default`}
+              </button>
+            ) : null}
+            {marginSaveError ? (
+              <span className="text-status-cancelled-fg text-xs">
+                {marginSaveError}
+              </span>
+            ) : null}
+          </div>
           <NumberField
             label="Packages in the order"
             value={packages}

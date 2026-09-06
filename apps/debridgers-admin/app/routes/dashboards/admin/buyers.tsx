@@ -1,5 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { ShoppingBag } from "lucide-react";
+import {
+  ShoppingBag,
+  Ban,
+  ShieldCheck,
+  PauseCircle,
+  PlayCircle,
+} from "lucide-react";
 import {
   DataTable,
   TablePrimaryCell,
@@ -7,9 +13,16 @@ import {
   TableStatusBadge,
   TableEmptyState,
   type TableColumn,
+  type RowAction,
   type StatusTone,
 } from "@debridgers/ui-web";
-import { apiFetch } from "@debridgers/api-client";
+import {
+  apiFetch,
+  blockBuyer,
+  unblockBuyer,
+  suspendBuyer,
+  unsuspendBuyer,
+} from "@debridgers/api-client";
 
 import { buildPageMeta } from "../../../lib/seo";
 export function meta() {
@@ -147,6 +160,8 @@ export default function AdminBuyers() {
   const [loading, setLoading] = useState<boolean>(true);
   /* A failed load must not render as "no buyers", which is a different story. */
   const [loadError, setLoadError] = useState<string | null>(null);
+  /* Per-row, so one buyer's pending action does not freeze the others. */
+  const [actioningId, setActioningId] = useState<number | null>(null);
 
   const load = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -168,6 +183,106 @@ export default function AdminBuyers() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const runAction = useCallback(
+    async (
+      id: number,
+      mutate: (id: number) => Promise<unknown>,
+    ): Promise<void> => {
+      setActioningId(id);
+      try {
+        await mutate(id);
+        await load();
+      } finally {
+        setActioningId(null);
+      }
+    },
+    [load],
+  );
+
+  // === Row actions
+
+  /*
+   * Errors from the mutation are left to propagate: the confirm dialog catches
+   * them, stays open and shows the message.
+   */
+  const rowActions = useMemo<RowAction<BuyerRow>[]>(
+    () => [
+      {
+        id: "suspend",
+        label: "Suspend",
+        icon: PauseCircle,
+        tone: "default",
+        hidden: (b) => b.status !== "active",
+        isBusy: (b) => actioningId === b.id,
+        confirm: {
+          dialogKey: "CONFIRM",
+          props: (b) => ({
+            title: "Suspend this buyer?",
+            description: `${b.name} will not be able to place orders until the hold is lifted.`,
+            confirmLabel: "Suspend",
+            tone: "primary",
+          }),
+        },
+        onSelect: (b) => runAction(b.id, suspendBuyer),
+      },
+      {
+        id: "unsuspend",
+        label: "Unsuspend",
+        icon: PlayCircle,
+        tone: "primary",
+        hidden: (b) => b.status !== "suspended",
+        isBusy: (b) => actioningId === b.id,
+        confirm: {
+          dialogKey: "CONFIRM",
+          props: (b) => ({
+            title: "Lift the hold on this buyer?",
+            description: `${b.name} will be able to place orders again.`,
+            confirmLabel: "Unsuspend",
+            tone: "primary",
+          }),
+        },
+        onSelect: (b) => runAction(b.id, unsuspendBuyer),
+      },
+      {
+        id: "block",
+        label: "Block",
+        icon: Ban,
+        tone: "danger",
+        hidden: (b) => b.status === "blocked",
+        isBusy: (b) => actioningId === b.id,
+        confirm: {
+          dialogKey: "CONFIRM",
+          props: (b) => ({
+            title: "Block this buyer?",
+            description: `${b.name} will be permanently blocked from placing orders.`,
+            confirmLabel: "Block",
+            tone: "danger",
+          }),
+        },
+        onSelect: (b) => runAction(b.id, blockBuyer),
+      },
+      {
+        id: "unblock",
+        label: "Unblock",
+        icon: ShieldCheck,
+        tone: "primary",
+        hidden: (b) => b.status !== "blocked",
+        isBusy: (b) => actioningId === b.id,
+        confirm: {
+          dialogKey: "CONFIRM",
+          props: (b) => ({
+            title: "Unblock this buyer?",
+            description: `${b.name} will be able to place orders again. A separate suspension hold, if any, still applies.`,
+            confirmLabel: "Unblock",
+            tone: "primary",
+          }),
+        },
+        onSelect: (b) => runAction(b.id, unblockBuyer),
+      },
+    ],
+    [actioningId, runAction],
+  );
 
   const emptyState = useMemo(
     () => (
@@ -195,6 +310,7 @@ export default function AdminBuyers() {
       <DataTable
         rows={buyers}
         columns={COLUMNS}
+        actions={rowActions}
         caption="Buyers"
         showSearch
         searchPlaceholder="Search buyers by name, email or phone"

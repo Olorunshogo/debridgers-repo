@@ -29,3 +29,6 @@ export * from "./services/public/cart-stage";
 
 // === Newsletter
 export * from "./services/newsletter";
+
+// === Admin buyer account actions
+export * from "./services/admin/buyers";

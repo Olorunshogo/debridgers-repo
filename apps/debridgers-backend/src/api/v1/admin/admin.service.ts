@@ -38,6 +38,7 @@ const SETTING_DEFAULTS: Record<string, string> = {
   buyer_referral_discount_type: "flat",
   agent_override_rate_percent: "5",
   state_manager_override_rate_percent: "2",
+  procurement_target_margin_percent: "10",
 };
 
 @Injectable()
@@ -1416,6 +1417,10 @@ export class AdminService {
           10,
         ),
         buyer_referral_discount_type: stored["buyer_referral_discount_type"],
+        procurement_target_margin_percent: parseInt(
+          stored["procurement_target_margin_percent"],
+          10,
+        ),
       },
     };
   }
@@ -1489,6 +1494,7 @@ export class AdminService {
       "buyer_referral_discount_type",
       "agent_override_rate_percent",
       "state_manager_override_rate_percent",
+      "procurement_target_margin_percent",
     ];
     if (!allowed.includes(key))
       throw new BadRequestException(`Unknown setting key: ${key}`);
@@ -1503,6 +1509,16 @@ export class AdminService {
       if (isNaN(n) || n < 1 || n > 100)
         throw new BadRequestException(
           `${key} must be a number between 1 and 100`,
+        );
+    }
+
+    /* A separate check: zero is a valid procurement target (buy at break-even),
+       unlike the commission and override rates which must be at least 1. */
+    if (key === "procurement_target_margin_percent") {
+      const n = parseFloat(value);
+      if (isNaN(n) || n < 0 || n > 100)
+        throw new BadRequestException(
+          `${key} must be a number between 0 and 100`,
         );
     }
 
