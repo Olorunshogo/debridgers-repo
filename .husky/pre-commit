@@ -7,6 +7,15 @@ set -e
 echo "🔎 Scanning staged files for the EtherHiding backdoor..."
 bash scripts/scan-backdoor.sh --staged
 
+echo "🔒 Checking for staged env files..."
+blocked_env=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.env($|\.)' | grep -vE '\.(example|sample|template)$' || true)
+if [ -n "$blocked_env" ]; then
+  echo "✋ Refusing to commit env file(s) - these hold secrets:"
+  echo "$blocked_env" | sed 's/^/   - /'
+  echo "   Rename to *.env.example with no real values, or add it to .gitignore."
+  exit 1
+fi
+
 echo "💅 Fixing lint & formatting staged files..."
 pnpm lint-staged
 

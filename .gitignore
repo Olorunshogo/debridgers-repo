@@ -13,11 +13,16 @@ build
 coverage
 .nyc_output
 
-# Environment variables
+# Environment variables. Any name (.env, prod.env, staging.env), any depth.
+# Real secrets never get committed; only *.example templates are allowed. This
+# list is wider than ".env*" because a "prod.env" slipped past that and shipped
+# live keys - see the pre-commit guard and the incident note below.
 .env
 .env.*
+*.env
 !.env.example
 !.env.*.example
+!*.env.example
 .kiro
 
 # Keys and certificates. debridgers_data_config/ carried real committed private
