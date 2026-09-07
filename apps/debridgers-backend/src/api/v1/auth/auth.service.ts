@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Inject,
   Injectable,
   Logger,
@@ -252,6 +253,10 @@ export class AuthService {
       throw new UnauthorizedException("Invalid credentials");
     }
 
+    /* Blocks and suspensions were only enforced on the agent branch, so a
+       blocked or suspended buyer logged in normally. Gate every role here. */
+    this.assertAccountUsable(user);
+
     // For agents: check approval status first (before email verification)
     if (user.role === "agent") {
       const [profile] = await this.db
@@ -371,6 +376,11 @@ export class AuthService {
     if (!refreshTokenMatches(user.refresh_token, refreshToken)) {
       throw new UnauthorizedException("Access denied");
     }
+
+    /* A block or suspension applied mid-session takes effect at the next
+       refresh, so it lands within the access-token window without a per-request
+       DB hit in the guard. */
+    this.assertAccountUsable(user);
 
     /*
      * The token has always carried device and ip_address; nothing ever checked
@@ -789,6 +799,25 @@ export class AuthService {
       .update(schema.users)
       .set({ refresh_token: hashRefreshToken(token) })
       .where(eq(schema.users.id, userId));
+  }
+
+  /*
+   * Refuses login or refresh for an account an operator has taken out of
+   * service. Both states are terminal from the user's side, so the copy tells
+   * them what happened and points at support rather than implying a retry.
+   */
+  private assertAccountUsable(user: typeof schema.users.$inferSelect): void {
+    if (user.is_blocked) {
+      throw new ForbiddenException(
+        "Your account has been blocked. Please contact support if you think this is a mistake.",
+      );
+    }
+
+    if (user.is_suspended) {
+      throw new ForbiddenException(
+        "Your account is suspended. Please contact support to restore access.",
+      );
+    }
   }
 
   private sanitize(user: typeof schema.users.$inferSelect) {

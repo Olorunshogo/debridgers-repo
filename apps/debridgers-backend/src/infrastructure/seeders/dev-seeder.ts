@@ -658,10 +658,27 @@ async function seedDev(): Promise<void> {
         .returning({ id: schema.orders.id });
 
       orderIds.push(order.id);
+
+      /*
+       * Line items, so the order-detail endpoint has something to join. Without
+       * these rows every seeded order rendered with items: []. Spread across 1
+       * to 3 products; the line quantities sum to the order quantity so the two
+       * stay consistent.
+       */
+      const lineCount = Math.min(quantity, 1 + (i % 3));
+      for (let line = 0; line < lineCount; line++) {
+        const lineQty = line === lineCount - 1 ? quantity - (lineCount - 1) : 1;
+        await db.insert(schema.order_items).values({
+          order_id: order.id,
+          product_id: products[(i + line) % products.length].id,
+          quantity: lineQty,
+          unit_price_kobo: unitPrice,
+        });
+      }
     }
 
     console.warn(
-      `✓ Orders seeded: ${orderIds.length} across every status and payment_status`,
+      `✓ Orders seeded: ${orderIds.length} across every status and payment_status, with line items`,
     );
 
     // === Commissions

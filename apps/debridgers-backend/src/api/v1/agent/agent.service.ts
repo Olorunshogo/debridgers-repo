@@ -27,6 +27,20 @@ import {
   ORDER_STATUS_NOTIFICATION,
 } from "../../shared/order-status";
 
+// === Types
+
+/* Money fields are kobo integers, like every other money field in the API. The
+   pg SUM() aggregate hands back a string (or null for no rows), so each is run
+   through Number(... ?? 0) before it leaves the service. */
+export interface AgentDashboardStats {
+  total_bags_sold: number;
+  total_earned: number;
+  rank: number | null;
+  days_reported: number;
+  commission_pending: number;
+  recent_reports: (typeof schema.sales_reports.$inferSelect)[];
+}
+
 @Injectable()
 export class AgentService {
   constructor(
@@ -213,7 +227,8 @@ export class AgentService {
 
     return {
       message: "Profile retrieved",
-      data: { ...agent, total_earnings: earningsSummary?.total ?? "0.00" },
+      // Kobo integer, not a pg SUM() string defaulting to "0.00"
+      data: { ...agent, total_earnings: Number(earningsSummary?.total ?? 0) },
     };
   }
 
@@ -421,7 +436,9 @@ export class AgentService {
     return { message: "Leaderboard retrieved", data: leaderboard };
   }
 
-  async getDashboardStats(user: JwtPayload) {
+  async getDashboardStats(
+    user: JwtPayload,
+  ): Promise<{ message: string; data: AgentDashboardStats }> {
     const [totalBagsSoldRow] = await this.db
       .select({ total: sum(schema.sales_reports.pages_sold) })
       .from(schema.sales_reports)
@@ -470,10 +487,10 @@ export class AgentService {
       message: "Dashboard stats retrieved",
       data: {
         total_bags_sold: Number(totalBagsSoldRow?.total ?? 0),
-        total_earned: totalEarnedRow?.total ?? "0.00",
+        total_earned: Number(totalEarnedRow?.total ?? 0),
         rank,
-        days_reported: daysReportedRow?.total ?? 0,
-        commission_pending: pendingCommissionRow?.total ?? "0.00",
+        days_reported: Number(daysReportedRow?.total ?? 0),
+        commission_pending: Number(pendingCommissionRow?.total ?? 0),
         recent_reports: recentReports,
       },
     };

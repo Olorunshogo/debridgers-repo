@@ -17,8 +17,10 @@ export class NewsletterService {
         .insert(schema.newsletter_subscribers)
         .values({ email: dto.email });
     } catch (error) {
-      const dbError = error as { code?: string };
-      if (dbError.code === "23505") {
+      /* drizzle-orm 0.45 wraps the pg driver error in a DrizzleQueryError, so
+         the SQLSTATE lives on error.cause, not error itself. Check both. */
+      const code: string | undefined = this.pgErrorCode(error);
+      if (code === "23505") {
         throw new ConflictException("You're already subscribed");
       }
       throw error;
@@ -28,5 +30,24 @@ export class NewsletterService {
       message: "Subscribed! Watch your inbox for market updates.",
       data: null,
     };
+  }
+
+  private pgErrorCode(error: unknown): string | undefined {
+    const read = (val: unknown): string | undefined => {
+      if (val && typeof val === "object" && "code" in val) {
+        const code: unknown = (val as { code: unknown }).code;
+        return typeof code === "string" ? code : undefined;
+      }
+      return undefined;
+    };
+
+    return (
+      read(error) ??
+      read(
+        error && typeof error === "object" && "cause" in error
+          ? (error as { cause: unknown }).cause
+          : undefined,
+      )
+    );
   }
 }
