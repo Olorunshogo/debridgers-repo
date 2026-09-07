@@ -140,6 +140,11 @@ const agentNavGroups: NavGroup[] = [
         href: "/agent-dashboard/daily-report",
       },
       {
+        label: "Deliveries",
+        icon: Truck,
+        href: "/agent-dashboard/deliveries",
+      },
+      {
         label: "Leader board",
         icon: Trophy,
         href: "/agent-dashboard/leaderboard",

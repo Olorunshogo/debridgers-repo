@@ -54,6 +54,9 @@ export function NotificationsPage({
   onMarkAsDone,
   onMarkAllRead,
   onItemClick,
+  hasMore = false,
+  loadingMore = false,
+  onLoadMore,
 }: NotificationsViewProps) {
   const [tab, setTab] = useState<FilterTab>("all");
 
@@ -254,6 +257,19 @@ export function NotificationsPage({
               })}
             </AnimatePresence>
           </ul>
+        )}
+
+        {!loading && !error && hasMore && onLoadMore && (
+          <div className="border-line flex justify-center border-t p-3">
+            <button
+              type="button"
+              onClick={onLoadMore}
+              disabled={loadingMore}
+              className="border-line text-body hover:border-input-border-focus hover:text-heading cursor-pointer rounded-full border px-5 py-2 text-sm font-medium transition-all duration-300 ease-in-out disabled:cursor-default disabled:opacity-60"
+            >
+              {loadingMore ? "Loading…" : "Load more"}
+            </button>
+          </div>
         )}
       </div>
     </div>
