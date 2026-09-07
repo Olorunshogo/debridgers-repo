@@ -67,6 +67,7 @@
     "debridgers-backend:seed": "pnpm --filter @debridgers/debridgers-backend db:seed",
     "debridgers-backend:seed:dev": "pnpm --filter @debridgers/debridgers-backend db:seed:dev",
     "debridgers-backend:seed:dev:reset": "pnpm --filter @debridgers/debridgers-backend db:seed:dev:reset",
+    "debridgers-backend:reset": "pnpm --filter @debridgers/debridgers-backend db:reset",
     "docker:up": "docker compose -p debridgers -f docker/docker-compose.yml up postgres redis -d --wait",
     "docker:down": "docker compose -p debridgers -f docker/docker-compose.yml down",
     "docker:migrate": "pnpm docker:up && pnpm debridgers-backend:migrate",

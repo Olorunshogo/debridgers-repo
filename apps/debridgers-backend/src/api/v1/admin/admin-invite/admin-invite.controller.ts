@@ -31,10 +31,16 @@ export class AdminInviteController {
       req.user.id,
     );
 
+    /* Envelope kept as-is: the admin dashboard reads this shape directly. Only
+       the copy reflects whether the email actually went out. */
+    const message: string = result.email_sent
+      ? `Invite sent to ${dto.email}. Share the temporary password and invite code with them.`
+      : `Invite created for ${dto.email} but the email could not be sent. Share the invite code and temporary password below manually.`;
+
     return {
       success: true,
       data: result,
-      message: `Invite sent to ${dto.email}. Share the temporary password and invite code with them.`,
+      message,
     };
   }
 

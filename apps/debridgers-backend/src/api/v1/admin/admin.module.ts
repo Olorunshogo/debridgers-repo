@@ -7,8 +7,6 @@ import { AuthModule } from "../auth/auth.module";
 import { AgentModule } from "../agent/agent.module";
 import { CloudinaryService } from "../../../infrastructure/cloudinary/cloudinary.service";
 import { AuditModule } from "../../../infrastructure/audit/audit.module";
-import { BuyerAdminController } from "./buyer-admin/buyer-admin.controller";
-import { BuyerAdminService } from "./buyer-admin/buyer-admin.service";
 import { DeliveryAdminController } from "./buyer-admin/delivery-admin.controller";
 import { DeliveryAdminService } from "./buyer-admin/delivery-admin.service";
 import { NotificationsService } from "../buyer/notifications.service";
@@ -32,7 +30,6 @@ import { DeliveryPromotionModule } from "./pricing/delivery-promotion.module";
   ],
   controllers: [
     AdminController,
-    BuyerAdminController,
     DeliveryAdminController,
     NotificationsAdminController,
     AdminInviteController,
@@ -42,7 +39,6 @@ import { DeliveryPromotionModule } from "./pricing/delivery-promotion.module";
     AdminService,
     AdminApiKeysService,
     CloudinaryService,
-    BuyerAdminService,
     DeliveryAdminService,
     NotificationsService,
     AdminInviteService,
@@ -50,11 +46,6 @@ import { DeliveryPromotionModule } from "./pricing/delivery-promotion.module";
     ZoneAdminService,
     // Remove EmailService - it comes from EmailModule
   ],
-  exports: [
-    AdminApiKeysService,
-    BuyerAdminService,
-    DeliveryAdminService,
-    AdminInviteService,
-  ],
+  exports: [AdminApiKeysService, DeliveryAdminService, AdminInviteService],
 })
 export class AdminModule {}

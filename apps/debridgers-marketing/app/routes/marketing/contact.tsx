@@ -68,10 +68,13 @@ function validate(form: ContactForm): FormErrors {
     errors.email = "Please enter a valid email address.";
   }
 
-  const wordCount = form.message.trim().split(/\s+/).filter(Boolean).length;
-  if (wordCount < 5) {
-    errors.message = "Message must be at least 5 words.";
-  } else if (form.message.length > 1000) {
+  // Keep this rule in step with createContactSchema on the backend: a plain
+  // character minimum, not a word count, so the two never disagree about
+  // whether a given message is valid.
+  const message = form.message.trim();
+  if (message.length < 15) {
+    errors.message = "Message must be at least 15 characters.";
+  } else if (message.length > 1000) {
     errors.message = "Message cannot exceed 1000 characters.";
   }
 

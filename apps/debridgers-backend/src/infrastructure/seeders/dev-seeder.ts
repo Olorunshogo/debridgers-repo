@@ -658,10 +658,27 @@ async function seedDev(): Promise<void> {
         .returning({ id: schema.orders.id });
 
       orderIds.push(order.id);
+
+      /*
+       * Line items, so the order-detail endpoint has something to join. Without
+       * these rows every seeded order rendered with items: []. Spread across 1
+       * to 3 products; the line quantities sum to the order quantity so the two
+       * stay consistent.
+       */
+      const lineCount = Math.min(quantity, 1 + (i % 3));
+      for (let line = 0; line < lineCount; line++) {
+        const lineQty = line === lineCount - 1 ? quantity - (lineCount - 1) : 1;
+        await db.insert(schema.order_items).values({
+          order_id: order.id,
+          product_id: products[(i + line) % products.length].id,
+          quantity: lineQty,
+          unit_price_kobo: unitPrice,
+        });
+      }
     }
 
     console.warn(
-      `✓ Orders seeded: ${orderIds.length} across every status and payment_status`,
+      `✓ Orders seeded: ${orderIds.length} across every status and payment_status, with line items`,
     );
 
     // === Commissions
@@ -859,7 +876,22 @@ async function resetDev(): Promise<void> {
 
 const mode = process.argv[2];
 
-const run = mode === "reset" ? resetDev : seedDev;
+/*
+ * Bare: populate only, and a no-op if dev data already exists.
+ * `reset`: wipe the dev dataset and repopulate it, so one command returns the
+ * database to a known-good state. The base seeder's rows (admin, zones,
+ * products) are left untouched by the wipe, so `db:seed` only has to have run
+ * once.
+ */
+async function run(): Promise<void> {
+  if (mode === "reset") {
+    await resetDev();
+    await seedDev();
+    return;
+  }
+
+  await seedDev();
+}
 
 run().catch((err: unknown) => {
   console.error("Dev seed failed:", err);

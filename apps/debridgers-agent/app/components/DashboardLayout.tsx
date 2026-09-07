@@ -166,8 +166,11 @@ export default function DashboardLayout() {
           setMustChangePassword(Boolean(p.must_change_password));
           if (p.email) setUserProfile({ name, sub: p.email });
         })
-        .catch(() => {
-          /* A failed profile read must not invent an obligation. */
+        .catch((err: unknown) => {
+          /* Non-fatal: the JWT-derived name and sub above keep the shell usable.
+             A failed read must not invent a password obligation, so leave the
+             flag false, but make the failure visible in the console. */
+          console.error("DashboardLayout: /admin/me profile read failed", err);
         });
       return;
     }
@@ -185,7 +188,11 @@ export default function DashboardLayout() {
         const sub = isAgent ? (p.lga ?? "") : (p.email ?? "");
         setUserProfile({ name, sub, avatar_url: p.avatar_url });
       })
-      .catch(() => {});
+      .catch((err: unknown) => {
+        /* Non-fatal: the header falls back to whatever profile is already set,
+           and the rest of the shell (nav, outlet) does not depend on this. */
+        console.error(`DashboardLayout: ${endpoint} profile read failed`, err);
+      });
   }, [isAgent, isBuyer, isAdmin, isSubAdmin]);
 
   /*

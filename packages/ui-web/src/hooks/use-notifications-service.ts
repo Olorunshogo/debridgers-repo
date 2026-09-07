@@ -71,6 +71,12 @@ export interface UseNotificationsServiceResult extends NotificationsViewProps {
   reload: () => void;
 }
 
+/*
+ * One page per request. The backend caps `limit` at 50 and pages by offset;
+ * this stays well under the cap so "Load more" has somewhere to go.
+ */
+const PAGE_SIZE = 20;
+
 export function useNotificationsService({
   role,
 }: {
@@ -82,17 +88,25 @@ export function useNotificationsService({
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState<number>(1);
+  const [hasMore, setHasMore] = useState<boolean>(false);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
 
   const load = useCallback(async (): Promise<void> => {
     setLoading(true);
     try {
-      const rows = await apiFetch<ApiNotification[]>(`${base}?limit=50`);
+      const rows = await apiFetch<ApiNotification[]>(
+        `${base}?page=1&limit=${PAGE_SIZE}`,
+      );
       setNotifications(rows);
+      setPage(1);
+      setHasMore(rows.length === PAGE_SIZE);
       setError(null);
     } catch (err) {
       /* An empty list would read as "nothing has happened", which is a
          different and misleading story. */
       setNotifications([]);
+      setHasMore(false);
       setError(
         err instanceof ApiError
           ? err.message
@@ -102,6 +116,29 @@ export function useNotificationsService({
       setLoading(false);
     }
   }, [base]);
+
+  const onLoadMore = useCallback(async (): Promise<void> => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const next = page + 1;
+      const rows = await apiFetch<ApiNotification[]>(
+        `${base}?page=${next}&limit=${PAGE_SIZE}`,
+      );
+      /* Dedupe on id: a row inserted between page reads shifts the offset and
+         could otherwise repeat the last item of the previous page. */
+      setNotifications((prev) => {
+        const seen = new Set(prev.map((n) => n.id));
+        return [...prev, ...rows.filter((r) => !seen.has(r.id))];
+      });
+      setPage(next);
+      setHasMore(rows.length === PAGE_SIZE);
+    } catch {
+      /* Keep what is already shown; the button stays for another try. */
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [base, page, hasMore, loadingMore]);
 
   useEffect(() => {
     void load();
@@ -191,5 +228,8 @@ export function useNotificationsService({
     recent,
     listPath,
     reload: () => void load(),
+    hasMore,
+    loadingMore,
+    onLoadMore: () => void onLoadMore(),
   };
 }

@@ -17,6 +17,8 @@ import {
   SearchInputField,
   SortMenu,
   sortProducts,
+  useAsyncResource,
+  AsyncBoundary,
   type ProductSortKey,
 } from "@debridgers/ui-web";
 
@@ -67,22 +69,25 @@ export default function BuyerShop() {
   const { isFavorite, toggleFavorite, canFavorite } = useFavorites();
   const { products: buyAgain, hasHistory } = useBuyAgain();
 
-  const [products, setProducts] = useState<ApiProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: productsData,
+    error: productsError,
+    loading,
+    refetch: refetchProducts,
+  } = useAsyncResource<ApiProduct[]>(
+    (signal: AbortSignal): Promise<ApiProduct[]> =>
+      apiFetch<ApiProduct[]>("/products", { signal }),
+    [],
+  );
+  const products: ApiProduct[] = useMemo(
+    () => productsData ?? [],
+    [productsData],
+  );
   const [cartOpen, setCartOpen] = useState<boolean>(false);
   const [search, setSearch] = useState<string>("");
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORIES);
   const [sortBy, setSortBy] = useState<ProductSortKey>("category");
   const [currentPage, setCurrentPage] = useState<number>(1);
-
-  useEffect(() => {
-    apiFetch<ApiProduct[]>("/products")
-      .then((rows) => {
-        setProducts(rows);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
 
   /* From the real category column, and only chips that have products behind
      them. This used to derive from `description`, which is unique per product,
@@ -221,52 +226,64 @@ export default function BuyerShop() {
           </div>
         )}
 
-        {loading ? (
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-line h-64 animate-pulse rounded-2xl" />
-            ))}
-          </div>
-        ) : products.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-20">
-            <Package size={48} className="text-body opacity-20" />
-            <p className="text-body text-sm">
-              No products available yet. Check back soon.
-            </p>
-          </div>
-        ) : filtered.length === 0 ? (
-          <p className="text-body py-10 text-center text-sm">
-            No products match &quot;{search}&quot;
-          </p>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="grid grid-cols-[repeat(auto-fit,minmax(min(280px,100%),1fr))] gap-4 lg:grid-cols-3 xl:grid-cols-4"
-          >
-            {paginatedProducts.map((product, i) => {
-              const priceNaira = product.price_kobo / 100;
-              return (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  quantityInCart={quantityOf(String(product.id))}
-                  formattedPrice={formatCurrency(priceNaira)}
-                  animationIndex={i}
-                  onAddToCart={() => addToCart(product)}
-                  onIncrement={() => updateQty(String(product.id), 1)}
-                  onDecrement={() => updateQty(String(product.id), -1)}
-                  isFavorite={isFavorite(product.id)}
-                  onToggleFavorite={
-                    canFavorite
-                      ? () => void toggleFavorite(product.id)
-                      : undefined
-                  }
+        <AsyncBoundary
+          loading={loading}
+          error={productsError}
+          onRetry={refetchProducts}
+          isEmpty={products.length === 0}
+          skeleton={
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-line h-64 animate-pulse rounded-2xl"
                 />
-              );
-            })}
-          </motion.div>
-        )}
+              ))}
+            </div>
+          }
+          empty={
+            <div className="flex flex-col items-center gap-3 py-20">
+              <Package size={48} className="text-body opacity-20" />
+              <p className="text-body text-sm">
+                No products available yet. Check back soon.
+              </p>
+            </div>
+          }
+        >
+          {filtered.length === 0 ? (
+            <p className="text-body py-10 text-center text-sm">
+              No products match &quot;{search}&quot;
+            </p>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="grid grid-cols-[repeat(auto-fit,minmax(min(280px,100%),1fr))] gap-4 lg:grid-cols-3 xl:grid-cols-4"
+            >
+              {paginatedProducts.map((product, i) => {
+                const priceNaira = product.price_kobo / 100;
+                return (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    quantityInCart={quantityOf(String(product.id))}
+                    formattedPrice={formatCurrency(priceNaira)}
+                    animationIndex={i}
+                    onAddToCart={() => addToCart(product)}
+                    onIncrement={() => updateQty(String(product.id), 1)}
+                    onDecrement={() => updateQty(String(product.id), -1)}
+                    isFavorite={isFavorite(product.id)}
+                    onToggleFavorite={
+                      canFavorite
+                        ? () => void toggleFavorite(product.id)
+                        : undefined
+                    }
+                  />
+                );
+              })}
+            </motion.div>
+          )}
+        </AsyncBoundary>
 
         {!loading && filtered.length > 0 && totalPages > 1 && (
           <div className="mt-8 flex justify-center pb-2">

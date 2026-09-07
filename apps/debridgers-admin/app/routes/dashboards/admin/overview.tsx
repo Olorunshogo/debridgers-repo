@@ -1,9 +1,14 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { motion } from "framer-motion";
 import { Users, UserCheck, ShoppingBag, TrendingUp } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
-import { formatFromKobo, useDialog } from "@debridgers/ui-web";
+import {
+  formatFromKobo,
+  useDialog,
+  useAsyncResource,
+  AsyncBoundary,
+} from "@debridgers/ui-web";
 
 import { buildPageMeta } from "../../../lib/seo";
 export function meta() {
@@ -44,8 +49,6 @@ function mapStats(api: ApiAdminStats): AdminStats {
 }
 
 export default function AdminOverview() {
-  const [stats, setStats] = useState<AdminStats | null>(null);
-  const [loading, setLoading] = useState(true);
   const { triggerDialog } = useDialog();
   /* Opened once per mount; the dialog is dismissable and re-triggering on every
      render would trap the admin behind it. */
@@ -64,22 +67,16 @@ export default function AdminOverview() {
     }
   }, [triggerDialog]);
 
-  useEffect(() => {
-    apiFetch<ApiAdminStats>("/admin/dashboard")
-      .then((api) => setStats(mapStats(api)))
-      .catch(() => setStats(null))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="grid animate-pulse grid-cols-2 gap-4 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-line h-28 rounded-2xl" />
-        ))}
-      </div>
-    );
-  }
+  const {
+    data: stats,
+    error,
+    loading,
+    refetch,
+  } = useAsyncResource<AdminStats>(
+    (signal: AbortSignal): Promise<AdminStats> =>
+      apiFetch<ApiAdminStats>("/admin/dashboard", { signal }).then(mapStats),
+    [],
+  );
 
   const cards = stats
     ? [
@@ -112,7 +109,18 @@ export default function AdminOverview() {
 
   return (
     <div className="flex flex-col gap-6">
-      {stats ? (
+      <AsyncBoundary
+        loading={loading}
+        error={error}
+        onRetry={refetch}
+        skeleton={
+          <div className="grid animate-pulse grid-cols-2 gap-4 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="bg-line h-28 rounded-2xl" />
+            ))}
+          </div>
+        }
+      >
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {cards.map((c, i) => (
             <motion.div
@@ -138,13 +146,7 @@ export default function AdminOverview() {
             </motion.div>
           ))}
         </div>
-      ) : (
-        <div className="border-line rounded-2xl border bg-white p-10 text-center">
-          <p className="text-body text-sm">
-            Stats unavailable. The admin API is not yet connected.
-          </p>
-        </div>
-      )}
+      </AsyncBoundary>
 
       <div className="border-line rounded-2xl border bg-white p-6">
         <h3 className="font-syne text-heading mb-4 font-semibold">

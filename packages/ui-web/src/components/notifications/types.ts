@@ -49,4 +49,9 @@ export interface NotificationsViewProps {
   onMarkAsDone: (id: number) => void;
   onMarkAllRead: () => void;
   onItemClick?: (item: NotificationItem) => void;
+  /** More pages exist on the server than are currently loaded. */
+  hasMore?: boolean;
+  /** A "load more" append is in flight. */
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
 }

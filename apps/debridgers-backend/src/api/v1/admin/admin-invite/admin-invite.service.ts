@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, Inject } from "@nestjs/common";
+import {
+  Injectable,
+  BadRequestException,
+  Inject,
+  Logger,
+} from "@nestjs/common";
 import { randomBytes } from "crypto";
 import { eq, and, isNull } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -7,8 +12,26 @@ import { DATABASE_CONNECTION } from "../../../../infrastructure/database/databas
 import { adminInvites, users } from "../../../../infrastructure/persistence";
 import { EmailService } from "../../../../notification/features/email/email.service";
 
+// === Types
+
+export interface CreateInviteResult {
+  invite_id: number;
+  invite_code: string;
+  email: string;
+  temp_password: string;
+  expires_at: Date;
+  /* False when the row work committed but the invite email did not send (dev
+     has no SMTP). The caller then hands the code and password over manually. */
+  email_sent: boolean;
+  /* True when an active invite already existed and this call rotated its code
+     and temp password rather than creating a second one. */
+  reissued: boolean;
+}
+
 @Injectable()
 export class AdminInviteService {
+  private readonly logger = new Logger(AdminInviteService.name);
+
   constructor(
     @Inject(DATABASE_CONNECTION)
     private db: NodePgDatabase<Record<string, unknown>>,
@@ -23,49 +46,41 @@ export class AdminInviteService {
   async createInvite(
     email: string,
     superAdminId: number,
-  ): Promise<{
-    invite_id: number;
-    invite_code: string;
-    email: string;
-    temp_password: string;
-    expires_at: Date;
-  }> {
-    // Check if there's an active (unused, non-expired) invite for this email
-    const activeInvite = await this.db
-      .select()
-      .from(adminInvites)
-      .where(and(eq(adminInvites.email, email), isNull(adminInvites.used_at)));
-
-    // Filter in memory for expiry check
-    const now = new Date();
-    const validInvite = activeInvite.find(
-      (inv: (typeof activeInvite)[0]) => inv.expires_at > now,
-    );
-
-    if (validInvite) {
-      throw new BadRequestException(
-        "Active invite already exists for this email",
-      );
-    }
-
-    // Check if user exists
-    const existingUser = await this.db
-      .select()
-      .from(users)
-      .where(eq(users.email, email));
-
+  ): Promise<CreateInviteResult> {
     // Generate 32-character random invite code and temporary password
-    const inviteCode = randomBytes(16).toString("hex");
-    const tempPassword = this.generateTempPassword();
-    const hashedPassword = await bcrypt.hash(tempPassword, 10);
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+    const inviteCode: string = randomBytes(16).toString("hex");
+    const tempPassword: string = this.generateTempPassword();
+    const hashedPassword: string = await bcrypt.hash(tempPassword, 10);
+    const expiresAt: Date = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // Create or update admin account with new password
-    if (existingUser.length === 0) {
-      // Create new admin account
-      await this.db
-        .insert(users)
-        .values({
+    /*
+     * The user upsert, the invite row and (previously) the email all ran with no
+     * transaction and no catch. With no SMTP in dev the email threw and the
+     * whole request 500'd, leaving an orphan user + invite and losing the
+     * one-time code. Row work now commits atomically; the email is best-effort
+     * and reported back.
+     */
+    const { inviteId, reissued } = await this.db.transaction(async (tx) => {
+      const now: Date = new Date();
+
+      const activeInvites = await tx
+        .select()
+        .from(adminInvites)
+        .where(
+          and(eq(adminInvites.email, email), isNull(adminInvites.used_at)),
+        );
+
+      const validInvite = activeInvites.find(
+        (inv: (typeof activeInvites)[number]) => inv.expires_at > now,
+      );
+
+      const existingUser = await tx
+        .select()
+        .from(users)
+        .where(eq(users.email, email));
+
+      if (existingUser.length === 0) {
+        await tx.insert(users).values({
           email,
           password: hashedPassword,
           role: "admin",
@@ -74,43 +89,66 @@ export class AdminInviteService {
           last_name: "Admin",
           is_email_verified: true,
           must_change_password: true,
+        });
+      } else {
+        await tx
+          .update(users)
+          .set({ password: hashedPassword, must_change_password: true })
+          .where(eq(users.email, email));
+      }
+
+      /*
+       * A repeat call for an email that still has a live invite rotates that
+       * invite's code and window in place rather than dead-ending on a 400 or
+       * stacking a second active row. verifyInviteCode matches on the current
+       * (email, invite_code) pair, so the previous code stops working once it is
+       * overwritten.
+       */
+      if (validInvite) {
+        const [updated] = await tx
+          .update(adminInvites)
+          .set({ invite_code: inviteCode, expires_at: expiresAt })
+          .where(eq(adminInvites.id, validInvite.id))
+          .returning();
+        return { inviteId: updated.id, reissued: true };
+      }
+
+      const [created] = await tx
+        .insert(adminInvites)
+        .values({
+          invite_code: inviteCode,
+          email,
+          invited_by_admin_id: superAdminId,
+          expires_at: expiresAt,
         })
         .returning();
-    } else {
-      // Update password for existing user (allows re-inviting with new temp password)
-      await this.db
-        .update(users)
-        .set({
-          password: hashedPassword,
-          must_change_password: true,
-        })
-        .where(eq(users.email, email));
-    }
-
-    // Create the invite record
-    const [created] = await this.db
-      .insert(adminInvites)
-      .values({
-        invite_code: inviteCode,
-        email,
-        invited_by_admin_id: superAdminId,
-        expires_at: expiresAt,
-      })
-      .returning();
-
-    // Send invite email with temp password
-    await this.emailService.sendAdminInvite({
-      email,
-      invite_code: inviteCode,
-      temp_password: tempPassword,
+      return { inviteId: created.id, reissued: false };
     });
 
+    let emailSent = true;
+    try {
+      await this.emailService.sendAdminInvite({
+        email,
+        invite_code: inviteCode,
+        temp_password: tempPassword,
+      });
+    } catch (error) {
+      emailSent = false;
+      this.logger.warn(
+        `Admin invite row created for ${email} but the email failed to send: ${
+          error instanceof Error ? error.message : String(error)
+        }. The code and temp password are in the response for manual hand-over.`,
+      );
+    }
+
     return {
-      invite_id: created.id,
+      invite_id: inviteId,
       invite_code: inviteCode,
       email,
       temp_password: tempPassword,
       expires_at: expiresAt,
+      email_sent: emailSent,
+      reissued,
     };
   }
 

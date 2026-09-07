@@ -121,7 +121,7 @@ export default function PublicShop() {
 
   const filtered = useMemo(() => {
     let list = products;
-    if (activeCategory !== "All")
+    if (activeCategory !== ALL_CATEGORIES)
       list = list.filter((p) => p.category === activeCategory);
     if (search.trim()) {
       const q = search.toLowerCase();

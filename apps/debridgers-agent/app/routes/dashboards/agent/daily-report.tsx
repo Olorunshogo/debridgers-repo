@@ -2,13 +2,11 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, CheckCircle2 } from "lucide-react";
 import {
-  DateInputField,
   NumberInputField,
   TextInputField,
   SelectInputField,
   TextareaField,
   SubmitButton,
-  getTodayDateString,
   formatCurrency,
   lgaSelectOptions,
 } from "@debridgers/ui-web";
@@ -27,15 +25,12 @@ export function meta() {
 }
 
 // === Types
-type ReportStatus = "approved" | "pending" | "rejected" | "missed";
-
 interface ReportHistoryEntry {
   id: string;
   dayLabel: string;
   bagsSold: number;
   area: string;
   amount: string;
-  status: ReportStatus;
 }
 
 interface ApiReport {
@@ -58,20 +53,8 @@ function mapApiReport(r: ApiReport): ReportHistoryEntry {
     bagsSold: r.pages_sold,
     area: r.notes ?? "—",
     amount: formatCurrency(naira),
-    status: "approved",
   };
 }
-
-// === Status styles
-const STATUS_STYLES: Record<
-  ReportStatus,
-  { colorClass: string; icon: string }
-> = {
-  approved: { colorClass: "text-status-active-fg", icon: "✓" },
-  pending: { colorClass: "text-status-pending-fg", icon: "…" },
-  rejected: { colorClass: "text-red-600", icon: "✗" },
-  missed: { colorClass: "text-red-600", icon: "–" },
-};
 
 // === Report History Card
 function ReportHistoryCard({ entries }: { entries: ReportHistoryEntry[] }) {
@@ -83,8 +66,6 @@ function ReportHistoryCard({ entries }: { entries: ReportHistoryEntry[] }) {
       </div>
       <div className="flex flex-col">
         {latest.map((entry, i) => {
-          const s = STATUS_STYLES[entry.status];
-          const isMissed = entry.status === "missed";
           return (
             <motion.div
               key={entry.id}
@@ -95,24 +76,14 @@ function ReportHistoryCard({ entries }: { entries: ReportHistoryEntry[] }) {
             >
               <div className="flex flex-col gap-0.5">
                 <p className="text-body text-xs">{entry.dayLabel}</p>
-                <p
-                  className={`text-sm font-semibold ${isMissed ? "text-body" : "text-heading"}`}
-                >
-                  {isMissed
-                    ? `${entry.bagsSold} bag  Day off`
-                    : `${entry.bagsSold} bags ${entry.area}`}
+                <p className="text-heading text-sm font-semibold">
+                  {`${entry.bagsSold} bags ${entry.area}`}
                 </p>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span
-                  className={`font-syne text-sm font-semibold ${s.colorClass}`}
-                >
-                  {isMissed ? "Miss" : entry.amount}
-                </span>
-                <span className={`text-sm font-bold ${s.colorClass}`}>
-                  {s.icon}
-                </span>
-              </div>
+              {/* No status column exists server-side, so no chip is shown. */}
+              <span className="font-syne text-heading text-sm font-semibold">
+                {entry.amount}
+              </span>
             </motion.div>
           );
         })}
@@ -123,10 +94,8 @@ function ReportHistoryCard({ entries }: { entries: ReportHistoryEntry[] }) {
 
 // === Form state
 interface ReportForm {
-  date: string;
   bagsSold: string;
   cashCollected: string;
-  bagsRemaining: string;
   areaCovered: string;
   feedback: string;
   unsoldReason: string;
@@ -144,10 +113,8 @@ function formatAmountInput(raw: string): string {
 
 export default function AgentDailyReportPage() {
   const [form, setForm] = useState<ReportForm>({
-    date: getTodayDateString(),
     bagsSold: "",
     cashCollected: "",
-    bagsRemaining: "",
     areaCovered: "",
     feedback: "",
     unsoldReason: "",
@@ -189,13 +156,24 @@ export default function AgentDailyReportPage() {
     try {
       const pages_sold = parseInt(form.bagsSold, 10);
       const amount = parseFloat(form.cashCollected.replace(/,/g, ""));
-      const notesParts = [form.feedback, form.unsoldReason].filter(Boolean);
-      const notes = notesParts.join(" | ") || undefined;
 
       if (!pages_sold || pages_sold < 1 || isNaN(amount) || amount <= 0) {
         setSubmitError("Enter valid bags sold and cash collected.");
         return;
       }
+      if (!form.areaCovered) {
+        setSubmitError("Select the area you covered today.");
+        return;
+      }
+
+      /* The report endpoint's schema is only { pages_sold, amount, notes }, so
+         the required area is folded into notes rather than dropped. */
+      const notesParts = [
+        `Area covered: ${form.areaCovered}.`,
+        form.feedback,
+        form.unsoldReason,
+      ].filter(Boolean);
+      const notes = notesParts.join(" | ") || undefined;
 
       await apiFetch("/agent/report", {
         method: "POST",
@@ -208,10 +186,8 @@ export default function AgentDailyReportPage() {
       setSubmitted(true);
       setTimeout(() => setSubmitted(false), 3500);
       setForm({
-        date: getTodayDateString(),
         bagsSold: "",
         cashCollected: "",
-        bagsRemaining: "",
         areaCovered: "",
         feedback: "",
         unsoldReason: "",
@@ -262,14 +238,8 @@ export default function AgentDailyReportPage() {
               )}
               {/* Form */}
               <div className="flex flex-col gap-4">
-                {/* Row 1: Date + Bags Sold */}
+                {/* Row 1: Bags Sold + Cash Collected */}
                 <div className="grid gap-4 md:grid-cols-2">
-                  <DateInputField
-                    label="Date"
-                    required
-                    value={form.date}
-                    onChange={handleChange("date")}
-                  />
                   <NumberInputField
                     label="Bags Sold Today"
                     required
@@ -278,24 +248,12 @@ export default function AgentDailyReportPage() {
                     value={form.bagsSold}
                     onChange={handleChange("bagsSold")}
                   />
-                </div>
-
-                {/* Row 2: Cash Collected + Bags Remaining */}
-                <div className="grid gap-4 md:grid-cols-2">
                   <TextInputField
                     label="Cash Collected"
                     required
                     placeholder="e.g. 15,000"
                     value={form.cashCollected}
                     onChange={handleCashCollected}
-                  />
-                  <NumberInputField
-                    label="Bags Remaining"
-                    required
-                    min={0}
-                    placeholder="0"
-                    value={form.bagsRemaining}
-                    onChange={handleChange("bagsRemaining")}
                   />
                 </div>
 

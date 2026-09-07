@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { Icon } from "@iconify/react";
@@ -14,7 +13,11 @@ import {
   Cell,
 } from "recharts";
 import { HeroGreetingCard } from "@debridgers/ui-web";
-import { formatCurrency } from "@debridgers/ui-web";
+import {
+  formatFromKobo,
+  useAsyncResource,
+  AsyncBoundary,
+} from "@debridgers/ui-web";
 
 import { buildPageMeta } from "../../../lib/seo";
 export function meta() {
@@ -117,12 +120,17 @@ function mapToDashboard(
         ? "Good Afternoon ☀️"
         : "Good Evening 🌙";
 
-  const fmtNaira = (val: string | number) => {
-    const n = typeof val === "string" ? parseFloat(val) : val;
-    return formatCurrency(n);
+  /*
+   * GET /agent/dashboard returns total_earned / commission_pending as kobo
+   * strings, not naira. The backend contract should return kobo ints; until it
+   * does, parse as an integer number of kobo and format from there.
+   */
+  const fmtKobo = (val: string | number): string => {
+    const kobo = typeof val === "string" ? parseInt(val, 10) : Math.round(val);
+    return formatFromKobo(Number.isFinite(kobo) ? kobo : 0);
   };
 
-  const pendingNaira = parseFloat(stats.commission_pending);
+  const pendingKobo = parseInt(stats.commission_pending, 10);
 
   const nextFriday = (() => {
     const d = new Date();
@@ -144,7 +152,7 @@ function mapToDashboard(
     location: profile.address ?? "Unknown",
     ninVerified: profile.status === "approved",
     greeting,
-    weekEarning: fmtNaira(stats.total_earned),
+    weekEarning: fmtKobo(stats.total_earned),
     bagsInHand: 0,
     bagsSold: stats.total_bags_sold,
     bagsRemaining: 0,
@@ -158,9 +166,9 @@ function mapToDashboard(
       },
       {
         label: "Total earned",
-        value: fmtNaira(stats.total_earned),
+        value: fmtKobo(stats.total_earned),
         icon: "lucide:banknote",
-        trend: `${fmtNaira(stats.commission_pending)} pending`,
+        trend: `${fmtKobo(stats.commission_pending)} pending`,
       },
       {
         label: "Current rank",
@@ -199,7 +207,7 @@ function mapToDashboard(
     nextPayout: {
       daysLeft: nextFriday.daysLeft,
       date: nextFriday.label,
-      amountPending: pendingNaira > 0 ? fmtNaira(pendingNaira) : "₦0",
+      amountPending: pendingKobo > 0 ? fmtKobo(pendingKobo) : "₦0",
       weekProgress: new Date().getDay() || 7,
       weekLabel: `${nextFriday.daysLeft} day${nextFriday.daysLeft !== 1 ? "s" : ""} until payout`,
     },
@@ -265,35 +273,42 @@ function StatCard({ stat, index }: { stat: AgentStatCard; index: number }) {
 
 // === Page
 export default function AgentOverviewPage() {
-  const [data, setData] = useState<AgentDashData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, error, loading, refetch } = useAsyncResource<AgentDashData>(
+    async (signal: AbortSignal): Promise<AgentDashData> => {
+      const [profile, stats, leaderboard] = await Promise.all([
+        apiFetch<ApiProfile>("/agent/me", { signal }),
+        apiFetch<ApiDashStats>("/agent/dashboard", { signal }),
+        apiFetch<ApiLeaderEntry[]>("/agent/leaderboard", { signal }),
+      ]);
+      return mapToDashboard(profile, stats, leaderboard.slice(0, 3));
+    },
+    [],
+  );
 
-  useEffect(() => {
-    Promise.all([
-      apiFetch<ApiProfile>("/agent/me"),
-      apiFetch<ApiDashStats>("/agent/dashboard"),
-      apiFetch<ApiLeaderEntry[]>("/agent/leaderboard"),
-    ])
-      .then(([profile, stats, leaderboard]) => {
-        setData(mapToDashboard(profile, stats, leaderboard.slice(0, 3)));
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading || !data) {
-    return (
-      <div className="flex animate-pulse flex-col gap-6">
-        <div className="bg-line h-40 rounded-2xl" />
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-line h-28 rounded-2xl" />
-          ))}
-        </div>
+  const skeleton = (
+    <div className="flex animate-pulse flex-col gap-6">
+      <div className="bg-line h-40 rounded-2xl" />
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="bg-line h-28 rounded-2xl" />
+        ))}
       </div>
-    );
-  }
+    </div>
+  );
 
+  return (
+    <AsyncBoundary
+      loading={loading || !data}
+      error={error}
+      onRetry={refetch}
+      skeleton={skeleton}
+    >
+      {data ? <AgentOverviewContent data={data} /> : null}
+    </AsyncBoundary>
+  );
+}
+
+function AgentOverviewContent({ data }: { data: AgentDashData }) {
   return (
     <div className="flex flex-col gap-6">
       {/* Hero */}
@@ -330,7 +345,7 @@ export default function AgentOverviewPage() {
         infoBox={
           <>
             <div className="flex min-w-35 flex-col gap-1 rounded-xl border border-white/20 bg-white/10 p-4">
-              <p className="text-xs text-white/60">This week earning</p>
+              <p className="text-xs text-white/60">Total earned</p>
               <p className="font-syne text-xl font-bold text-white">
                 {data.weekEarning}
               </p>
@@ -392,7 +407,7 @@ export default function AgentOverviewPage() {
         <div className="border-line flex flex-col gap-3 rounded-2xl border bg-white p-5">
           <div className="flex items-center justify-between">
             <h3 className="font-syne text-heading font-semibold">
-              Today&apos;s checklist
+              Leaderboard
             </h3>
             <a
               href="/agent-dashboard/leaderboard"
