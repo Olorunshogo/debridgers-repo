@@ -128,12 +128,31 @@ const steps: Step[] = [
   },
 ];
 
-function buildEarningsRows(commissionRate: number) {
-  const sampleTotal = 75000;
+/*
+ * Illustration for the recruitment page, not a quote. The real money rule is
+ * the commission rate, which comes from platform config and is applied below;
+ * the order value and count here are just a representative scenario, kept as
+ * named constants so the table and its footnote cannot drift apart.
+ */
+const ILLUSTRATION_ORDERS = 5;
+const ILLUSTRATION_ORDER_VALUE_NAIRA = 15_000;
+
+interface EarningsRow {
+  label: string;
+  value: string;
+  highlight: boolean;
+}
+
+function buildEarningsRows(commissionRate: number): EarningsRow[] {
+  const sampleTotal = ILLUSTRATION_ORDERS * ILLUSTRATION_ORDER_VALUE_NAIRA;
   const agentEarns = Math.round((sampleTotal * commissionRate) / 100);
   const companyKeeps = sampleTotal - agentEarns;
   return [
-    { label: "Sales closed", value: "5 orders", highlight: false },
+    {
+      label: "Sales closed",
+      value: `${ILLUSTRATION_ORDERS} orders`,
+      highlight: false,
+    },
     {
       label: "Total sale amount",
       value: formatCurrency(sampleTotal),
@@ -460,7 +479,8 @@ export default function AgentsPage() {
                     ))}
               </div>
               <p className="mt-4 text-xs text-white/50">
-                * Based on ₦15,000 average order value. Actual earnings vary.
+                * Based on {formatCurrency(ILLUSTRATION_ORDER_VALUE_NAIRA)}{" "}
+                average order value. Actual earnings vary.
               </p>
             </motion.div>
           </div>

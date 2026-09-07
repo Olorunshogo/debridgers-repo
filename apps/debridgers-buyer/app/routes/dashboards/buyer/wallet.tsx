@@ -75,6 +75,15 @@ const TRANSFER_POLL_MS = 4000;
 /* Long enough to read "it landed" before the page changes under them. */
 const SETTLED_REDIRECT_DELAY_MS = 3000;
 
+/*
+ * The wallet deposit floor, in naira.
+ *
+ * TODO: this should come from `@debridgers/pricing` so the floor lives in one
+ * place. Not adding that export in this batch - kept as a named const with the
+ * value the backend already enforces.
+ */
+const MIN_DEPOSIT_NAIRA = 100;
+
 function readPendingTransfer(): PendingTransfer | null {
   try {
     const raw = sessionStorage.getItem(PENDING_TRANSFER_KEY);
@@ -665,11 +674,12 @@ export default function BuyerWallet() {
   async function handleFund(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setFunding(true);
+    setDepositError(null);
 
     try {
       const amountNaira = parseInt(fundAmount, 10);
-      if (isNaN(amountNaira) || amountNaira < 100) {
-        alert("Minimum amount is ₦100");
+      if (isNaN(amountNaira) || amountNaira < MIN_DEPOSIT_NAIRA) {
+        setDepositError(`Minimum amount is ₦${MIN_DEPOSIT_NAIRA}.`);
         setFunding(false);
         return;
       }
@@ -686,12 +696,16 @@ export default function BuyerWallet() {
       if (response?.authorization_url) {
         window.location.href = response.authorization_url;
       } else {
-        alert("Failed to initiate payment. Please try again.");
+        setDepositError(
+          "We could not start this payment. Try again in a moment.",
+        );
         setFunding(false);
       }
     } catch (err) {
       console.error("Deposit error:", err);
-      alert("Error initiating deposit. Please try again.");
+      setDepositError(
+        "We could not start this payment. Check your connection and try again.",
+      );
       setFunding(false);
     }
   }
@@ -991,7 +1005,7 @@ export default function BuyerWallet() {
                   <p className="text-body text-xs">Or pay with a card:</p>
                   <NumberInputField
                     label="Amount"
-                    min={100}
+                    min={MIN_DEPOSIT_NAIRA}
                     value={fundAmount}
                     onChange={(e) => setFundAmount(e.target.value)}
                     placeholder="e.g. 5000"

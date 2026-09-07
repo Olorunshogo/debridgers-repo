@@ -30,6 +30,10 @@ export default [
       "routes/dashboards/agent/daily-report.tsx",
     ),
     route(
+      "agent-dashboard/deliveries",
+      "routes/dashboards/agent/deliveries.tsx",
+    ),
+    route(
       "agent-dashboard/leaderboard",
       "routes/dashboards/agent/leaderboard.tsx",
     ),

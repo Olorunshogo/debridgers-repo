@@ -21,6 +21,7 @@ export const DIALOG_REGISTRY: DialogRegistry = {
   /* Opened by the table engine for any row action declaring `confirm`. */
   CONFIRM: () => import("../components/dialogs/ConfirmDialog"),
   REQUEST_PAYOUT: () => import("../components/dialogs/RequestPayoutDialog"),
+  REMIT_STOCK: () => import("../components/dialogs/RemitStockDialog"),
   REJECT_PAYOUT: () => import("../components/dialogs/RejectPayoutDialog"),
   PAYMENT_METHOD: () => import("../components/dialogs/PaymentMethodDialog"),
   HELP_GUIDE: () => import("../components/dialogs/HelpGuideDialog"),

@@ -67,17 +67,18 @@ interface ApiOrder {
 
 function mapApiOrder(o: ApiOrder): Order {
   const dbToUi = (orderStatus: string, paymentStatus: string): OrderStatus => {
-    // If payment not made yet, show as pending
-    if (paymentStatus === "unpaid") return "pending";
+    // Terminal fulfilment states win over payment: an order that was delivered
+    // or cancelled reads that way even if its payment record was never
+    // reconciled to "paid" (cash on handover, or a data gap).
+    if (orderStatus === "cancelled") return "cancelled";
+    if (orderStatus === "delivered") return "delivered";
+    if (orderStatus === "out_for_delivery") return "active";
 
-    // If paid but not yet in transit
+    // Not yet in transit: payment decides between pending and confirmed.
+    if (paymentStatus === "unpaid" || paymentStatus === "awaiting")
+      return "pending";
     if (paymentStatus === "paid" && orderStatus === "confirmed")
       return "confirmed";
-
-    // If out for delivery or delivered
-    if (orderStatus === "out_for_delivery") return "active";
-    if (orderStatus === "delivered") return "delivered";
-    if (orderStatus === "cancelled") return "cancelled";
 
     return "pending";
   };

@@ -37,7 +37,15 @@ interface DeliveryZone {
   areas: string[];
 }
 
-/* Mirrors the quote endpoint's response - see delivery-fee.ts on the backend. */
+/*
+ * Mirrors the quote endpoint's response - see delivery-fee.ts on the backend.
+ *
+ * The server is the single, deliberate enforcer of the minimum order: it
+ * rejects a below-minimum basket at order time. The client does not read or
+ * surface `belowMinimumOrder` here on purpose, so there is one place that
+ * decision lives rather than a client copy that can drift from the floor in
+ * `@debridgers/pricing`.
+ */
 interface OrderQuote {
   itemsTotalKobo: number;
   deliveryFeeKobo: number;
@@ -84,11 +92,13 @@ export default function BuyerCheckout() {
   const [step, setStep] = useState<Step>("delivery");
   /* Confirming the Paystack return, distinct from submitting a new order. */
   const [confirming, setConfirming] = useState<boolean>(false);
-  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState<string>("");
+  /* Same-day delivery is only offered before the noon dispatch cutoff. */
+  const pastTodayCutoff: boolean = new Date().getHours() >= 12;
   const [deliveryTime, setDeliveryTime] = useState<"today" | "tomorrow">(
-    "today",
+    pastTodayCutoff ? "tomorrow" : "today",
   );
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [zones, setZones] = useState<DeliveryZone[]>([]);
@@ -326,6 +336,7 @@ export default function BuyerCheckout() {
             delivery_address: deliveryAddress.trim(),
             zone_id: zoneId ? Number(zoneId) : undefined,
             delivery_time: deliveryTime,
+            notes: note.trim() || undefined,
             cart: cartItems.map((i) => ({
               product_id: Number(i.id),
               name: i.name,
@@ -397,6 +408,7 @@ export default function BuyerCheckout() {
             delivery_address: deliveryAddress.trim(),
             zone_id: zoneId ? Number(zoneId) : undefined,
             delivery_time: deliveryTime,
+            notes: note.trim() || undefined,
             cart: cartItems.map((i) => ({
               product_id: Number(i.id),
               name: i.name,
@@ -614,37 +626,50 @@ export default function BuyerCheckout() {
             </h3>
             <div className="flex gap-3">
               {[
-                { key: "today" as const, label: "Today", sub: "Before 12pm" },
+                {
+                  key: "today" as const,
+                  label: "Today",
+                  sub: pastTodayCutoff ? "Cutoff passed" : "Before 12pm",
+                },
                 {
                   key: "tomorrow" as const,
                   label: "Tomorrow",
                   sub: "Between 9am – 5pm",
                 },
-              ].map((opt) => (
-                <label
-                  key={opt.key}
-                  className={`flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-3 transition-colors ${
-                    deliveryTime === opt.key
-                      ? "border-primary bg-dash-quick-action-hover"
-                      : "border-line bg-transparent"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="deliveryTime"
-                    value={opt.key}
-                    checked={deliveryTime === opt.key}
-                    onChange={() => setDeliveryTime(opt.key)}
-                    className="accent-primary"
-                  />
-                  <div>
-                    <p className="text-heading text-sm font-medium">
-                      {opt.label}
-                    </p>
-                    <p className="text-body text-xs">{opt.sub}</p>
-                  </div>
-                </label>
-              ))}
+              ].map((opt) => {
+                const disabled: boolean =
+                  opt.key === "today" && pastTodayCutoff;
+                return (
+                  <label
+                    key={opt.key}
+                    className={`flex items-center gap-2 rounded-xl border px-4 py-3 transition-colors ${
+                      disabled
+                        ? "cursor-not-allowed opacity-50"
+                        : "cursor-pointer"
+                    } ${
+                      deliveryTime === opt.key
+                        ? "border-primary bg-dash-quick-action-hover"
+                        : "border-line bg-transparent"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="deliveryTime"
+                      value={opt.key}
+                      checked={deliveryTime === opt.key}
+                      disabled={disabled}
+                      onChange={() => setDeliveryTime(opt.key)}
+                      className="accent-primary"
+                    />
+                    <div>
+                      <p className="text-heading text-sm font-medium">
+                        {opt.label}
+                      </p>
+                      <p className="text-body text-xs">{opt.sub}</p>
+                    </div>
+                  </label>
+                );
+              })}
             </div>
 
             <TextareaField

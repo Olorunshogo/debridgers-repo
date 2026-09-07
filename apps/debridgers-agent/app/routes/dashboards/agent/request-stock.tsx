@@ -6,6 +6,7 @@ import {
   formatFromKobo,
   fadeDownVariants,
   transitionBase,
+  useDialog,
 } from "@debridgers/ui-web";
 import {
   StockTaxonomyPicker,
@@ -87,6 +88,7 @@ function fmt(kobo: number) {
 }
 
 export default function AgentRequestStockPage() {
+  const { triggerDialog } = useDialog();
   const [products, setProducts] = useState<Product[]>([]);
   const [tree, setTree] = useState<TaxonomyNode[]>([]);
   const [loadingProducts, setLoadingProducts] = useState<boolean>(true);
@@ -309,32 +311,60 @@ export default function AgentRequestStockPage() {
             <div className="flex flex-col gap-2">
               {pastRequests.map((req, i) => {
                 const s = statusStyles[req.status] ?? statusStyles.pending;
+                const outstanding: number =
+                  req.amount_to_remit - req.amount_remitted;
+                const canRemit: boolean =
+                  req.status === "fulfilled" && outstanding > 0;
                 return (
                   <motion.div
                     key={req.id}
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.06 }}
-                    className="border-line bg-light-bg flex items-center justify-between rounded-xl border px-4 py-3"
+                    className="border-line bg-light-bg flex flex-col gap-2 rounded-xl border px-4 py-3"
                   >
-                    <div className="flex flex-col gap-0.5">
-                      <p className="text-heading text-sm font-semibold">
-                        {req.product_name} × {req.quantity}
-                      </p>
-                      <p className="text-body text-xs">
-                        {new Date(req.created_at).toLocaleDateString("en-NG", {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                        {" · "}
-                        {fmt(req.amount_to_remit)}
-                      </p>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-col gap-0.5">
+                        <p className="text-heading text-sm font-semibold">
+                          {req.product_name} × {req.quantity}
+                        </p>
+                        <p className="text-body text-xs">
+                          {new Date(req.created_at).toLocaleDateString(
+                            "en-NG",
+                            {
+                              month: "short",
+                              day: "numeric",
+                            },
+                          )}
+                          {" · "}
+                          {fmt(req.amount_remitted)} /{" "}
+                          {fmt(req.amount_to_remit)} remitted
+                        </p>
+                      </div>
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${s.bgClass} ${s.textClass}`}
+                      >
+                        {s.label}
+                      </span>
                     </div>
-                    <span
-                      className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${s.bgClass} ${s.textClass}`}
-                    >
-                      {s.label}
-                    </span>
+
+                    {canRemit && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          triggerDialog("REMIT_STOCK", {
+                            stockRequestId: Number(req.id),
+                            productName: req.product_name,
+                            amountToRemitKobo: req.amount_to_remit,
+                            amountRemittedKobo: req.amount_remitted,
+                            onRemitted: () => void loadRequests(),
+                          })
+                        }
+                        className="border-primary text-primary w-fit cursor-pointer rounded-full border px-4 py-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
+                      >
+                        Remit {fmt(outstanding)}
+                      </button>
+                    )}
                   </motion.div>
                 );
               })}

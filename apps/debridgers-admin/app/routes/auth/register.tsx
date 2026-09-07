@@ -25,6 +25,7 @@ export default function AdminRegister() {
   const [loading, setLoading] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
+  const [apiKeyCopied, setApiKeyCopied] = useState<boolean>(false);
 
   /*
    * No schema library here (see the file's own note: plain useState, not
@@ -108,13 +109,15 @@ export default function AdminRegister() {
                 </button>
               </div>
               <button
+                type="button"
                 onClick={() => {
-                  navigator.clipboard.writeText(apiKey);
-                  alert("API key copied!");
+                  void navigator.clipboard.writeText(apiKey);
+                  setApiKeyCopied(true);
+                  window.setTimeout(() => setApiKeyCopied(false), 2000);
                 }}
                 className="mt-2 w-full rounded border border-blue-200 bg-blue-50 py-2 text-sm text-blue-700 hover:bg-blue-100"
               >
-                Copy to Clipboard
+                {apiKeyCopied ? "Copied" : "Copy to Clipboard"}
               </button>
               <p className="mt-3 text-xs text-yellow-800">
                 This is the only time your API key will be shown. Store it
