@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Offer - Debridgers</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      color: #414652;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+    }
+    .header {
+      background: #1e5925;
+      padding: 40px 20px;
+      text-align: center;
+      border-bottom: 4px solid #ef9e0b;
+    }
+    .header h1 {
+      color: white;
+      font-size: 28px;
+      margin-bottom: 5px;
+    }
+    .header p {
+      color: #fef3c7;
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+    .badge {
+      background: #dcfce7;
+      color: #15803d;
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      margin: 20px 0;
+      letter-spacing: 0.5px;
+    }
+    .content {
+      padding: 40px;
+    }
+    .content h2 {
+      color: #111827;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    .content p {
+      margin-bottom: 16px;
+      line-height: 1.8;
+    }
+    .offer-box {
+      background: #1e5925;
+      color: white;
+      padding: 32px;
+      border-radius: 4px;
+      margin: 24px 0;
+      text-align: center;
+    }
+    .offer-box .offer-title {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #fef3c7;
+      margin-bottom: 12px;
+    }
+    .offer-box .position {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .offer-details {
+      background: #f4f7f5;
+      padding: 24px;
+      border-left: 4px solid #ef9e0b;
+      margin: 24px 0;
+      border-radius: 4px;
+    }
+    .detail-item {
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #d9d9d9;
+    }
+    .detail-item:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    .detail-label {
+      font-weight: 600;
+      color: #1e5925;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .detail-value {
+      color: #111827;
+      font-size: 16px;
+      font-weight: 500;
+    }
+    .benefits {
+      background: #fef3c7;
+      border-left: 4px solid #ef9e0b;
+      padding: 20px;
+      margin: 24px 0;
+      border-radius: 4px;
+    }
+    .benefits h3 {
+      color: #854d0e;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    .benefits ul {
+      margin-left: 20px;
+      color: #854d0e;
+    }
+    .benefits li {
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+    .action-section {
+      text-align: center;
+      margin: 32px 0;
+      padding: 24px;
+      background: #f4f7f5;
+      border-radius: 4px;
+    }
+    .action-section p {
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    .action-section strong {
+      color: #1e5925;
+    }
+    .cta-button {
+      display: inline-block;
+      background: #1e5925;
+      color: white;
+      padding: 14px 40px;
+      text-decoration: none;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-top: 16px;
+    }
+    .cta-button:hover {
+      background: #4b7a51;
+    }
+    .expiration {
+      background: #fee2e2;
+      border-left: 4px solid #dc2626;
+      padding: 16px;
+      margin: 24px 0;
+      border-radius: 4px;
+      font-size: 14px;
+      color: #7f1d1d;
+    }
+    .expiration strong {
+      color: #991b1b;
+    }
+    .footer {
+      background: #f5f5f5;
+      padding: 30px 40px;
+      font-size: 12px;
+      color: #a5bda8;
+      border-top: 1px solid #d9d9d9;
+    }
+    .footer a {
+      color: #1e5925;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>DEBRIDGERS</h1>
+      <p>BULK FOOD COMMODITIES • KADUNA</p>
+      <p style="margin-top: 8px; font-size: 11px;">RECRUITMENT</p>
+    </div>
+
+    <div class="content">
+      <span class="badge">🎉 OFFER EXTENDED</span>
+      <h2>Congratulations, {{candidateName}}!</h2>
+
+      <p>We're excited to offer you a position at Debridgers. Your experience and enthusiasm impressed our team, and we believe you'll be a great addition to our growing company.</p>
+
+      <div class="offer-box">
+        <div class="offer-title">We are pleased to offer you the position of</div>
+        <div class="position">{{jobTitle}}</div>
+      </div>
+
+      <div class="offer-details">
+        <div class="detail-item">
+          <div class="detail-label">📍 Location</div>
+          <div class="detail-value">{{location}}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">💼 Department</div>
+          <div class="detail-value">{{department}}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">📅 Start Date</div>
+          <div class="detail-value">{{startDate}}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">💰 Annual Salary</div>
+          <div class="detail-value">{{salary}}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">📋 Employment Type</div>
+          <div class="detail-value">{{employmentType}}</div>
+        </div>
+      </div>
+
+      <div class="benefits">
+        <h3>Benefits & Allowances</h3>
+        <ul>
+          <li>Professional development opportunities</li>
+          <li>Annual leave ({{leaveAllocation}} days)</li>
+          <li>Health insurance</li>
+          <li>Meal & transportation allowances</li>
+          <li>Performance bonuses</li>
+        </ul>
+      </div>
+
+      <p>This offer is contingent upon:</p>
+      <ul style="margin-left: 20px; margin-bottom: 16px;">
+        <li style="margin-bottom: 8px;">Verification of qualifications and references</li>
+        <li style="margin-bottom: 8px;">Successful background check</li>
+        <li>Medical fitness clearance</li>
+      </ul>
+
+      <div class="action-section">
+        <p>To formally accept this offer, please click the button below.</p>
+        <p style="font-size: 13px; color: #666;">You'll be taken to our offer acceptance form where you can review and digitally sign your contract.</p>
+        <a href="{{offerSignatureUrl}}" class="cta-button">Accept & Sign Offer</a>
+      </div>
+
+      <div class="expiration">
+        <strong>⏰ Important:</strong> This offer expires on <strong>{{offerExpiryDate}}</strong>. Please respond before this date.
+      </div>
+
+      <p>If you have any questions about this offer or need to discuss any terms, please don't hesitate to contact our HR team at <a href="mailto:hr@debridgers.com" style="color: #1e5925;">hr@debridgers.com</a></p>
+
+      <p>We look forward to welcoming you to the Debridgers team!</p>
+
+      <p style="margin-top: 24px;">
+        <strong>Warm regards,</strong><br>
+        {{hiringManagerName}}<br>
+        {{hiringManagerTitle}}<br>
+        Debridgers Commodities Ltd
+      </p>
+    </div>
+
+    <div class="footer">
+      <p><strong>Debridgers Commodities Ltd</strong><br>
+      14 Kachia Road, Kakuri, Kaduna, Nigeria</p>
+      <p style="margin-top: 12px;">If you did not apply for this position or have questions, contact <a href="mailto:hr@debridgers.com">hr@debridgers.com</a></p>
+      <p style="margin-top: 12px;">© 2026 Debridgers. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>

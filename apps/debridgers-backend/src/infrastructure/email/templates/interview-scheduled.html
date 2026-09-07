@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interview Scheduled - Debridgers</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      color: #414652;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+    }
+    .header {
+      background: #1e5925;
+      padding: 40px 20px;
+      text-align: center;
+      border-bottom: 4px solid #ef9e0b;
+    }
+    .header h1 {
+      color: white;
+      font-size: 28px;
+      margin-bottom: 5px;
+    }
+    .header p {
+      color: #fef3c7;
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+    .badge {
+      background: #dcfce7;
+      color: #15803d;
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      margin: 20px 0;
+      letter-spacing: 0.5px;
+    }
+    .content {
+      padding: 40px;
+    }
+    .content h2 {
+      color: #111827;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    .content p {
+      margin-bottom: 16px;
+      line-height: 1.8;
+    }
+    .interview-details {
+      background: #f4f7f5;
+      padding: 24px;
+      border: 2px solid #1e5925;
+      border-radius: 4px;
+      margin: 24px 0;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #d9d9d9;
+    }
+    .detail-row:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    .detail-label {
+      font-weight: 600;
+      color: #1e5925;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      flex: 1;
+    }
+    .detail-value {
+      color: #111827;
+      font-size: 14px;
+      font-weight: 500;
+      flex: 1;
+      text-align: right;
+    }
+    .interviewer-info {
+      background: #fef3c7;
+      border-left: 4px solid #ef9e0b;
+      padding: 16px;
+      margin: 24px 0;
+      border-radius: 4px;
+    }
+    .interviewer-info p {
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .interviewer-info strong {
+      color: #854d0e;
+    }
+    .action-buttons {
+      margin: 24px 0;
+      text-align: center;
+    }
+    .btn {
+      display: inline-block;
+      padding: 12px 28px;
+      margin: 0 8px;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .btn-confirm {
+      background: #1e5925;
+      color: white;
+    }
+    .btn-confirm:hover {
+      background: #4b7a51;
+    }
+    .btn-reschedule {
+      background: white;
+      color: #1e5925;
+      border: 2px solid #1e5925;
+    }
+    .btn-reschedule:hover {
+      background: #f4f7f5;
+    }
+    .preparation {
+      margin: 24px 0;
+    }
+    .preparation h3 {
+      color: #1e5925;
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
+    .preparation ul {
+      margin-left: 20px;
+    }
+    .preparation li {
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .footer {
+      background: #f5f5f5;
+      padding: 30px 40px;
+      font-size: 12px;
+      color: #a5bda8;
+      border-top: 1px solid #d9d9d9;
+    }
+    .footer a {
+      color: #1e5925;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>DEBRIDGERS</h1>
+      <p>BULK FOOD COMMODITIES • KADUNA</p>
+      <p style="margin-top: 8px; font-size: 11px;">RECRUITMENT</p>
+    </div>
+
+    <div class="content">
+      <span class="badge">✓ INTERVIEW SCHEDULED</span>
+      <h2>Your Interview is Confirmed!</h2>
+
+      <p>Hi {{candidateName}},</p>
+
+      <p>Congratulations! We're impressed with your application for the <strong>{{jobTitle}}</strong> position and would like to invite you to an interview.</p>
+
+      <div class="interview-details">
+        <div class="detail-row">
+          <span class="detail-label">📅 Date</span>
+          <span class="detail-value">{{interviewDate}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">🕐 Time</span>
+          <span class="detail-value">{{interviewTime}} WAT</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">📍 Location</span>
+          <span class="detail-value">{{interviewLocation}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">🎯 Duration</span>
+          <span class="detail-value">45 minutes</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">👤 Interviewer</span>
+          <span class="detail-value">{{interviewerName}}</span>
+        </div>
+      </div>
+
+      <div class="interviewer-info">
+        <p><strong>Meet Your Interviewer:</strong></p>
+        <p>{{interviewerTitle}} at Debridgers<br>
+        <a href="mailto:{{interviewerEmail}}" style="color: #854d0e;">{{interviewerEmail}}</a></p>
+      </div>
+
+      <div class="action-buttons">
+        <a href="{{confirmUrl}}" class="btn btn-confirm">✓ Confirm Attendance</a>
+        <a href="{{rescheduleUrl}}" class="btn btn-reschedule">Reschedule</a>
+      </div>
+
+      <div class="preparation">
+        <h3>How to Prepare:</h3>
+        <ul>
+          <li><strong>Review the role:</strong> Re-read the job description and think about how your experience aligns</li>
+          <li><strong>Research Debridgers:</strong> Familiarize yourself with our company, mission, and recent projects</li>
+          <li><strong>Prepare examples:</strong> Think of 2-3 relevant work achievements or challenges you've overcome</li>
+          <li><strong>Have questions ready:</strong> Prepare questions about the role, team, and company culture</li>
+          <li><strong>Arrive early:</strong> Plan to arrive 10 minutes before the scheduled time</li>
+        </ul>
+      </div>
+
+      <p>If you need to reschedule or have any questions before the interview, please reply to this email or contact us at <a href="mailto:careers@debridgers.com" style="color: #1e5925;">careers@debridgers.com</a></p>
+
+      <p>We look forward to meeting you!</p>
+    </div>
+
+    <div class="footer">
+      <p><strong>Debridgers Commodities Ltd</strong><br>
+      14 Kachia Road, Kakuri, Kaduna, Nigeria<br>
+      <a href="tel:+234803...">+234...</a> | <a href="mailto:careers@debridgers.com">careers@debridgers.com</a></p>
+      <p style="margin-top: 12px;">© 2026 Debridgers. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>

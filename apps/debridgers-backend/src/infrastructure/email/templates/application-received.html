@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Application Received - Debridgers</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      color: #414652;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+    }
+    .header {
+      background: #1e5925;
+      padding: 40px 20px;
+      text-align: center;
+      border-bottom: 4px solid #ef9e0b;
+    }
+    .header h1 {
+      color: white;
+      font-size: 28px;
+      margin-bottom: 5px;
+    }
+    .header p {
+      color: #fef3c7;
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+    .badge {
+      background: #fef3c7;
+      color: #854d0e;
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      margin: 20px 0;
+      letter-spacing: 0.5px;
+    }
+    .content {
+      padding: 40px;
+    }
+    .content h2 {
+      color: #111827;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    .content p {
+      margin-bottom: 16px;
+      line-height: 1.8;
+    }
+    .application-summary {
+      background: #f4f7f5;
+      padding: 20px;
+      border-left: 4px solid #ef9e0b;
+      margin: 24px 0;
+      border-radius: 4px;
+    }
+    .summary-item {
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    .summary-item strong {
+      color: #1e5925;
+      display: block;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .timeline {
+      margin: 24px 0;
+    }
+    .timeline-item {
+      display: flex;
+      margin-bottom: 16px;
+      padding-left: 30px;
+      position: relative;
+    }
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 6px;
+      width: 16px;
+      height: 16px;
+      background: #4b7a51;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 0 0 1px #1e5925;
+    }
+    .timeline-item p {
+      margin: 0;
+      font-size: 14px;
+    }
+    .timeline-item strong {
+      color: #1e5925;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .cta-button {
+      display: inline-block;
+      background: #1e5925;
+      color: white;
+      padding: 14px 32px;
+      text-decoration: none;
+      border-radius: 4px;
+      font-weight: 600;
+      margin: 24px 0;
+    }
+    .cta-button:hover {
+      background: #4b7a51;
+    }
+    .info-box {
+      background: #fef9c3;
+      border-left: 4px solid #854d0e;
+      padding: 16px;
+      margin: 20px 0;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .info-box strong {
+      color: #854d0e;
+    }
+    .footer {
+      background: #f5f5f5;
+      padding: 30px 40px;
+      font-size: 12px;
+      color: #a5bda8;
+      border-top: 1px solid #d9d9d9;
+    }
+    .footer a {
+      color: #1e5925;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>DEBRIDGERS</h1>
+      <p>BULK FOOD COMMODITIES • KADUNA</p>
+      <p style="margin-top: 8px; font-size: 11px;">CAREERS</p>
+    </div>
+
+    <div class="content">
+      <span class="badge">APPLICATION RECEIVED</span>
+      <h2>Thank you, {{candidateName}}!</h2>
+
+      <p>We've received your application for the <strong>{{jobTitle}}</strong> position. Here's what happens next:</p>
+
+      <div class="application-summary">
+        <div class="summary-item">
+          <strong>Position Applied For</strong>
+          {{jobTitle}}
+        </div>
+        <div class="summary-item">
+          <strong>Application Submitted</strong>
+          {{submissionDate}} at {{submissionTime}}
+        </div>
+        <div class="summary-item">
+          <strong>Reference Number</strong>
+          {{applicationId}}
+        </div>
+      </div>
+
+      <p><strong>What Happens Next:</strong></p>
+      <div class="timeline">
+        <div class="timeline-item">
+          <p><strong>Screening Phase</strong><br>Our HR team will review your application, CV, and cover letter. This typically takes 5-7 business days.</p>
+        </div>
+        <div class="timeline-item">
+          <p><strong>Interview</strong><br>If you pass screening, we'll contact you to schedule an interview with our hiring team.</p>
+        </div>
+        <div class="timeline-item">
+          <p><strong>Final Decision</strong><br>After the interview, we'll inform you of our hiring decision and next steps.</p>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <strong>📌 Keep this for reference:</strong> Save your Application Reference Number (<strong>{{applicationId}}</strong>) if you need to check on your application status.
+      </div>
+
+      <p>We're excited to learn more about you! Thank you for your interest in joining Debridgers.</p>
+
+      <a href="{{applicationPortalUrl}}" class="cta-button">Track Your Application</a>
+
+      <p style="margin-top: 24px; font-size: 14px;">Questions? Reach out to our careers team at <a href="mailto:careers@debridgers.com" style="color: #1e5925;">careers@debridgers.com</a></p>
+    </div>
+
+    <div class="footer">
+      <p><strong>Debridgers Commodities Ltd</strong><br>
+      14 Kachia Road, Kakuri, Kaduna, Nigeria</p>
+      <p style="margin-top: 12px;">Automated email from Debridgers HR system. Questions? <a href="mailto:careers@debridgers.com">Contact careers team</a></p>
+      <p style="margin-top: 12px;">© 2026 Debridgers. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>

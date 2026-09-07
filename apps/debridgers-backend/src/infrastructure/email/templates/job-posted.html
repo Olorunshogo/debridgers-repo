@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Job Posted - Debridgers HR</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      color: #414652;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+    }
+    .header {
+      background: #1e5925;
+      padding: 40px 20px;
+      text-align: center;
+      border-bottom: 4px solid #ef9e0b;
+    }
+    .header h1 {
+      color: white;
+      font-size: 28px;
+      margin-bottom: 5px;
+    }
+    .header p {
+      color: #fef3c7;
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+    .badge {
+      background: #fef3c7;
+      color: #854d0e;
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      margin: 20px 0;
+      letter-spacing: 0.5px;
+    }
+    .content {
+      padding: 40px;
+    }
+    .content h2 {
+      color: #111827;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    .content p {
+      margin-bottom: 16px;
+      line-height: 1.8;
+    }
+    .job-details {
+      background: #f4f7f5;
+      padding: 20px;
+      border-left: 4px solid #ef9e0b;
+      margin: 24px 0;
+      border-radius: 4px;
+    }
+    .job-details h3 {
+      color: #1e5925;
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
+    .job-detail-item {
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    .job-detail-item strong {
+      color: #1e5925;
+    }
+    .cta-button {
+      display: inline-block;
+      background: #1e5925;
+      color: white;
+      padding: 14px 32px;
+      text-decoration: none;
+      border-radius: 4px;
+      font-weight: 600;
+      margin: 24px 0;
+    }
+    .cta-button:hover {
+      background: #4b7a51;
+    }
+    .footer {
+      background: #f5f5f5;
+      padding: 30px 40px;
+      font-size: 12px;
+      color: #a5bda8;
+      border-top: 1px solid #d9d9d9;
+    }
+    .footer a {
+      color: #1e5925;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>DEBRIDGERS</h1>
+      <p>BULK FOOD COMMODITIES • KADUNA</p>
+      <p style="margin-top: 8px; font-size: 11px;">RECRUITMENT</p>
+    </div>
+
+    <div class="content">
+      <span class="badge">NEW JOB POSTED</span>
+      <h2>New Position Open: {{jobTitle}}</h2>
+
+      <p>Hi {{hiringManagerName}},</p>
+
+      <p>A new job posting has been created in the Debridgers HR system. You've been assigned as the Hiring Manager for this role.</p>
+
+      <div class="job-details">
+        <h3>Position Details</h3>
+        <div class="job-detail-item"><strong>Title:</strong> {{jobTitle}}</div>
+        <div class="job-detail-item"><strong>Department:</strong> {{department}}</div>
+        <div class="job-detail-item"><strong>Location:</strong> {{location}}</div>
+        <div class="job-detail-item"><strong>Type:</strong> {{employmentType}}</div>
+        <div class="job-detail-item"><strong>Salary Range:</strong> {{salaryRange}}</div>
+        <div class="job-detail-item"><strong>Posted:</strong> {{postedDate}}</div>
+      </div>
+
+      <p><strong>Next Steps:</strong></p>
+      <ul style="margin-left: 20px; margin-bottom: 16px;">
+        <li style="margin-bottom: 8px;">Review and approve the job posting</li>
+        <li style="margin-bottom: 8px;">Share the position with your team</li>
+        <li style="margin-bottom: 8px;">Prepare for incoming applications</li>
+        <li>Set up interview schedules</li>
+      </ul>
+
+      <a href="{{applicationDashboardUrl}}" class="cta-button">View in HR System</a>
+
+      <p style="margin-top: 24px;">Questions? Contact the HR team at <a href="mailto:hr@debridgers.com" style="color: #1e5925;">hr@debridgers.com</a></p>
+    </div>
+
+    <div class="footer">
+      <p><strong>Debridgers Commodities Ltd</strong><br>
+      14 Kachia Road, Kakuri, Kaduna, Nigeria</p>
+      <p style="margin-top: 12px;">Automated HR notification. Questions? <a href="mailto:hr@debridgers.com">Contact HR</a></p>
+      <p style="margin-top: 12px;">© 2026 Debridgers. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
