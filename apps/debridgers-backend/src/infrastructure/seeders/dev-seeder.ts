@@ -876,7 +876,22 @@ async function resetDev(): Promise<void> {
 
 const mode = process.argv[2];
 
-const run = mode === "reset" ? resetDev : seedDev;
+/*
+ * Bare: populate only, and a no-op if dev data already exists.
+ * `reset`: wipe the dev dataset and repopulate it, so one command returns the
+ * database to a known-good state. The base seeder's rows (admin, zones,
+ * products) are left untouched by the wipe, so `db:seed` only has to have run
+ * once.
+ */
+async function run(): Promise<void> {
+  if (mode === "reset") {
+    await resetDev();
+    await seedDev();
+    return;
+  }
+
+  await seedDev();
+}
 
 run().catch((err: unknown) => {
   console.error("Dev seed failed:", err);
