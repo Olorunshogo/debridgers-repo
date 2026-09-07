@@ -9,9 +9,14 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # Every workspace manifest must be present before install. With only a subset,
 # pnpm populates the store but cannot build the per-member node_modules symlink
 # trees, so `pnpm --filter <member>` finds no binaries.
+COPY apps/debridgers-admin/package.json apps/debridgers-admin/
+COPY apps/debridgers-agent/package.json apps/debridgers-agent/
 COPY apps/debridgers-backend/package.json apps/debridgers-backend/
 COPY apps/debridgers-backend-e2e/package.json apps/debridgers-backend-e2e/
-COPY apps/debridgers-frontend/package.json apps/debridgers-frontend/
+COPY apps/debridgers-buyer/package.json apps/debridgers-buyer/
+COPY apps/debridgers-marketing/package.json apps/debridgers-marketing/
+COPY libs/shared-theme/package.json libs/shared-theme/
+COPY libs/shared-utils/package.json libs/shared-utils/
 COPY packages/api-client/package.json packages/api-client/
 COPY packages/pricing/package.json packages/pricing/
 COPY packages/ui-app/package.json packages/ui-app/
