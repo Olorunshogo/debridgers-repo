@@ -43,7 +43,14 @@ interface LoginPageProps {
 }
 
 export default function LoginPage({ variant = "public" }: LoginPageProps) {
-  const { form, submit, apiError, isSubmitting } = useLogin({ variant });
+  const {
+    form,
+    submit,
+    apiError,
+    isSubmitting,
+    unverifiedEmail,
+    goToVerifyEmail,
+  } = useLogin({ variant });
   const [searchParams, setSearchParams] = useSearchParams();
   const { items, replaceItems } = useCart();
   /* One-shot: the staged token is single-use, so a re-render must not re-fetch. */
@@ -95,6 +102,8 @@ export default function LoginPage({ variant = "public" }: LoginPageProps) {
       heading="Log in to your account"
       images={AUTH_IMAGES}
       apiError={apiError}
+      unverifiedEmail={unverifiedEmail}
+      onVerifyEmail={unverifiedEmail ? goToVerifyEmail : undefined}
       subheading={
         <>
           No account?{" "}

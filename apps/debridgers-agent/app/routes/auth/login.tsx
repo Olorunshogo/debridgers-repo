@@ -40,13 +40,22 @@ interface LoginPageProps {
 }
 
 export default function LoginPage({ variant = "public" }: LoginPageProps) {
-  const { form, submit, apiError, isSubmitting } = useLogin({ variant });
+  const {
+    form,
+    submit,
+    apiError,
+    isSubmitting,
+    unverifiedEmail,
+    goToVerifyEmail,
+  } = useLogin({ variant });
 
   return (
     <AuthFormShell
       heading="Log in to your account"
       images={AUTH_IMAGES}
       apiError={apiError}
+      unverifiedEmail={unverifiedEmail}
+      onVerifyEmail={unverifiedEmail ? goToVerifyEmail : undefined}
       subheading={
         <>
           No account?{" "}

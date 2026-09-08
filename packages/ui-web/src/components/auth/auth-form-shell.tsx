@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppLogo } from "../app-logo";
+import { VerifyEmailBanner } from "./verify-email-banner";
 import {
   fadeDownVariants,
   fadeVariants,
@@ -39,6 +40,13 @@ export interface AuthFormShellProps {
    */
   images: readonly AuthImageSlide[];
   apiError?: string | null;
+  /*
+   * Set together to render the "verify now" recovery banner instead of a
+   * dead-end error, when login or signup failed because the account exists
+   * but has not verified its email yet.
+   */
+  unverifiedEmail?: string | null;
+  onVerifyEmail?: () => void;
   children: ReactNode;
 }
 
@@ -49,6 +57,8 @@ export function AuthFormShell({
   subheading,
   images,
   apiError,
+  unverifiedEmail,
+  onVerifyEmail,
   children,
 }: AuthFormShellProps) {
   const [activeSlide, setActiveSlide] = useState<number>(0);
@@ -180,6 +190,13 @@ export function AuthFormShell({
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {onVerifyEmail && (
+              <VerifyEmailBanner
+                email={unverifiedEmail}
+                onVerify={onVerifyEmail}
+              />
+            )}
 
             {children}
           </div>

@@ -27,6 +27,12 @@ export type { RoleSignupConfig, SignupFormValues };
 // === Shared base fields
 // In render order.
 
+/*
+ * `phone` sits before `email`, not between `email` and `password`.
+ * A password manager treats the text field immediately preceding a password field as that credential's identifier.
+ * This holds regardless of the field's own type or autocomplete attribute.
+ * With phone directly before password, autofilling a saved login also stuffed a phone number into it.
+ */
 const BASE_FIELDS: readonly SignupFieldDescriptor[] = [
   {
     name: "fullName",
@@ -36,18 +42,18 @@ const BASE_FIELDS: readonly SignupFieldDescriptor[] = [
     autoComplete: "name",
   },
   {
-    name: "email",
-    label: "Email address",
-    type: "email",
-    placeholder: "you@example.com",
-    autoComplete: "email",
-  },
-  {
     name: "phone",
     label: "Phone number",
     type: "tel",
     placeholder: "08012345678",
     autoComplete: "tel",
+  },
+  {
+    name: "email",
+    label: "Email address",
+    type: "email",
+    placeholder: "you@example.com",
+    autoComplete: "email",
   },
   {
     name: "password",

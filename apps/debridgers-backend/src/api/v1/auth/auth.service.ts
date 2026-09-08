@@ -277,9 +277,21 @@ export class AuthService {
     }
 
     if (!user.is_email_verified) {
-      throw new UnauthorizedException(
-        "Please verify your email before logging in.",
+      /*
+       * Same recovery path as a signup retry on an unverified email - a fresh OTP is issued here too.
+       * Whichever door a returning user tries, login or signup, a code is already waiting once they reach verify-email.
+       */
+      await this.refreshVerificationOtp(
+        user.id,
+        user.first_name,
+        user.last_name,
+        user.email,
+        user.role,
       );
+      throw new UnauthorizedException({
+        message: "Please verify your email before logging in.",
+        code: "UNVERIFIED_EMAIL",
+      });
     }
 
     const context = this.extractRequestContext(req);

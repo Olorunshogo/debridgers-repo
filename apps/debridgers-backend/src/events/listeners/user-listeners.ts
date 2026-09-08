@@ -70,25 +70,34 @@ export class UserListeners {
 
   @OnEvent(USER_EVENTS.USER_REGISTERED)
   async onUserRegistered(payload: UserRegisteredPayload): Promise<void> {
-    if (payload.role === "agent") {
-      await this.emailService.sendAgentWelcome(payload.email, payload.name);
-    } else {
-      await this.emailService.sendWelcome(
-        payload.email,
-        payload.name,
-        payload.role,
-      );
-    }
-
-    await this.emailService.sendEmailVerification(
-      payload.email,
-      payload.name,
-      payload.otp,
-      payload.role,
-    );
-
+    /*
+     * Logged before either send attempt, not after - a broken mail provider
+     * must not also hide the OTP from the developer testing locally.
+     */
     if (process.env.NODE_ENV !== "production") {
       console.log(`📧 [OTP] Email: ${payload.email} | OTP: ${payload.otp}`);
+    }
+
+    try {
+      if (payload.role === "agent") {
+        await this.emailService.sendAgentWelcome(payload.email, payload.name);
+      } else {
+        await this.emailService.sendWelcome(
+          payload.email,
+          payload.name,
+          payload.role,
+        );
+      }
+
+      await this.emailService.sendEmailVerification(
+        payload.email,
+        payload.name,
+        payload.otp,
+        payload.role,
+      );
+    } catch (error) {
+      this.logger.warn(`Registration email failed for ${payload.email}`);
+      this.logger.debug(error);
     }
   }
 
@@ -182,17 +191,22 @@ export class UserListeners {
   async onPasswordResetRequested(
     payload: PasswordResetRequestedPayload,
   ): Promise<void> {
+    /*
+     * Logged before the send attempt, not after - a broken mail provider must
+     * not also hide the reset token from the developer testing locally.
+     */
+    if (process.env.NODE_ENV !== "production") {
+      console.log(
+        `📧 [PASSWORD_RESET] Email: ${payload.email} | Token: ${payload.token}`,
+      );
+    }
+
     try {
       await this.emailService.sendPasswordReset(
         payload.email,
         payload.name,
         payload.token,
       );
-      if (process.env.NODE_ENV !== "production") {
-        console.log(
-          `📧 [PASSWORD_RESET] Email: ${payload.email} | Token: ${payload.token}`,
-        );
-      }
     } catch (error) {
       this.logger.warn(`Password reset email failed for ${payload.email}`);
       this.logger.debug(error);
@@ -220,6 +234,16 @@ export class UserListeners {
   async onEmailVerificationRequested(
     payload: EmailVerificationRequestedPayload,
   ): Promise<void> {
+    /*
+     * Logged before the send attempt, not after - a broken mail provider must
+     * not also hide the OTP from the developer testing locally.
+     */
+    if (process.env.NODE_ENV !== "production") {
+      console.log(
+        `📧 [EMAIL_VERIFICATION] Email: ${payload.email} | OTP: ${payload.token}`,
+      );
+    }
+
     try {
       await this.emailService.sendEmailVerification(
         payload.email,
@@ -227,11 +251,6 @@ export class UserListeners {
         payload.token,
         payload.role,
       );
-      if (process.env.NODE_ENV !== "production") {
-        console.log(
-          `📧 [EMAIL_VERIFICATION] Email: ${payload.email} | OTP: ${payload.token}`,
-        );
-      }
     } catch (error) {
       this.logger.warn(`Verification email failed for ${payload.email}`);
       this.logger.debug(error);

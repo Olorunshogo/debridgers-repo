@@ -10,6 +10,16 @@ import { applyServerFieldErrors } from "../../lib/server-errors";
  * The network call and navigation come from the adapter, so this file contains no fetch, axios, cookie, Response, or router reference.
  */
 
+/*
+ * The backend reissues a fresh OTP the moment this fires.
+ * By the time a caller acts on `unverifiedEmail`, a code is already waiting.
+ * Read structurally rather than importing ApiError, to keep the transport layer out of this UI package.
+ */
+function isUnverifiedEmailError(error: unknown): boolean {
+  const body = (error as { body?: { code?: unknown } } | null)?.body;
+  return body?.code === "UNVERIFIED_EMAIL";
+}
+
 export type { LoginVariant };
 
 /*
@@ -26,6 +36,12 @@ export interface UseLoginResult {
   apiError: string | null;
   clearApiError: () => void;
   isSubmitting: boolean;
+  /*
+   * Set when login failed because the account exists but has not verified its email yet.
+   * Lets the page offer an explicit way back to verify-email instead of a dead-end error.
+   */
+  unverifiedEmail: string | null;
+  goToVerifyEmail: () => void;
 }
 
 export function useLogin(options: UseLoginOptions = {}): UseLoginResult {
@@ -33,6 +49,7 @@ export function useLogin(options: UseLoginOptions = {}): UseLoginResult {
   const adapter = useAuthAdapter();
 
   const [apiError, setApiError] = useState<string | null>(null);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -46,6 +63,7 @@ export function useLogin(options: UseLoginOptions = {}): UseLoginResult {
 
   const submit = form.handleSubmit(async (values: LoginValues) => {
     setApiError(null);
+    setUnverifiedEmail(null);
     try {
       const role = await adapter.login(values.email, values.password, variant);
       if (onSuccess) {
@@ -60,8 +78,16 @@ export function useLogin(options: UseLoginOptions = {}): UseLoginResult {
           : "Something went wrong. Please try again.",
       );
       applyServerFieldErrors(error, form);
+      if (isUnverifiedEmailError(error)) {
+        setUnverifiedEmail(values.email);
+      }
     }
   });
+
+  const goToVerifyEmail = useCallback((): void => {
+    if (!unverifiedEmail) return;
+    adapter.navigate("/verify-email", { email: unverifiedEmail });
+  }, [unverifiedEmail, adapter]);
 
   return {
     form,
@@ -69,5 +95,7 @@ export function useLogin(options: UseLoginOptions = {}): UseLoginResult {
     apiError,
     clearApiError,
     isSubmitting: form.formState.isSubmitting,
+    unverifiedEmail,
+    goToVerifyEmail,
   };
 }

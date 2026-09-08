@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm --filter @debridgers/pricing build && pnpm run build",
+  "buildCommand": "pnpm exec nx build debridgers-buyer",
   "outputDirectory": "build",
   "headers": [
     {

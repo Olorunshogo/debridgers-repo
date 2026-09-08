@@ -15,6 +15,16 @@ import type {
  */
 
 /*
+ * The backend reissues a fresh OTP the moment this fires.
+ * By the time a caller acts on `unverifiedEmail`, a code is already waiting.
+ * Read structurally rather than importing ApiError, to keep the transport layer out of this UI package.
+ */
+function isUnverifiedEmailError(error: unknown): boolean {
+  const body = (error as { body?: { code?: unknown } } | null)?.body;
+  return body?.code === "UNVERIFIED_EMAIL";
+}
+
+/*
  * `config`: the role's schema, fields, and redirect all come from its config, so this hook never branches on which role it is handling.
  */
 export interface UseSignupOptions {
@@ -31,19 +41,12 @@ export interface UseSignupResult {
   isSubmitting: boolean;
   /** True once registration succeeded and email verification is pending. */
   awaitingVerification: boolean;
-}
-
-/*
- * A 409 carrying this code means the account exists but was never verified.
- * register() has already reissued the OTP by that point, so it is the verification path rather than a failure.
- * Showing it as an error banner would strand the user on the signup screen with no way forward.
- *
- * Read structurally instead of importing ApiError, which lives in the API client.
- * Pulling that in would drag the transport layer into this UI package, which is the coupling the adapter exists to avoid.
- */
-function isUnverifiedEmailError(error: unknown): boolean {
-  const body = (error as { body?: { code?: unknown } } | null)?.body;
-  return body?.code === "UNVERIFIED_EMAIL";
+  /*
+   * Set when signup failed because this email is already registered but not yet verified.
+   * Lets the page offer an explicit way to verify-email instead of a dead-end error.
+   */
+  unverifiedEmail: string | null;
+  goToVerifyEmail: () => void;
 }
 
 export function useSignup(options: UseSignupOptions): UseSignupResult {
@@ -54,6 +57,7 @@ export function useSignup(options: UseSignupOptions): UseSignupResult {
   const [apiError, setApiError] = useState<string | null>(null);
   const [awaitingVerification, setAwaitingVerification] =
     useState<boolean>(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(config.schema),
@@ -90,20 +94,10 @@ export function useSignup(options: UseSignupOptions): UseSignupResult {
 
   const submit = form.handleSubmit(async (values: SignupFormValues) => {
     setApiError(null);
+    setUnverifiedEmail(null);
     const { first_name, last_name } = adapter.splitFullName(
       values.fullName.trim(),
     );
-
-    const proceedToVerification = (): void => {
-      setAwaitingVerification(true);
-
-      if (onRequiresVerification) {
-        onRequiresVerification(values.email, role);
-        return;
-      }
-
-      adapter.navigate("/verify-email", { email: values.email, role });
-    };
 
     try {
       /*
@@ -128,13 +122,18 @@ export function useSignup(options: UseSignupOptions): UseSignupResult {
         });
       }
 
-      proceedToVerification();
-    } catch (error) {
-      if (isUnverifiedEmailError(error)) {
-        proceedToVerification();
-        return;
+      /*
+       * Only a genuine success reaches here.
+       * `config.register`/`adapter.register` throw on any non-2xx response, including the unverified-email conflict.
+       * So this never runs unless the account was actually created just now.
+       */
+      setAwaitingVerification(true);
+      if (onRequiresVerification) {
+        onRequiresVerification(values.email, role);
+      } else {
+        adapter.navigate("/verify-email", { email: values.email, role });
       }
-
+    } catch (error) {
       const message =
         error instanceof Error
           ? error.message
@@ -142,8 +141,16 @@ export function useSignup(options: UseSignupOptions): UseSignupResult {
 
       setApiError(message);
       applyServerFieldErrors(error, form);
+      if (isUnverifiedEmailError(error)) {
+        setUnverifiedEmail(values.email);
+      }
     }
   });
+
+  const goToVerifyEmail = useCallback((): void => {
+    if (!unverifiedEmail) return;
+    adapter.navigate("/verify-email", { email: unverifiedEmail, role });
+  }, [unverifiedEmail, adapter, role]);
 
   return {
     form,
@@ -153,5 +160,7 @@ export function useSignup(options: UseSignupOptions): UseSignupResult {
     clearApiError,
     isSubmitting: form.formState.isSubmitting,
     awaitingVerification,
+    unverifiedEmail,
+    goToVerifyEmail,
   };
 }

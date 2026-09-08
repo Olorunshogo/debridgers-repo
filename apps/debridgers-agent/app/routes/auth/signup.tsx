@@ -24,7 +24,15 @@ export function meta() {
 export default function SignupPage() {
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
 
-  const { form, config, submit, apiError, isSubmitting } = useSignup({
+  const {
+    form,
+    config,
+    submit,
+    apiError,
+    isSubmitting,
+    unverifiedEmail,
+    goToVerifyEmail,
+  } = useSignup({
     config: ROLE_SIGNUP_CONFIG.agent,
     onRequiresVerification: (email: string) => setRegisteredEmail(email),
   });
@@ -47,6 +55,8 @@ export default function SignupPage() {
         heading="Apply to become an agent"
         images={AUTH_IMAGES}
         apiError={apiError}
+        unverifiedEmail={unverifiedEmail}
+        onVerifyEmail={unverifiedEmail ? goToVerifyEmail : undefined}
         subheading={
           <>
             Already have an account?{" "}
