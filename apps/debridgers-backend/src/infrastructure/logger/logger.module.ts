@@ -1,37 +1,42 @@
 import { Module } from "@nestjs/common";
 import { LoggerModule as PinoLoggerModule } from "nestjs-pino";
-/*
- * A named import, not a default one.
- *
- * file-stream-rotator marks itself __esModule but exports only { getStream },
- * with no default. TypeScript's esModuleInterop helper therefore passes the
- * module through unwrapped and `.default` is undefined, so a default import
- * compiles cleanly and then throws at runtime.
- *
- * It only ever threw in production, because the rotator is the non-dev branch
- * of the stream below. Every local run took the pino-pretty path instead, so
- * the crash was invisible until the container booted with NODE_ENV=production.
- */
-import { getStream } from "file-stream-rotator";
 import path from "path";
+import { createRequire } from "module";
 
 const isDev = process.env.NODE_ENV !== "production";
 
 /*
  * Where production logs go.
  *
- * Unset, which is the default, means stdout. That is what a container needs:
- * `docker compose logs backend` is how the deploy script reports a failed smoke
- * test, and a process writing to a file inside the container makes that
- * diagnostic empty at precisely the moment it matters. Docker's json-file
- * driver already rotates, configured in deploy/docker-compose.prod.yml, so
- * rotating again in here would be doing the same job twice and losing the logs
- * when the container is replaced.
- *
- * Set LOG_DIR to write rotating files instead, for a deployment that is not a
- * container. The directory must exist and be writable by the running user.
+ * Unset (the default) means stdout. That is what a container needs:
+ * `docker compose logs` is how deploy reports a failed smoke test, and Docker's
+ * json-file driver already rotates. Set LOG_DIR only for non-container hosts.
  */
 const logDir = process.env.LOG_DIR;
+
+/*
+ * Resolve getStream via createRequire, not `import` / `import … from`.
+ *
+ * file-stream-rotator sets __esModule but has no default export. With
+ * esModuleInterop, both `import X from "…"` and some Nest emit paths compile
+ * to `.default.getStream`, which is undefined at runtime and crash-loops the
+ * container (TypeError on boot). createRequire returns the CJS export shape
+ * directly: `{ getStream }`.
+ */
+function rotatingFileStream(dir: string) {
+  const requireRotator = createRequire(__filename);
+  const { getStream } = requireRotator("file-stream-rotator") as {
+    getStream: (options: Record<string, string>) => NodeJS.WritableStream;
+  };
+  return getStream({
+    filename: path.join(dir, "app-%DATE%.log"),
+    frequency: "daily",
+    max_logs: "14d",
+    size: "5m",
+    audit_file: path.join(dir, ".audit.json"),
+    date_format: "YYYY-MM-DD",
+  });
+}
 
 @Module({
   imports: [
@@ -45,17 +50,7 @@ const logDir = process.env.LOG_DIR;
               options: { colorize: true, singleLine: false },
             }
           : undefined,
-        stream:
-          isDev || !logDir
-            ? undefined
-            : getStream({
-                filename: path.join(logDir, "app-%DATE%.log"),
-                frequency: "daily",
-                max_logs: "14d",
-                size: "5m",
-                audit_file: path.join(logDir, ".audit.json"),
-                date_format: "YYYY-MM-DD",
-              }),
+        stream: isDev || !logDir ? undefined : rotatingFileStream(logDir),
       },
     }),
   ],
