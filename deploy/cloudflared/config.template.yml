@@ -13,4 +13,6 @@ credentials-file: /etc/cloudflared/creds.json
 ingress:
   - hostname: api-test.debridgers.com
     service: http://debridgers-backend:4001
+  - hostname: api.debridgers.com
+    service: http://debridgers-backend:4001
   - service: http_status:404

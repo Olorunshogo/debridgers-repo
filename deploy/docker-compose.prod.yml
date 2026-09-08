@@ -10,6 +10,7 @@ services:
     restart: unless-stopped
     ports:
       - "4001:4001"
+      - "4002:4001"
     env_file:
       - .env
     environment:
