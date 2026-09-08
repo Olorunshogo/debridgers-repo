@@ -97,9 +97,8 @@ jobs:
             fi
             if [ -f .env ]; then
               cp -a .env ".env.bak.$(date +%s)"
-              for k in IMAGE_TAG; do
-                grep -h "^${k}=" .env >> .env.incoming || true
-              done
+              # IMAGE_TAG is owned by deploy.sh from the commit SHA — do not
+              # merge the previous value or the wrong image can start.
               ls -1t .env.bak.* 2>/dev/null | tail -n +6 | xargs -r rm -f
             fi
             install -m 600 .env.incoming .env
@@ -168,9 +167,8 @@ jobs:
             fi
             if [ -f .env ]; then
               cp -a .env ".env.bak.$(date +%s)"
-              for k in IMAGE_TAG; do
-                grep -h "^${k}=" .env >> .env.incoming || true
-              done
+              # IMAGE_TAG is owned by deploy.sh from the commit SHA — do not
+              # merge the previous value or the wrong image can start.
               ls -1t .env.bak.* 2>/dev/null | tail -n +6 | xargs -r rm -f
             fi
             install -m 600 .env.incoming .env

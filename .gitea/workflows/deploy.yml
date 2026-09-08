@@ -145,9 +145,9 @@ jobs:
             fi
             if [ -f .env ]; then
               cp -a .env ".env.bak.$(date +%s)"
-              for k in IMAGE_TAG; do
-                grep -h "^${k}=" .env >> .env.incoming || true
-              done
+              # Do not copy IMAGE_TAG from the previous .env — deploy.sh sets it
+              # from the commit SHA. Merging the old tag made CI build one SHA
+              # and start another (9bd54af built, 209aeb1 started).
               ls -1t .env.bak.* 2>/dev/null | tail -n +6 | xargs -r rm -f
             fi
             install -m 600 .env.incoming .env
@@ -229,9 +229,9 @@ jobs:
             fi
             if [ -f .env ]; then
               cp -a .env ".env.bak.$(date +%s)"
-              for k in IMAGE_TAG; do
-                grep -h "^${k}=" .env >> .env.incoming || true
-              done
+              # Do not copy IMAGE_TAG from the previous .env — deploy.sh sets it
+              # from the commit SHA. Merging the old tag made CI build one SHA
+              # and start another (9bd54af built, 209aeb1 started).
               ls -1t .env.bak.* 2>/dev/null | tail -n +6 | xargs -r rm -f
             fi
             install -m 600 .env.incoming .env

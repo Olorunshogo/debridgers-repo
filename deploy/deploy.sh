@@ -4,7 +4,11 @@
 set -euo pipefail
 
 APP_DIR="/opt/debridgers"
-IMAGE_TAG="${1:?Usage: deploy.sh <image-tag>}"
+# Capture the CLI tag before sourcing .env — `set -a; source` would otherwise
+# overwrite it with a stale IMAGE_TAG from a previous deploy (e.g. built 9bd54af
+# then started 209aeb1 and replayed the old logger crash).
+REQUESTED_TAG="${1:?Usage: deploy.sh <image-tag>}"
+IMAGE_TAG="${REQUESTED_TAG}"
 REGISTRY="docker.io"
 IMAGE_NAME="1techhunter/debridgers"
 # Pin the project name so down/up always target the same containers,
@@ -43,7 +47,7 @@ else
   exit 1
 fi
 
-echo "==> Deploying Debridgers:${IMAGE_TAG}"
+echo "==> Deploying Debridgers:${REQUESTED_TAG}"
 echo "==> Compose file: ${COMPOSE_FILE}"
 echo "==> Env file: ${ENV_FILE}"
 
@@ -51,9 +55,12 @@ set -a
 # shellcheck disable=SC1090
 source "${ENV_FILE}"
 set +a
+# Restore after source — .env often still has the previous deploy's IMAGE_TAG.
+IMAGE_TAG="${REQUESTED_TAG}"
+export IMAGE_TAG
 : "${CLOUDFLARE_TUNNEL_CREDENTIALS:?CLOUDFLARE_TUNNEL_CREDENTIALS must be set in ${ENV_FILE}}"
 
-echo "==> Persisting IMAGE_TAG to ${ENV_FILE}"
+echo "==> Persisting IMAGE_TAG=${IMAGE_TAG} to ${ENV_FILE}"
 grep -v '^IMAGE_TAG=' "${ENV_FILE}" > "${ENV_FILE}.tmp" && mv "${ENV_FILE}.tmp" "${ENV_FILE}" || true
 echo "IMAGE_TAG=${IMAGE_TAG}" >> "${ENV_FILE}"
 
@@ -61,8 +68,11 @@ set -a
 # shellcheck disable=SC1090
 source "${ENV_FILE}"
 set +a
+IMAGE_TAG="${REQUESTED_TAG}"
+export IMAGE_TAG
 
 FULL_IMAGE="${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+echo "==> Target image: ${FULL_IMAGE}"
 
 # Prefer a local image (CI just built it on this VPS). Pulling first would
 # overwrite a good local build with a stale/broken Hub tag of the same SHA.
