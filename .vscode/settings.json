@@ -150,6 +150,7 @@
     "typescriptreact": "html"
   },
   "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
   "explorer.fileNesting.patterns": {
     "*.ts": "${capture}.js, ${capture}.d.ts",
     ".env": ".env.development, .env.development.example, .env.example, .env.production, .env.production.example, .env.staging, .env.staging.example",

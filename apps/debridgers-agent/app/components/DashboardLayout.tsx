@@ -5,6 +5,7 @@ import { Menu, X, Bell, LogOut } from "lucide-react";
 import {
   useDialog,
   useAuth,
+  usePageLoader,
   AppLogo,
   SearchInputField,
   PrimaryButton,
@@ -80,6 +81,7 @@ export default function DashboardLayout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
+  const { withLoader } = usePageLoader();
   const { groups, isActive, basePath, isAgent, isBuyer, isAdmin, isSubAdmin } =
     useDashboardNav(user?.admin_tier ?? null);
   /*
@@ -225,9 +227,12 @@ export default function DashboardLayout() {
   const pageTitle = titleMap[pathname] ?? "Dashboard";
 
   async function handleLogout(): Promise<void> {
-    await logout();
+    await withLoader(logout);
     navigate("/login");
   }
+
+  /* Covers the auth check with the page loader instead of rendering the shell against a `user` that has not resolved yet - the route guard above redirects once it knows either way. */
+  if (isLoading) return null;
 
   function Sidebar({ onNavClick }: { onNavClick?: () => void }) {
     return (

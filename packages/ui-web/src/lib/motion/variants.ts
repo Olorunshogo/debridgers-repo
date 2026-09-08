@@ -186,6 +186,19 @@ export const selectMenuTransition: Transition = {
   ease: motionEase,
 };
 
+// === Loading ellipsis
+
+/** One dot's pulse in a loading ellipsis - pair with staggerDelay's `step` for the travelling-pulse effect. */
+export const loadingDotVariants: Variants = {
+  animate: { opacity: [0.4, 1, 0.4], scale: [0.85, 1, 0.85] },
+};
+
+export const loadingDotTransition: Transition = {
+  duration: 1.2,
+  repeat: Infinity,
+  ease: "easeInOut",
+};
+
 // === Staggered lists
 
 export const staggerItemVariants: Variants = {

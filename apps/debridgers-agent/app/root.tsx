@@ -11,7 +11,11 @@ import type { Route } from "./+types/root";
 import type { MetaFunction } from "react-router";
 import { MotionConfig } from "framer-motion";
 import "./styles.css";
-import { DialogProvider, AuthProvider } from "@debridgers/ui-web";
+import {
+  DialogProvider,
+  AuthProvider,
+  PageLoaderProvider,
+} from "@debridgers/ui-web";
 import { PlatformConfigProvider } from "./contexts/PlatformConfigContext";
 import { DIALOG_REGISTRY } from "./providers/dialog-registry";
 import { AppAuthAdapterProvider } from "./providers/auth-adapter";
@@ -62,25 +66,28 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    /* reducedMotion="user" makes every framer-motion animation honour the OS "reduce motion" setting without each call site checking it. */
+    /* This makes every framer-motion animation honour the OS "reduce motion" setting without each call site checking it. */
     <MotionConfig reducedMotion="user">
-      <AuthProvider>
-        {/* Outermost of the data providers: the commission rate is read by the public agents page as well as the dashboards, signed in or not. */}
-        <PlatformConfigProvider>
-          {/* Inside the router and AuthProvider - the adapter needs both. */}
-          <AppAuthAdapterProvider>
-            {/* Supplies transport to the shared payment hooks, as the auth adapter does for the auth hooks.
-              Inside AppAuthAdapterProvider so its requests carry a session. */}
-            <AppPaymentAdapterProvider>
-              {/* Innermost, because the engine renders dialogs at its own position in the tree rather than at the caller's.
-                Any provider above it here is a context its dialogs could not reach. */}
-              <DialogProvider registry={DIALOG_REGISTRY}>
-                <Outlet />
-              </DialogProvider>
-            </AppPaymentAdapterProvider>
-          </AppAuthAdapterProvider>
-        </PlatformConfigProvider>
-      </AuthProvider>
+      {/* Outermost of all allows this to cover all including auth as long as its page underneath is yet to show its own skeleton. */}
+      <PageLoaderProvider>
+        <AuthProvider>
+          {/* Outermost of the data providers: the commission rate is read by the public agents page as well as the dashboards, signed in or not. */}
+          <PlatformConfigProvider>
+            {/* Inside the router and AuthProvider - the adapter needs both. */}
+            <AppAuthAdapterProvider>
+              {/* Supplies transport to the shared payment hooks, as the auth adapter does for the auth hooks.
+                Inside AppAuthAdapterProvider so its requests carry a session. */}
+              <AppPaymentAdapterProvider>
+                {/* Innermost, because the engine renders dialogs at its own position in the tree rather than at the caller's.
+                  Any provider above it here is a context its dialogs could not reach. */}
+                <DialogProvider registry={DIALOG_REGISTRY}>
+                  <Outlet />
+                </DialogProvider>
+              </AppPaymentAdapterProvider>
+            </AppAuthAdapterProvider>
+          </PlatformConfigProvider>
+        </AuthProvider>
+      </PageLoaderProvider>
     </MotionConfig>
   );
 }

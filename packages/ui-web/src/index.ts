@@ -36,6 +36,9 @@ export * from "./lib/motion";
 // === Dialog engine
 export * from "./lib/dialog";
 
+// === Page loader
+export * from "./lib/loader";
+
 // === Table engine
 export * from "./lib/table";
 export * from "./lib/seo/build-page-meta";
@@ -71,9 +74,9 @@ export * from "./components/yellow-primary-link";
 export * from "./components/base-input-field";
 
 /*
- * Every input in the app, dashboard and marketing alike. The marketing pages
- * had their own controlled copies of three of these; they now pass
- * variant="pill" instead, so a fix to a label or an error state lands once.
+ * Every input field in the app, dashboard and marketing alike.
+ * The marketing pages had their own controlled copies of three of these;
+ * they now pass variant="pill" instead, so a fix to a label or an error state lands once.
  */
 // === Inputs
 export * from "./components/text-input-field";

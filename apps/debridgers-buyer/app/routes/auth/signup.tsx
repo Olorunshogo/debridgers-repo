@@ -44,7 +44,7 @@ export default function SignupPage() {
       </AnimatePresence>
 
       <AuthFormShell
-        heading="Create your account"
+        heading="Create your Buyer account"
         images={AUTH_IMAGES}
         apiError={apiError}
         subheading={
