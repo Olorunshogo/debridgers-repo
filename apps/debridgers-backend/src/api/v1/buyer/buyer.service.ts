@@ -9,7 +9,7 @@ import {
 import * as bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, desc, sum, count, and, inArray, sql } from "drizzle-orm";
+import { eq, desc, sum, count, and, inArray, sql, asc } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
 import { EmailService } from "../../../notification/features/email/email.service";
@@ -247,16 +247,33 @@ export class BuyerService {
      * OrderController also declares POST /buyer/orders and sent this email, but
      * BuyerController registers first and wins the path, so that copy never ran.
      * Fire-and-forget: a mail outage must not fail an order that is already
-     * committed.
+     * committed. Account manager is the buyer-desk sub-admin when one exists.
      */
+    const accountManager = await this.resolveBuyerAccountManager();
     this.emailService
-      .sendOrderConfirmation(
-        user.email,
-        user.first_name || "Buyer",
-        order.order_reference || `#DBR-${String(order.id).padStart(4, "0")}`,
-        `₦${Math.round(totals.totalKobo / 100)}`,
-        lines.length,
-      )
+      .sendOrderConfirmation({
+        to: user.email,
+        buyerFirstName: user.first_name || "Buyer",
+        buyerFullName:
+          `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Buyer",
+        orderReference:
+          order.order_reference || `#DBR-${String(order.id).padStart(4, "0")}`,
+        deliveryAddress: dto.delivery_address,
+        placedAt: order.created_at ?? new Date(),
+        items: lines.map((line) => ({
+          name: line.name,
+          unitLabel: line.unitLabel,
+          unit: line.unit,
+          quantity: line.quantity,
+          unitPriceKobo: line.unit_price_kobo,
+          lineTotalKobo: line.unit_price_kobo * line.quantity,
+        })),
+        itemsTotalKobo: totals.itemsTotalKobo,
+        deliveryFeeKobo: totals.deliveryFeeKobo,
+        serviceFeeKobo: totals.handlingFeeKobo,
+        totalKobo: totals.totalKobo,
+        accountManager,
+      })
       .catch((err) => {
         this.logger.error(
           `Failed to send order confirmation email for order ${order.id}: ${
@@ -734,6 +751,10 @@ export class BuyerService {
       .select({
         id: schema.productsTable.id,
         price_kobo: schema.productsTable.price_kobo,
+        name: schema.productsTable.name,
+        unit: schema.productsTable.unit,
+        measure_value: schema.productsTable.measure_value,
+        measure_unit: schema.productsTable.measure_unit,
       })
       .from(schema.productsTable)
       .where(
@@ -752,12 +773,17 @@ export class BuyerService {
     }
 
     const priced = lines.map((line) => {
-      const product = byId.get(line.product_id) as {
-        id: number;
-        price_kobo: number;
-      };
+      const product = byId.get(line.product_id)!;
+      const measure =
+        product.measure_value && product.measure_unit
+          ? `${product.measure_value}${product.measure_unit}`
+          : null;
+      const unitLabel = measure ? `${measure} ${product.unit}` : product.unit;
       return {
         product_id: line.product_id,
+        name: product.name,
+        unit: product.unit,
+        unitLabel,
         quantity: line.qty,
         unit_price_kobo: product.price_kobo,
       };
@@ -825,6 +851,84 @@ export class BuyerService {
        * overstate what the campaign actually gave away.
        */
       promotion: zoneIsStandingFree ? null : promotion,
+    };
+  }
+
+  /*
+   * The buyer-desk sub-admin shown as "account manager" on order receipts.
+   * Same audience as notifyBuyerAdmins: sub-admins first, any admin if none
+   * exist yet. Phone falls back to support when the admin row has none.
+   */
+  private async resolveBuyerAccountManager(): Promise<{
+    name: string;
+    phoneDisplay: string;
+    phoneTel: string;
+  } | null> {
+    const selectManager = {
+      first_name: schema.users.first_name,
+      last_name: schema.users.last_name,
+      phone: schema.users.phone,
+    } as const;
+
+    let [manager] = await this.db
+      .select(selectManager)
+      .from(schema.users)
+      .where(
+        and(
+          eq(schema.users.role, "admin"),
+          eq(schema.users.admin_tier, "sub"),
+          eq(schema.users.is_blocked, false),
+        ),
+      )
+      .orderBy(asc(schema.users.id))
+      .limit(1);
+
+    if (!manager) {
+      [manager] = await this.db
+        .select(selectManager)
+        .from(schema.users)
+        .where(
+          and(
+            eq(schema.users.role, "admin"),
+            eq(schema.users.is_blocked, false),
+          ),
+        )
+        .orderBy(asc(schema.users.id))
+        .limit(1);
+    }
+
+    if (!manager) return null;
+
+    const name =
+      `${manager.first_name} ${manager.last_name}`.trim() ||
+      "Debridgers Support";
+    const rawPhone = manager.phone?.trim();
+    if (!rawPhone) {
+      return {
+        name,
+        phoneDisplay: "0701 228 8798",
+        phoneTel: "tel:+2347012288798",
+      };
+    }
+
+    const digits = rawPhone.replace(/\D/g, "");
+    const e164 =
+      digits.startsWith("234") && digits.length >= 13
+        ? `+${digits}`
+        : digits.startsWith("0") && digits.length === 11
+          ? `+234${digits.slice(1)}`
+          : rawPhone.startsWith("+")
+            ? rawPhone
+            : `+${digits}`;
+    const phoneDisplay =
+      e164.startsWith("+234") && e164.length === 14
+        ? `0${e164.slice(4, 7)} ${e164.slice(7, 10)} ${e164.slice(10)}`
+        : rawPhone;
+
+    return {
+      name,
+      phoneDisplay,
+      phoneTel: `tel:${e164}`,
     };
   }
 

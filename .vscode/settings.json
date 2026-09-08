@@ -161,5 +161,6 @@
   },
   "cSpell.words": ["debridgers", "nx", "pnpm"],
   "compile-hero.disable-compile-files-on-did-save-code": false,
-  "terminal.integrated.copyOnSelection": false
+  "terminal.integrated.copyOnSelection": false,
+  "liveServer.settings.port": 5501
 }

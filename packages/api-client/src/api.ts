@@ -5,7 +5,7 @@
  */
 export const BASE_BACKEND_URL: string =
   (import.meta.env["VITE_API_URL"] as string | undefined) ??
-  "http://localhost:4001/api/v1";
+  "http://localhost:4002/api/v1";
 
 /*
  * A shell-exported VITE_API_URL silently overrides the .env file for that

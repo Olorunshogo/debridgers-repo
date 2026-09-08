@@ -133,7 +133,10 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
-    ]
+    ],
+    "overrides": {
+      "hasown": "2.0.2"
+    }
   },
   "dependencies": {
     "class-transformer": "^0.5.1",

@@ -28,14 +28,25 @@ set -a
 source deploy/.env
 set +a
 
-echo "==> Pulling latest images"
-IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml pull debridgers-backend
+FULL_IMAGE="${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+
+echo "==> Pulling ${FULL_IMAGE} (skip if already present locally)"
+if ! IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" \
+  docker compose -f deploy/docker-compose.prod.yml pull debridgers-backend; then
+  if docker image inspect "${FULL_IMAGE}" >/dev/null 2>&1 \
+    || docker image inspect "${IMAGE_NAME}:${IMAGE_TAG}" >/dev/null 2>&1; then
+    echo "==> Pull failed but ${FULL_IMAGE} exists locally — restarting with local image"
+  else
+    echo "==> Pull failed and image is not local" >&2
+    exit 1
+  fi
+fi
 
 echo "==> Stopping and removing old containers"
 IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml down || true
 
 echo "==> Starting services"
-IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml up -d
+IMAGE_TAG="${IMAGE_TAG}" CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" docker compose -f deploy/docker-compose.prod.yml up -d --force-recreate
 
 echo "==> Skipping database migrations (run locally before deployment)"
 

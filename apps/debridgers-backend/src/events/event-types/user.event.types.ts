@@ -73,4 +73,6 @@ export interface UserLoggedInPayload {
   name: string;
   email: string;
   role: "admin" | "agent" | "buyer" | "company";
+  device?: string;
+  ip_address?: string;
 }

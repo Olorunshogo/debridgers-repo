@@ -295,6 +295,8 @@ export class AuthService {
       name: `${user.first_name} ${user.last_name}`,
       email: user.email,
       role: user.role,
+      device: context.device,
+      ip_address: context.ip_address,
     });
 
     // Track login in PostHog

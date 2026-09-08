@@ -252,6 +252,7 @@ export class UserListeners {
         await this.emailService.sendAgentLoginMessage(
           payload.email,
           payload.name,
+          { device: payload.device },
         );
         return;
       }
@@ -259,6 +260,7 @@ export class UserListeners {
       await this.emailService.sendBuyerLoginMessage(
         payload.email,
         payload.name,
+        { device: payload.device },
       );
     } catch (error) {
       this.logger.warn(`Login email failed for ${payload.email}`);
