@@ -5,9 +5,7 @@ import { formatFromKobo } from "../../utils/format-currency";
 /*
  * Cell primitives.
  *
- * These exist so money is formatted in one place rather than as a bare
- * `/ 100` at each call site, and so the same "title over subtitle" cell does
- * not get rebuilt with slightly different type scales on every page.
+ * These exist so money is formatted in one place rather than as a bare `/ 100` at each call site, and so the same "title over subtitle" cell does not get rebuilt with slightly different type scales on every page.
  */
 
 // === Text
@@ -133,8 +131,7 @@ export function TableDateCell({
 // === Status
 
 /*
- * Tones map onto the dashboard status tokens already in the theme, so a badge
- * here matches a badge anywhere else in the app.
+ * Tones map onto the dashboard status tokens already in the theme, so a badge here matches a badge anywhere else in the app.
  */
 export type StatusTone =
   | "success"

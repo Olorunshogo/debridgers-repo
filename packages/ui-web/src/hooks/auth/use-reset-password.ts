@@ -6,11 +6,11 @@ import {
   type ResetPasswordValues,
 } from "../../schemas/auth/password-reset";
 import { useAuthAdapter } from "./auth-adapter";
+import { applyServerFieldErrors } from "../../lib/server-errors";
 
 /*
- * Step two of password reset. Applies the full password strength rules, unlike
- * login: the user is choosing a new password here, so it must satisfy what the
- * backend will accept.
+ * Step two of password reset.
+ * Applies the full password strength rules, unlike login: the user is choosing a new password here, so it must satisfy what the backend will accept.
  */
 
 export interface UseResetPasswordOptions {
@@ -63,6 +63,7 @@ export function useResetPassword(
           ? error.message
           : "Could not reset your password. Please try again.",
       );
+      applyServerFieldErrors(error, form);
     }
   });
 

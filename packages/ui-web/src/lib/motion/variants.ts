@@ -3,13 +3,11 @@ import type { Transition, Variants } from "framer-motion";
 /*
  * The single source of truth for motion in this codebase.
  *
- * Never declare an inline `initial`/`animate`/`exit` object or a one-off
- * `Variants` in a component or page. Import from here. Uniform motion is what
- * makes an interface feel deliberate rather than assembled, and a shared file is
- * the only way that survives more than one contributor.
+ * Never declare an inline `initial`/`animate`/`exit` object or a one-off `Variants` in a component or page.
+ * Import from here.
+ * Uniform motion is what makes an interface feel deliberate rather than assembled, and a shared file is the only way that survives more than one contributor.
  *
- * If a genuinely new motion is needed, add it here and name it after the job it
- * does, not the values it uses.
+ * If a genuinely new motion is needed, add it here and name it after the job it does, not the values it uses.
  */
 
 // === Timing tokens
@@ -105,17 +103,15 @@ export const successPanelVariants: Variants = {
 
 /*
  * How long a dialog stays open showing its success panel before closing.
- * Closing instantly reads as if nothing happened, and anything under ~2s is too
- * quick to actually read the confirmation.
+ * Closing instantly reads as if nothing happened, and anything under ~2s is too quick to actually read the confirmation.
  */
 export const DIALOG_SUCCESS_CLOSE_DELAY_MS = 2500;
 
 // === Swapped content
 
 /*
- * Crossfading content that replaces itself in place: a paginated list, a tab
- * panel, a step in a wizard. A plain opacity crossfade on purpose - a transform
- * here reads as noise because the surrounding chrome has not moved.
+ * Crossfading content that replaces itself in place: a paginated list, a tab panel, a step in a wizard.
+ * A plain opacity crossfade on purpose - a transform here reads as noise because the surrounding chrome has not moved.
  * Use with AnimatePresence mode="wait" and a `key` on the changing content.
  */
 export const swappedContentVariants: Variants = fadeVariants;
@@ -127,11 +123,8 @@ export const swappedContentTransition: Transition = transitionFast;
 /*
  * Swapping a product card's "Add to cart" button for its quantity stepper.
  *
- * Unlike swappedContentVariants this DOES translate: the two controls occupy
- * the same slot and the vertical slide is what communicates that one replaced
- * the other, rather than the card having re-rendered. Pair with springPanel and
- * AnimatePresence mode="wait", and give the slot a fixed height so the grid
- * does not reflow on every add.
+ * Unlike swappedContentVariants this DOES translate: the two controls occupy the same slot and the vertical slide is what communicates that one replaced the other, rather than the card having re-rendered.
+ * Pair with springPanel and AnimatePresence mode="wait", and give the slot a fixed height so the grid does not reflow on every add.
  */
 export const cartControlVariants: Variants = {
   initial: { y: 24, opacity: 0 },
@@ -140,9 +133,8 @@ export const cartControlVariants: Variants = {
 };
 
 /*
- * A bar docked to the bottom of the viewport that appears in response to state,
- * such as the cart summary bar. Rises into place rather than fading, so it
- * reads as arriving from off-screen.
+ * A bar docked to the bottom of the viewport that appears in response to state, such as the cart summary bar.
+ * Rises into place rather than fading, so it reads as arriving from off-screen.
  */
 export const stickyBarVariants: Variants = {
   initial: { y: 80, opacity: 0 },
@@ -153,9 +145,8 @@ export const stickyBarVariants: Variants = {
 // === Inline disclosure
 
 /*
- * A panel expanding in place: an accordion row, a drill-down level appearing
- * under the one above it. Animating `height` to "auto" is what keeps the
- * surrounding layout honest rather than overlapping it.
+ * A panel expanding in place: an accordion row, a drill-down level appearing under the one above it.
+ * Animating `height` to "auto" is what keeps the surrounding layout honest rather than overlapping it.
  */
 export const collapseVariants: Variants = {
   initial: { opacity: 0, height: 0 },
@@ -168,9 +159,8 @@ export const collapseVariants: Variants = {
 /*
  * A select's option list opening beneath its trigger.
  *
- * Scales from the top edge rather than fading in place, so the menu reads as
- * unfolding out of the trigger it belongs to. Keep the origin at the top in the
- * component (`origin-top`) or the scale looks like it grew from the middle.
+ * Scales from the top edge rather than fading in place, so the menu reads as unfolding out of the trigger it belongs to.
+ * Keep the origin at the top in the component (`origin-top`) or the scale looks like it grew from the middle.
  */
 export const selectMenuVariants: Variants = {
   initial: { opacity: 0, scaleY: 0.92, y: -4 },
@@ -181,9 +171,8 @@ export const selectMenuVariants: Variants = {
 /*
  * The same motion for a menu that flipped above its trigger.
  *
- * The offset is mirrored so the menu still travels away from the trigger, not
- * through it. Pair with `origin-bottom`, or it scales from the wrong edge and
- * the flip reads as a glitch.
+ * The offset is mirrored so the menu still travels away from the trigger, not through it.
+ * Pair with `origin-bottom`, or it scales from the wrong edge and the flip reads as a glitch.
  */
 export const selectMenuUpVariants: Variants = {
   initial: { opacity: 0, scaleY: 0.92, y: 4 },

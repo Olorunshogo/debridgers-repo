@@ -1,57 +1,47 @@
 import type { MetaDescriptor } from "react-router";
 
 /*
- * One factory per app, not one shared instance: each of debridgers-marketing,
- * debridgers-buyer, debridgers-agent and debridgers-admin has its own siteUrl
- * (a different subdomain), so each calls createPageMetaBuilder once with its
- * own defaults and every route in that app calls the buildPageMeta it gets
- * back. Change the og-image (or any other default) in one place and every
- * route using it picks it up immediately.
+ * One factory per app, not one shared instance: each of debridgers-marketing, debridgers-buyer, debridgers-agent and debridgers-admin has its own siteUrl (a different subdomain), so each calls createPageMetaBuilder once with its own defaults and every route in that app calls the buildPageMeta it gets back.
+ * Change the og-image (or any other default) in one place and every route using it picks it up immediately.
  *
- * OG/Twitter/canonical fields are all optional on SeoDefaults: only
- * debridgers-marketing's public pages need them. The dashboard apps supply
- * just siteName/siteUrl/author, and the builder skips the whole social-card
- * block for any noIndex page regardless.
+ * OG/Twitter/canonical fields are all optional on SeoDefaults: only debridgers-marketing's public pages need them.
+ * The dashboard apps supply just siteName/siteUrl/author, and the builder skips the whole social-card block for any noIndex page regardless.
  */
 
+/*
+ * `baseKeywords` are base keywords merged into every route's own, e.g. ["Debridgers", "Shop"].
+ * `defaultImage` is an absolute https URL; omit on an app with no public/indexable pages.
+ * `twitterHandle` is e.g. "@debridgers"; omit on an app with no public/indexable pages.
+ * `locale` is e.g. "en_NG".
+ */
 export interface SeoDefaults {
   siteName: string;
   siteUrl: string;
   author: string;
-  /** Base keywords merged into every route's own, e.g. ["Debridgers", "Shop"]. */
   baseKeywords: readonly string[];
-  /** Absolute https URL. Omit on an app with no public/indexable pages. */
   defaultImage?: string;
   imageWidth?: string;
   imageHeight?: string;
   imageAlt?: string;
-  /** e.g. "@debridgers". Omit on an app with no public/indexable pages. */
   twitterHandle?: string;
-  /** e.g. "en_NG". */
   locale?: string;
 }
 
+/*
+ * `path` is the route path from the site root, e.g. "/shop" - builds og:url/canonical.
+ * `keywords` are extra keywords for this route, merged with (not replacing) baseKeywords.
+ * `image` overrides defaults.defaultImage for a route that wants its own card.
+ * Pass `false` (not just omitting this) to explicitly suppress the card image for a route that still wants og:title/og:description - a legal document, for instance - rather than falling back to defaults.defaultImage.
+ * `noIndex` is true for every auth/dashboard route: it skips the whole OG/Twitter/canonical block (a private page has no business declaring a social card) and sets robots to noindex, nofollow.
+ */
 export interface PageMetaInput {
   title: string;
   description: string;
-  /** Route path from the site root, e.g. "/shop" - builds og:url/canonical. */
   path: string;
-  /** Extra keywords for this route, merged with (not replacing) baseKeywords. */
   keywords?: readonly string[];
-  /**
-   * Overrides defaults.defaultImage for a route that wants its own card. Pass
-   * `false` (not just omitting this) to explicitly suppress the card image
-   * for a route that still wants og:title/og:description - a legal document,
-   * for instance - rather than falling back to defaults.defaultImage.
-   */
   image?: string | false;
   imageAlt?: string;
   type?: "website" | "article";
-  /**
-   * True for every auth/dashboard route: skips the whole OG/Twitter/canonical
-   * block (a private page has no business declaring a social card) and sets
-   * robots to noindex, nofollow.
-   */
   noIndex?: boolean;
 }
 

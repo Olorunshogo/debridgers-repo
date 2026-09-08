@@ -93,11 +93,13 @@ const LIST_PADDING = 8;
 
 type MenuPlacement = "up" | "down";
 
+/*
+ * `top` and `bottom` are one vertical anchor or the other: a downward menu
+ * grows from the trigger's bottom edge, an upward one from its top, so each
+ * pins the edge it grows away from.
+ */
 interface MenuPosition {
   placement: MenuPlacement;
-  /* One vertical anchor or the other: a downward menu grows from the trigger's
-     bottom edge, an upward one from its top, so each pins the edge it grows
-     away from. */
   top?: number;
   bottom?: number;
   left?: number;

@@ -48,7 +48,6 @@ export default function AgentLeaderboard() {
 
   return (
     <div className="py-section-px flex flex-col gap-6">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <Trophy size={24} className="text-primary" />
         <div>
@@ -71,7 +70,6 @@ export default function AgentLeaderboard() {
 
       {!loading && top3.length > 0 && (
         <>
-          {/* Top 3 podium */}
           <div className="grid grid-cols-3 gap-4">
             {top3.map((agent, i) => {
               const badge = BADGE_MAP[agent.rank];
@@ -95,7 +93,6 @@ export default function AgentLeaderboard() {
             })}
           </div>
 
-          {/* Full table */}
           <div className="border-line overflow-hidden rounded-2xl border bg-white">
             <div className="border-line text-body grid grid-cols-4 gap-4 border-b px-5 py-3 text-xs font-semibold tracking-wider uppercase">
               <span>Rank</span>

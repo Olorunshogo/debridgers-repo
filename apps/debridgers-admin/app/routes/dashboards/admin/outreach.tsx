@@ -92,24 +92,16 @@ function todayString() {
 
 /*
  * Locations are stored two ways.
- *
- * Rows written before the picker existed hold the display label ("Kaduna
- * South", "Narayi"); the picker submits the option's slug ("kaduna-south",
- * "narayi"). A direct === between the two never matched, so choosing any
- * location filtered every row away and only "All Locations" appeared to work.
- *
- * Normalising both sides fixes the existing rows and keeps working once every
- * row is slug-shaped, since slugging a slug is a no-op.
+ * Rows written before the picker existed hold the display label ("Kaduna South", "Narayi"); the picker submits the option's slug ("kaduna-south", "narayi").
+ * A direct === between the two never matched, so choosing any location filtered every row away and only "All Locations" appeared to work.
+ * Normalising both sides fixes the existing rows and keeps working once every row is slug-shaped, since slugging a slug is a no-op.
  */
 function toLocationSlug(value: string | null | undefined): string {
   return (value ?? "").trim().toLowerCase().replace(/\s+/g, "-");
 }
 
 /*
- * Seven columns was the cramped table. LGA, Area and Date drop to "detail", so
- * the engine collapses them behind the card disclosure on narrow viewports
- * instead of squeezing every column until the shop name is unreadable.
- *
+ * Seven columns was the cramped table. LGA, Area and Date drop to "detail", so the engine collapses them behind the card disclosure on narrow viewports instead of squeezing every column until the shop name is unreadable.
  * Module scope: an inline array re-derives every row on every keystroke.
  */
 const COLUMNS: readonly TableColumn<OutreachRecord>[] = [
@@ -246,8 +238,7 @@ export default function AdminOutreachPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [filterLga, setFilterLga] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
-  /* A failed load must not render as "no outreach yet", which is a different
-     story, so the table gets its own error and retry. */
+  /* A failed load must not render as "no outreach yet", which is a different story, so the table gets its own error and retry. */
   const [loadError, setLoadError] = useState<string | null>(null);
   /* `formError` sits inside the add panel, so delete failures need their own. */
   const [actionError, setActionError] = useState<string | null>(null);
@@ -274,8 +265,7 @@ export default function AdminOutreachPage() {
     void load();
   }, []);
 
-  /* Only the location filter is applied here; search, sort and paging are the
-     engine's job now. */
+  /* Only the location filter is applied here; search, sort and paging are the engine's job now. */
   const visible = useMemo<OutreachRecord[]>(() => {
     if (!filterLga) return records;
     const target = toLocationSlug(filterLga);
@@ -617,8 +607,7 @@ export default function AdminOutreachPage() {
         onRetry={() => void load()}
         pageSize={10}
         pageSizeOptions={[10, 25, 50]}
-        /* The location filter lives on the page, so the engine is told when it
-           changes or the viewer stays on a page that no longer exists. */
+        /* The location filter lives on the page, so the engine is told when it changes or the viewer stays on a page that no longer exists. */
         resetKey={filterLga}
         toolbar={
           <SelectButtonField

@@ -40,9 +40,9 @@ export const paymentRecords = pgTable(
     amount_kobo: integer().notNull(),
     payment_method: paymentMethodEnum().notNull(),
     status: paymentRecordStatusEnum().notNull().default("initiated"),
-    paystack_reference: varchar({ length: 100 }), // Paystack transfer/charge reference
-    paystack_transfer_code: varchar({ length: 100 }), // Paystack transfer code
-    paystack_receipt_number: varchar({ length: 100 }), // Paystack receipt
+    paystack_reference: varchar({ length: 100 }),
+    paystack_transfer_code: varchar({ length: 100 }),
+    paystack_receipt_number: varchar({ length: 100 }),
     description: text(),
     created_at: timestamp().defaultNow().notNull(),
     completed_at: timestamp(),

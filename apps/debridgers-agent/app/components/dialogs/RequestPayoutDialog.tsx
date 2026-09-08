@@ -9,15 +9,12 @@ import { apiFetch } from "@debridgers/api-client";
 
 /*
  * Glue between the dialog engine and the API.
- *
- * The presentation component in @debridgers/ui-web knows nothing about
- * fetching or routing; this file is the only place they meet. Registered as
- * REQUEST_PAYOUT in app/providers/dialog-registry.ts.
+ * The presentation component in @debridgers/ui-web knows nothing about fetching or routing; this file is the only place they meet.
+ * Registered as REQUEST_PAYOUT in app/providers/dialog-registry.ts.
+ * `onRequested` lets the wallet page refresh its balance once the request lands.
  */
-
 interface RequestPayoutDialogProps {
   availableBalanceKobo: number;
-  /** Lets the wallet page refresh its balance once the request lands. */
   onRequested?: () => void;
 }
 
@@ -28,17 +25,14 @@ export default function RequestPayoutDialog({
   const { closeDialog, setDialogLoading } = useDialog();
   const { status, error, run, isSubmitting } = useDialogSubmission<void>();
 
-  /*
-   * Blocks Escape and backdrop dismissal while the request is in flight - a
-   * half-submitted payout is not something to let someone click away from.
-   */
+  /* Blocks Escape and backdrop dismissal while the request is in flight - a half-submitted payout is not something to let someone click away from. */
   useEffect(() => {
     setDialogLoading(isSubmitting);
   }, [isSubmitting, setDialogLoading]);
 
   /*
-   * Hold the success panel long enough to read, then close. Closing the instant
-   * the promise resolves reads as if nothing happened.
+   * Hold the success panel long enough to read, then close.
+   * Closing the instant the promise resolves reads as if nothing happened.
    */
   useEffect(() => {
     if (status !== "success") return;

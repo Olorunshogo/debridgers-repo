@@ -7,6 +7,7 @@ import {
   ShieldCheck,
   Banknote,
   Boxes,
+  Star,
   Bell,
   type LucideIcon,
 } from "lucide-react";
@@ -29,6 +30,7 @@ export const NOTIFICATION_ICON_MAP: Record<NotificationType, LucideIcon> = {
   kyc: ShieldCheck,
   withdrawal: Banknote,
   stock: Boxes,
+  rating: Star,
   general: Bell,
 };
 
@@ -41,6 +43,7 @@ export const NOTIFICATION_ICON_CLASS: Record<NotificationType, string> = {
   kyc: "bg-status-pending text-status-pending-fg",
   withdrawal: "bg-status-cancelled text-status-cancelled-fg",
   stock: "bg-accent-soft text-accent-soft-fg",
+  rating: "bg-status-pending text-status-pending-fg",
   general: "bg-light-bg text-body",
 };
 

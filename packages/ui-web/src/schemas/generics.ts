@@ -11,10 +11,12 @@ import { z } from "zod";
 
 // === Options
 
+/*
+ * requiredMessage overrides the default "required" message.
+ * invalidMessage overrides the default format/validity message.
+ */
 export interface FieldSchemaOptions {
-  /** Overrides the default "required" message. */
   requiredMessage?: string;
-  /** Overrides the default format/validity message. */
   invalidMessage?: string;
 }
 

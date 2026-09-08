@@ -23,30 +23,31 @@ import type {
 /*
  * The table engine.
  *
- * Solves, once, what every hand-rolled list in this codebase solved
- * differently or not at all: pagination, sorting, debounced search, selection,
- * per-row busy state, confirm dialogs, horizontal overflow, skeletons that
- * match the columns, a real empty state that is not the error state, and a
- * mobile layout that is not a six-column table on a phone.
+ * Solves, once, what every hand-rolled list in this codebase solved differently or not at all: pagination, sorting, debounced search, selection, per-row busy state, confirm dialogs, horizontal overflow, skeletons that match the columns, a real empty state that is not the error state, and a mobile layout that is not a six-column table on a phone.
  *
- * Never hand-roll a <table> in a page again. Declare `columns` and render
- * <DataTable>.
+ * Never hand-roll a <table> in a page again.
+ * Declare `columns` and render <DataTable>.
  *
- * `DataTable` owns its state. Pages that need to read that state - a header
- * that counts the selection, a filter bar wired to the same search - call
- * `useTableState` themselves and render `DataTableView`.
+ * `DataTable` owns its state.
+ * Pages that need to read that state - a header that counts the selection, a filter bar wired to the same search - call `useTableState` themselves and render `DataTableView`.
  */
 
 // === Presentation
 
+/*
+ * `caption` is the screen-reader name for the table, e.g. "Orders" - required, not optional.
+ * `mode` defaults to "auto": cards below md, table from md up.
+ * `error` is a message, not a boolean; it renders instead of rows, never as "no results".
+ * `toolbar` is filter chips or anything else the page owns, placed beside the search.
+ * `pageSizeOptions` adds a page-size selector next to the pager.
+ * `maxBodyHeight` gives the table body its own scroll area and makes the header sticky.
+ */
 export interface DataTableViewProps<TRow> {
   state: TableStateApi<TRow>;
   columns: readonly TableColumn<TRow>[];
 
-  /** Screen-reader name for the table, e.g. "Orders". Required, not optional. */
   caption: string;
 
-  /** Defaults to "auto": cards below md, table from md up. */
   mode?: TableRenderMode;
   density?: TableDensity;
 
@@ -55,7 +56,6 @@ export interface DataTableViewProps<TRow> {
   onRowClick?: (row: TRow) => void;
 
   loading?: boolean;
-  /** A message, not a boolean. Renders instead of rows, never as "no results". */
   error?: string | null;
   onRetry?: () => void;
 
@@ -63,14 +63,11 @@ export interface DataTableViewProps<TRow> {
 
   showSearch?: boolean;
   searchPlaceholder?: string;
-  /** Filter chips or anything else the page owns, placed beside the search. */
   toolbar?: ReactNode;
 
   showPagination?: boolean;
-  /** Adds a page-size selector next to the pager. */
   pageSizeOptions?: readonly number[];
 
-  /** Gives the table body its own scroll area and makes the header sticky. */
   maxBodyHeight?: string;
 
   className?: string;
@@ -98,17 +95,15 @@ export function DataTableView<TRow>({
   className,
 }: DataTableViewProps<TRow>) {
   /*
-   * One tree, not two hidden by CSS: a hidden duplicate would be read out by a
-   * screen reader alongside the visible one. The server assumes the table, so
-   * SSR output is stable and the swap happens on hydration.
+   * One tree, not two hidden by CSS: a hidden duplicate would be read out by a screen reader alongside the visible one.
+   * The server assumes the table, so SSR output is stable and the swap happens on hydration.
    */
   const isDesktopWidth = useMediaQuery(MD_BREAKPOINT_QUERY, true);
   const renderAsTable = mode === "table" || (mode === "auto" && isDesktopWidth);
 
   const skeletonRowCount = Math.min(state.pageSize, 6);
 
-  /* An error replaces the rows entirely. A half-rendered table over a failed
-     request is how "no results" ends up meaning "the API is down". */
+  /* An error replaces the rows entirely: a half-rendered table over a failed request is how "no results" ends up meaning "the API is down". */
   const body = error ? (
     <div className="px-5 py-12">
       <TableErrorState message={error} onRetry={onRetry} />
@@ -213,8 +208,7 @@ export type DataTableProps<TRow> = Omit<DataTableViewProps<TRow>, "state"> &
 /**
  * The call site most pages want: hand it rows and columns, it does the rest.
  *
- * Reach for `useTableState` + `DataTableView` only when the page itself needs
- * to read or drive the table's state.
+ * Reach for `useTableState` + `DataTableView` only when the page itself needs to read or drive the table's state.
  */
 export function DataTable<TRow>(props: DataTableProps<TRow>) {
   const {

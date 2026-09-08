@@ -6,13 +6,10 @@ import type { RowAction } from "./table-types";
 /*
  * Row actions.
  *
- * Every list in this codebase had grown its own per-row busy flag - deletingId,
- * busyId, actioningId - and its own confirmation, or none at all. This is the
- * one implementation: `isBusy(row)` for the spinner, and `confirm` to route
- * through the dialog engine first.
+ * Every list in this codebase had grown its own per-row busy flag - deletingId, busyId, actioningId - and its own confirmation, or none at all.
+ * This is the one implementation: `isBusy(row)` for the spinner, and `confirm` to route through the dialog engine first.
  *
- * A confirm dialog is handed `onConfirm` alongside its own props, so the dialog
- * decides when the action runs and the engine never assumes the answer.
+ * A confirm dialog is handed `onConfirm` alongside its own props, so the dialog decides when the action runs and the engine never assumes the answer.
  */
 
 const toneClasses = {

@@ -10,28 +10,22 @@ import type { PricingRules } from "@debridgers/pricing";
 
 /*
  * Platform settings the admin controls, fetched once and shared.
- *
- * These live in `system_settings` and are served by GET /config/public, which
- * needs no auth because the agent recruitment page reads the commission rate
- * before anyone signs in.
- *
- * Before this existed, `marketing/agents.tsx` fetched the endpoint itself and fell
- * back to a hardcoded rate, so a slow or failed request rendered an entire
- * earnings table at the wrong figure on the one page whose job is telling
- * agents what they will earn.
+ * These live in `system_settings` and are served by GET /config/public, which needs no auth because the agent recruitment page reads the commission rate before anyone signs in.
+ * Before this existed, `marketing/agents.tsx` fetched the endpoint itself and fell back to a hardcoded rate, so a slow or failed request rendered an entire earnings table at the wrong figure on the one page whose job is telling agents what they will earn.
  */
 
 // === Types
 
-/* Kobo, exactly as the API serves it. Converted once, below. */
+/*
+ * Kobo, exactly as the API serves it, converted once below.
+ * The default_tier_one/default_tier_two/default_delivery_cap fields are per-zone defaults; a quote for a specific delivery must read them off that zone rather than from here.
+ */
 interface PublicPricingResponse {
   service_fee_rate: number;
   service_fee_min_kobo: number;
   service_fee_max_kobo: number;
   packages_included_in_base: number;
   tier_one_package_count: number;
-  /* Defaults. The taper and ceiling are per zone, so a quote for a specific
-     delivery must read them off that zone rather than from here. */
   default_tier_one_per_package_kobo: number;
   default_tier_two_per_package_kobo: number;
   default_delivery_cap_over_base_kobo: number;
@@ -40,19 +34,16 @@ interface PublicPricingResponse {
 }
 
 /*
- * The running free-delivery campaign, or null when none is. Served publicly so
- * the shop and the zone picker can announce it before anyone signs in.
- *
- * `zone_ids` is served rather than derived: a zone-scoped campaign covers one
- * zone, a global or first-order one covers every active zone, and re-deriving
- * that rule on the client is how the two ends drift apart.
+ * The running free-delivery campaign, or null when none is.
+ * Served publicly so the shop and the zone picker can announce it before anyone signs in.
+ * `zone_ids` is served rather than derived: a zone-scoped campaign covers one zone, a global or first-order one covers every active zone, and re-deriving that rule on the client is how the two ends drift apart.
+ * `ends_at` is an ISO string over the wire; the API types it as a Date server-side.
  */
 export type DeliveryPromotionScope = "global" | "zone" | "first_order";
 
 export interface DeliveryPromotion {
   name: string;
   scope: DeliveryPromotionScope;
-  /* ISO string over the wire; the API types it as a Date server-side. */
   ends_at: string;
   zone_ids: number[];
 }
@@ -67,9 +58,8 @@ interface PublicConfigResponse {
 }
 
 /*
- * One conversion, in one place. Every consumer downstream works in naira and
- * never has to ask which unit it is holding, which is the mistake that has
- * already produced a 100x transfer bug and a 100x refund bug in this codebase.
+ * One conversion, in one place.
+ * Every consumer downstream works in naira and never has to ask which unit it is holding, which is the mistake that has already produced a 100x transfer bug and a 100x refund bug in this codebase.
  */
 function toPricingRules(p: PublicPricingResponse): PricingRules {
   const naira = (kobo: number): number => kobo / 100;
@@ -88,42 +78,29 @@ function toPricingRules(p: PublicPricingResponse): PricingRules {
   };
 }
 
+/*
+ * `commissionPercent` and `commissionRate`: the API serves a PERCENTAGE (5), not a fraction (0.05).
+ * Both are exposed deliberately: the same ambiguity already caused a real bug server-side, where a stored percentage would have been multiplied as-is rather than divided down first.
+ * `pricing` is null until the first response lands, and null if it failed, deliberately not defaulted: a pricing calculator that silently quotes against invented fee rules is worse than one that refuses to render.
+ * `deliveryPromotion` is null both when no campaign is running and before the first response lands, so gate on `isLoading` before concluding there is no promotion.
+ * `isLoading` is true until the first fetch settles, so callers can hold off on rendering a number rather than flashing a placeholder that is wrong.
+ * `error` is set when the fetch failed and the values above are defaults, not live.
+ */
 interface PlatformConfigContextType {
-  /*
-   * The API serves a PERCENTAGE (5), not a fraction (0.05). Both are exposed
-   * deliberately: the same ambiguity already caused a real bug server-side,
-   * where a stored percentage would have been multiplied as-is rather than
-   * divided down first. No call site should have to remember which form it
-   * received.
-   */
   commissionPercent: number;
   commissionRate: number;
   referralDiscountKobo: number;
   referralDiscountType: string;
   currency: string;
-  /*
-   * Null until the first response lands, and null if it failed. Deliberately
-   * not defaulted: a pricing calculator that silently quotes against invented
-   * fee rules is worse than one that refuses to render.
-   */
   pricing: PricingRules | null;
-  /*
-   * The running free-delivery campaign, or null. Null both when no campaign is
-   * running and before the first response lands, so gate on `isLoading` before
-   * concluding there is no promotion.
-   */
   deliveryPromotion: DeliveryPromotion | null;
-  /* True until the first fetch settles, so callers can hold off on rendering
-     a number rather than flashing a placeholder that is wrong. */
   isLoading: boolean;
-  /* Set when the fetch failed and the values below are defaults, not live. */
   error: string | null;
 }
 
 /*
- * Used only until the first response lands, and only so the shape is never
- * undefined. Anything user-facing should gate on `isLoading` instead of
- * rendering these.
+ * Used only until the first response lands, and only so the shape is never undefined.
+ * Anything user-facing should gate on `isLoading` instead of rendering these.
  */
 const FALLBACK = {
   agent_commission_rate: 0,
@@ -153,9 +130,8 @@ export function PlatformConfigProvider({ children }: { children: ReactNode }) {
       .catch(() => {
         if (cancelled) return;
         /*
-         * Deliberately not silent. A wrong commission rate shown to an agent is
-         * a promise about their income, so callers are told the number is not
-         * live rather than being handed a plausible-looking default.
+         * Deliberately not silent.
+         * A wrong commission rate shown to an agent is a promise about their income, so callers are told the number is not live rather than being handed a plausible-looking default.
          */
         setError("Could not load platform settings.");
       })

@@ -10,15 +10,12 @@ import {
 
 /*
  * Rejecting a payout, registered as REJECT_PAYOUT.
- *
- * Was an inline panel that expanded inside the row, with the open row id and
- * the typed reason held as page state. The reason belongs to one decision about
- * one request, so it lives with that decision instead of on the page.
+ * Was an inline panel that expanded inside the row, with the open row id and the typed reason held as page state. The reason belongs to one decision about one request, so it lives with that decision instead of on the page.
+ * `amountLabel` is already formatted, so this component does no currency work.
  */
 
 interface RejectPayoutDialogProps {
   agentName?: string;
-  /** Already formatted, so this component does no currency work. */
   amountLabel?: string;
   onReject?: (reason: string) => void | Promise<void>;
 }

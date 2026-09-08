@@ -6,14 +6,9 @@ import {
 
 /*
  * The generic confirmation, registered as CONFIRM.
- *
- * The table engine opens this for any row action that declares `confirm`, and
- * passes `onConfirm` alongside the copy. Nothing here knows what is being
- * confirmed, which is the point: one dialog for every destructive row action in
- * the app rather than a bespoke overlay per page.
- *
- * The dialog stays open and shows the error if the action rejects, so a failed
- * delete does not disappear silently.
+ * The table engine opens this for any row action that declares `confirm`, and passes `onConfirm` alongside the copy.
+ * Nothing here knows what is being confirmed, which is the point: one dialog for every destructive row action in the app rather than a bespoke overlay per page.
+ * The dialog stays open and shows the error if the action rejects, so a failed delete does not disappear silently.
  */
 
 interface ConfirmDialogProps {
@@ -35,9 +30,7 @@ export default function ConfirmDialog({
 }: ConfirmDialogProps) {
   const { closeDialog } = useDialog();
   /*
-   * Typed boolean rather than void so success is distinguishable: run resolves
-   * undefined when the action throws, which a void action cannot be told apart
-   * from a successful one.
+   * Typed boolean rather than void so success is distinguishable: run resolves undefined when the action throws, which a void action cannot be told apart from a successful one.
    */
   const { error, run, isSubmitting } = useDialogSubmission<boolean>();
 

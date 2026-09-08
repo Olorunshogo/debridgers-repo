@@ -43,15 +43,15 @@ export interface CartItem {
   qty: number;
 }
 
+/*
+ * subtotal is naira, summed in kobo internally so it cannot drift.
+ * isHydrated is true only once the cart has been read from storage, so callers can wait for SSR-safe rendering.
+ */
 export interface CartContextValue {
   items: CartItem[];
-  /** Distinct products in the cart. */
   itemCount: number;
-  /** Sum of every line's quantity. */
   totalQuantity: number;
-  /** Subtotal in naira, summed in kobo so it cannot drift. */
   subtotal: number;
-  /** True once the cart has been read from storage, for SSR-safe rendering. */
   isHydrated: boolean;
   addItem: (item: Omit<CartItem, "qty">, qty?: number) => void;
   updateQuantity: (id: string, delta: number) => void;

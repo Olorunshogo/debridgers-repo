@@ -35,12 +35,10 @@ const LOGIN_FIELDS: readonly AuthFieldDescriptor[] = [
   },
 ];
 
+/*
+ * This app only ever serves admins, so the default is the admin login endpoint rather than the public one the marketing app's copy of this file uses.
+ */
 interface LoginPageProps {
-  /*
-   * This app only ever serves admins, so the default is the admin login
-   * endpoint rather than the public one the marketing app's copy of this
-   * file uses.
-   */
   variant?: LoginVariant;
 }
 
@@ -48,9 +46,7 @@ export default function LoginPage({ variant = "admin" }: LoginPageProps) {
   const { form, submit, apiError, isSubmitting } = useLogin({ variant });
 
   /*
-   * No public "Sign up" link: admins are invite-only, so /register is
-   * mentioned only in the fine print below, not advertised as a primary
-   * action the way buyer/agent signup is.
+   * No public "Sign up" link: admins are invite-only, so /register is mentioned only in the fine print below, not advertised as a primary action the way buyer/agent signup is.
    */
   return (
     <AuthFormShell

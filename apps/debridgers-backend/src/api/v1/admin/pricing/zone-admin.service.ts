@@ -14,12 +14,9 @@ import { CreateZoneDto, UpdateZoneDto, TAPER_MESSAGE } from "./dto/zone.dto";
 /**
  * Zone delivery rates as data rather than as migrations.
  *
- * Base fee, both taper rates, the ceiling and the standing free-delivery flag
- * are per zone and change with a measurement, so an operator owns them. The fee
- * rules themselves - the 3%, its floor and cap, the minimum order - stay in
- * `@debridgers/pricing` and change by deploy. Putting those behind a toggle
- * would give a money figure a second home, which is the failure CLAUDE.md
- * exists to prevent.
+ * Base fee, both taper rates, the ceiling and the standing free-delivery flag are per zone and change with a measurement, so an operator owns them.
+ * The fee rules themselves - the 3%, its floor and cap, the minimum order - stay in `@debridgers/pricing` and change by deploy.
+ * Putting those behind a toggle would give a money figure a second home, which is the failure CLAUDE.md exists to prevent.
  */
 @Injectable()
 export class ZoneAdminService {

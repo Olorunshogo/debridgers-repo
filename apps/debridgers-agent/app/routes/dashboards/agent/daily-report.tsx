@@ -101,8 +101,10 @@ interface ReportForm {
   unsoldReason: string;
 }
 
-/* Groups digits as the user types in the amount field. This is input masking,
-   not money display - use formatCurrency from @debridgers/ui-web for that. */
+/*
+ * Groups digits as the user types in the amount field.
+ * This is input masking, not money display - use formatCurrency from @debridgers/ui-web for that.
+ */
 function formatAmountInput(raw: string): string {
   const digits = raw.replace(/[^0-9]/g, "");
   if (!digits) return "";
@@ -166,8 +168,7 @@ export default function AgentDailyReportPage() {
         return;
       }
 
-      /* The report endpoint's schema is only { pages_sold, amount, notes }, so
-         the required area is folded into notes rather than dropped. */
+      /* The report endpoint's schema is only { pages_sold, amount, notes }, so the required area is folded into notes rather than dropped. */
       const notesParts = [
         `Area covered: ${form.areaCovered}.`,
         form.feedback,
@@ -205,7 +206,6 @@ export default function AgentDailyReportPage() {
 
   return (
     <div className="py-section-py grid gap-6 lg:grid-cols-[1fr_453px]">
-      {/* Left: Submit form */}
       <div className="border-line flex flex-col gap-5 rounded-2xl border bg-white p-6">
         <h3 className="font-syne text-heading text-lg font-semibold">
           Submit Today&apos;s Report
@@ -236,9 +236,7 @@ export default function AgentDailyReportPage() {
                   {submitError}
                 </p>
               )}
-              {/* Form */}
               <div className="flex flex-col gap-4">
-                {/* Row 1: Bags Sold + Cash Collected */}
                 <div className="grid gap-4 md:grid-cols-2">
                   <NumberInputField
                     label="Bags Sold Today"
@@ -257,7 +255,6 @@ export default function AgentDailyReportPage() {
                   />
                 </div>
 
-                {/* Area Covered */}
                 <SelectInputField
                   label="Area Covered Today"
                   required
@@ -267,7 +264,6 @@ export default function AgentDailyReportPage() {
                   onChange={handleChange("areaCovered")}
                 />
 
-                {/* Feedback */}
                 <TextareaField
                   label="Feedback"
                   placeholder="Any issues, customer feedback…"
@@ -277,7 +273,6 @@ export default function AgentDailyReportPage() {
                   onChange={handleChange("feedback")}
                 />
 
-                {/* Unsold Reason */}
                 <SelectInputField
                   label="Unsold Reason"
                   options={unsoldReasons}
@@ -287,7 +282,6 @@ export default function AgentDailyReportPage() {
                 />
               </div>
 
-              {/* Submit */}
               <div className="mx-auto w-full max-w-102.5">
                 <SubmitButton
                   variant="block"
@@ -303,7 +297,6 @@ export default function AgentDailyReportPage() {
         </AnimatePresence>
       </div>
 
-      {/* Right: History */}
       {historyLoading ? (
         <div className="border-line flex flex-col gap-3 overflow-hidden rounded-2xl border bg-white p-5">
           {Array.from({ length: 5 }).map((_, i) => (

@@ -5,7 +5,8 @@
  * 1. The ThrottlerGuard blocks repeated requests from the same IP above the configured limit.
  * 2. Critical public endpoints respond within acceptable latency bounds.
  *
- * Run against a live server:  VITE_API_URL=http://localhost:4000/api/v1 pnpm test
+ * Run against a live server:
+ * VITE_API_URL=http://localhost:4000/api/v1 pnpm test
  */
 
 const BASE = process.env.VITE_API_URL || "http://localhost:4000/api/v1";
@@ -39,17 +40,15 @@ describe("Rate Limiting (ThrottlerGuard)", () => {
     );
     const statuses = results.map((r) => r.status);
     const ok = statuses.filter((s) => s === 200).length;
-    expect(ok).toBe(10); // all 10 should pass within the short window
+    expect(ok).toBe(10);
   });
 
   it("should return 429 when the short limit (10 req/s) is exceeded", async () => {
-    // Fire 15 concurrent requests — at least some should be throttled
     const results = await Promise.all(
       Array.from({ length: 15 }, () => fetch(`${BASE}/products`)),
     );
     const statuses = results.map((r) => r.status);
     const throttled = statuses.filter((s) => s === 429).length;
-    // At least one should be rate-limited once limit is exceeded
     expect(throttled).toBeGreaterThan(0);
   });
 
@@ -69,7 +68,6 @@ describe("Rate Limiting (ThrottlerGuard)", () => {
   });
 
   it("Paystack webhook endpoint should be exempt from rate limiting", async () => {
-    // Fire 20 requests — none should be throttled (SkipThrottle applied)
     const results = await Promise.all(
       Array.from({ length: 20 }, () =>
         fetch(`${BASE}/payment/webhook`, {
@@ -98,7 +96,7 @@ describe("Rate Limiting (ThrottlerGuard)", () => {
 // === Benchmark / Latency
 
 describe("Benchmark — Response Time", () => {
-  const P95_THRESHOLD_MS = 500; // 95th percentile must be under 500ms
+  const P95_THRESHOLD_MS = 500;
   const REQUESTS = 20;
 
   async function benchmark(label: string, url: string): Promise<void> {

@@ -89,9 +89,10 @@ export default function BuyerShop() {
   const [sortBy, setSortBy] = useState<ProductSortKey>("category");
   const [currentPage, setCurrentPage] = useState<number>(1);
 
-  /* From the real category column, and only chips that have products behind
-     them. This used to derive from `description`, which is unique per product,
-     so every chip matched exactly one item. */
+  /*
+   * From the real category column, and only chips that have products behind them.
+   * This used to derive from `description`, which is unique per product, so every chip matched exactly one item.
+   */
   const categories = useMemo(
     () => categoryFilterChips(products.map((p) => p.category ?? null)),
     [products],
@@ -125,11 +126,13 @@ export default function BuyerShop() {
   }, [currentPage, totalPages]);
 
   return (
-    // === Relative container so cart drawer can use absolute positioning
+    // === Relative container
+    // So the cart drawer and bottom bar below can use absolute positioning against this shell.
     <div className="relative h-full">
       {/* Scrollable content */}
       <div className="flex h-full flex-col gap-4 overflow-y-auto pb-28">
-        {/* === Buy again - only once there is order history to rank */}
+        {/* === Buy again */}
+        {/* Shown only once there is order history to rank. */}
         {hasHistory && (
           <section className="flex flex-col gap-3">
             <h2 className="font-syne text-heading text-base font-bold">
@@ -296,8 +299,8 @@ export default function BuyerShop() {
         )}
       </div>
 
-      {/* === Bottom cart bar - absolute within the relative shell, so it stays
-          inside the dashboard's bounds instead of spanning the viewport */}
+      {/* === Bottom cart bar */}
+      {/* Absolute within the relative shell, so it stays inside the dashboard's bounds instead of spanning the viewport. */}
       <AnimatePresence>
         {cartProductCount > 0 && (
           <motion.div
@@ -337,7 +340,8 @@ export default function BuyerShop() {
         )}
       </AnimatePresence>
 
-      {/* === Cart drawer - absolute within this relative container */}
+      {/* === Cart drawer */}
+      {/* Absolute within this relative container. */}
       <AnimatePresence>
         {cartOpen && (
           <>

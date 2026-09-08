@@ -15,9 +15,9 @@ import { apiFetch } from "@debridgers/api-client";
  * REQUEST_PAYOUT in app/providers/dialog-registry.ts.
  */
 
+/* onRequested lets the wallet page refresh its balance once the request lands. */
 interface RequestPayoutDialogProps {
   availableBalanceKobo: number;
-  /** Lets the wallet page refresh its balance once the request lands. */
   onRequested?: () => void;
 }
 

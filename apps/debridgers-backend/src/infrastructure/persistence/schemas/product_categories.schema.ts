@@ -26,23 +26,19 @@ import { createInsertSchema } from "drizzle-zod";
  * `products.category_id` points at a LEAF of this tree. The older
  * `products.category` text column is left in place and still written, so
  * anything reading it keeps working while the two coexist.
+ *
+ * `slug` is a stable, URL-safe key, unique per parent rather than globally: "White" is a valid variety under both Garri and Beans.
+ * `parent_id` null means this is a top-level category.
+ * `image_url` matters most at variety level, since Wake Gida does not look like cowpea and Ofada does not look like long grain; a buyer picking by photo needs the leaf image, not the category's.
  */
 export const product_categories = pgTable("product_categories", {
   id: serial().primaryKey().notNull(),
   name: text().notNull(),
-  /* Stable, URL-safe key. Unique per parent, not globally - "White" is a valid
-     variety under both Garri and Beans. */
   slug: text().notNull(),
-  /* Null means this is a top-level category. */
   parent_id: integer().references((): AnyPgColumn => product_categories.id, {
     onDelete: "cascade",
   }),
   description: text(),
-  /*
-   * Images matter most at variety level: Wake Gida does not look like cowpea,
-   * and Ofada does not look like long grain. A buyer picking by photo needs the
-   * leaf image, not the category's.
-   */
   image_url: text(),
   sort_order: integer().notNull().default(0),
   is_active: boolean().notNull().default(true),

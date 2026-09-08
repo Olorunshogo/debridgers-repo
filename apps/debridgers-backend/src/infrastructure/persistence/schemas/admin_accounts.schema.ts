@@ -15,13 +15,14 @@ export const adminAccountTypeEnum = pgEnum("admin_account_type", [
   "holding",
 ]);
 
+/* Balance and totals are kobo. */
 export const adminAccounts = pgTable(
   "admin_accounts",
   {
     id: serial().primaryKey().notNull(),
     account_type: adminAccountTypeEnum().notNull().default("platform"),
     name: varchar({ length: 100 }).notNull(),
-    balance: integer().notNull().default(0), // in kobo
+    balance: integer().notNull().default(0),
     total_received: integer().notNull().default(0),
     total_paid_out: integer().notNull().default(0),
     description: text(),

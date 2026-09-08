@@ -9,12 +9,9 @@ import {
 import { apiFetch, ApiError } from "@debridgers/api-client";
 
 /*
- * Glue between the dialog engine and the API. Registered as PAYMENT_METHOD in
- * app/providers/dialog-registry.ts.
- *
- * Step two of checkout: the order already exists as pending and unpaid, and
- * every figure below was priced by the server when it was created. Nothing here
- * recomputes a total, so what the buyer was shown is what gets charged.
+ * Glue between the dialog engine and the API. Registered as PAYMENT_METHOD in app/providers/dialog-registry.ts.
+ * Step two of checkout: the order already exists as pending and unpaid, and every figure below was priced by the server when it was created. Nothing here recomputes a total, so what the buyer was shown is what gets charged.
+ * `onPaid` fires only after a wallet payment settles, never for the Paystack hop.
  */
 
 interface PaymentMethodDialogProps {
@@ -24,7 +21,6 @@ interface PaymentMethodDialogProps {
   handlingFeeKobo: number;
   totalKobo: number;
   walletBalanceKobo: number;
-  /** Fires only after a wallet payment settles, never for the Paystack hop. */
   onPaid?: () => void;
 }
 
@@ -48,8 +44,7 @@ export default function PaymentMethodDialog({
   );
 
   /*
-   * Blocks Escape and backdrop dismissal mid-payment. Clicking away from a
-   * half-submitted charge is the expensive kind of accident.
+   * Blocks Escape and backdrop dismissal mid-payment. Clicking away from a half-submitted charge is the expensive kind of accident.
    */
   useEffect(() => {
     setDialogLoading(isSubmitting);
@@ -94,10 +89,8 @@ export default function PaymentMethodDialog({
             });
           } catch (err) {
             /*
-             * The payment rate limiter exists to stop an order being charged
-             * twice, so hitting it usually means an attempt is already in
-             * flight. "Too many payment attempts. Try again in 47 seconds"
-             * reads as a fault; this says what actually happened.
+             * The payment rate limiter exists to stop an order being charged twice, so hitting it usually means an attempt is already in flight.
+             * "Too many payment attempts. Try again in 47 seconds" reads as a fault; this says what actually happened.
              */
             if (err instanceof ApiError && err.status === 429) {
               throw new Error(
@@ -108,9 +101,8 @@ export default function PaymentMethodDialog({
           }
 
           /*
-           * Paystack finishes off-site, so this never reaches the success
-           * panel. The webhook is what actually marks the order paid; landing
-           * back on the return URL is not proof of payment.
+           * Paystack finishes off-site, so this never reaches the success panel.
+           * The webhook is what actually marks the order paid; landing back on the return URL is not proof of payment.
            */
           if (method === "paystack") {
             if (!res?.authorization_url) {

@@ -46,11 +46,7 @@ export function meta() {
 
 /*
  * The approval step in the payout chain.
- *
- * Agents request payouts and the Friday cron pays approved ones, but nothing
- * could move a request from pending to approved: the endpoints existed with no
- * interface behind them, so the queue had no exit and no agent could ever be
- * paid.
+ * Agents request payouts and the Friday cron pays approved ones, but nothing could move a request from pending to approved: the endpoints existed with no interface behind them, so the queue had no exit and no agent could ever be paid.
  */
 
 type WithdrawalStatus = "pending" | "approved" | "rejected" | "paid";
@@ -72,8 +68,7 @@ interface Withdrawal {
   created_at: string;
 }
 
-/* The queue's own sums, counted server-side over every row rather than the
-   visible page, which the two totals cards read. */
+/* The queue's own sums, counted server-side over every row rather than the visible page, which the two totals cards read. */
 interface WithdrawalListMeta extends PaginationMeta {
   pending_total: number;
   approved_total: number;
@@ -116,8 +111,7 @@ export default function AdminPayoutsPage() {
   const [filter, setFilter] = useState<string>("pending");
   const [loading, setLoading] = useState<boolean>(true);
   const [actionError, setActionError] = useState<string | null>(null);
-  /* The list's own failure. An empty table would read as "no payout
-     requests", which is a different story. */
+  /* The list's own failure. An empty table would read as "no payout requests", which is a different story. */
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -133,9 +127,7 @@ export default function AdminPayoutsPage() {
   const { triggerDialog } = useDialog();
 
   /*
-   * Server mode: the endpoint paginates, sorts and searches. Sort keys below
-   * are its own allowlist, so an unknown one is a 400 rather than a silent
-   * full-table sort.
+   * Server mode: the endpoint paginates, sorts and searches. Sort keys below are its own allowlist, so an unknown one is a 400 rather than a silent full-table sort.
    */
   const load = useCallback(
     async (state: TableStateSnapshot, status: string): Promise<void> => {
@@ -187,8 +179,7 @@ export default function AdminPayoutsPage() {
     if (snapshot) void load(snapshot, filter);
   }, [snapshot, filter, load]);
 
-  /* Both throw rather than swallowing: the confirming dialog shows the failure
-     and stays open, instead of closing over a decision that never landed. */
+  /* Both throw rather than swallowing: the confirming dialog shows the failure and stays open, instead of closing over a decision that never landed. */
   const handleApprove = useCallback(
     async (id: number): Promise<void> => {
       setBusyId(id);
@@ -267,8 +258,7 @@ export default function AdminPayoutsPage() {
 
   const columns = useMemo<TableColumn<Withdrawal>[]>(
     () => [
-      /* Column ids double as the endpoint's sort keys in server mode, so they
-         are its allowlist verbatim, not names chosen here. */
+      /* Column ids double as the endpoint's sort keys in server mode, so they are its allowlist verbatim, not names chosen here. */
       {
         id: "agent_name",
         header: "Agent",
@@ -339,12 +329,12 @@ export default function AdminPayoutsPage() {
 
   const rowActions = useMemo<RowAction<Withdrawal>[]>(
     () => [
+      /* `hidden` restricts this action to a pending request - it is the only one that can be acted on. */
       {
         id: "approve",
         label: "Approve",
         icon: Check,
         tone: "primary",
-        /* Only a pending request can be acted on. */
         hidden: (w) => w.status !== "pending",
         isBusy: (w) => busyId === w.id,
         onSelect: (w) => handleApprove(w.id),
@@ -367,9 +357,7 @@ export default function AdminPayoutsPage() {
         hidden: (w) => w.status !== "pending",
         isBusy: (w) => busyId === w.id,
         /*
-         * Opened directly rather than through `confirm`, because the rejection
-         * carries a reason back and the engine's confirm contract passes no
-         * arguments.
+         * Opened directly rather than through `confirm`, because the rejection carries a reason back and the engine's confirm contract passes no arguments.
          */
         onSelect: (w) =>
           triggerDialog("REJECT_PAYOUT", {
@@ -503,8 +491,7 @@ export default function AdminPayoutsPage() {
         onRetry={reload}
         pageSize={10}
         pageSizeOptions={[10, 25, 50]}
-        /* The filter lives on the page, so the engine has to be told when it
-           changes or the viewer stays on a page that no longer exists. */
+        /* The filter lives on the page, so the engine has to be told when it changes or the viewer stays on a page that no longer exists. */
         resetKey={filter}
         toolbar={FILTERS.map((f) => (
           <button

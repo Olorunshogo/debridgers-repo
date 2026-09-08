@@ -11,49 +11,38 @@ import type {
 } from "./table-types";
 
 /*
- * The table engine's brain. No DOM, no markup - so the same pagination, sort,
- * search, selection and page-reset behaviour is shared by the table renderer,
- * the card renderer, and anything else that ever renders rows.
+ * The table engine's brain. No DOM, no markup - so the same pagination, sort, search, selection and page-reset behaviour is shared by the table renderer, the card renderer, and anything else that ever renders rows.
  */
 
+/*
+ * `rows` is the whole set in client mode, the current page in server mode.
+ * `dataMode` defaults to "client"; `pageSize` defaults to 10.
+ * `getRowId` is required when rows carry no `id`.
+ * `loading` is whether the consumer is currently fetching.
+ * The engine only clamps an out-of-range page while this is false: a server-mode consumer that empties its rows during a fetch would otherwise be yanked back to page 1 by the very request it just made.
+ * `total` and `pageCount` are server mode only.
+ * `onStateChange` is called with the debounced state whenever it changes, and once on mount so the consumer can make its first request.
+ * It is held in a ref, so an inline arrow function here does not cause a refetch loop.
+ * `resetKey` is the identity of any filter the page owns outside the engine, such as a status chip row.
+ * When it changes, the engine returns to page 1 and clears the selection, which is the reset every hand-rolled list forgets.
+ */
 export interface UseTableStateOptions<TRow> {
-  /** Client mode: the whole set. Server mode: the current page. */
   rows: readonly TRow[];
   columns: readonly TableColumn<TRow>[];
-  /** Defaults to "client". */
   dataMode?: TableDataModeOption;
-  /** Defaults to 10. */
   pageSize?: number;
   initialPage?: number;
   initialSearch?: string;
   initialSort?: TableSort | null;
-  /** Required when rows carry no `id`. */
   getRowId?: (row: TRow) => RowId;
   searchDebounceMs?: number;
   selectable?: boolean;
-  /**
-   * Whether the consumer is currently fetching. The engine only clamps an
-   * out-of-range page while this is false: a server-mode consumer that empties
-   * its rows during a fetch would otherwise be yanked back to page 1 by the
-   * very request it just made.
-   */
   loading?: boolean;
 
-  /* Server mode only. */
   total?: number;
   pageCount?: number;
-  /**
-   * Called with the debounced state whenever it changes, and once on mount so
-   * the consumer can make its first request. Held in a ref, so an inline
-   * arrow function here does not cause a refetch loop.
-   */
   onStateChange?: (state: TableStateSnapshot) => void;
 
-  /**
-   * Identity of any filter the page owns outside the engine, such as a status
-   * chip row. When it changes, the engine returns to page 1 and clears the
-   * selection, which is the reset every hand-rolled list forgets.
-   */
   resetKey?: string | number | boolean | null;
 }
 
@@ -64,7 +53,7 @@ const EMPTY_SELECTION: ReadonlySet<RowId> = new Set<RowId>();
 function defaultGetRowId<TRow>(row: TRow): RowId {
   const id = (row as { id?: RowId }).id;
   if (id === undefined || id === null) {
-    /* A wiring mistake, not a user-facing error. Fail loudly. */
+    /* A wiring mistake, not a user-facing error - fail loudly. */
     throw new Error(
       "[useTableState] Rows have no `id`. Pass getRowId to identify them.",
     );
@@ -162,10 +151,8 @@ export function useTableState<TRow>(
   // === Resets, derived during render
 
   /*
-   * Adjusting state during render rather than in an effect, so the change is
-   * committed in the same pass. In an effect, the emission below would fire
-   * once with the stale page and again with the reset one - two requests for
-   * one keystroke.
+   * Adjusting state during render rather than in an effect, so the change is committed in the same pass.
+   * In an effect, the emission below would fire once with the stale page and again with the reset one - two requests for one keystroke.
    */
   const pageResetSignature = `${debouncedSearch}|${sort?.key ?? ""}|${
     sort?.direction ?? ""
@@ -216,10 +203,8 @@ export function useTableState<TRow>(
   /*
    * resetKey belongs in this key, not just in the page-reset signature above.
    *
-   * A page-level filter changes resetKey but usually leaves page/search/sort
-   * untouched - the admin is already on page 1. Without resetKey here the
-   * serialised snapshot is identical, the effect below never re-runs, and a
-   * server-mode table never reloads for the new filter.
+   * A page-level filter changes resetKey but usually leaves page/search/sort untouched - the admin is already on page 1.
+   * Without resetKey here the serialised snapshot is identical, the effect below never re-runs, and a server-mode table never reloads for the new filter.
    */
   const snapshotKey = `${snapshot.page}|${snapshot.pageSize}|${
     snapshot.search

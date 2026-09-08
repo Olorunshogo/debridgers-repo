@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@debridgers/pricing": "workspace:*",
+    "@debridgers/ratings": "workspace:*",
     "@keyv/redis": "^5.1.6",
     "@neondatabase/serverless": "^1.0.2",
     "@nestjs/cache-manager": "^3.0.1",

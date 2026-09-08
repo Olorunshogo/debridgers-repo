@@ -53,9 +53,9 @@ export async function databaseAvailable(): Promise<boolean> {
   }
 }
 
+/* `truncate` empties every table between tests without paying for a re-migration. */
 export interface TestDb {
   db: TestDatabase;
-  /* Empties every table between tests without paying for a re-migration. */
   truncate: () => Promise<void>;
   destroy: () => Promise<void>;
 }

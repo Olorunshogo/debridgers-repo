@@ -34,11 +34,11 @@ export const disputes = pgTable("disputes", {
   type: disputeTypeEnum().notNull(),
   status: disputeStatusEnum().notNull().default("initiated"),
   reason: text(),
-  paystack_reference: varchar({ length: 100 }), // Paystack dispute/chargeback reference
+  paystack_reference: varchar({ length: 100 }),
   initiated_at: timestamp().notNull().defaultNow(),
   resolved_at: timestamp(),
   resolution_notes: text(),
-  resolved_by: integer().references(() => users.id, { onDelete: "set null" }), // Admin who resolved
+  resolved_by: integer().references(() => users.id, { onDelete: "set null" }),
   ...timestamps,
 });
 

@@ -211,10 +211,6 @@ export class ProductService {
     };
   }
 
-  /**
-   * Soft delete product (Admin only)
-   * Sets deleted_at timestamp instead of actual deletion
-   */
   async deleteProduct(productId: number) {
     const [existing] = await this.db
       .select()
@@ -238,10 +234,6 @@ export class ProductService {
     };
   }
 
-  /**
-   * Request stock from product (Agent only)
-   * Creates a stock request that admin can fulfill
-   */
   async requestStock(agentId: number, dto: CreateStockRequestDto) {
     const [product] = await this.db
       .select()
@@ -277,10 +269,10 @@ export class ProductService {
         product_id: dto.product_id,
         quantity: dto.quantity,
         status: "pending",
-        /* Remit price is the product's own price less the agent's commission
-           per package. The old ₦1,300 flat assumed a product the catalogue
-           has never sold: it recorded ten bags of ₦42,000 rice as ₦13,000
-           owed, so an agent could keep almost the whole consignment. */
+        /*
+         * Remit price is the product's own price less the agent's commission per package.
+         * The old ₦1,300 flat assumed an unsold product, overpaying agents by nearly the whole consignment.
+         */
         amount_to_remit:
           dto.quantity * remitPerPackageKobo(product.name, product.price_kobo),
         amount_remitted: 0,

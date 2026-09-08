@@ -65,14 +65,11 @@ export default function AdminInvites() {
   const [loading, setLoading] = useState<boolean>(true);
   const [email, setEmail] = useState<string>("");
   const [sending, setSending] = useState<boolean>(false);
-  /* Carries its own tone: the same slot reports both a sent invite and a
-     failed one, and they must not look alike. */
+  /* Carries its own tone: the same slot reports both a sent invite and a failed one, and they must not look alike. */
   const [message, setMessage] = useState<InviteMessage | null>(null);
-  /* The list's own failure, kept apart from the invite form's message so a
-     failed load cannot read as "no invitations yet". */
+  /* The list's own failure, kept apart from the invite form's message so a failed load cannot read as "no invitations yet". */
   const [loadError, setLoadError] = useState<string | null>(null);
-  /* Which invite code was just copied, so that row can confirm it. Declared
-     here because copyToClipboard set it without it ever existing. */
+  /* Which invite code was just copied, so that row can confirm it. Declared here because copyToClipboard set it without it ever existing. */
   const [copied, setCopied] = useState<string | null>(null);
 
   const loadInvites = useCallback(async (): Promise<void> => {

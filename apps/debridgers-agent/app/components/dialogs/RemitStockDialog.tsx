@@ -8,17 +8,16 @@ import {
 import { apiFetch } from "@debridgers/api-client";
 
 /*
- * Glue between the dialog engine and POST /agent/stock/remit. The presentation
- * component in @debridgers/ui-web knows nothing about fetching. Registered as
- * REMIT_STOCK in app/providers/dialog-registry.ts.
+ * Glue between the dialog engine and POST /agent/stock/remit.
+ * The presentation component in @debridgers/ui-web knows nothing about fetching.
+ * Registered as REMIT_STOCK in app/providers/dialog-registry.ts.
+ * `onRemitted` lets the request-stock page refetch its list once the remittance lands.
  */
-
 interface RemitStockDialogProps {
   stockRequestId: number;
   productName: string;
   amountToRemitKobo: number;
   amountRemittedKobo: number;
-  /** Lets the request-stock page refetch its list once the remittance lands. */
   onRemitted?: () => void;
 }
 

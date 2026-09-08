@@ -1,19 +1,14 @@
-// apps/debridgers-backend/src/db/schema/products.schema.ts
 import { pgTable, serial, text, integer, boolean } from "drizzle-orm/pg-core";
 import { timestamps } from "../../helper/column.helper";
 import { product_categories } from "./product_categories.schema";
 
 /*
- * The catalogue. Prices live here and nowhere else: checkout re-reads
- * price_kobo from this table on every order, so a price the client sends is
- * always discarded.
+ * The catalogue. Prices live here and nowhere else: checkout re-reads price_kobo from this table on every order, so a price the client sends is always discarded.
+ * The table name is kept singular ("product"), unlike the rest of the schema.
  *
- * category_id restricts on delete rather than cascading, because
- * deactivateCategory is a soft delete and a cascade would silently null the
- * taxonomy on every product beneath a category an admin only meant to hide.
+ * category_id restricts on delete rather than cascading, because deactivateCategory is a soft delete and a cascade would silently null the taxonomy on every product beneath a category an admin only meant to hide.
  */
 export const productsTable = pgTable("product", {
-  // Keep singular
   id: serial().primaryKey().notNull(),
   name: text().notNull(),
   unit: text().notNull(),

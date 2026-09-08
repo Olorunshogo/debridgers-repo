@@ -635,3 +635,4 @@ Ten to fifteen rows is enough. **Ask the two existing customers who else they bu
 
 1. [Debridgers - Customers Terms and Conditions](https://docs.google.com/document/d/16atOOEH0A48k6eEZzx2MN5IyqQc_sCt9UlMxn-MP-xU/edit?tab=t.w8b0m4yhnxnb)
 2. [Debridgers - Survey Requirement Document - Vision & Mission](https://docs.google.com/document/d/1zUt2aIv7dfdd97VtxlNlBIKFy--r42Wjw96rpKnKLIs/edit?tab=t.zhmlw19u52yo#heading=h.5d2nkwa6yf3n)
+3. [Stephanie - HR Framework - Link](https://docs.google.com/document/d/1W4ogs_L9OPudeJc9GmiT2UAI7PeYmQMjH83fbFOIwV8/edit?tab=t.0)

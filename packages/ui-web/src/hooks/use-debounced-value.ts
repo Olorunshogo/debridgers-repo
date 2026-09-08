@@ -3,8 +3,7 @@ import { useEffect, useState } from "react";
 /**
  * Trails `value` by `delayMs`, so a keystroke does not become a request.
  *
- * The first value is returned immediately rather than after a delay - a table
- * should render its initial state, not an empty one, while a timer runs.
+ * The first value is returned immediately rather than after a delay - a table should render its initial state, not an empty one, while a timer runs.
  */
 export function useDebouncedValue<T>(value: T, delayMs: number = 300): T {
   const [debounced, setDebounced] = useState<T>(value);

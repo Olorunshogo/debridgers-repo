@@ -125,11 +125,11 @@ export class PublicController {
     const data = rows.map(({ category_id, category, ...product }) => {
       const derived = category_id ? labels.get(category_id) : undefined;
 
+      // category is the root ancestor and drives the shop's filter chips.
+      // subcategory is the immediate parent and labels the product card.
       return {
         ...product,
-        /* Root ancestor - drives the shop's filter chips. */
         category: derived?.category ?? category,
-        /* Immediate parent - labels the product card. */
         subcategory: derived?.subcategory ?? category,
       };
     });
@@ -145,6 +145,10 @@ export class PublicController {
   })
   @ApiResponse({ status: 200, description: "Zones retrieved" })
   async getZones() {
+    /*
+     * tier_one/tier_two/delivery_cap belong to the zone, not to the defaults in /config/public.
+     * A client that quoted from those defaults was pricing a far zone at the near zone's rates, computing walk-away prices against a schedule checkout does not charge.
+     */
     const rows = await this.db
       .select({
         id: schema.zones.id,
@@ -152,13 +156,6 @@ export class PublicController {
         delivery_fee: schema.zones.delivery_fee,
         free_delivery: schema.zones.free_delivery,
         areas: schema.zones.areas,
-        /*
-         * The taper and the ceiling belong to the zone, not to the defaults in
-         * /config/public. A client that quoted from those defaults was pricing
-         * a far zone at the near zone's rates, which is how the buying desk
-         * came to compute walk-away prices against a schedule checkout does not
-         * charge.
-         */
         tier_one_per_package_kobo: schema.zones.tier_one_per_package_kobo,
         tier_two_per_package_kobo: schema.zones.tier_two_per_package_kobo,
         delivery_cap_kobo: schema.zones.delivery_cap_kobo,
@@ -212,10 +209,8 @@ export class PublicController {
         currency: "NGN",
         delivery_promotion: promotion,
         /*
-         * Imported from @debridgers/pricing rather than restated here. Anything
-         * that re-types these numbers is a place they can drift from the
-         * charge, which is exactly how a ₦1,400 unit price outlived the
-         * product it described.
+         * Imported from @debridgers/pricing rather than restated here.
+         * Anything that re-types these numbers is a place they can drift from the charge, which is exactly how a ₦1,400 unit price outlived the product it described.
          */
         pricing: {
           service_fee_rate: SERVICE_FEE_RATE,
@@ -224,9 +219,8 @@ export class PublicController {
           packages_included_in_base: PACKAGES_INCLUDED_IN_BASE,
           tier_one_package_count: TIER_ONE_PACKAGE_COUNT,
           /*
-           * Defaults only. The taper and the ceiling are per zone, so a client
-           * quoting a specific delivery must read them off that zone rather
-           * than from here, or it will under-quote the far ones.
+           * default_tier_one/default_tier_two/default_delivery_cap are defaults only.
+           * The taper and the ceiling are per zone, so a client quoting a specific delivery must read them off that zone rather than from here, or it will under-quote the far ones.
            */
           default_tier_one_per_package_kobo: TIER_ONE_PER_PACKAGE_KOBO,
           default_tier_two_per_package_kobo: TIER_TWO_PER_PACKAGE_KOBO,
@@ -289,10 +283,11 @@ export class PublicController {
   @UsePipes(new ZodValidationPipe(webLeadSchema))
   @ApiOperation({ summary: "Public web lead / interest form submission" })
   async submitWebLead(@Body() dto: WebLeadDto) {
+    // shop_name is a NOT NULL column, so web leads without one default to an empty string.
     await this.db.insert(schema.outreach_records).values({
       owner_name: dto.owner_name,
       phone: dto.phone,
-      shop_name: dto.shop_name ?? "", // NOT NULL column, default empty string for web leads
+      shop_name: dto.shop_name ?? "",
       lga: dto.lga ?? null,
       area: dto.area ?? null,
       product_interest: dto.product_interest ?? null,

@@ -1,7 +1,6 @@
 /*
- * investor, farmer and logistics are reserved, not active roles: no schema,
- * signup config or dashboard exists for them yet. Uncomment as each gets real
- * backend support, matching apps/debridgers-backend's roles.type.ts.
+ * investor, farmer and logistics are reserved, not active roles: no schema, signup config or dashboard exists for them yet.
+ * Uncomment as each gets real backend support, matching apps/debridgers-backend's roles.type.ts.
  */
 export type UserRole = "admin" | "agent" | "buyer" | "company";
 // | "investor"

@@ -1,9 +1,9 @@
 import { X } from "lucide-react";
 
+/** `showCloser` is hidden while a submission is in flight or a success panel is showing. */
 export interface DialogHeaderProps {
   title: string;
   description?: string;
-  /** Hidden while a submission is in flight or a success panel is showing. */
   showCloser?: boolean;
   onClose?: () => void;
 }

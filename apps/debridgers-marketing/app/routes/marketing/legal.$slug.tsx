@@ -7,9 +7,9 @@ import { useAuth } from "@debridgers/ui-web";
 import { marketingNavLinks } from "@/components/marketing/data/data";
 
 /*
- * One page for every legal document. The slug selects the content; the renderer
- * is shared. Publishing the agent agreement means adding its data file to the
- * registry, and this file does not change.
+ * One page for every legal document.
+ * The slug selects the content; the renderer is shared.
+ * Publishing the agent agreement means adding its data file to the registry, and this file does not change.
  */
 
 // === Data
@@ -18,9 +18,8 @@ export function loader({ params }: Route.LoaderArgs) {
   const document = getLegalDocument(params.slug);
 
   /*
-   * A 404 rather than a redirect. An unknown slug is usually a stale link in an
-   * email or a contract, and quietly serving a different document would let a
-   * customer believe they had read the one they asked for.
+   * A 404 rather than a redirect.
+   * An unknown slug is usually a stale link in an email or a contract, and quietly serving a different document would let a customer believe they had read the one they asked for.
    */
   if (!document) {
     throw data("Document not found", { status: 404 });

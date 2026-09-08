@@ -10,16 +10,14 @@ import { BASE_BACKEND_URL } from "@debridgers/api-client";
 
 /*
  * Glue between the dialog engine and the contact endpoint.
- *
- * Posts to the same /contact endpoint the marketing page form uses, so a message
- * raised from inside a dashboard lands in the same inbox as a public enquiry.
+ * Posts to the same /contact endpoint the marketing page form uses, so a message raised from inside a dashboard lands in the same inbox as a public enquiry.
  * Registered as SUPPORT_TICKET in app/providers/dialog-registry.ts.
+ * `contextNote` is appended to the message, e.g. the order the user is asking about.
  */
 
 interface SupportTicketDialogProps {
   defaultName?: string;
   defaultEmail?: string;
-  /* Appended to the message, e.g. the order the user is asking about. */
   contextNote?: string;
 }
 
@@ -43,8 +41,7 @@ export default function SupportTicketDialog({
   }, [status, closeDialog]);
 
   /*
-   * Deliberately not apiFetch: /contact is public and unauthenticated, and a
-   * support message must still send when the session is the thing that broke.
+   * Deliberately not apiFetch: /contact is public and unauthenticated, and a support message must still send when the session is the thing that broke.
    */
   async function submit(values: SupportTicketValues): Promise<void> {
     const res = await fetch(`${BASE_BACKEND_URL}/contact`, {

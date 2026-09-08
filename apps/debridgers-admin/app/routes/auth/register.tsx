@@ -28,10 +28,7 @@ export default function AdminRegister() {
   const [apiKeyCopied, setApiKeyCopied] = useState<boolean>(false);
 
   /*
-   * No schema library here (see the file's own note: plain useState, not
-   * react-hook-form), so validity is the same required/minLength constraints
-   * already on the inputs below, computed once for the submit button rather
-   * than left to the browser's own validation on click.
+   * No schema library here (plain useState, not react-hook-form), so validity is the same required/minLength constraints already on the inputs below, computed once for the submit button rather than left to the browser's own validation on click.
    */
   const isFormValid =
     formData.email.trim() !== "" &&

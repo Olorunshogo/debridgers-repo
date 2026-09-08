@@ -1,9 +1,8 @@
 import { apiFetch } from "../../apiFetch";
 
 /*
- * Admin actions on a buyer account. Blocking is permanent, suspension is a
- * hold - they are separate fields on the user row, so each has its own pair of
- * endpoints rather than one status enum.
+ * Admin actions on a buyer account.
+ * Blocking is permanent, suspension is a hold - they are separate fields on the user row, so each has its own pair of endpoints rather than one status enum.
  */
 
 export function blockBuyer(id: number): Promise<null> {

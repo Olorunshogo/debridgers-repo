@@ -13,20 +13,19 @@ import type { SelfRegisterableRole } from "@debridgers/api-client";
 /*
  * The single place this app's self-registerable role is described.
  *
- * This app only ever serves buyers - each role now lives on its own subdomain
- * app, so there is no cross-role table to keep in sync here. Debridgers-agent
- * carries the same shape for its own role.
+ * This app only ever serves buyers - each role now lives on its own subdomain app, so there is no cross-role table to keep in sync here.
+ * Debridgers-agent carries the same shape for its own role.
  */
 
 /*
- * Field descriptors come from @debridgers/ui-web. The shared form renders
- * whatever descriptors it is given, so this table is the only place that knows
- * which fields belong to this role.
+ * Field descriptors come from @debridgers/ui-web.
+ * The shared form renders whatever descriptors it is given, so this table is the only place that knows which fields belong to this role.
  */
 export type SignupFieldDescriptor = AuthFieldDescriptor;
 export type { RoleSignupConfig, SignupFormValues };
 
-// === Shared base fields, in render order
+// === Shared base fields
+// In render order.
 
 const BASE_FIELDS: readonly SignupFieldDescriptor[] = [
   {
@@ -69,8 +68,7 @@ const BASE_FIELDS: readonly SignupFieldDescriptor[] = [
 /*
  * The consent tick for a role, linking to that role's own document.
  *
- * Built from the document rather than written out, so the slug in the link and
- * the version in the consent record cannot drift from the text on the page.
+ * Built from the document rather than written out, so the slug in the link and the version in the consent record cannot drift from the text on the page.
  */
 function termsField(slug: string, label: string): SignupFieldDescriptor {
   return {
@@ -109,10 +107,9 @@ export const ROLE_SIGNUP_CONFIG: Record<
     fields: [
       ...BASE_FIELDS,
       /*
-       * Referral code hidden for now, not removed. The schema field above stays
-       * optional so the form still validates and the register payload still
-       * carries referred_by_agent_code when something else supplies it - a
-       * referral link, for instance. Uncomment to put the input back.
+       * Referral code hidden for now, not removed.
+       * The schema field above stays optional so the form still validates and the register payload still carries referred_by_agent_code when something else supplies it - a referral link, for instance.
+       * Uncomment to put the input back.
        */
       // {
       //   name: "referredByAgentCode",
@@ -120,7 +117,7 @@ export const ROLE_SIGNUP_CONFIG: Record<
       //   type: "text",
       //   optional: true,
       // },
-      /* Last, so consent is the final thing read before the button. */
+      // Last, so consent is the final thing read before the button.
       termsField(buyerTerms.slug, buyerTerms.title),
     ],
     terms: { slug: buyerTerms.slug, version: buyerTerms.version },

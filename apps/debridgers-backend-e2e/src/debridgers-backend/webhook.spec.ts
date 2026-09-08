@@ -61,7 +61,8 @@ describe("Paystack webhook", () => {
 
   it("credits a deposit exactly once even when the webhook fires twice", async () => {
     const buyer = await registerBuyer(BASE, "webhook-buyer");
-    const amountKobo = 250000; // ₦2,500, above the ₦200 deposit minimum
+    // ₦2,500, above the ₦200 deposit minimum.
+    const amountKobo = 250000;
 
     /*
      * Reading the wallet both creates it and pins the starting balance. The

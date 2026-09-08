@@ -107,8 +107,73 @@ proven nothing about the money paths.
 
 ## Conventions
 
-- Section dividers are `// === Name`. Never decorative rules.
-- Comment the non-obvious _why_, never the what.
+- Section dividers are `// === Name`. Never decorative rules (no `---`, no `===...===`).
+- Comment the non-obvious _why_, never the what. If a block is obvious without a comment, it gets none.
 - Explicit type annotations on state, even where inference would do.
 - No em dashes in markdown, commit messages or documentation.
 - Commits are one line with a conventional prefix, and signed.
+
+### Comment placement (locked, do not relitigate)
+
+A comment goes in exactly one place: **at the top**, above the declaration,
+block, or function it explains. There is no trailing-comment exception -
+not even a short one.
+
+- Never wedge a comment between the members of an interface, object literal,
+  props type, or enum, however short. `deliveryWindow: DateRange; // buyer-supplied`
+  is banned exactly as much as a multi-line block would be. If a field needs
+  explaining, the explanation goes once at the top of the whole declaration,
+  naming the field(s) it covers when it explains more than one.
+- Never scatter a comment per statement inside a function body. One comment
+  above the block it explains, not one trailing each line.
+- If a block reads fine once its inline comments are removed, delete them -
+  do not invent a top-of-block comment to replace them.
+- The same applies inside JSX: a `{/* */}` block sits above the component or
+  the subtree it explains, never wedged between sibling elements or props.
+
+```ts
+// WRONG - trailing, however short
+export interface OrderPayload {
+  deliveryWindow: DateRange; // buyer-supplied, not the agent's
+  quantity: number;
+}
+
+// RIGHT - one comment, once, at the top
+// Delivery window is buyer-supplied; agents can't set it.
+export interface OrderPayload {
+  deliveryWindow: DateRange;
+  quantity: number;
+}
+```
+
+**Line breaks inside a multi-line comment:** one sentence per line. A new
+line starts right after a sentence's full stop, never mid-sentence to fit a
+column width - the number of full stops is the number of lines, however long
+any one line ends up.
+
+### Inline field errors from the backend
+
+Any endpoint validated by `ZodValidationPipe` already returns
+`{ message, errors: [{ field, message }] }` on a 400, where `field` is the
+DTO's snake_case key. A business-rule exception that is really about one
+form field (a conflict, a wrong current password, an unresolvable bank
+account) should throw the same shape by hand -
+`throw new BadRequestException({ message, errors: [{ field: "bank_code", message }] })`
+
+- rather than a plain string, so the frontend never has to special-case it.
+
+On the frontend, `@debridgers/ui-web` turns that shape into a per-field
+error generically, with no per-field hardcoding anywhere:
+
+- React Hook Form: `applyServerFieldErrors(error, form)` in a hook's catch
+  block calls `form.setError()` for every backend field that matches a real
+  form field (snake_case to camelCase).
+- Plain `useState` forms: `extractServerFieldErrors(error)` returns a
+  `Record<string, string>` to merge into the form's own field-error state.
+- Dialogs built on `useDialogSubmission` get this for free - it already
+  exposes a `fieldErrors` map alongside `error`, computed the same way.
+
+Only attribute an error to a field when it is genuinely about that one
+input's value. A whole-form precondition ("add a bank account first",
+"insufficient balance") stays a top banner - it is not the shape of any one
+field, and inventing a field for it just to look consistent is wrong.

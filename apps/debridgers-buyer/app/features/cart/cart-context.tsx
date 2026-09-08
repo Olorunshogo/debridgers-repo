@@ -14,23 +14,19 @@ import { syncServerCart, mergeServerCart } from "@debridgers/api-client";
 /*
  * One cart, shared by every page that touches it.
  *
- * Previously the marketing shop, the buyer shop, and checkout each kept their own
- * useState over the same localStorage key. They only agreed by accident: moving
- * between them mid-session could show stale contents until a component
- * remounted, and CartItem was declared three separate times.
+ * Previously the marketing shop, the buyer shop, and checkout each kept their own useState over the same localStorage key.
+ * They only agreed by accident: moving between them mid-session could show stale contents until a component remounted, and CartItem was declared three separate times.
  *
- * localStorage is the source of truth. When a server-side cart is added later,
- * the local copy still wins on conflict, since it is the one holding writes that
- * have not synced yet.
+ * localStorage is the source of truth.
+ * When a server-side cart is added later, the local copy still wins on conflict, since it is the one holding writes that have not synced yet.
  */
 
 export const CART_STORAGE_KEY = "debridgers_cart";
 export const LAST_ORDER_STORAGE_KEY = "debridgers_last_order";
 
 /*
- * How long the cart must be still before it is pushed to the server. Long
- * enough that adjusting a quantity a few times is one write, short enough that
- * switching device shortly after feels current.
+ * How long the cart must be still before it is pushed to the server.
+ * Long enough that adjusting a quantity a few times is one write, short enough that switching device shortly after feels current.
  */
 const SYNC_DEBOUNCE_MS = 2000;
 
@@ -43,15 +39,16 @@ export interface CartItem {
   qty: number;
 }
 
+/*
+ * `itemCount` is distinct products in the cart; `totalQuantity` is the sum of every line's quantity.
+ * `subtotal` is in naira, summed in kobo so it cannot drift.
+ * `isHydrated` is true once the cart has been read from storage, for SSR-safe rendering.
+ */
 export interface CartContextValue {
   items: CartItem[];
-  /** Distinct products in the cart. */
   itemCount: number;
-  /** Sum of every line's quantity. */
   totalQuantity: number;
-  /** Subtotal in naira, summed in kobo so it cannot drift. */
   subtotal: number;
-  /** True once the cart has been read from storage, for SSR-safe rendering. */
   isHydrated: boolean;
   addItem: (item: Omit<CartItem, "qty">, qty?: number) => void;
   updateQuantity: (id: string, delta: number) => void;
@@ -75,8 +72,7 @@ function readStoredCart(): CartItem[] {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   /*
-   * Starts empty rather than reading storage during render: the server has no
-   * localStorage, so seeding from it here would produce a hydration mismatch.
+   * Starts empty rather than reading storage during render: the server has no localStorage, so seeding from it here would produce a hydration mismatch.
    * The first effect fills it in.
    */
   const { isAuthenticated } = useAuth();
@@ -170,14 +166,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       .catch(() => {
         /* Offline or the call failed - localStorage remains authoritative. */
       });
-    /* items is deliberately not a dependency: this runs once, on the cart as it
-       stood at login, and re-running on every edit would fight the debounce. */
+    /* items is deliberately not a dependency: this runs once, on the cart as it stood at login, and re-running on every edit would fight the debounce. */
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHydrated, isAuthenticated]);
 
   /*
-   * Debounced push to the server. Only while signed in - an anonymous cart has
-   * no owner to key on, which is why there is no guest cart on the backend.
+   * Debounced push to the server.
+   * Only while signed in - an anonymous cart has no owner to key on, which is why there is no guest cart on the backend.
    */
   useEffect(() => {
     if (!isHydrated || !isAuthenticated || !hasMergedRef.current) return;
@@ -186,8 +181,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       void syncServerCart(
         items.map((i) => ({ product_id: Number(i.id), quantity: i.qty })),
       ).catch(() => {
-        /* A failed sync is not user-facing: localStorage still holds the cart
-           and the next edit retries. The endpoint is idempotent. */
+        /*
+         * A failed sync is not user-facing: localStorage still holds the cart and the next edit retries.
+         * The endpoint is idempotent.
+         */
       });
     }, SYNC_DEBOUNCE_MS);
 
@@ -200,9 +197,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   /*
-   * Summed in kobo. `price` is a naira float, so adding `price * qty` across
-   * lines accumulates binary rounding error; toMinorUnits recovers exact
-   * integers and the division happens once.
+   * Summed in kobo.
+   * `price` is a naira float, so adding `price * qty` across lines accumulates binary rounding error; toMinorUnits recovers exact integers and the division happens once.
    */
   const subtotal = useMemo(
     () =>

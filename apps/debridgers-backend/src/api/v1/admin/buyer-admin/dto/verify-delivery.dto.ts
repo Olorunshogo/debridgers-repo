@@ -32,17 +32,16 @@ const photo = z
     "Each photo must be an image data URL or a hosted URL",
   );
 
+/*
+ * At least one photo, because a verification with no evidence is the thing this endpoint exists to prevent.
+ * recipient_name is who took delivery, which is not always the buyer.
+ */
 export const verifyDeliverySchema = z.object({
-  /*
-   * At least one photo, because a verification with no evidence is the thing
-   * this endpoint exists to prevent.
-   */
   photos: z
     .array(photo)
     .min(1, "At least one delivery photo is required")
     .max(MAX_DELIVERY_PHOTOS, `At most ${MAX_DELIVERY_PHOTOS} photos`),
   notes: z.string().max(1000).optional(),
-  /* Who took delivery, which is not always the buyer. */
   recipient_name: z.string().min(1).max(120).optional(),
 });
 

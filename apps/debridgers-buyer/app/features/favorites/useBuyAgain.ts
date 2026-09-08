@@ -3,21 +3,19 @@ import { apiFetch } from "@debridgers/api-client";
 import { useAuth, type ProductCardProduct } from "@debridgers/ui-web";
 
 /*
- * "Buy again": the products this buyer orders most, ranked server-side by
- * frequency then recency from their order history.
+ * "Buy again": the products this buyer orders most, ranked server-side by frequency then recency from their order history.
  *
- * Not a stored list and not the same as favourites - nobody has to remember to
- * bookmark their usual bag of rice for it to show up here.
+ * Not a stored list and not the same as favourites - nobody has to remember to bookmark their usual bag of rice for it to show up here.
  */
 
 export interface BuyAgainProduct extends ProductCardProduct {
   times_ordered: number;
 }
 
+/* `hasHistory` is false until the buyer has ordered something, so the rail can hide. */
 export interface UseBuyAgainResult {
   products: BuyAgainProduct[];
   isLoading: boolean;
-  /** False until the buyer has ordered something, so the rail can hide. */
   hasHistory: boolean;
 }
 

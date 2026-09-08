@@ -22,9 +22,9 @@ export function meta() {
   });
 }
 
+/* `order_reference` is nullable until migration 0016 backfills the rows that predate 0011. */
 interface DeliveryOrder {
   id: number;
-  /* Nullable until migration 0016 backfills the rows that predate 0011. */
   order_reference: string | null;
   buyer_name: string;
   buyer_phone: string;

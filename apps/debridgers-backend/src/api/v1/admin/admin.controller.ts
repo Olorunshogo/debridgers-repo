@@ -510,9 +510,9 @@ export class AdminController {
     @Query("is_suspended") isSuspended?: string,
     @Query("is_blocked") isBlocked?: string,
   ) {
+    // Tri-state for both booleans: absent must stay undefined, or the list silently filters.
     return this.adminService.getBuyers(
       zoneId ? parseInt(zoneId, 10) : undefined,
-      /* Tri-state: absent must stay undefined, or the list silently filters. */
       parseOptionalBoolean(isSuspended, "is_suspended"),
       parseOptionalBoolean(isBlocked, "is_blocked"),
     );
@@ -806,9 +806,10 @@ export class AdminController {
 
   // === Outreach
 
+  // Agents do field outreach, so this overrides the class-level @Roles("admin").
   @Post("outreach")
   @HttpCode(HttpStatus.CREATED)
-  @Roles("admin", "agent") // agents do field outreach; overrides class-level @Roles("admin")
+  @Roles("admin", "agent")
   @ApiOperation({
     summary: "Record a new outreach / offline customer visit (admin + agent)",
   })

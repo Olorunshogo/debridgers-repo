@@ -96,7 +96,10 @@ export class AuthService {
           code: "UNVERIFIED_EMAIL",
         });
       }
-      throw new ConflictException("Email already registered");
+      throw new ConflictException({
+        message: "Email already registered",
+        errors: [{ field: "email", message: "Email already registered" }],
+      });
     }
 
     const verificationToken = this.generateVerificationOtp();
@@ -117,21 +120,16 @@ export class AuthService {
           phone: dto.phone,
           password: hashed,
           /*
-           * Always explicit. The users.role column defaults to buyer, but relying
-           * on a column default while the role is caller-supplied is how you
-           * silently create the wrong kind of account.
+           * Always explicit. The users.role column defaults to buyer.
+           * Relying on that default when role is caller-supplied risks the wrong kind of account.
            */
           role,
-          /*
-           * Only buyers carry a permanent referral link to a recruiting agent.
-           * resolveBuyerReferrerId already returns null when no code was given.
-           */
+          // Only buyers carry a referral link to a recruiting agent; resolveBuyerReferrerId already returns null when no code was given.
           referred_by_agent_id:
             role === USER_ROLES.BUYER ? referredByAgentId : null,
           /*
-           * Stamped here rather than taken from the client. The request says
-           * which document was accepted; when it was accepted is the server's
-           * to record, or the timestamp is worth nothing as evidence.
+           * Stamped server-side, not taken from the client.
+           * The request says which document was accepted; when it was accepted is the server's to record.
            */
           terms_accepted_at: new Date(),
           terms_document: dto.terms_document,
@@ -175,7 +173,7 @@ export class AuthService {
           expires_at: verificationExpiresAt,
         });
 
-        // Fire-and-forget — don't block registration on email delivery
+        // Fire-and-forget: don't block registration on email delivery.
         this.eventEmitter.emit(USER_EVENTS.USER_REGISTERED, {
           name: `${createdUser.first_name} ${createdUser.last_name}`,
           email: createdUser.email,
@@ -593,10 +591,10 @@ export class AuthService {
       .set({
         password: hashed,
         refresh_token: null,
-        /* A reset is a real password change, so it retires the "still on the
-           issued password" flag exactly as the change-password flow does.
-           Without this an invited admin who reset instead of changing would be
-           reminded forever about a password they had already replaced. */
+        /*
+         * A reset is a real password change too, so it retires the flag exactly as the change-password flow does.
+         * Without this an invited admin who reset instead of changing would be reminded forever about a password already replaced.
+         */
         must_change_password: false,
         password_changed_at: new Date(),
       })

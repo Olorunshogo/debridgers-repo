@@ -27,11 +27,12 @@ export class PaystackInvoiceService {
    * Create a Paystack invoice for an order.
    * Invoice will show in Paystack dashboard Orders section.
    * Customer can pay via link or we pay via transfer.
+   * amount is in kobo.
    */
   async createInvoice(
     orderId: number,
     buyerId: number,
-    amount: number, // in kobo
+    amount: number,
     orderReference: string,
     buyerEmail: string,
     _buyerName: string,
@@ -46,6 +47,7 @@ export class PaystackInvoiceService {
         Authorization: `Bearer ${this.secretKey}`,
         "Content-Type": "application/json",
       },
+      // due_date is 7 days out.
       body: JSON.stringify({
         customer: buyerEmail,
         amount,
@@ -57,7 +59,7 @@ export class PaystackInvoiceService {
             quantity: 1,
           },
         ],
-        due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Due in 7 days
+        due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         metadata: {
           order_id: orderId,
           buyer_id: buyerId,

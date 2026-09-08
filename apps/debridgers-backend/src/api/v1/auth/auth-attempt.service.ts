@@ -18,26 +18,18 @@ export class AuthAttemptService {
     return `auth_attempts:email_ip:${email}:${ip}`;
   }
 
-  /**
-   * Get backoff time in milliseconds based on failure count
-   * 1-5 failures: allowed (no lockout)
-   * 6-9 failures: 20 min lockout
-   * 10-14 failures: 30 min lockout
-   * 15-19 failures: 45 min lockout
-   * 20+ failures: 24 hrs lockout (comeback tomorrow)
+  /*
+   * Backoff schedule by failure count: 1-5 none, 6-9 twenty minutes, 10-14 thirty minutes, 15-19 forty-five minutes, 20+ a day.
    */
   private getBackoffTime(failureCount: number): number {
-    if (failureCount < 6) return 0; // No lockout for first 5 attempts
-    if (failureCount <= 9) return 20 * 60 * 1000; // 20 minutes
-    if (failureCount <= 14) return 30 * 60 * 1000; // 30 minutes
-    if (failureCount <= 19) return 45 * 60 * 1000; // 45 minutes
-    return 24 * 60 * 60 * 1000; // 24 hours (1 day)
+    if (failureCount < 6) return 0;
+    if (failureCount <= 9) return 20 * 60 * 1000;
+    if (failureCount <= 14) return 30 * 60 * 1000;
+    if (failureCount <= 19) return 45 * 60 * 1000;
+    return 24 * 60 * 60 * 1000;
   }
 
-  /**
-   * Check if login attempt is allowed
-   * Returns: { allowed: boolean, remainingTime?: number (in seconds) }
-   */
+  /* Return value's remainingTime is in seconds, unlike the internal backoff which is tracked in milliseconds. */
   async checkAttemptAllowed(
     email: string,
     ip: string,
@@ -45,7 +37,6 @@ export class AuthAttemptService {
     const ipKey = this.getIpKey(ip);
     const emailIpKey = this.getEmailIpKey(email, ip);
 
-    // Check IP-level attempts
     const ipData = await this.redis.get<AttemptData>(ipKey);
     if (ipData) {
       const elapsed = Date.now() - ipData.timestamp;
@@ -56,11 +47,9 @@ export class AuthAttemptService {
           remainingTime: Math.ceil((backoff - elapsed) / 1000),
         };
       }
-      // Backoff expired, delete it
       await this.redis.del(ipKey);
     }
 
-    // Check Email+IP-level attempts
     const emailIpData = await this.redis.get<AttemptData>(emailIpKey);
     if (emailIpData) {
       const elapsed = Date.now() - emailIpData.timestamp;
@@ -71,21 +60,16 @@ export class AuthAttemptService {
           remainingTime: Math.ceil((backoff - elapsed) / 1000),
         };
       }
-      // Backoff expired, delete it
       await this.redis.del(emailIpKey);
     }
 
     return { allowed: true };
   }
 
-  /**
-   * Record a failed login attempt
-   */
   async recordFailedAttempt(email: string, ip: string): Promise<void> {
     const ipKey = this.getIpKey(ip);
     const emailIpKey = this.getEmailIpKey(email, ip);
 
-    // Update IP attempts
     const ipData = await this.redis.get<AttemptData>(ipKey);
     const newIpCount = (ipData?.count ?? 0) + 1;
     const backoff = this.getBackoffTime(newIpCount);
@@ -97,7 +81,6 @@ export class AuthAttemptService {
       ttl,
     );
 
-    // Update Email+IP attempts
     const emailIpData = await this.redis.get<AttemptData>(emailIpKey);
     const newEmailIpCount = (emailIpData?.count ?? 0) + 1;
     const emailIpBackoff = this.getBackoffTime(newEmailIpCount);
@@ -110,9 +93,6 @@ export class AuthAttemptService {
     );
   }
 
-  /**
-   * Reset attempts on successful login
-   */
   async resetAttempts(email: string, ip: string): Promise<void> {
     const ipKey = this.getIpKey(ip);
     const emailIpKey = this.getEmailIpKey(email, ip);

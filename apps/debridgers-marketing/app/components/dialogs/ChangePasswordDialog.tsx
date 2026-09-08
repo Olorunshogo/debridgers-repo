@@ -19,8 +19,8 @@ import {
  * Registered as CHANGE_PASSWORD in app/providers/dialog-registry.ts.
  */
 
+/* onChanged fires once the new password is accepted, so the caller can stop asking. */
 interface ChangePasswordDialogProps {
-  /** Fires once the new password is accepted, so the caller can stop asking. */
   onChanged?: () => void;
   title?: string;
   description?: string;

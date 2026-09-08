@@ -12,10 +12,8 @@ import { formatCurrency } from "@debridgers/ui-web";
 
 import { marketingNavLinks } from "@/components/marketing/data/data";
 /*
- * No commission figure in the metadata. The rate is an admin setting that can
- * change at any time, and meta() is static - it previously advertised a fixed
- * rate in the page title and social cards, which became a false claim the
- * moment the rate was changed.
+ * No commission figure in the metadata.
+ * The rate is an admin setting that can change at any time, and meta() is static - it previously advertised a fixed rate in the page title and social cards, which became a false claim the moment the rate was changed.
  */
 export function meta() {
   return buildPageMeta({
@@ -129,10 +127,8 @@ const steps: Step[] = [
 ];
 
 /*
- * Illustration for the recruitment page, not a quote. The real money rule is
- * the commission rate, which comes from platform config and is applied below;
- * the order value and count here are just a representative scenario, kept as
- * named constants so the table and its footnote cannot drift apart.
+ * Illustration for the recruitment page, not a quote.
+ * The real money rule is the commission rate, which comes from platform config and is applied below; the order value and count here are just a representative scenario, kept as named constants so the table and its footnote cannot drift apart.
  */
 const ILLUSTRATION_ORDERS = 5;
 const ILLUSTRATION_ORDER_VALUE_NAIRA = 15_000;
@@ -184,18 +180,15 @@ export default function AgentsPage() {
   const { isAuthenticated, dashboardPath } = useAuth();
   const [activeStep, setActiveStep] = useState<number>(0);
   /*
-   * Shared context rather than a local fetch. This page used to default to a
-   * hardcoded rate while its own request was in flight, so every visitor
-   * briefly saw an earnings table computed at the wrong figure - on the page
-   * whose whole purpose is telling agents what they will earn.
+   * Shared context rather than a local fetch.
+   * This page used to default to a hardcoded rate while its own request was in flight, so every visitor briefly saw an earnings table computed at the wrong figure - on the page whose whole purpose is telling agents what they will earn.
    */
   const { commissionPercent: commissionRate, isLoading: configLoading } =
     usePlatformConfig();
 
   /*
-   * Never render a rate that is not the real one: a placeholder reads as a
-   * commitment on a recruitment page. While loading, the figure is omitted
-   * rather than guessed.
+   * Never render a rate that is not the real one: a placeholder reads as a commitment on a recruitment page.
+   * While loading, the figure is omitted rather than guessed.
    */
   const rateLabel = configLoading ? "competitive" : `${commissionRate}%`;
   const earningsRows = buildEarningsRows(commissionRate);
@@ -441,9 +434,8 @@ export default function AgentsPage() {
               className="rounded-2xl bg-white/10 p-8 backdrop-blur-sm"
             >
               {/*
-                Skeleton until the real rate arrives. Rendering the table at a
-                default would state a specific naira figure the agent would be
-                right to hold us to.
+                Skeleton until the real rate arrives.
+                Rendering the table at a default would state a specific naira figure the agent would be right to hold us to.
               */}
               <div className="flex flex-col gap-4">
                 {configLoading

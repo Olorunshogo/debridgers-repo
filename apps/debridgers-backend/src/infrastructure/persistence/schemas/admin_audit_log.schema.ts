@@ -10,16 +10,22 @@ import {
 } from "drizzle-orm/pg-core";
 import { users } from "./users.schema";
 
+/*
+ * `action` is an event name, e.g. "WITHDRAWAL_APPROVED", "BUYER_BLOCKED".
+ * `resource_type` names the entity acted on, e.g. "withdrawal", "buyer", "commission".
+ * `details` holds the before/after values or request payload.
+ * `ip_address` is sized for IPv6.
+ */
 export const admin_audit_log = pgTable(
   "admin_audit_log",
   {
     id: serial().primaryKey().notNull(),
     admin_id: integer().references(() => users.id, { onDelete: "set null" }),
-    action: text().notNull(), // e.g. "WITHDRAWAL_APPROVED", "BUYER_BLOCKED"
-    resource_type: text().notNull(), // e.g. "withdrawal", "buyer", "commission"
+    action: text().notNull(),
+    resource_type: text().notNull(),
     resource_id: integer(),
-    details: jsonb(), // before/after values or request payload
-    ip_address: varchar({ length: 45 }), // 45 chars covers IPv6
+    details: jsonb(),
+    ip_address: varchar({ length: 45 }),
     user_agent: text(),
     created_at: timestamp().defaultNow().notNull(),
   },

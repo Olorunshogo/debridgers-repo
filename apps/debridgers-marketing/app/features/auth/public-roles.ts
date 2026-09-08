@@ -3,9 +3,8 @@ import type { LucideIcon } from "lucide-react";
 import { dashboardAppUrl } from "../../utils/app-urls";
 
 /*
- * The public entry points marketing advertises. Admin deliberately isn't
- * here - its login/register URLs are unadvertised on purpose, matching the
- * old routes.ts comment this replaces.
+ * The public entry points marketing advertises.
+ * Admin deliberately isn't here - its login/register URLs are unadvertised on purpose, matching the old routes.ts comment this replaces.
  */
 export type PublicRole = "buyer" | "agent";
 
@@ -32,9 +31,7 @@ export const PUBLIC_ROLES: readonly PublicRoleOption[] = [
 ];
 
 /*
- * Marketing has no auth of its own - every role's real login/signup lives on
- * that role's own subdomain app, so choosing a role here is always an
- * external redirect, never an in-app route change.
+ * Marketing has no auth of its own - every role's real login/signup lives on that role's own subdomain app, so choosing a role here is always an external redirect, never an in-app route change.
  */
 export function publicRoleAppPath(
   role: PublicRole,

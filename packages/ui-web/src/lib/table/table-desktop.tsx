@@ -22,16 +22,12 @@ import type {
 } from "./table-types";
 
 /*
-
  * The desktop renderer: a real <table>.
  *
- * Real table semantics on purpose. One of the lists this replaces was a CSS
- * grid pretending to be a table, which meant no th, no scope, no row
- * association, and nothing for a screen reader to announce.
+ * Real table semantics on purpose.
+ * One of the lists this replaces was a CSS grid pretending to be a table, which meant no th, no scope, no row association, and nothing for a screen reader to announce.
  *
- * Horizontal overflow lives on an inner element rather than the card, so the
- * card's rounded corners are never clipped mid-scroll, and the actions column
- * is sticky so it cannot scroll out of reach on a narrow screen.
+ * Horizontal overflow lives on an inner element rather than the card, so the card's rounded corners are never clipped mid-scroll, and the actions column is sticky so it cannot scroll out of reach on a narrow screen.
  */
 
 interface ScrollShadows {
@@ -145,6 +141,11 @@ function HeaderCell<TRow>({
 
 // === Table
 
+/*
+ * `caption` is the screen-reader description of what the table lists.
+ * `maxBodyHeight` turns the body into its own scroll area and makes the header sticky.
+ * Without a height there is nothing for the header to stick inside: an overflow-x container has no vertical scroll of its own, so `sticky top-0` would silently do nothing against page scroll.
+ */
 export interface TableDesktopProps<TRow> {
   columns: readonly TableColumn<TRow>[];
   rows: readonly TRow[];
@@ -155,17 +156,10 @@ export interface TableDesktopProps<TRow> {
   selection: TableSelectionApi<TRow>;
   actions?: readonly RowAction<TRow>[];
   onRowClick?: (row: TRow) => void;
-  /** Screen-reader description of what the table lists. */
   caption: string;
   loading: boolean;
   skeletonRowCount: number;
   emptyState: ReactNode;
-  /**
-   * Turns the body into its own scroll area and makes the header sticky.
-   * Without a height there is nothing for the header to stick inside: an
-   * overflow-x container has no vertical scroll of its own, so `sticky top-0`
-   * would silently do nothing against page scroll.
-   */
   maxBodyHeight?: string;
 }
 
@@ -188,8 +182,7 @@ export function TableDesktop<TRow>({
   const tokens = densityTokens[density];
   const { ref, shadows, onScroll } = useScrollShadows();
 
-  /* Rows arriving changes scrollWidth without resizing the container, so the
-     ResizeObserver alone would leave the shadows stale. */
+  /* Rows arriving changes scrollWidth without resizing the container, so the ResizeObserver alone would leave the shadows stale. */
   useEffect(() => {
     onScroll();
   }, [rows.length, loading, onScroll]);
@@ -296,8 +289,7 @@ export function TableDesktop<TRow>({
                 return (
                   <motion.tr
                     key={id}
-                    /* Enter only. An exit animation on a <tr> inside <tbody>
-                       is unreliable, and rows leave by being replaced. */
+                    /* Enter only: an exit animation on a <tr> inside <tbody> is unreliable, and rows leave by being replaced. */
                     variants={staggerItemVariants}
                     initial="initial"
                     animate="animate"
@@ -375,8 +367,7 @@ export function TableDesktop<TRow>({
         </table>
       </div>
 
-      {/* Scroll affordances. Without them the sticky actions column reads as
-          the end of the table and the middle columns are never discovered. */}
+      {/* Scroll affordances: without them the sticky actions column reads as the end of the table and the middle columns are never discovered. */}
       <div
         aria-hidden="true"
         className={cn(

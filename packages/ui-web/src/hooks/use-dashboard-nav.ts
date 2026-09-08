@@ -27,15 +27,12 @@ export type AdminTier = "super" | "sub";
 /**
  * Which part of the business an admin looks after.
  *
- * Distinct from `AdminTier`, and deliberately so. A tier is a privilege level
- * and is an auth credential: `admin_tier` is checked by admin-key.guard against
- * the SUPER_ADMIN_KEY env values, so it must stay small and boring. A domain is
- * an area of responsibility, several can apply to one person, and they carry no
- * ordering.
+ * Distinct from `AdminTier`, and deliberately so.
+ * A tier is a privilege level and is an auth credential: `admin_tier` is checked by admin-key.guard against the SUPER_ADMIN_KEY env values, so it must stay small and boring.
+ * A domain is an area of responsibility, several can apply to one person, and they carry no ordering.
  *
- * Today this only records which domain owns a nav item; `tiers` still does the
- * gating. When `users` grows a domains column, gating moves here and the
- * mapping is already written down.
+ * Today this only records which domain owns a nav item; `tiers` still does the gating.
+ * When `users` grows a domains column, gating moves here and the mapping is already written down.
  */
 export type AdminDomain =
   | "buyer"
@@ -47,25 +44,23 @@ export type AdminDomain =
   | "support"
   | "growth";
 
+/*
+ * `tiers` is which admin tiers may see this item; omitted means every tier.
+ * There is one admin dashboard, not two: a sub-admin gets a narrower nav rather than a separate set of routes.
+ * Splitting them produced two copies of overview, buyers and settings that had to be kept in step by hand.
+ *
+ * `domain` is the domain that owns this surface, where one does.
+ * Metadata only for now: nothing reads it to decide visibility yet.
+ * Items with no domain are the shared admin surface.
+ *
+ * `badge` marks a surface that is routed and readable but not yet built.
+ */
 export interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
-  /*
-   * Which admin tiers may see this item. Omitted means every tier.
-   *
-   * There is one admin dashboard, not two: a sub-admin gets a narrower nav
-   * rather than a separate set of routes. Splitting them produced two copies of
-   * overview, buyers and settings that had to be kept in step by hand.
-   */
   tiers?: readonly AdminTier[];
-  /*
-   * The domain that owns this surface, where one does. Metadata only for now:
-   * nothing reads it to decide visibility yet. Items with no domain are the
-   * shared admin surface.
-   */
   domain?: AdminDomain;
-  /* Marks a surface that is routed and readable but not yet built. */
   badge?: string;
 }
 
@@ -240,12 +235,9 @@ const adminNavGroups: NavGroup[] = [
         domain: "supply",
       },
       /*
-       * The buyer domain. Visible to a sub-admin because it is their desk, and
-       * to a super admin because a super admin sees everything.
-       *
-       * `domain` records ownership and gates nothing yet; `tiers` still decides
-       * visibility. When users grows a domains column, this is where the switch
-       * happens.
+       * The buyer domain. Visible to a sub-admin because it is their desk, and to a super admin because a super admin sees everything.
+       * `domain` records ownership and gates nothing yet; `tiers` still decides visibility.
+       * When users grows a domains column, this is where the switch happens.
        */
       {
         label: "Buyer Desk",
@@ -304,8 +296,7 @@ function navForTier(groups: NavGroup[], tier: AdminTier): NavGroup[] {
 }
 
 /*
- * Tier is supplied by the caller rather than read from an auth context: this
- * hook ships in a package and must not reach into the consuming app's session.
+ * Tier is supplied by the caller rather than read from an auth context: this hook ships in a package and must not reach into the consuming app's session.
  */
 export function useDashboardNav(adminTier?: AdminTier | null) {
   const { pathname } = useLocation();
@@ -315,18 +306,14 @@ export function useDashboardNav(adminTier?: AdminTier | null) {
   const isAdmin = pathname.startsWith("/admin-dashboard");
   /*
    * A sub-admin is identified by their tier, not by where they are standing.
-   * This used to be a path check against /buyer-admin-dashboard, which no
-   * longer exists: that surface is now a domain inside the one admin dashboard,
-   * so a super admin visiting it is still a super admin.
+   * This used to be a path check against /buyer-admin-dashboard, which no longer exists: that surface is now a domain inside the one admin dashboard, so a super admin visiting it is still a super admin.
    */
 
   /*
    * Tier comes from the session, not the URL.
    *
-   * Nav used to be chosen purely by path, so what an admin saw depended on
-   * where they happened to be rather than on what they are allowed to do.
-   * Defaults to the narrower tier: showing a sub-admin links they cannot use is
-   * worse than hiding one from a super admin until the token loads.
+   * Nav used to be chosen purely by path, so what an admin saw depended on where they happened to be rather than on what they are allowed to do.
+   * Defaults to the narrower tier: showing a sub-admin links they cannot use is worse than hiding one from a super admin until the token loads.
    */
   const tier: AdminTier = adminTier === "super" ? "super" : "sub";
 

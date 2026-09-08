@@ -14,6 +14,7 @@ import {
   lgaSelectOptions,
   TextareaField,
   SubmitButton,
+  extractServerFieldErrors,
 } from "@debridgers/ui-web";
 
 import { buildPageMeta } from "../../../lib/seo";
@@ -40,31 +41,23 @@ interface DeliveryZone {
 /*
  * Mirrors the quote endpoint's response - see delivery-fee.ts on the backend.
  *
- * The server is the single, deliberate enforcer of the minimum order: it
- * rejects a below-minimum basket at order time. The client does not read or
- * surface `belowMinimumOrder` here on purpose, so there is one place that
- * decision lives rather than a client copy that can drift from the floor in
- * `@debridgers/pricing`.
+ * The server is the single, deliberate enforcer of the minimum order: it rejects a below-minimum basket at order time.
+ * The client does not read or surface `belowMinimumOrder` here on purpose, so there is one place that decision lives rather than a client copy that can drift from the floor in `@debridgers/pricing`.
+ *
+ * `serviceFeeKobo` is the cost-to-serve fee; `handlingFeeKobo` is the same value under the name the orders table still uses, so prefer `serviceFeeKobo` in new code.
+ * `requiresIndividualQuote` is set when the basket is past the tapered table and the delivery fee no longer covers the vehicle.
+ * It was computed and returned all along, and read by nothing, so checkout sold these orders below cost in silence.
  */
 interface OrderQuote {
   itemsTotalKobo: number;
   deliveryFeeKobo: number;
   deliveryFeeBeforePromoKobo: number;
-  /*
-   * The cost-to-serve fee. `handlingFeeKobo` is the same value under the name
-   * the orders table still uses; prefer this one in new code.
-   */
   serviceFeeKobo: number;
   handlingFeeKobo: number;
   totalKobo: number;
   freeDelivery: boolean;
   extraPackages: number;
   package_count: number;
-  /*
-   * Set when the basket is past the tapered table and the delivery fee no
-   * longer covers the vehicle. Computed and returned all along, and read by
-   * nothing, so checkout sold these orders below cost in silence.
-   */
   requiresIndividualQuote: boolean;
 }
 
@@ -101,21 +94,19 @@ export default function BuyerCheckout() {
   const [note, setNote] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   /* State is fixed to the launch state by default; LGA narrows the zone list. */
   const [stateName, setStateName] = useState<string>(defaultStateName);
   const [lga, setLga] = useState<string>("");
   const [zoneId, setZoneId] = useState<string>("");
-  /* Kept while a new quote is in flight so the totals never flash empty. */
-  /*
-   * The running campaign and the minimum order, from the one place that knows
-   * them. Both were already fetched by this provider and rendered nowhere.
-   */
+  /* The running campaign and the minimum order, from the one place that knows them - both were already fetched by this provider and rendered nowhere. */
   const { deliveryPromotion } = usePlatformConfig();
 
   const promotionCoversZone = (zone: number): boolean =>
     !!deliveryPromotion && deliveryPromotion.zone_ids.includes(zone);
 
+  // Kept while a new quote is in flight so totals never flash empty.
   const [quote, setQuote] = useState<OrderQuote | null>(null);
   const [quoting, setQuoting] = useState<boolean>(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
@@ -161,9 +152,8 @@ export default function BuyerCheckout() {
   }, []);
 
   /*
-   * Zones that serve the chosen LGA. The seeded zones are named after LGAs
-   * ("Kaduna South") and also list their areas, so match on either - the same
-   * rule the backend uses to resolve a zone, kept in step deliberately.
+   * Zones that serve the chosen LGA.
+   * The seeded zones are named after LGAs ("Kaduna South") and also list their areas, so match on either - the same rule the backend uses to resolve a zone, kept in step deliberately.
    */
   const zonesForLga = useMemo(() => {
     if (!lga) return [];
@@ -187,9 +177,8 @@ export default function BuyerCheckout() {
   }, [zonesForLga]);
 
   /*
-   * Live quote. The server owns the pricing - delivery is a zone base plus a
-   * per-package charge, and a promo can zero it - so the summary asks rather
-   * than recomputing it here and risking a number that differs from the charge.
+   * Live quote.
+   * The server owns the pricing - delivery is a zone base plus a per-package charge, and a promo can zero it - so the summary asks rather than recomputing it here and risking a number that differs from the charge.
    */
   useEffect(() => {
     if (!zoneId || cartItems.length === 0) {
@@ -214,8 +203,7 @@ export default function BuyerCheckout() {
           setQuoteError(null);
         })
         .catch((err: unknown) => {
-          /* Drop the stale quote: showing the previous total next to an error
-             is how a buyer ends up believing a price the server just refused. */
+          /* Drop the stale quote: showing the previous total next to an error is how a buyer ends up believing a price the server just refused. */
           setQuote(null);
           setQuoteError(
             err instanceof Error
@@ -230,10 +218,9 @@ export default function BuyerCheckout() {
   }, [zoneId, cartItems]);
 
   /*
-   * Return leg from Paystack. Arriving here proves the buyer came back, not
-   * that they paid - Paystack sends the same callback when a card is declined
-   * or the page is abandoned. So the reference is confirmed with the server
-   * before anything is treated as bought, and the cart survives a failure.
+   * Return leg from Paystack.
+   * Arriving here proves the buyer came back, not that they paid - Paystack sends the same callback when a card is declined or the page is abandoned.
+   * So the reference is confirmed with the server before anything is treated as bought, and the cart survives a failure.
    */
   useEffect(() => {
     const ref = searchParams.get("trxref") ?? searchParams.get("reference");
@@ -248,8 +235,10 @@ export default function BuyerCheckout() {
     )
       .then(() => {
         if (cancelled) return;
-        /* Snapshot before clearing so "repeat last order" has something to
-           restore. Taken from the shared cart rather than re-reading storage. */
+        /*
+         * Snapshot before clearing so "repeat last order" has something to restore.
+         * Taken from the shared cart rather than re-reading storage.
+         */
         if (cartItemsRef.current.length > 0) {
           localStorage.setItem(
             LAST_ORDER_STORAGE_KEY,
@@ -292,6 +281,7 @@ export default function BuyerCheckout() {
     if (submittingRef.current) return;
     submittingRef.current = true;
     setError(null);
+    setFieldErrors({});
     setLoading(true);
 
     try {
@@ -299,9 +289,8 @@ export default function BuyerCheckout() {
         /*
          * Balance is checked before the order exists, not after.
          *
-         * Creating first and bailing on a shortfall left a pending, unpayable
-         * order behind on every failed attempt. The quote is the same figure
-         * the server will charge, so it is enough to decide this up front.
+         * Creating first and bailing on a shortfall left a pending, unpayable order behind on every failed attempt.
+         * The quote is the same figure the server will charge, so it is enough to decide this up front.
          */
         const expectedKobo = quote?.totalKobo;
 
@@ -351,17 +340,18 @@ export default function BuyerCheckout() {
         const amount = orderRes.total_kobo;
 
         /*
-         * Re-checked against the server's own total. The pre-flight check used
-         * the quote; this catches the case where the two disagree, and cancels
-         * the order rather than leaving it pending and unpayable.
+         * Re-checked against the server's own total.
+         * The pre-flight check used the quote; this catches the case where the two disagree, and cancels the order rather than leaving it pending and unpayable.
          */
         if (wallet.wallet.available_balance < amount) {
           await apiFetch(`/buyer/orders/${orderId}/cancel`, {
             method: "POST",
             body: JSON.stringify({ reason: "Insufficient wallet balance" }),
           }).catch(() => {
-            /* Best effort. An uncancelled order is recoverable; a misleading
-               success message is not. */
+            /*
+             * Best effort.
+             * An uncancelled order is recoverable; a misleading success message is not.
+             */
           });
 
           setError(
@@ -396,11 +386,11 @@ export default function BuyerCheckout() {
         setStep("confirmed");
       } else {
         // Card payment: initialize Paystack
+        /* `totals` carries the same figures as the quote, minus package_count. */
         const res = await apiFetch<{
           authorization_url: string;
           reference: string;
           order_id: number;
-          /* Same figures as the quote, minus package_count. */
           totals: Omit<OrderQuote, "package_count">;
         }>("/buyer/orders/initialize-payment", {
           method: "POST",
@@ -426,6 +416,7 @@ export default function BuyerCheckout() {
           ? err.message
           : "Failed to process payment. Please try again.",
       );
+      setFieldErrors(extractServerFieldErrors(err));
       stopSubmitting();
     }
   }
@@ -531,6 +522,7 @@ export default function BuyerCheckout() {
               label="Delivery area"
               required
               value={zoneId}
+              error={fieldErrors.zoneId}
               placeholder={
                 !lga
                   ? "Choose an LGA first"
@@ -540,10 +532,9 @@ export default function BuyerCheckout() {
               }
               disabled={!lga || zonesForLga.length === 0}
               /*
-                A running campaign is reflected here, not only once a quote
-                returns. The picker used to read zone.free_delivery alone, so a
-                global campaign was invisible at the moment of choosing.
-              */
+               * A running campaign is reflected here, not only once a quote returns.
+               * The picker used to read zone.free_delivery alone, so a global campaign was invisible at the moment of choosing.
+               */
               options={zonesForLga.map((zone) => ({
                 value: String(zone.id),
                 label:
@@ -565,6 +556,7 @@ export default function BuyerCheckout() {
               required
               aria-required="true"
               value={deliveryAddress}
+              error={fieldErrors.deliveryAddress}
               onChange={(e) => setDeliveryAddress(e.target.value)}
               placeholder="Enter your full delivery address..."
               rows={3}
@@ -728,9 +720,8 @@ export default function BuyerCheckout() {
               </div>
 
               {/*
-                Delivery is priced server-side and only known once an area is
-                chosen. Saying "Free" before then, as this used to, was simply
-                wrong once per-package pricing landed.
+                Delivery is priced server-side and only known once an area is chosen.
+                Saying "Free" before then, as this used to, was simply wrong once per-package pricing landed.
               */}
               <div className="text-body flex justify-between gap-3 text-sm">
                 <span>
@@ -743,10 +734,8 @@ export default function BuyerCheckout() {
                   )}
                 </span>
                 {/*
-                  Four distinct states, not three. This used to render a bare
-                  "..." for everything that was not a finished quote, so a
-                  failed one sat there for ever while the reason appeared in
-                  small red text underneath.
+                  Four distinct states, not three.
+                  This used to render a bare "..." for everything that was not a finished quote, so a failed one sat there for ever while the reason appeared in small red text underneath.
                 */}
                 {!zoneId ? (
                   <span className="text-placeholder-text">Choose an area</span>
@@ -769,9 +758,8 @@ export default function BuyerCheckout() {
               </div>
 
               {/*
-                Named for what it pays for. It was "Handling", which is why it
-                was once set at 100 naira: it is not a charge for lifting a bag,
-                it covers the payment rail and the admin around the order.
+                Named for what it pays for.
+                It was "Handling", which is why it was once set at 100 naira: it is not a charge for lifting a bag, it covers the payment rail and the admin around the order.
               */}
               {quote && (
                 <div className="text-body flex justify-between text-sm">
@@ -783,10 +771,9 @@ export default function BuyerCheckout() {
               <div className="font-syne text-heading flex justify-between text-lg font-bold">
                 <span>Total</span>
                 {/*
-                  No subtotal fallback. Falling back to the items total showed a
-                  figure that excluded delivery and the service fee, so a buyer
-                  whose quote had failed was shown less than they would be
-                  charged. Better to show nothing than a number that is wrong.
+                  No subtotal fallback.
+                  Falling back to the items total showed a figure that excluded delivery and the service fee, so a buyer whose quote had failed was shown less than they would be charged.
+                  Better to show nothing than a number that is wrong.
                 */}
                 <span className={quoting ? "opacity-50" : undefined}>
                   {quote ? (
@@ -804,9 +791,8 @@ export default function BuyerCheckout() {
               )}
 
               {/*
-                Past the tapered table the delivery fee stops covering the
-                vehicle, so the order is quoted by hand instead of being sold
-                below cost. The flag was computed and returned all along.
+                Past the tapered table the delivery fee stops covering the vehicle, so the order is quoted by hand instead of being sold below cost.
+                The flag was computed and returned all along.
               */}
               {quote?.requiresIndividualQuote && (
                 <div className="border-status-pending-fg/25 bg-status-pending text-status-pending-fg mt-1 rounded-xl border px-3 py-2.5 text-xs">

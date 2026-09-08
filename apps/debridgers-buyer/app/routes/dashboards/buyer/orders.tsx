@@ -14,6 +14,8 @@ import {
   TableDateCell,
   TableStatusBadge,
   TableEmptyState,
+  useDialog,
+  usePendingRatings,
   type StatusTone,
   type TableColumn,
 } from "@debridgers/ui-web";
@@ -40,9 +42,8 @@ type Tab = "all" | OrderStatus;
 /*
  * Raw values, not display strings.
  *
- * date and amount used to be pre-formatted here, which reads fine until the
- * table sorts them: "Apr" sorts before "Jan" and "₦9,000" before "₦10,000",
- * because both are string comparisons. The cells format at render instead.
+ * date and amount used to be pre-formatted here, which reads fine until the table sorts them: "Apr" sorts before "Jan" and "₦9,000" before "₦10,000", because both are string comparisons.
+ * The cells format at render instead.
  */
 interface Order {
   id: string;
@@ -67,9 +68,7 @@ interface ApiOrder {
 
 function mapApiOrder(o: ApiOrder): Order {
   const dbToUi = (orderStatus: string, paymentStatus: string): OrderStatus => {
-    // Terminal fulfilment states win over payment: an order that was delivered
-    // or cancelled reads that way even if its payment record was never
-    // reconciled to "paid" (cash on handover, or a data gap).
+    // Terminal fulfilment states win over payment: an order that was delivered or cancelled reads that way even if its payment record was never reconciled to "paid" (cash on handover, or a data gap).
     if (orderStatus === "cancelled") return "cancelled";
     if (orderStatus === "delivered") return "delivered";
     if (orderStatus === "out_for_delivery") return "active";
@@ -102,9 +101,8 @@ const tabs: { key: Tab; label: string }[] = [
 ];
 
 /*
- * Tone plus label, rather than raw class pairs. TableStatusBadge already owns
- * the token pairing, and "confirmed" was reaching for bg-green-100 /
- * text-green-700 - palette literals that match nothing else in the system.
+ * Tone plus label, rather than raw class pairs.
+ * TableStatusBadge already owns the token pairing, and "confirmed" was reaching for bg-green-100 / text-green-700 - palette literals that match nothing else in the system.
  */
 const STATUS_PRESENTATION: Record<
   OrderStatus,
@@ -117,16 +115,15 @@ const STATUS_PRESENTATION: Record<
   cancelled: { tone: "danger", label: "Cancelled" },
 };
 
-/* Trackable states. Named once because the row action and the detail panel
-   both ask the same question. */
+/*
+ * Trackable states.
+ * Named once because the row action and the detail panel both ask the same question.
+ */
 function isTrackable(status: OrderStatus): boolean {
   return status === "active" || status === "delivered";
 }
 
-/*
- * Module scope: an inline array rebuilds every cell on every keystroke in the
- * table's search box.
- */
+/* Module scope: an inline array rebuilds every cell on every keystroke in the table's search box. */
 const COLUMNS: readonly TableColumn<Order>[] = [
   {
     id: "orderId",
@@ -188,6 +185,9 @@ const COLUMNS: readonly TableColumn<Order>[] = [
 ];
 
 export default function BuyerOrders() {
+  const { triggerDialog } = useDialog();
+  const { pending: pendingRatings, reload: reloadPendingRatings } =
+    usePendingRatings();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("all");
@@ -206,9 +206,8 @@ export default function BuyerOrders() {
   }
 
   /*
-   * The backend only lets an order be cancelled while it is still unpaid, which
-   * maps to the Pending status here. Anything already paid has to go through a
-   * refund request instead, so the button is not offered for those.
+   * The backend only lets an order be cancelled while it is still unpaid, which maps to the Pending status here.
+   * Anything already paid has to go through a refund request instead, so the button is not offered for those.
    */
   async function handleCancel(): Promise<void> {
     if (!selected || cancelReason.trim().length < 5) return;
@@ -239,11 +238,7 @@ export default function BuyerOrders() {
     }
   }
 
-  /*
-   * A failed load used to console.error and leave the list empty, which the
-   * table then reported as "no orders" - a very different thing to tell a
-   * buyer than "we could not reach the server".
-   */
+  /* A failed load used to console.error and leave the list empty, which the table then reported as "no orders" - a very different thing to tell a buyer than "we could not reach the server". */
   const load = useCallback((): void => {
     setLoading(true);
     apiFetch<ApiOrder[]>("/buyer/orders")
@@ -299,9 +294,7 @@ export default function BuyerOrders() {
         pageSize={10}
         pageSizeOptions={[10, 25, 50]}
         onRowClick={(order) => setSelected(order)}
-        /* The status filter lives on the page, so the engine is told when it
-           changes and the viewer does not stay on a page that no longer
-           exists. */
+        /* The status filter lives on the page, so the engine is told when it changes and the viewer does not stay on a page that no longer exists. */
         resetKey={activeTab}
         toolbar={
           <SelectButtonField
@@ -380,6 +373,31 @@ export default function BuyerOrders() {
                   </SubmitButton>
                 )}
               </div>
+
+              {selected.status === "delivered" && (
+                <div className="border-line mt-5 flex flex-wrap gap-2 border-t pt-5">
+                  {pendingRatings
+                    .filter((r) => String(r.orderId) === selected.id)
+                    .map((r) => (
+                      <SubmitButton
+                        key={r.contextKey}
+                        variant="secondary"
+                        type="button"
+                        className="text-xs"
+                        onClick={() =>
+                          triggerDialog("RATE_ORDER", {
+                            contextKey: r.contextKey,
+                            orderId: Number(selected.id),
+                            subjectLabel: r.description,
+                            onRated: reloadPendingRatings,
+                          })
+                        }
+                      >
+                        {r.title}
+                      </SubmitButton>
+                    ))}
+                </div>
+              )}
 
               {selected.status === "pending" && (
                 <div className="border-line mt-5 flex flex-col gap-3 border-t pt-5">

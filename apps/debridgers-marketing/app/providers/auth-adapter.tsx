@@ -18,17 +18,18 @@ import { redirectAfterAuth } from "../utils/auth-redirect";
 import { splitFullName } from "../utils/name";
 
 /*
- * Wires the shared auth hooks in @debridgers/ui-web to this app's real
- * transport, session, and router.
- *
- * This is the only place those three concerns meet the hooks. Keeping it here
- * rather than inside ui-web is what lets the hooks be shared without dragging
- * the API client and router into a UI package.
+ * Wires the shared auth hooks in @debridgers/ui-web to this app's real transport, session, and router.
+ * This is the only place those three concerns meet the hooks.
+ * Keeping it here rather than inside ui-web is what lets the hooks be shared without dragging the API client and router into a UI package.
  */
 export function AppAuthAdapterProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const { login, syncUserFromToken } = useAuth();
 
+  /*
+   * updatePassword is unreachable here since marketing has no dashboards or settings screen; it exists only to satisfy AuthAdapter, and fails loudly rather than guessing a role/endpoint if that assumption ever stops holding.
+   * storeSession returns the role when a session was actually issued, or null when the backend verified the email without logging the user in - the hook uses that to decide between redirecting to a dashboard and sending the user to /login.
+   */
   const adapter = useMemo<AuthAdapter>(
     () => ({
       login,
@@ -41,11 +42,6 @@ export function AppAuthAdapterProvider({ children }: { children: ReactNode }) {
       resetPassword: (token, password) =>
         resetPasswordRequest({ token, password }),
 
-      /*
-       * Marketing has no dashboards or settings screen, so nothing here ever
-       * calls this - it exists only to satisfy AuthAdapter. Fails loudly rather
-       * than guessing a role/endpoint if that assumption ever stops holding.
-       */
       updatePassword: () => {
         throw new Error("Password updates are not available on this app.");
       },
@@ -54,12 +50,6 @@ export function AppAuthAdapterProvider({ children }: { children: ReactNode }) {
 
       resendOtp: (email) => resendOtpRequest(email),
 
-      /*
-       * Returns the role when a session was actually issued, or null when the
-       * backend verified the email without logging the user in. The hook uses
-       * that to decide between redirecting to a dashboard and sending the user
-       * to /login.
-       */
       storeSession: (session: VerifiedSession): string | null => {
         if (!session?.accessToken || !session?.refreshToken) return null;
         storeTokens(session.accessToken, session.refreshToken);

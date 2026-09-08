@@ -12,15 +12,11 @@ import {
 } from "@debridgers/ui-web";
 
 /*
- * Payout bank details. Replaces the "contact admin" placeholder that used to sit
- * on the wallet page, which was the reason no agent could be paid: the account
- * number reached the database through KYC but the bank *code* never did, and a
- * transfer needs the code.
- *
- * The account name is never typed by the agent. They pick a bank, enter the
- * number, and the server resolves the name from the bank; they confirm that name
- * before anything is saved. A typo therefore shows up as the wrong person's name
- * rather than as money sent to a stranger.
+ * Payout bank details.
+ * Replaces the "contact admin" placeholder that used to sit on the wallet page, which was the reason no agent could be paid: the account number reached the database through KYC but the bank *code* never did, and a transfer needs the code.
+ * The account name is never typed by the agent.
+ * They pick a bank, enter the number, and the server resolves the name from the bank; they confirm that name before anything is saved.
+ * A typo therefore shows up as the wrong person's name rather than as money sent to a stranger.
  */
 
 // === Types
@@ -43,12 +39,11 @@ interface ResolvedAccount {
   bank_name: string;
 }
 
+/*
+ * `onDetailsChange` fires on first load and after every save, so the wallet page can gate its payout button.
+ * It must fire on load too: gating on save alone would leave an already-configured agent looking unconfigured until they re-saved.
+ */
 export interface BankDetailsCardProps {
-  /*
-   * Fires on first load and after every save, so the wallet page can gate its
-   * payout button. It must fire on load too: gating on save alone would leave
-   * an already-configured agent looking unconfigured until they re-saved.
-   */
   onDetailsChange?: (details: BankDetails) => void;
 }
 
@@ -68,9 +63,8 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
   const [saved, setSaved] = useState<boolean>(false);
 
   /*
-   * Held in a ref so `load` can stay dependency-free. Taking the callback as a
-   * dependency would refetch on every parent render unless the parent memoized
-   * it, which is a trap for the next caller.
+   * Held in a ref so `load` can stay dependency-free.
+   * Taking the callback as a dependency would refetch on every parent render unless the parent memoized it, which is a trap for the next caller.
    */
   const onDetailsChangeRef = useRef(onDetailsChange);
   useEffect(() => {
@@ -295,10 +289,7 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
             />
           </div>
 
-          {/*
-            Resolution is a separate, explicit step: the agent must see whose
-            account this is before the details can be saved.
-          */}
+          {/* Resolution is a separate, explicit step: the agent must see whose account this is before the details can be saved. */}
           {resolved ? (
             <div className="bg-status-delivered flex flex-col gap-1 rounded-xl px-4 py-3">
               <span className="text-status-delivered-fg flex items-center gap-2 text-xs font-semibold uppercase">

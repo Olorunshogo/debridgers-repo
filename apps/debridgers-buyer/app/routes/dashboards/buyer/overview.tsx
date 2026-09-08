@@ -104,14 +104,13 @@ interface DashboardData {
 }
 
 /*
- * This week against last week. "flat" covers both an exact match and the case
- * where there is no previous week to compare against - with one week of data
- * there is no direction to claim, and an arrow would be inventing one.
+ * This week against last week.
+ * "flat" covers both an exact match and the case where there is no previous week to compare against - with one week of data there is no direction to claim, and an arrow would be inventing one.
+ *
+ * `percent` is the whole percent change from the previous week: 0 when direction is flat, and null when the previous week was zero, since that has no percentage.
  */
 type SpendingTrend = {
   direction: "up" | "down" | "flat";
-  /* Whole percent change from the previous week. 0 when direction is flat, and
-     null when the previous week was zero, since that has no percentage. */
   percent: number | null;
 };
 
@@ -141,10 +140,7 @@ interface ApiDashboard {
   } | null;
 }
 
-/*
- * GET /buyer/spending returns one row per week of delivered orders over the
- * last six weeks, oldest first, with amounts in kobo.
- */
+/* GET /buyer/spending returns one row per week of delivered orders over the last six weeks, oldest first, with amounts in kobo. */
 interface ApiSpendingWeek {
   week: string;
   amount_kobo: number;
@@ -171,8 +167,7 @@ function buildSpendingTrend(
 
   const direction = thisWeek > lastWeek ? "up" : "down";
 
-  /* Coming off a zero week is an increase with no meaningful percentage - the
-     arrow says what happened and a "∞%" would not help. */
+  /* Coming off a zero week is an increase with no meaningful percentage - the arrow says what happened and a "∞%" would not help. */
   if (lastWeek === 0) return { direction, percent: null };
 
   return {
@@ -201,8 +196,8 @@ function buildSpending(rows: ApiSpendingWeek[]): DashboardData["spending"] {
   const thisWeek = weeks[weeks.length - 1].amount;
 
   /*
-   * The API labels weeks as "Mon DD" with no year, so a true calendar month
-   * cannot be derived from it. The last four buckets are used as the month.
+   * The API labels weeks as "Mon DD" with no year, so a true calendar month cannot be derived from it.
+   * The last four buckets are used as the month.
    */
   const thisMonth = weeks.slice(-4).reduce((sum, w) => sum + w.amount, 0);
 
@@ -295,10 +290,9 @@ function mapApiToDashboard(
         icon: "lucide:refresh-cw",
       },
       /*
-       * Money Saved needs the referral system finished end to end before it can
-       * show a real figure, and a card reading "-" teaches the buyer nothing.
-       * Wallet balance is money they can act on today, and the Add Funds quick
-       * action right below it is the action. Restore this when referrals land.
+       * Money Saved needs the referral system finished end to end before it can show a real figure, and a card reading "-" teaches the buyer nothing.
+       * Wallet balance is money they can act on today, and the Add Funds quick action right below it is the action.
+       * Restore this when referrals land.
        */
       // {
       //   label: "Money Saved",
@@ -328,10 +322,8 @@ function mapApiToDashboard(
 /*
  * Direction of this week's spend against last week's.
  *
- * Up is green and down is red, as asked. Worth knowing this is the inverse of
- * the usual reading for a spending figure - for a buyer, spending less is
- * normally the good news - so if it ever looks wrong on screen, this is the
- * line to flip, not the data.
+ * Up is green and down is red, as asked.
+ * Worth knowing this is the inverse of the usual reading for a spending figure - for a buyer, spending less is normally the good news - so if it ever looks wrong on screen, this is the line to flip, not the data.
  */
 function SpendingTrendChip({ trend }: { trend: SpendingTrend }) {
   if (trend.direction === "flat") {
@@ -437,10 +429,9 @@ export default function BuyerOverview() {
   /*
    * Server first, localStorage only as a fallback.
    *
-   * This used to read the snapshot alone, which is written at checkout and so
-   * only exists in the browser the order was placed from. On a new device, or
-   * after clearing storage, the button silently navigated to an empty shop and
-   * looked broken. The buyer's real order history is on the server, so ask it.
+   * This used to read the snapshot alone, which is written at checkout and so only exists in the browser the order was placed from.
+   * On a new device, or after clearing storage, the button silently navigated to an empty shop and looked broken.
+   * The buyer's real order history is on the server, so ask it.
    */
   async function repeatLastOrder(): Promise<void> {
     try {
@@ -486,8 +477,7 @@ export default function BuyerOverview() {
   useEffect(() => {
     Promise.all([
       apiFetch<ApiDashboard>("/buyer/dashboard"),
-      // The chart is secondary to the rest of the page, so a failure here
-      // leaves the dashboard usable with an empty chart rather than blank.
+      // The chart is secondary to the rest of the page, so a failure here leaves the dashboard usable with an empty chart rather than blank.
       apiFetch<ApiSpendingWeek[]>("/buyer/spending").catch(() => []),
     ])
       .then(([api, spendingRows]) =>

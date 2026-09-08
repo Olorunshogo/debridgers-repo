@@ -45,9 +45,8 @@ export default defineConfig({
   },
   server: {
     /*
-     * 5174 matches the deployed test backend's ALLOWED_ORIGINS - a different
-     * port here means every local request gets CORS-blocked, not the "port in
-     * use" a bare mismatch usually looks like. --port still overrides this.
+     * 5174 matches the deployed test backend's ALLOWED_ORIGINS - a different port here means every local request gets CORS-blocked, not the "port in use" a bare mismatch usually looks like.
+     * --port still overrides this.
      */
     port: Number(process.env.PORT) || 5174,
   },

@@ -4,16 +4,16 @@
    nigerian-states dataset and by any form that needs a state, LGA, or area
    selector. */
 
+/* areas is named areas/wards within the LGA. Only populated where we have the detail. */
 export interface NigerianLga {
   name: string;
-  /** Named areas/wards within the LGA. Only populated where we have the detail. */
   areas?: readonly string[];
 }
 
+/* slug is kebab-case, URL/param safe, derived from name. */
 export interface NigerianState {
   name: string;
   capital: string;
-  /** kebab-case, URL/param safe, derived from name. */
   slug: string;
   lgas: readonly NigerianLga[];
 }

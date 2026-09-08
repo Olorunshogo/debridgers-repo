@@ -33,11 +33,8 @@ const REQUEST_FIELDS: readonly AuthFieldDescriptor[] = [
 ];
 
 /*
- * One step only: request the reset link. The link itself carries the actual
- * reset token to /reset-password - there is no code to type here, so this
- * page never collects a password. Previously had a fake step 2 that relabeled
- * the emailed link's 64-char token as a short "code," duplicating
- * reset-password.tsx with misleading copy - removed rather than kept in sync.
+ * One step only: request the reset link. The link itself carries the actual reset token to /reset-password - there is no code to type here, so this page never collects a password.
+ * Previously had a fake step 2 that relabeled the emailed link's 64-char token as a short "code," duplicating reset-password.tsx with misleading copy - removed rather than kept in sync.
  */
 export default function ForgotPasswordPage() {
   const request = useForgotPassword();

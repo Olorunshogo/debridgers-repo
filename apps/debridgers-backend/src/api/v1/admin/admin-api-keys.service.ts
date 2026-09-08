@@ -21,7 +21,8 @@ import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.p
 export class AdminApiKeysService {
   private readonly logger = new Logger(AdminApiKeysService.name);
   private readonly API_KEY_PREFIX = "debridgers_";
-  private readonly API_KEY_LENGTH = 32; // 256 bits
+  // 256 bits.
+  private readonly API_KEY_LENGTH = 32;
 
   constructor(
     @Inject(DATABASE_CONNECTION)
@@ -61,8 +62,9 @@ export class AdminApiKeysService {
 
     this.logger.log(`API key created for admin ${adminId}: ${name}`);
 
+    // key is only returned once, at creation.
     return {
-      key: plainKey, // Only returned once at creation
+      key: plainKey,
       keyId: result[0].id,
     };
   }
@@ -70,9 +72,8 @@ export class AdminApiKeysService {
   /**
    * Validate an API key and return the admin ID if valid.
    *
-   * Joins the owning user deliberately. Checking only the key's own `is_active`
-   * meant a blocked, suspended or role-changed admin's keys kept authenticating
-   * indefinitely, so revoking a person did not revoke their access.
+   * Joins the owning user deliberately.
+   * Checking only the key's own `is_active` meant a blocked, suspended or role-changed admin's keys kept authenticating indefinitely, so revoking a person did not revoke their access.
    *
    * @param plainKey - The plain API key to validate
    * @returns Admin ID if valid, null if the key or its owner is not active
@@ -130,9 +131,8 @@ export class AdminApiKeysService {
   /**
    * List an admin's API keys, never the keys themselves.
    *
-   * Revoked keys are hidden unless explicitly asked for. Listing them beside
-   * live ones with only a boolean to tell them apart invited the reader to
-   * treat a revoked key as usable, which is F11.
+   * Revoked keys are hidden unless explicitly asked for.
+   * Listing them beside live ones with only a boolean to tell them apart invited the reader to treat a revoked key as usable, which is F11.
    */
   async listApiKeys(adminId: number, isActive?: boolean) {
     const conditions = [eq(schema.admin_api_keys.admin_id, adminId)];
@@ -158,8 +158,7 @@ export class AdminApiKeysService {
   /**
    * Deactivate an API key (soft delete).
    *
-   * `is_active` is part of the predicate, not just the update: without it,
-   * re-revoking an already revoked key matched a row and reported success.
+   * `is_active` is part of the predicate, not just the update: without it, re-revoking an already revoked key matched a row and reported success.
    */
   async deactivateApiKey(keyId: number, adminId: number): Promise<void> {
     const updated = await this.db

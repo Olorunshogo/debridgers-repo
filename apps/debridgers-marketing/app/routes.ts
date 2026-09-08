@@ -16,21 +16,15 @@ export default [
     route("agents", "routes/marketing/agents.tsx"),
     /*
      * One route for every legal document, resolved from a registry by slug.
-     * Terms, the agent agreement and the privacy policy are the same renderer
-     * over different data, so publishing another one is a content file and a
-     * registry entry rather than a route and a page.
+     * Terms, the agent agreement and the privacy policy are the same renderer over different data, so publishing another one is a content file and a registry entry rather than a route and a page.
      */
     route("legal/:slug", "routes/marketing/legal.$slug.tsx"),
   ]),
 
+  // === Auth Routes
   /*
-   * === Auth Routes
-   *
-   * Marketing has no auth of its own - /login and /signup are role pickers
-   * that redirect to the chosen role's own subdomain app, which owns the
-   * real forms (see features/auth/public-roles.ts). Admin isn't offered here
-   * on purpose: its login/register URLs live on debridgers-admin and are not
-   * advertised on this public page.
+   * Marketing has no auth of its own - /login and /signup are role pickers that redirect to the chosen role's own subdomain app, which owns the real forms (see features/auth/public-roles.ts).
+   * Admin isn't offered here on purpose: its login/register URLs live on debridgers-admin and are not advertised on this public page.
    */
   layout("routes/auth/layout.tsx", [
     route("login", "routes/auth/login.tsx"),

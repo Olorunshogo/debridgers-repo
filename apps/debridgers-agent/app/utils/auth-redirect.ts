@@ -9,17 +9,10 @@ const ROLE_PATHS: Record<UserRole, string> = {
 };
 
 /*
- * Where to send the user once they finish authenticating, when something
- * started the sign-in on their behalf.
- *
- * The public shop's checkout gate is the case this exists for: a buyer clicks
- * Checkout, signs in or registers, and should land on checkout rather than the
- * dashboard's front page. Login and email verification take different routes
- * through the auth hooks, so the intent is parked here instead of threaded
- * through both.
- *
- * sessionStorage, not localStorage: the intent belongs to this tab and this
- * sitting, and must not outlive it.
+ * Where to send the user once they finish authenticating, when something started the sign-in on their behalf.
+ * The public shop's checkout gate is the case this exists for: a buyer clicks Checkout, signs in or registers, and should land on checkout rather than the dashboard's front page.
+ * Login and email verification take different routes through the auth hooks, so the intent is parked here instead of threaded through both.
+ * sessionStorage, not localStorage: the intent belongs to this tab and this sitting, and must not outlive it.
  */
 const POST_AUTH_REDIRECT_KEY = "debridgers_post_auth_redirect";
 
@@ -58,8 +51,10 @@ export function redirectAfterAuth(navigate: NavigateFunction, role: string) {
   const intended = takePostAuthRedirect();
   const path = ROLE_PATHS[role as UserRole] ?? ROLE_PATHS.buyer;
 
-  /* Honour the intent only for the role it was recorded for. An agent or admin
-     signing in on the same tab gets their own dashboard, not a buyer checkout. */
+  /*
+   * Honour the intent only for the role it was recorded for.
+   * An agent or admin signing in on the same tab gets their own dashboard, not a buyer checkout.
+   */
   if (intended && intended.startsWith(path)) {
     navigate(intended);
     return;

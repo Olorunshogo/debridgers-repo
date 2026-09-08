@@ -9,6 +9,7 @@ import {
   SubmitButton,
   TextareaField,
   useDialog,
+  extractServerFieldErrors,
 } from "@debridgers/ui-web";
 import {
   apiFetch,
@@ -83,7 +84,8 @@ function Section({
   );
 }
 
-// === FieldRow - read-only display with pen icon to enter edit mode
+// === FieldRow
+// Read-only display with a pen icon to enter edit mode.
 function FieldRow({
   label,
   value,
@@ -115,7 +117,8 @@ function FieldRow({
   );
 }
 
-// === ReadOnlyRow - for fields that can never be edited (e.g. email)
+// === ReadOnlyRow
+// For fields that can never be edited (e.g. email).
 function ReadOnlyRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="font-syne flex flex-col gap-1.5">
@@ -187,11 +190,7 @@ export default function BuyerSettings() {
       if (profile.avatar_url) setAvatarUrl(profile.avatar_url);
       setApiError(null);
     } catch (err) {
-      /*
-       * Silence here was actively unsafe: the form stays blank, `original`
-       * stays blank with it, so `isDirty` reads false and a save would submit
-       * empty values over the real profile.
-       */
+      /* Silence here was actively unsafe: the form stays blank, `original` stays blank with it, so `isDirty` reads false and a save would submit empty values over the real profile. */
       setApiError(
         err instanceof ApiError
           ? err.message
@@ -299,6 +298,14 @@ export default function BuyerSettings() {
           ? err.message
           : "Failed to save changes. Please try again.",
       );
+
+      /* firstName/lastName both come from the one userName field, so either backend field is shown there. */
+      const server = extractServerFieldErrors(err);
+      setErrors((prev) => ({
+        ...prev,
+        deliveryAddress: server.deliveryAddress ?? prev.deliveryAddress,
+        userName: server.firstName ?? server.lastName ?? prev.userName,
+      }));
     } finally {
       setLoading(false);
     }

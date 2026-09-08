@@ -2,16 +2,13 @@ import { BASE_BACKEND_URL } from "../api";
 import { ApiError } from "../apiFetch";
 
 /*
- * Request helper for UNAUTHENTICATED endpoints (login, register, password
- * reset, email verification).
+ * Request helper for UNAUTHENTICATED endpoints (login, register, password reset, email verification).
  *
- * Deliberately not built on apiFetch: that attaches a bearer token and, on a
- * 401, attempts a silent refresh and retries. Both are wrong here. A failed
- * login legitimately returns 401 and must surface as an error, not trigger a
- * refresh of a session that does not exist yet.
+ * Deliberately not built on apiFetch: that attaches a bearer token and, on a 401, attempts a silent refresh and retries.
+ * Both are wrong here.
+ * A failed login legitimately returns 401 and must surface as an error, not trigger a refresh of a session that does not exist yet.
  *
- * Returns the envelope's `data` and throws ApiError on any non-2xx, matching
- * apiFetch's contract so callers handle both the same way.
+ * Returns the envelope's `data` and throws ApiError on any non-2xx, matching apiFetch's contract so callers handle both the same way.
  */
 export async function publicRequest<T = unknown>(
   path: string,
@@ -21,9 +18,8 @@ export async function publicRequest<T = unknown>(
 
   try {
     /*
-     * FormData sets its own multipart Content-Type, including the boundary the
-     * server needs to parse the parts. Setting it here would overwrite that
-     * with a boundary-less header and every upload would fail to parse.
+     * FormData sets its own multipart Content-Type, including the boundary the server needs to parse the parts.
+     * Setting it here would overwrite that with a boundary-less header and every upload would fail to parse.
      */
     const isFormData =
       typeof FormData !== "undefined" && options.body instanceof FormData;

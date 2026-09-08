@@ -61,9 +61,15 @@ export class OrderService {
 
     // Validate delivery address
     if (!dto.delivery_address || dto.delivery_address.length < 10) {
-      throw new BadRequestException(
-        "Delivery address must be at least 10 characters",
-      );
+      throw new BadRequestException({
+        message: "Delivery address must be at least 10 characters",
+        errors: [
+          {
+            field: "delivery_address",
+            message: "Delivery address must be at least 10 characters",
+          },
+        ],
+      });
     }
 
     /* Fall back to the buyer's own zone so a client that does not collect one
@@ -79,9 +85,15 @@ export class OrderService {
     }
 
     if (zoneId === undefined) {
-      throw new BadRequestException(
-        "No delivery zone supplied and none set on your profile.",
-      );
+      throw new BadRequestException({
+        message: "No delivery zone supplied and none set on your profile.",
+        errors: [
+          {
+            field: "zone_id",
+            message: "No delivery zone supplied and none set on your profile.",
+          },
+        ],
+      });
     }
 
     // Verify zone exists
@@ -92,7 +104,10 @@ export class OrderService {
       .limit(1);
 
     if (!zone) {
-      throw new BadRequestException("Invalid zone");
+      throw new BadRequestException({
+        message: "Invalid zone",
+        errors: [{ field: "zone_id", message: "Invalid zone" }],
+      });
     }
 
     /*

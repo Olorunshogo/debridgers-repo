@@ -8,11 +8,8 @@ export const BASE_BACKEND_URL: string =
   "http://localhost:4002/api/v1";
 
 /*
- * A shell-exported VITE_API_URL silently overrides the .env file for that
- * mode - that's Vite's own by-design precedence, not a bug here - and the
- * only symptom used to be a failed request with no clue why. Printed once at
- * module load, on both the server render and the client, so the mode and the
- * URL it resolved to are always visible instead of discovered by accident.
+ * A shell-exported VITE_API_URL silently overrides the .env file for that mode - that's Vite's own by-design precedence, not a bug here - and the only symptom used to be a failed request with no clue why.
+ * Printed once at module load, on both the server render and the client, so the mode and the URL it resolved to are always visible instead of discovered by accident.
  */
 console.log(
   `[Debridgers] mode=${import.meta.env.MODE} apiBaseUrl=${BASE_BACKEND_URL}`,

@@ -18,8 +18,8 @@ export class ApiError extends Error {
 }
 
 /*
- * The full response envelope the backend's interceptor emits. `meta` is present
- * only on paginated handlers.
+ * The full response envelope the backend's interceptor emits.
+ * `meta` is present only on paginated handlers.
  */
 interface ApiEnvelope<T> {
   data: T;
@@ -28,8 +28,8 @@ interface ApiEnvelope<T> {
 }
 
 /*
- * One request, one silent refresh on 401, one retry. Both apiFetch and
- * apiFetchPaged go through here so the auth behaviour cannot drift apart.
+ * One request, one silent refresh on 401, one retry.
+ * Both apiFetch and apiFetchPaged go through here so the auth behaviour cannot drift apart.
  */
 async function requestEnvelope<T>(
   path: string,
@@ -90,8 +90,7 @@ export async function apiFetch<T = unknown>(
  * Authenticated fetch for a paginated list endpoint, keeping `meta`.
  *
  * Use this anywhere a pager, a total, or server-side sorting is involved.
- * `params` is serialised onto the path, so callers never hand-build a query
- * string: apiFetchPaged("/admin/orders", { page, limit, sort, order, search }).
+ * `params` is serialised onto the path, so callers never hand-build a query string: apiFetchPaged("/admin/orders", { page, limit, sort, order, search }).
  */
 export async function apiFetchPaged<
   T = unknown,
@@ -107,9 +106,8 @@ export async function apiFetchPaged<
   );
 
   /*
-   * A missing `meta` means the endpoint is not actually paginated, so the
-   * caller is wrong. Failing loudly beats rendering a pager over a full list
-   * that silently shows only its first page.
+   * A missing `meta` means the endpoint is not actually paginated, so the caller is wrong.
+   * Failing loudly beats rendering a pager over a full list that silently shows only its first page.
    */
   if (!envelope.meta) {
     throw new ApiError(

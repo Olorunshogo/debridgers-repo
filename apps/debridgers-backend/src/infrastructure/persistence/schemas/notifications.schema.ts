@@ -24,11 +24,13 @@ export const NOTIFICATION_TYPES = [
   "kyc",
   "withdrawal",
   "stock",
+  "rating",
   "general",
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
+/* `done` means "handled, stop showing it to me" and implies `read`; the service enforces that pairing so the two can never disagree. */
 export const notifications = pgTable(
   "notifications",
   {
@@ -40,8 +42,6 @@ export const notifications = pgTable(
     title: text().notNull(),
     description: text().notNull(),
     read: boolean().notNull().default(false),
-    /* "Handled, stop showing it to me." Implies read; the service enforces
-       that pairing so the two can never disagree. */
     done: boolean().notNull().default(false),
     ...timestamps,
   },

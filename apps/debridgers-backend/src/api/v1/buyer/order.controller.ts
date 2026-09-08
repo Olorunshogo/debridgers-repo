@@ -215,11 +215,12 @@ export class OrderController {
     @Body(new ZodValidationPipe(mobileMoneyPaymentSchema))
     dto: z.infer<typeof mobileMoneyPaymentSchema>,
   ) {
+    // TODO: Get actual amount from order instead of this hardcoded value.
     const result = await this.paymentService.initiateMobileMoneyPayment({
       email: user.email,
       orderId: dto.orderId,
       buyerId: user.sub,
-      amountKobo: 50000, // TODO: Get actual amount from order
+      amountKobo: 50000,
       phoneNumber: dto.phoneNumber,
       provider: dto.provider,
     });

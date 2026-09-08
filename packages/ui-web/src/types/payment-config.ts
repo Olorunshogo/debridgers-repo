@@ -91,16 +91,16 @@ export interface RolePaymentConfigEndpoints {
   payoutAccount: string;
 }
 
+/*
+ * The `map*` fields below are shape adapters. Each role's raw API response can
+ * use its own field names (the agent endpoints do), so mapping from the raw
+ * response to the canonical domain types above is config, not hook logic -
+ * the same reason RoleSignupConfig carries the signup schema instead of the
+ * hook branching on role.
+ */
 export interface RolePaymentConfig {
   role: string;
   endpoints: RolePaymentConfigEndpoints;
-  /*
-   * Shape adapters. Each role's raw API response can use its own field names
-   * (the agent endpoints do), so mapping from the raw response to the
-   * canonical domain types above is config, not hook logic - the same reason
-   * RoleSignupConfig carries the signup schema instead of the hook branching
-   * on role.
-   */
   mapWallet: (raw: unknown) => WalletPage;
   mapDepositInitiation: (raw: unknown) => DepositInitiation;
   mapDepositConfirmation: (raw: unknown) => DepositConfirmation;

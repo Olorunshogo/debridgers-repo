@@ -84,10 +84,12 @@ export type LegalBlock =
  * headings that only look nested. The table of contents and the anchor ids are
  * both derived from this tree, so a renumbering cannot leave them disagreeing.
  */
+/*
+ * id is the anchor fragment, stable across revisions so an old link keeps working.
+ * number is the clause number as displayed, "7" or "10.8". Omitted for an unnumbered section.
+ */
 export interface LegalSection {
-  /** Anchor fragment, stable across revisions so an old link keeps working. */
   id: string;
-  /** Clause number as displayed, "7" or "10.8". Omitted for an unnumbered section. */
   number?: string;
   heading: string;
   blocks?: readonly LegalBlock[];
@@ -102,23 +104,23 @@ export interface LegalRevision {
   summary: string;
 }
 
+/*
+ * slug is the registry key and URL segment: /legal/<slug>.
+ * version is what a consent is recorded against. A signup stores this string, so
+ * a revision that changes obligations must raise it or the record will claim
+ * the user agreed to text they never saw.
+ * intro is the preamble before the first numbered section.
+ * closing is the closing line under the last section, "These Terms are effective as of...".
+ */
 export interface LegalDocument {
-  /** Registry key and URL segment: /legal/<slug>. */
   slug: string;
   title: string;
   subtitle?: string;
-  /*
-   * The version a consent is recorded against. A signup stores this string, so
-   * a revision that changes obligations must raise it or the record will claim
-   * the user agreed to text they never saw.
-   */
   version: string;
   effectiveDate: string;
   lastRevised: string;
   revisions?: readonly LegalRevision[];
-  /** Preamble before the first numbered section. */
   intro?: readonly LegalBlock[];
   sections: readonly LegalSection[];
-  /** Closing line under the last section, "These Terms are effective as of...". */
   closing?: string;
 }

@@ -54,12 +54,12 @@ export class KycService {
 
     await this.db
       .update(schema.agent_profiles)
+      // The bank_code spread leaves an existing code alone when this submission omits one.
       .set({
         id_type: dto.id_type,
         id_front_url: files.id_front,
         id_selfie_url: files.id_selfie,
         bank_name: dto.bank_name,
-        /* Leave an existing code alone when this submission omits one. */
         ...(dto.bank_code ? { bank_code: dto.bank_code } : {}),
         bank_account_number: dto.bank_account_number,
         bank_account_name: dto.bank_account_name,

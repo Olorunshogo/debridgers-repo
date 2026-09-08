@@ -26,31 +26,22 @@ export const SELF_REGISTERABLE_ROLES = [
 
 export type SelfRegisterableRole = (typeof SELF_REGISTERABLE_ROLES)[number];
 
+/*
+ * accepted_terms/terms_document/terms_version: consent to the terms shown at signup.
+ * accepted_terms must be `true` since this endpoint creates an active account, so a request without consent is a client that skipped the tick.
+ * Document and version are recorded because each role signs different text, and a consent naming neither can't say which one, or which revision, the account holder saw.
+ * role defaults to buyer, the least-privileged self-registerable role, so an omitted field can then only ever create a harmless account.
+ */
 export const registerSchema = z.object({
   first_name: z.string().min(2, "First name must be at least 2 characters"),
   last_name: z.string().min(2, "Last name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   phone: z.string().min(10, "Invalid phone number").optional(),
   password: passwordRule,
-  /*
-   * Defaults to buyer, the least-privileged self-registerable role, so a request
-   * that omits the field can only ever create a harmless account.
-   */
   role: z
     .enum(SELF_REGISTERABLE_ROLES as unknown as [string, ...string[]])
     .default(USER_ROLES.BUYER),
   referred_by_agent_code: z.string().optional(),
-  /*
-   * Consent to the terms shown at signup.
-   *
-   * Required, and required to be `true`: this endpoint creates an active
-   * account for a role whose terms are published, so a request without consent
-   * is a client that skipped the tick rather than a user who accepted.
-   *
-   * The document and version are recorded because each role signs a different
-   * text, and a consent that names neither cannot answer which one, or which
-   * revision of it, the account holder actually saw.
-   */
   accepted_terms: z.literal(true, {
     error: "You must accept the Terms and Conditions",
   }),

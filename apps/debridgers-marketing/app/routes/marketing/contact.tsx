@@ -12,16 +12,15 @@ import {
   TextareaField,
   SubmitButton,
   isValidEmail,
+  extractServerFieldErrors,
   SUPPORT,
   supportMailtoHref,
   supportTelHref,
 } from "@debridgers/ui-web";
 import { BASE_BACKEND_URL } from "@debridgers/api-client";
 /*
- * Leaflet ships its own stylesheet and marker images and is a real dependency,
- * so both are bundled rather than fetched from unpkg. Pulling them from a CDN
- * meant a slow or blocked network rendered the map with no stylesheet and no
- * marker, which looks like a broken map rather than a failed request.
+ * Leaflet ships its own stylesheet and marker images and is a real dependency, so both are bundled rather than fetched from unpkg.
+ * Pulling them from a CDN meant a slow or blocked network rendered the map with no stylesheet and no marker, which looks like a broken map rather than a failed request.
  */
 import "leaflet/dist/leaflet.css";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
@@ -68,9 +67,7 @@ function validate(form: ContactForm): FormErrors {
     errors.email = "Please enter a valid email address.";
   }
 
-  // Keep this rule in step with createContactSchema on the backend: a plain
-  // character minimum, not a word count, so the two never disagree about
-  // whether a given message is valid.
+  /* Keep this rule in step with createContactSchema on the backend: a plain character minimum, not a word count, so the two never disagree about whether a given message is valid. */
   const message = form.message.trim();
   if (message.length < 15) {
     errors.message = "Message must be at least 15 characters.";
@@ -143,10 +140,8 @@ function ContactMap({
         .openPopup();
 
       /*
-       * Leaflet measures its container once, at construction. This one is in a
-       * flex column that finishes sizing after the dynamic import resolves, so
-       * without this the tiles lay out against a stale height and the map
-       * renders part-drawn or grey.
+       * Leaflet measures its container once, at construction.
+       * This one is in a flex column that finishes sizing after the dynamic import resolves, so without this the tiles lay out against a stale height and the map renders part-drawn or grey.
        */
       requestAnimationFrame(() => map.invalidateSize());
 
@@ -162,8 +157,7 @@ function ContactMap({
     };
   }, [lat, lng, zoom]);
 
-  /* A concrete minimum height, not just h-full: the parent is `lg:h-auto`, so
-     a purely relative height collapses to zero and Leaflet draws nothing. */
+  /* A concrete minimum height, not just h-full: the parent is `lg:h-auto`, so a purely relative height collapses to zero and Leaflet draws nothing. */
   return <div ref={mapRef} className="h-full min-h-96 w-full" />;
 }
 
@@ -182,7 +176,6 @@ export default function ContactPage() {
   function handleChange(field: keyof ContactForm) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setForm((prev) => ({ ...prev, [field]: e.target.value }));
-      // Clear error on change
       if (errors[field]) {
         setErrors((prev) => ({ ...prev, [field]: undefined }));
       }

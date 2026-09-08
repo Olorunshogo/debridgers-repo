@@ -1,14 +1,12 @@
 /*
  * Every number the business runs on that has not been measured yet.
  *
- * The point is not the fallbacks. The point is that each figure carries its own
- * status, so a contribution margin computed from guesses is visibly computed
- * from guesses, and nobody has to remember which is which. When a real figure
- * arrives, one value changes here and everything downstream follows.
+ * The point is not the fallbacks.
+ * The point is that each figure carries its own status, so a contribution margin computed from guesses is visibly computed from guesses, and nobody has to remember which is which.
+ * When a real figure arrives, one value changes here and everything downstream follows.
  *
- * Fallbacks exist so the platform runs while the counting happens. They are
- * deliberately conservative: a fallback that flatters the margin is worse than
- * no fallback at all, because it reads as fact.
+ * Fallbacks exist so the platform runs while the counting happens.
+ * They are deliberately conservative: a fallback that flatters the margin is worse than no fallback at all, because it reads as fact.
  *
  * Derivations and the reasoning behind every estimate: docs/business/BusinessModel.md.
  */
@@ -24,12 +22,14 @@
  */
 export type MetricStatus = "measured" | "estimated" | "unknown";
 
+/*
+ * `basis` is where the figure came from, or what the guess rests on.
+ * `measuredAt` is the ISO date the figure was measured, absent while it is not.
+ */
 export interface Metric<T = number> {
   value: T;
   status: MetricStatus;
-  /** Where the figure came from, or what the guess rests on. */
   basis: string;
-  /** ISO date the figure was measured. Absent while it is not. */
   measuredAt?: string;
   unit: string;
 }
@@ -51,9 +51,8 @@ export function unmeasured(metrics: Record<string, Metric<unknown>>): string[] {
 
 // === Landed cost, per product
 //
-// The single most load-bearing unknown in the business: every margin figure
-// rests on the procurement spread, and the spread cannot be known until the
-// true delivered cost of a bag is known. Keyed by the catalogue product name.
+// The single most load-bearing unknown in the business: every margin figure rests on the procurement spread, and the spread cannot be known until the true delivered cost of a bag is known.
+// Keyed by the catalogue product name.
 
 /** Target procurement spread, as a fraction of the buyer price. */
 export const TARGET_PROCUREMENT_SPREAD = 0.06;
@@ -61,10 +60,8 @@ export const TARGET_PROCUREMENT_SPREAD = 0.06;
 /**
  * Landed cost per package, in kobo.
  *
- * Until a product is measured, its cost is implied from the target spread,
- * which means the margin it reports is the target rather than the truth. That
- * is the honest placeholder: it never claims a margin the business has not
- * proven.
+ * Until a product is measured, its cost is implied from the target spread, which means the margin it reports is the target rather than the truth.
+ * That is the honest placeholder: it never claims a margin the business has not proven.
  */
 export const LANDED_COST_KOBO: Record<string, Metric> = {};
 
@@ -95,8 +92,8 @@ export function landedCostKobo(
 // === Operating metrics
 
 /*
- * Inbound haulage, loading, burn and order admin. Loading is the only one with
- * a considered basis; the rest are placeholders waiting on a count.
+ * Inbound haulage, loading, burn and order admin.
+ * Loading is the only one with a considered basis; the rest are placeholders waiting on a count.
  */
 
 export const INBOUND_HAULAGE_KOBO: Metric = {
@@ -137,8 +134,8 @@ export const ORDER_ADMIN_MINUTES: Metric = {
 
 // === Trading metrics
 //
-// Unlike the above these are queries, not counts: the orders table already
-// holds them. They stay here so a report reads every figure from one place.
+// Unlike the above these are queries, not counts: the orders table already holds them.
+// They stay here so a report reads every figure from one place.
 
 export const GMV_KOBO: Metric = {
   value: 0,
@@ -176,8 +173,8 @@ export const WAREHOUSE_MONTHLY_COST_KOBO: Metric = {
 
 // === Payment rails
 //
-// Paystack's rates, not Debridgers'. They belong to the gateway, so they are
-// recorded rather than decided, and want verifying on the dashboard.
+// Paystack's rates, not Debridgers'.
+// They belong to the gateway, so they are recorded rather than decided, and want verifying on the dashboard.
 
 export const PAYSTACK_CARD_RATE = 0.015;
 export const PAYSTACK_CARD_FLAT_KOBO = 10_000;

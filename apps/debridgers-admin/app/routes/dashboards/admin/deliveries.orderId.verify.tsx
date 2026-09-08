@@ -57,9 +57,7 @@ export default function VerifyDelivery() {
   const [photos, setPhotos] = useState<PhotoUpload[]>([]);
   const [notes, setNotes] = useState<string>("");
   /*
-   * Who actually took delivery. Left blank rather than prefilled with the
-   * buyer's name: this used to send the buyer regardless of who was standing at
-   * the gate, which is the one detail proof of delivery exists to record.
+   * Who actually took delivery. Left blank rather than prefilled with the buyer's name: this used to send the buyer regardless of who was standing at the gate, which is the one detail proof of delivery exists to record.
    */
   const [recipientName, setRecipientName] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);

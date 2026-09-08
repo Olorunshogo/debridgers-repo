@@ -18,16 +18,13 @@ import { applyAgent } from "@debridgers/api-client";
 
 /*
  * The single place this app's self-registerable role is described.
- *
- * This app only ever serves agents - each role now lives on its own subdomain
- * app, so there is no cross-role table to keep in sync here. Debridgers-buyer
- * carries the same shape for its own role.
+ * This app only ever serves agents - each role now lives on its own subdomain app, so there is no cross-role table to keep in sync here.
+ * Debridgers-buyer carries the same shape for its own role.
  */
 
 /*
- * Field descriptors come from @debridgers/ui-web. The shared form renders
- * whatever descriptors it is given, so this table is the only place that knows
- * which fields belong to this role.
+ * Field descriptors come from @debridgers/ui-web.
+ * The shared form renders whatever descriptors it is given, so this table is the only place that knows which fields belong to this role.
  */
 export type SignupFieldDescriptor = AuthFieldDescriptor;
 export type { RoleSignupConfig, SignupFormValues };
@@ -73,10 +70,8 @@ const BASE_FIELDS: readonly SignupFieldDescriptor[] = [
 ];
 
 /*
- * Labels, not slugs: the API stores the LGA as free text and admin screens
- * display it, so "Kaduna North" is the value worth persisting. Agents are
- * Kaduna-only for now, so this is the one state's LGA list, not the full
- * country the shared dataset also carries.
+ * Labels, not slugs: the API stores the LGA as free text and admin screens display it, so "Kaduna North" is the value worth persisting.
+ * Agents are Kaduna-only for now, so this is the one state's LGA list, not the full country the shared dataset also carries.
  */
 const AGENT_LGA_OPTIONS: readonly string[] = lgaSelectOptions("Kaduna").map(
   (lga) => lga.label,
@@ -84,9 +79,7 @@ const AGENT_LGA_OPTIONS: readonly string[] = lgaSelectOptions("Kaduna").map(
 
 /*
  * The consent tick for a role, linking to that role's own document.
- *
- * Built from the document rather than written out, so the slug in the link and
- * the version in the consent record cannot drift from the text on the page.
+ * Built from the document rather than written out, so the slug in the link and the version in the consent record cannot drift from the text on the page.
  */
 function termsField(slug: string, label: string): SignupFieldDescriptor {
   return {
@@ -115,11 +108,7 @@ export const ROLE_SIGNUP_CONFIG: Record<
   Extract<SelfRegisterableRole, "agent">,
   RoleSignupConfig
 > = {
-  /*
-   * An agent collects an LGA, a home address and optionally a CV at signup, and
-   * posts to /agent/apply rather than /auth/register: the account is created
-   * `pending` for admin approval, not active.
-   */
+  /* An agent collects an LGA, a home address and optionally a CV at signup, and posts to /agent/apply rather than /auth/register: the account is created `pending` for admin approval, not active. */
   agent: {
     role: "agent",
     label: "Agent",
@@ -129,6 +118,7 @@ export const ROLE_SIGNUP_CONFIG: Record<
       cv: cvField,
       acceptedTerms: acceptedTermsField,
     }),
+    /* termsField is last in this array, so consent is the final thing read before the button. */
     fields: [
       ...BASE_FIELDS,
       {
@@ -153,7 +143,6 @@ export const ROLE_SIGNUP_CONFIG: Record<
         accept: ".pdf,.doc,.docx",
         hint: "PDF or Word, up to 5MB. You can add this later if you do not have it to hand.",
       },
-      /* Last, so consent is the final thing read before the button. */
       termsField(agentTerms.slug, agentTerms.title),
     ],
     terms: { slug: agentTerms.slug, version: agentTerms.version },
@@ -180,10 +169,8 @@ export const ROLE_SIGNUP_CONFIG: Record<
       }
 
       /*
-       * Consent, appended as strings because this endpoint is multipart. The
-       * agreement is still a draft, so what is recorded is consent to version
-       * 0.1: the version is exactly what makes that identifiable later, once
-       * the reviewed agreement replaces it.
+       * Consent, appended as strings because this endpoint is multipart.
+       * The agreement is still a draft, so what is recorded is consent to version 0.1: the version is exactly what makes that identifiable later, once the reviewed agreement replaces it.
        */
       form.append("accepted_terms", "true");
       form.append("terms_document", agentTerms.slug);
@@ -202,10 +189,7 @@ export function getRoleSignupConfig(): RoleSignupConfig {
   return ROLE_SIGNUP_CONFIG.agent;
 }
 
-/*
- * Retained for the agent profile form that owns these fields, so the
- * validation rule lives with the role rather than being retyped in settings.
- */
+/* Retained for the agent profile form that owns these fields, so the validation rule lives with the role rather than being retyped in settings. */
 export const agentProfileFields = {
   area: createRequiredString("Area", { min: 1 }),
   address: createRequiredString("Home address", { min: 5 }),

@@ -159,17 +159,19 @@ export class BuyerService {
     const order = await this.db.transaction(async (tx) => {
       const [created] = await tx
         .insert(schema.orders)
+        // unit_price is a legacy column; order_items is the real record.
         .values({
           order_reference: this.generateOrderReference(),
           buyer_id: user.sub,
           zone_id: zoneId,
           quantity: totalQuantity,
-          /* Legacy single-product columns; order_items is the real record. */
           unit_price: Math.round(totals.itemsTotalKobo / totalQuantity),
           handling_fee: totals.handlingFeeKobo,
           delivery_fee: totals.deliveryFeeKobo,
-          /* Recorded on every order, discounted or not, so a campaign's cost
-             is one query afterwards. */
+          /*
+           * Recorded on every order, not only discounted ones, so the cost of a campaign is one query afterwards.
+           * Without it, a free-delivery week left no trace of what it gave away.
+           */
           delivery_fee_before_promo: totals.deliveryFeeBeforePromoKobo,
           delivery_promotion_id: promotion?.id ?? null,
           total_amount: totals.totalKobo,
@@ -492,12 +494,26 @@ export class BuyerService {
 
     const valid = await bcrypt.compare(dto.old_password, buyer.password);
     if (!valid)
-      throw new UnauthorizedException("Current password is incorrect");
+      throw new UnauthorizedException({
+        message: "Current password is incorrect",
+        errors: [
+          {
+            field: "current_password",
+            message: "Current password is incorrect",
+          },
+        ],
+      });
 
     if (dto.new_password.length < 8)
-      throw new BadRequestException(
-        "New password must be at least 8 characters",
-      );
+      throw new BadRequestException({
+        message: "New password must be at least 8 characters",
+        errors: [
+          {
+            field: "password",
+            message: "New password must be at least 8 characters",
+          },
+        ],
+      });
 
     const hashed = await bcrypt.hash(dto.new_password, 12);
     await this.db
@@ -847,8 +863,7 @@ export class BuyerService {
       packageCount,
       /*
        * Attributed to a campaign only when the zone was not already free.
-       * Crediting a campaign for an order in a permanently-free area would
-       * overstate what the campaign actually gave away.
+       * Crediting a campaign for an order in a permanently-free area would overstate what the campaign actually gave away.
        */
       promotion: zoneIsStandingFree ? null : promotion,
     };
@@ -957,9 +972,16 @@ export class BuyerService {
         )
         .limit(1);
       if (!zone) {
-        throw new BadRequestException(
-          "We do not deliver to that area yet. Please choose another.",
-        );
+        throw new BadRequestException({
+          message: "We do not deliver to that area yet. Please choose another.",
+          errors: [
+            {
+              field: "zone_id",
+              message:
+                "We do not deliver to that area yet. Please choose another.",
+            },
+          ],
+        });
       }
       return zone.id;
     }
@@ -971,9 +993,15 @@ export class BuyerService {
       .limit(1);
 
     if (!buyer?.zone_id) {
-      throw new BadRequestException(
-        "Please choose a delivery area before checking out.",
-      );
+      throw new BadRequestException({
+        message: "Please choose a delivery area before checking out.",
+        errors: [
+          {
+            field: "zone_id",
+            message: "Please choose a delivery area before checking out.",
+          },
+        ],
+      });
     }
     return buyer.zone_id;
   }
@@ -993,8 +1021,7 @@ export class BuyerService {
         ...totals,
         zone_id: zoneId,
         package_count: packageCount,
-        /* Named so the delivery line can say which campaign struck the fee
-           through, rather than only that it is free. */
+        // Named so the delivery line can say which campaign struck the fee through, rather than only that it is free.
         delivery_promotion: promotion,
       },
     };
@@ -1031,17 +1058,19 @@ export class BuyerService {
     const order = await this.db.transaction(async (tx) => {
       const [created] = await tx
         .insert(schema.orders)
+        // unit_price is a legacy column; order_items is the real record.
         .values({
           order_reference: `ord_${randomBytes(6).toString("hex")}`,
           buyer_id: user.sub,
           zone_id: zoneId,
           quantity: totalQuantity,
-          /* Legacy single-product columns; order_items is the real record. */
           unit_price: Math.round(totals.itemsTotalKobo / totalQuantity),
           handling_fee: totals.handlingFeeKobo,
           delivery_fee: totals.deliveryFeeKobo,
-          /* Recorded on every order, discounted or not, so a campaign's cost
-             is one query afterwards. */
+          /*
+           * Recorded on every order, not only discounted ones, so the cost of a campaign is one query afterwards.
+           * Without it, a free-delivery week left no trace of what it gave away.
+           */
           delivery_fee_before_promo: totals.deliveryFeeBeforePromoKobo,
           delivery_promotion_id: promotion?.id ?? null,
           total_amount: totals.totalKobo,

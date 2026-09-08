@@ -50,9 +50,12 @@ const KADUNA_NORTH = naira(4500);
 const CHIKUN = naira(6000);
 
 // Catalogue prices, per package.
-const RICE = naira(42000); // Local White Rice, 50kg bag
-const BEANS = naira(55000); // Wake Gida (Honey Beans), 100kg bag
-const PALM_OIL = naira(28000); // Palm Oil, 25 litre keg
+// RICE is Local White Rice, 50kg bag.
+// BEANS is Wake Gida (Honey Beans), 100kg bag.
+// PALM_OIL is Palm Oil, 25 litre keg.
+const RICE = naira(42000);
+const BEANS = naira(55000);
+const PALM_OIL = naira(28000);
 
 describe("delivery fee", () => {
   it("charges the zone base alone for one or two packages", () => {

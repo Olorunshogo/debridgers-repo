@@ -44,9 +44,10 @@ export class PaystackSubaccountService {
    * Transfer funds to platform subaccount.
    * Called when a user makes a payment (wallet, card, etc).
    * Paystack handles auto-settlement to bank account.
+   * amount is in kobo.
    */
   async transferToSubaccount(
-    amount: number, // in kobo
+    amount: number,
     reference: string,
     description: string,
   ): Promise<{ transfer_code: string; amount: number; reference: string }> {
@@ -58,8 +59,9 @@ export class PaystackSubaccountService {
         Authorization: `Bearer ${this.secretKey}`,
         "Content-Type": "application/json",
       },
+      // source is "balance": from the Paystack balance.
       body: JSON.stringify({
-        source: "balance", // From Paystack balance
+        source: "balance",
         amount,
         recipient: subaccountCode,
         reason: description,
@@ -111,13 +113,14 @@ export class PaystackSubaccountService {
         Authorization: `Bearer ${this.secretKey}`,
         "Content-Type": "application/json",
       },
+      // percentage_charge is 0 because the platform fee is handled separately.
       body: JSON.stringify({
         business_name: businessName,
         settlement_bank: bankCode,
         account_number: accountNumber,
         subaccount_type: "individual",
         contact_email: email,
-        percentage_charge: 0, // Platform fee handled separately
+        percentage_charge: 0,
       }),
     });
 

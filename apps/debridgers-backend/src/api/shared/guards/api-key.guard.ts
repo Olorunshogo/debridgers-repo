@@ -12,12 +12,7 @@ interface ApiKeyRequest extends Request {
   adminId?: number;
 }
 
-/**
- * SECURITY FIX: API Key authentication for admin endpoints
- *
- * Validates API key from Authorization header: "Bearer <key>"
- * More secure than JWT for service-to-service auth
- */
+/* Reads the API key from the "Bearer <key>" Authorization header; used for service-to-service admin auth instead of JWT. */
 @Injectable()
 export class ApiKeyGuard implements CanActivate {
   private readonly logger = new Logger(ApiKeyGuard.name);

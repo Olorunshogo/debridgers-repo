@@ -97,13 +97,11 @@ describe.skipIf(!hasDb)("DeliveryPromotionService", () => {
       payment,
       invoice,
       config,
-      /* Real, over an empty system_settings, so the deprecated
-         free_delivery_until fallback is exercised rather than stubbed away. */
+      // Real, over an empty system_settings, so the deprecated free_delivery_until fallback is exercised rather than stubbed away.
       new SystemSettingsService(t.db, config),
       email,
       promotions,
-      /* Real, so a below-minimum order genuinely writes its buyer-admin alert
-         rather than having the one side effect of that path stubbed out. */
+      // Real, so a below-minimum order genuinely writes its buyer-admin alert rather than having that side effect stubbed out.
       new NotificationsService(t.db),
     );
   }, 120000);

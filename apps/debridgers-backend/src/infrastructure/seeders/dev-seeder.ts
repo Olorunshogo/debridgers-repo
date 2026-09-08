@@ -46,6 +46,7 @@ type CommissionStatus = "pending" | "confirmed" | "paid";
 type WithdrawalStatus = "pending" | "approved" | "rejected" | "paid";
 type StockRequestStatus = "pending" | "fulfilled" | "cancelled";
 
+// bank_code is left null on one agent so POST /admin/agents/backfill-bank-codes has a row to actually operate on.
 interface AgentSeed {
   first_name: string;
   last_name: string;
@@ -55,20 +56,17 @@ interface AgentSeed {
   kyc_status: KycStatus;
   is_state_manager: boolean;
   managed_state: string | null;
-  /* Left null on one agent so POST /admin/agents/backfill-bank-codes has a
-     row to actually operate on. */
   bank_code: string | null;
   target: number;
   is_suspended: boolean;
 }
 
+// transaction_count: one buyer gets enough wallet transactions to cross a page boundary, since that endpoint is one of only two that paginate.
 interface BuyerSeed {
   first_name: string;
   last_name: string;
   is_blocked: boolean;
   is_suspended: boolean;
-  /* One buyer gets enough wallet transactions to cross a page boundary, since
-     that endpoint is one of only two that paginate. */
   transaction_count: number;
 }
 
@@ -104,6 +102,7 @@ const AGENTS: AgentSeed[] = [
     target: 30,
     is_suspended: false,
   },
+  // No bank code on Sunday: the backfill endpoint needs a real target row.
   {
     first_name: "Sunday",
     last_name: "Okoro",
@@ -113,7 +112,6 @@ const AGENTS: AgentSeed[] = [
     kyc_status: "submitted",
     is_state_manager: false,
     managed_state: null,
-    /* No bank code: the backfill endpoint needs a real target row. */
     bank_code: null,
     target: 20,
     is_suspended: false,

@@ -41,6 +41,7 @@ const titleMaps: Record<string, Record<string, string>> = {
     "/buyer-dashboard/checkout": "Checkout",
     "/buyer-dashboard/help": "Help Center",
   },
+  /* "/admin-dashboard/buyer" and its children are the buyer-admin domain, inside the one admin dashboard. */
   "/admin-dashboard": {
     "/admin-dashboard": "Overview",
     "/admin-dashboard/agents": "Agents",
@@ -56,7 +57,6 @@ const titleMaps: Record<string, Record<string, string>> = {
     "/admin-dashboard/procurement-targets": "Procurement Targets",
     "/admin-dashboard/notifications": "Notifications",
     "/admin-dashboard/settings": "Settings",
-    /* The buyer-admin domain, inside the one admin dashboard. */
     "/admin-dashboard/buyer": "Buyer Desk",
     "/admin-dashboard/buyer/deliveries": "Order Tracking",
   },
@@ -73,11 +73,8 @@ function getInitials(name: string): string {
 /* Long enough that the admin has landed and looked around before being asked. */
 const PASSWORD_PROMPT_DELAY_MS = 120_000;
 
-/*
- * The one dashboard shell, shared by every role. It stays in the app rather
- * than the package: it is the single component that legitimately owns session
- * state, and pushing it into the package would mean threading auth through
- * every role layout to keep the package free of app context.
+/* The one dashboard shell, shared by every role.
+ * It stays in the app rather than the package: it is the single component that legitimately owns session state, and pushing it into the package would mean threading auth through every role layout to keep the package free of app context.
  */
 export default function DashboardLayout() {
   const { pathname } = useLocation();
@@ -86,9 +83,8 @@ export default function DashboardLayout() {
   const { groups, isActive, basePath, isAgent, isBuyer, isAdmin, isSubAdmin } =
     useDashboardNav(user?.admin_tier ?? null);
   /*
-   * The flags above come from useDashboardNav, which reads them off the URL -
-   * they say which dashboard is being viewed, not who is viewing it. The real
-   * role lives here.
+   * The flags above come from useDashboardNav, which reads them off the URL - they say which dashboard is being viewed, not who is viewing it.
+   * The real role lives here.
    */
   const [mobileOpen, setMobileOpen] = useState<boolean>(false);
   const [search, setSearch] = useState<string>("");
@@ -100,16 +96,14 @@ export default function DashboardLayout() {
     sub: string;
     avatar_url?: string | null;
   } | null>(null);
-  /* Asked once per mount. The dialog is dismissable, so without this an admin
-     who closed it would be re-prompted on every re-render. */
+  /*
+   * Asked once per mount.
+   * The dialog is dismissable, so without this an admin who closed it would be re-prompted on every re-render.
+   */
   const promptedForPasswordRef = useRef<boolean>(false);
   const { triggerDialog } = useDialog();
 
-  /*
-   * Route guard: this app only ever serves the agent role, so there is no
-   * cross-role dashboard to switch to - a mismatch just means "not signed in
-   * here", and the only place to send that is this app's own login.
-   */
+  /* Route guard: this app only ever serves the agent role, so there is no cross-role dashboard to switch to - a mismatch just means "not signed in here", and the only place to send that is this app's own login. */
   useEffect(() => {
     if (isLoading) return;
 
@@ -118,24 +112,20 @@ export default function DashboardLayout() {
     }
   }, [isLoading, user, navigate]);
 
+  /* The server clears must_change_password in the same write as the password, so the reminder retires on success and nowhere else. */
   const openPasswordDialog = useCallback((): void => {
     triggerDialog("CHANGE_PASSWORD", {
       title: "Secure your account",
       description:
         "You are still on the temporary password you were invited with. Set a permanent one to keep the account yours.",
-      /* The server clears must_change_password in the same write as the
-         password, so the reminder retires on success and nowhere else. */
       onChanged: () => setMustChangePassword(false),
     });
   }, [triggerDialog]);
 
   /*
    * Open the prompt once, then leave the chip to do the reminding.
-   *
-   * The obligation itself lives on the server as users.must_change_password;
-   * this only decides when to volunteer the dialog. Closing it stores nothing,
-   * so the chip is still there afterwards and the prompt returns on the next
-   * load - until the password actually changes.
+   * The obligation itself lives on the server as users.must_change_password; this only decides when to volunteer the dialog.
+   * Closing it stores nothing, so the chip is still there afterwards and the prompt returns on the next load - until the password actually changes.
    */
   useEffect(() => {
     if (!mustChangePassword) return;
@@ -157,9 +147,8 @@ export default function DashboardLayout() {
       setUserProfile({ name, sub: payload?.email ?? "" });
 
       /*
-       * The JWT carries the email but not the password flag, and it would be
-       * stale anyway: a token minted before the change would keep claiming the
-       * password is temporary. Only the row is authoritative.
+       * The JWT carries the email but not the password flag, and it would be stale anyway: a token minted before the change would keep claiming the password is temporary.
+       * Only the row is authoritative.
        */
       apiFetch<{ email?: string; must_change_password?: boolean }>("/admin/me")
         .then((p) => {
@@ -167,9 +156,10 @@ export default function DashboardLayout() {
           if (p.email) setUserProfile({ name, sub: p.email });
         })
         .catch((err: unknown) => {
-          /* Non-fatal: the JWT-derived name and sub above keep the shell usable.
-             A failed read must not invent a password obligation, so leave the
-             flag false, but make the failure visible in the console. */
+          /*
+           * Non-fatal: the JWT-derived name and sub above keep the shell usable.
+           * A failed read must not invent a password obligation, so leave the flag false, but make the failure visible in the console.
+           */
           console.error("DashboardLayout: /admin/me profile read failed", err);
         });
       return;
@@ -189,22 +179,20 @@ export default function DashboardLayout() {
         setUserProfile({ name, sub, avatar_url: p.avatar_url });
       })
       .catch((err: unknown) => {
-        /* Non-fatal: the header falls back to whatever profile is already set,
-           and the rest of the shell (nav, outlet) does not depend on this. */
+        /* Non-fatal: the header falls back to whatever profile is already set, and the rest of the shell (nav, outlet) does not depend on this. */
         console.error(`DashboardLayout: ${endpoint} profile read failed`, err);
       });
   }, [isAgent, isBuyer, isAdmin, isSubAdmin]);
 
   /*
-   * Every dashboard now uses the plural path, so this is no longer a per-role
-   * ternary. Agent was the lone exception until its notifications moved onto
-   * the shared service.
+   * Every dashboard now uses the plural path, so this is no longer a per-role ternary.
+   * Agent was the lone exception until its notifications moved onto the shared service.
    */
   const notifPath = `${basePath}/notifications`;
 
   /*
-   * Which role's notifications to load. Buyer-admin has no notification feed
-   * of its own, so it keeps the plain link.
+   * Which role's notifications to load.
+   * Buyer-admin has no notification feed of its own, so it keeps the plain link.
    */
   const dropdownRole: NotificationRole | null = isAdmin
     ? "admin"
@@ -244,16 +232,13 @@ export default function DashboardLayout() {
   function Sidebar({ onNavClick }: { onNavClick?: () => void }) {
     return (
       <div className="flex h-full flex-col">
-        {/* Scrollable area: logo + nav + user card */}
         <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto rounded-xl bg-[#FCFDFD] p-4 pt-6">
-          {/* Logo */}
           <div className="mx-auto flex h-16 items-center">
             <Link to={basePath} onClick={onNavClick}>
               <AppLogo />
             </Link>
           </div>
 
-          {/* Nav */}
           <nav className="flex flex-1 flex-col gap-4">
             {groups.map((group) => (
               <div key={group.label} className="flex flex-col gap-1">
@@ -304,7 +289,6 @@ export default function DashboardLayout() {
             ))}
           </nav>
 
-          {/* User card */}
           <div className="flex items-center gap-3 rounded-xl bg-[#FAFAFB] px-4 py-2">
             <div className="bg-primary flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-semibold text-white">
               {userProfile?.avatar_url ? (
@@ -330,7 +314,6 @@ export default function DashboardLayout() {
           </div>
         </div>
 
-        {/* Logout */}
         <button
           onClick={handleLogout}
           className="font-open-sans text-body z-10 flex w-full shrink-0 cursor-pointer items-center gap-3 rounded-2xl p-4 text-base transition-all duration-300 ease-in-out hover:bg-red-100 hover:text-red-600"
@@ -346,12 +329,10 @@ export default function DashboardLayout() {
     <div className="relative h-screen bg-black">
       <div className="layout-max-width relative flex h-screen flex-col">
         <div className="bg-dash-page-bg px-section-px flex h-screen w-full gap-6">
-          {/* Desktop sidebar */}
           <aside className="sticky top-0 hidden h-screen w-70 shrink-0 rounded-2xl lg:flex lg:flex-col">
             <Sidebar />
           </aside>
 
-          {/* Mobile drawer */}
           <AnimatePresence>
             {mobileOpen && (
               <>
@@ -384,9 +365,7 @@ export default function DashboardLayout() {
             )}
           </AnimatePresence>
 
-          {/* Main area */}
           <div className="flex h-screen min-w-0 flex-1 flex-col overflow-y-auto">
-            {/* Topbar */}
             <header className="border-line bg-dash-topbar-bg mb-6 flex h-16 shrink-0 items-center justify-between gap-4 border-b px-4 lg:px-6">
               <div className="flex items-center gap-3">
                 <button
@@ -409,7 +388,6 @@ export default function DashboardLayout() {
               />
 
               <div className="flex shrink-0 items-center gap-3">
-                {/* Topbar CTA */}
                 {isAgent ? (
                   <Link to="/agent-dashboard/request-stock">
                     <PrimaryButton className="rounded-full px-4 py-2 text-sm">
@@ -449,7 +427,6 @@ export default function DashboardLayout() {
               </div>
             </header>
 
-            {/* Page content */}
             <main className="min-h-0 flex-1">
               <Outlet />
             </main>

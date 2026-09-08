@@ -48,10 +48,7 @@ export default function VerifyEmailPage() {
     isCodeComplete,
   } = useEmailVerification({ email, maxResends: MAX_RESENDS });
 
-  /*
-   * A verification link can carry the code directly, so fill it and let
-   * onComplete auto-submit rather than making the user retype what they clicked.
-   */
+  /* A verification link can carry the code directly, so fill it and let onComplete auto-submit rather than making the user retype what they clicked. */
   useEffect(() => {
     if (queryOtp) setCode(queryOtp);
   }, [queryOtp, setCode]);

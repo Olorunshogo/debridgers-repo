@@ -108,8 +108,10 @@ export class PayoutSchedulerService {
         },
         body: JSON.stringify({
           source: "balance",
-          /* Kobo. This divided by 100 first, paying one hundredth of what
-             was owed, and addressed a subaccount that /transfer rejects. */
+          /*
+           * Kobo. This divided by 100 first, paying one hundredth of what was owed.
+           * It also addressed a subaccount that /transfer rejects.
+           */
           amount: toPaystackAmount(totalCommission),
           recipient: target.recipientCode,
           reference,
@@ -170,7 +172,8 @@ export class PayoutSchedulerService {
         ),
       );
 
-    return Math.round(parseFloat(result?.total ?? "0") * 100); // Convert to kobo
+    // Convert to kobo.
+    return Math.round(parseFloat(result?.total ?? "0") * 100);
   }
 
   private async createPayoutRecord(
@@ -188,10 +191,11 @@ export class PayoutSchedulerService {
       .where(eq(schema.agent_profiles.user_id, agentId))
       .limit(1);
 
+    // amount is stored in naira, converted from the kobo amount taken in.
     await this.db.insert(schema.payouts).values({
       agent_id: agentId,
       subaccount_code: profile?.subaccount_code ?? null,
-      amount: String(amountKobo / 100), // Store in naira
+      amount: String(amountKobo / 100),
       reference,
       status,
       error_message: errorMessage ?? null,

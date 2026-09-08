@@ -20,16 +20,17 @@ export const refundStatusEnum = pgEnum("refund_status", [
   "failed",
 ]);
 
+/* `amount` is kobo. `initiated_by` is the admin who initiated the refund. */
 export const refunds = pgTable("refunds", {
   id: serial().primaryKey().notNull(),
   order_id: integer()
     .notNull()
     .references(() => orders.id, { onDelete: "cascade" }),
-  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(), // in kobo
-  reference: varchar({ length: 100 }).notNull().unique(), // Paystack refund reference
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  reference: varchar({ length: 100 }).notNull().unique(),
   reason: varchar({ length: 255 }),
   status: refundStatusEnum().notNull().default("initiated"),
-  initiated_by: integer().references(() => users.id, { onDelete: "set null" }), // Admin who initiated
+  initiated_by: integer().references(() => users.id, { onDelete: "set null" }),
   initiated_at: timestamp().notNull().defaultNow(),
   completed_at: timestamp(),
   ...timestamps,

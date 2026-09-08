@@ -7,10 +7,7 @@ import {
 
 /*
  * Glue between the dialog engine and the help guide.
- *
- * Purely presentational content, so there is nothing to fetch here. It still
- * goes through the engine so it inherits Escape and backdrop dismissal, focus
- * trapping and scroll locking rather than hand-rolling them again.
+ * Purely presentational content, so there is nothing to fetch here. It still goes through the engine so it inherits Escape and backdrop dismissal, focus trapping and scroll locking rather than hand-rolling them again.
  * Registered as HELP_GUIDE in app/providers/dialog-registry.ts.
  */
 

@@ -17,6 +17,7 @@ import { apiFetch, ApiError } from "@debridgers/api-client";
  * recomputes a total, so what the buyer was shown is what gets charged.
  */
 
+/* onPaid fires only after a wallet payment settles, never for the Paystack hop. */
 interface PaymentMethodDialogProps {
   orderId: number;
   itemsTotalKobo: number;
@@ -24,7 +25,6 @@ interface PaymentMethodDialogProps {
   handlingFeeKobo: number;
   totalKobo: number;
   walletBalanceKobo: number;
-  /** Fires only after a wallet payment settles, never for the Paystack hop. */
   onPaid?: () => void;
 }
 

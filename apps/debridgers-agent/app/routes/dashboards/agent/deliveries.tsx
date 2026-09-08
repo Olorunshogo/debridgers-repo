@@ -7,6 +7,8 @@ import {
   AsyncBoundary,
   TableStatusBadge,
   formatFromKobo,
+  useDialog,
+  usePendingRatings,
   type StatusTone,
 } from "@debridgers/ui-web";
 
@@ -61,6 +63,9 @@ const STATUS_LABEL: Record<AgentOrderStatus, string> = {
 
 // === Page
 export default function AgentDeliveriesPage() {
+  const { triggerDialog } = useDialog();
+  const { pending: pendingRatings, reload: reloadPendingRatings } =
+    usePendingRatings();
   const { data, error, loading, refetch, refetching } = useAsyncResource<
     AgentOrder[]
   >(
@@ -95,7 +100,6 @@ export default function AgentDeliveriesPage() {
 
   return (
     <div className="py-section-px flex flex-col gap-6">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <Truck size={24} className="text-primary" />
         <div>
@@ -187,6 +191,27 @@ export default function AgentDeliveriesPage() {
                   {movingId === order.id ? "Updating..." : "Out for delivery"}
                 </button>
               )}
+
+              {order.status === "delivered" &&
+                pendingRatings
+                  .filter((r) => r.orderId === order.id)
+                  .map((r) => (
+                    <button
+                      key={r.contextKey}
+                      type="button"
+                      onClick={() =>
+                        triggerDialog("RATE_ORDER", {
+                          contextKey: r.contextKey,
+                          orderId: order.id,
+                          subjectLabel: r.description,
+                          onRated: reloadPendingRatings,
+                        })
+                      }
+                      className="border-primary text-primary w-fit shrink-0 cursor-pointer rounded-full border px-5 py-2 text-sm font-semibold transition-opacity hover:opacity-80"
+                    >
+                      {r.title}
+                    </button>
+                  ))}
             </motion.div>
           ))}
         </div>

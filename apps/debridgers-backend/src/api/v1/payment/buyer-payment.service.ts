@@ -75,6 +75,7 @@ export class BuyerPaymentService {
 
     // Create payment record (tracks order payment for admin & Paystack)
     const [_paymentRecord] = await this.db
+      // paystack_reference tracks this by order ID in Paystack.
       .insert(schema.paymentRecords)
       .values({
         order_id: orderId,
@@ -82,7 +83,7 @@ export class BuyerPaymentService {
         amount_kobo: amount,
         payment_method: "wallet",
         status: "completed",
-        paystack_reference: `order_${orderId}`, // Track by order ID in Paystack
+        paystack_reference: `order_${orderId}`,
         description: `Wallet payment for order #${order.order_reference || orderId} → DVA 9605038516`,
         completed_at: new Date(),
       })
@@ -188,12 +189,13 @@ export class BuyerPaymentService {
       throw new BadRequestException("Buyer email not found");
     }
 
-    // Call Paystack API to initialize transaction
-    // Note: Pass orderId in metadata so webhook knows this is an order payment
+    // Call Paystack API to initialize transaction.
+    // Pass orderId in metadata so webhook knows this is an order payment.
+    // Reference is left undefined so Paystack generates one; we store whatever it returns.
     const initiateResponse = await this.initializePaystackTransaction(
       buyer.email,
       amount,
-      undefined, // Let Paystack generate reference (we'll store what it returns)
+      undefined,
       orderId,
     );
 
@@ -335,9 +337,8 @@ export class BuyerPaymentService {
         email,
         amount: amountKobo,
         /*
-         * Sent per request rather than relying on the Paystack dashboard's
-         * default, which is one field shared by every environment: without it
-         * local, staging and production buyers all return to the same place.
+         * Sent per request rather than relying on the Paystack dashboard's default, which is one field shared by every environment.
+         * Without it local, staging and production buyers all return to the same place.
          */
         callback_url: `${this.appUrl}/buyer-dashboard/checkout`,
         metadata: {
@@ -441,11 +442,7 @@ export class BuyerPaymentService {
     return this.PAYSTACK_IPS.includes(ipAddress);
   }
 
-  /**
-   * Initiate Mobile Money/USSD payment (Paystack Charge API)
-   * Supports: MTN, Vodafone, AirtelTigo, Telecel
-   * Returns USSD code if needed, or success if completed
-   */
+  /* Supports MTN, Vodafone, AirtelTigo and Telecel; returns a USSD code if the charge is not already complete. */
   async initiateMobileMoneyPayment(params: {
     email: string;
     orderId: number;
@@ -495,12 +492,12 @@ export class BuyerPaymentService {
 
     const { reference, status } = data.data;
 
-    // If pending, return USSD code (display_text contains the code)
+    // If pending, return USSD code. display_text contains the code, e.g. *170*50#.
     if (status === "pending") {
       return {
         reference,
         status: "ussd_pending",
-        ussdCode: data.data.display_text || "", // e.g., *170*50#
+        ussdCode: data.data.display_text || "",
         message: `Dial ${data.data.display_text} to complete payment`,
         pollingUrl: `/api/v1/buyer/orders/${params.orderId}/payment/status/${reference}`,
       };

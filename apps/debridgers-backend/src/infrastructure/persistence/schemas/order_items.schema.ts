@@ -14,6 +14,9 @@ import { createInsertSchema } from "drizzle-zod";
  *
  * `unit_price_kobo` is captured per line at purchase time rather than read from
  * products - a price change must never rewrite what someone already paid.
+ *
+ * `product_id` restricts, not cascades, on delete: deleting a product must not silently erase the history of orders that contained it.
+ * `order_items_product_idx` also serves buy-again, which groups by product across a buyer's history.
  */
 export const order_items = pgTable(
   "order_items",
@@ -22,10 +25,6 @@ export const order_items = pgTable(
     order_id: integer()
       .notNull()
       .references(() => orders.id, { onDelete: "cascade" }),
-    /*
-     * restrict, not cascade: deleting a product must not silently erase the
-     * history of orders that contained it.
-     */
     product_id: integer()
       .notNull()
       .references(() => productsTable.id, { onDelete: "restrict" }),
@@ -35,7 +34,6 @@ export const order_items = pgTable(
   },
   (table) => [
     index("order_items_order_idx").on(table.order_id),
-    // Buy-again groups by product across a buyer's history
     index("order_items_product_idx").on(table.product_id),
   ],
 );

@@ -16,31 +16,19 @@ interface NavLinkItem {
   href: string;
 }
 
+/*
+ * navLinks is readonly since the header never mutates it, which lets callers pass a shared `as const` navigation table.
+ * surface says what the header is sitting on: "hero" watches the dark hero behind it and inverts as you scroll past, while "solid" is for a page with no hero, where guessing from scroll position produced a white pill on a white page that turned green 80% of a viewport later - a page without a hero must say so rather than be inferred.
+ * cartCount and onCartClick only make sense together, since the shop's cart bar sits in the flow beneath a catalogue that grows with the product count, so forty products down there was nothing to click, and a count with no handler is decoration.
+ */
 interface HeaderProps {
-  /* Readonly: the header renders this list and never mutates it, which lets
-     callers pass a shared `as const` navigation table. */
   navLinks: readonly NavLinkItem[];
   orderNowHref?: string;
   signUpHref: string;
   heroSectionId?: string;
   isAuthenticated?: boolean;
   dashboardPath?: string;
-  /*
-   * What the header is sitting on.
-   *
-   * "hero" watches the dark hero behind it and inverts as you scroll past.
-   * "solid" is for a page with no hero, where guessing from scroll position
-   * produced a white pill on a white page that turned green 80% of a viewport
-   * later. A page without a hero must say so rather than be inferred.
-   */
   surface?: "hero" | "solid";
-  /*
-   * A cart affordance, for a page that has one.
-   *
-   * The shop's cart bar sits in the flow beneath a catalogue that grows with
-   * the product count, so forty products down there was nothing to click. Both
-   * props are needed together: a count with no handler is decoration.
-   */
   cartCount?: number;
   onCartClick?: () => void;
 }
@@ -74,11 +62,8 @@ export function Header({
 
   /*
    * Whether the pill is dark and therefore needs light content on it.
-   *
-   * Derived from the surface rather than from scroll state alone. The previous
-   * version read a scroll flag that a solid page never updated, so solid pages
-   * rendered correctly only because that flag happened to start true. Changing
-   * an initial value would have inverted every one of them.
+   * Derived from the surface rather than from scroll state alone.
+   * The previous version read a scroll flag that a solid page never updated, so solid pages rendered correctly only because that flag happened to start true - changing an initial value would have inverted every one of them.
    */
   const isDark: boolean = !isSolid && !overHero;
 
@@ -118,10 +103,8 @@ export function Header({
   }, []);
 
   /*
-   * While the drawer is open: the page behind it must not scroll, Escape must
-   * close it, and Tab must not walk out of it into content nobody can see.
-   * None of this existed, which made the menu unusable by keyboard and left
-   * the page scrolling underneath on touch.
+   * While the drawer is open: the page behind it must not scroll, Escape must close it, and Tab must not walk out of it into content nobody can see.
+   * None of this existed, which made the menu unusable by keyboard and left the page scrolling underneath on touch.
    */
   useEffect(() => {
     if (!menuOpen) return;
@@ -175,8 +158,8 @@ export function Header({
   }, [menuOpen]);
 
   /*
-   * On a solid page the pill needs to read as a distinct surface. Pure white on
-   * a white page is invisible, so it takes a faint tint and a border instead.
+   * On a solid page the pill needs to read as a distinct surface.
+   * Pure white on a white page is invisible, so it takes a faint tint and a border instead.
    */
   const pillBg: string = isSolid
     ? "rgba(250,251,250,1)"
@@ -197,13 +180,8 @@ export function Header({
   return (
     /*
      * The header positions itself.
-     *
-     * Every caller used to wrap it, and the five wrappers disagreed: four made
-     * it sticky and the shop did not, so it scrolled away over a catalogue that
-     * grows with the product count. The shop's wrapper also set a z-index on a
-     * statically positioned element, which creates no stacking context at all,
-     * so the cart backdrop painted straight over it.
-     *
+     * Every caller used to wrap it, and the five wrappers disagreed: four made it sticky and the shop did not, so it scrolled away over a catalogue that grows with the product count.
+     * The shop's wrapper also set a z-index on a statically positioned element, which creates no stacking context at all, so the cart backdrop painted straight over it.
      * Owning both here means no page can get it wrong again.
      */
     <div className="sticky top-3 z-999">

@@ -46,7 +46,6 @@ function readUserFromToken(): AuthUser | null {
     JwtPayload & { exp?: number; admin_tier?: "super" | "sub" }
   >(token);
   if (!payload) return null;
-  // Check expiry
   if (payload.exp && payload.exp * 1000 < Date.now()) return null;
   return {
     sub: payload.sub as unknown as number,
@@ -60,12 +59,9 @@ function dashboardForRole(role: string, _adminTier?: string): string {
   switch (role) {
     case "admin":
       /*
-       * One admin dashboard for both tiers; the nav narrows for a sub-admin
-       * rather than sending them somewhere else.
-       *
-       * A second top-level dashboard meant two places disagreed about what a
-       * sub-admin is. `tiers` in use-dashboard-nav is the single answer, and
-       * a domain surface lives at /admin-dashboard/<domain> inside this one.
+       * One admin dashboard for both tiers; the nav narrows for a sub-admin rather than sending them somewhere else.
+       * A second top-level dashboard meant two places disagreed about what a sub-admin is.
+       * `tiers` in use-dashboard-nav is the single answer, and a domain surface lives at /admin-dashboard/<domain> inside this one.
        */
       return "/admin-dashboard";
     case "agent":
@@ -85,7 +81,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return nextUser;
   }, []);
 
-  // Hydrate from stored token on mount
   useEffect(() => {
     syncUserFromToken();
     setIsLoading(false);
@@ -98,20 +93,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       variant: "public" | "admin" = "public",
     ): Promise<AuthUser["role"]> => {
       /*
-       * The transport lives in @debridgers/api-client. This context only stores
-       * the tokens and derives the session, so moving auth to HttpOnly cookies
-       * later is a change inside api-client, not here.
+       * The transport lives in @debridgers/api-client.
+       * This context only stores the tokens and derives the session, so moving auth to HttpOnly cookies later is a change inside api-client, not here.
        *
-       * ApiError already carries the server's message verbatim, including on
-       * 401. That matters because the backend returns 401 for five different
-       * conditions - bad credentials, missing password, unverified email, and
-       * agent-approval pending or rejected. This previously overrode all of
-       * them with "Invalid email or password", which told users with a real,
-       * valid account that their password was wrong.
+       * ApiError already carries the server's message verbatim, including on 401.
+       * That matters because the backend returns 401 for five different conditions: bad credentials, missing password, unverified email, and agent-approval pending or rejected.
+       * This previously overrode all of them with "Invalid email or password", which told users with a real, valid account that their password was wrong.
        *
-       * Passing the server's wording through does not leak account existence:
-       * the backend deliberately returns the same "Invalid credentials" string
-       * for both an unknown email and a wrong password.
+       * Passing the server's wording through does not leak account existence: the backend deliberately returns the same "Invalid credentials" string for both an unknown email and a wrong password.
        */
       const request = variant === "admin" ? adminLoginRequest : loginRequest;
       const session = await request({ email, password });

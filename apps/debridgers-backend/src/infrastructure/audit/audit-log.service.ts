@@ -16,8 +16,7 @@ export interface AuditLogEntry {
 /**
  * Append-only trail of privileged admin mutations (F9).
  *
- * Writes are best effort: a failed audit insert must never turn a successful
- * admin action into a request error, so failures are logged and swallowed.
+ * Writes are best effort: a failed audit insert must never turn a successful admin action into a request error, so failures are logged and swallowed.
  */
 @Injectable()
 export class AuditLogService {

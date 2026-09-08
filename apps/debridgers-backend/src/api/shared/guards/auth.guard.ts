@@ -48,9 +48,10 @@ export class AuthGuard implements CanActivate {
         first_name: payload.first_name,
         last_name: payload.last_name,
         role: payload.role,
-        /* admin_tier gates super-only admin writes (PricingAdminController.
-           assertSuper). Dropping it here made every super admin look like a sub
-           and 403'd real pricing writes. */
+        /*
+         * Gates super-only admin writes (PricingAdminController.assertSuper).
+         * Dropping it here made every super admin look like a sub and 403'd real pricing writes.
+         */
         admin_tier: payload.admin_tier,
         api_version: payload.api_version,
         device: payload.device,

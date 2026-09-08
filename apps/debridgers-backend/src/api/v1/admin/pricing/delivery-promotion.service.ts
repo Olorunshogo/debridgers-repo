@@ -28,9 +28,8 @@ export interface PublicPromotion {
   scope: DeliveryPromotionScope;
   ends_at: Date;
   /*
-   * The zones this campaign actually reaches. A zone-scoped campaign covers
-   * one; a global or first-order one covers every active zone. Served
-   * explicitly so a zone picker does not have to re-derive the rule.
+   * The zones this campaign actually reaches. A zone-scoped campaign covers one; a global or first-order one covers every active zone.
+   * Served explicitly so a zone picker does not have to re-derive the rule.
    */
   zone_ids: number[];
 }
@@ -69,12 +68,10 @@ const ANNOUNCEMENT_PRECEDENCE: readonly DeliveryPromotionScope[] = [
 ];
 
 /**
- * Resolves whether a delivery is free because a campaign is running, and
- * records which campaign it was.
+ * Resolves whether a delivery is free because a campaign is running, and records which campaign it was.
  *
- * Eligibility is a data question, not a pricing rule, so none of it lives in
- * `@debridgers/pricing`. That package already takes a `freeDelivery` boolean
- * and already returns the pre-promotion figure; this decides the boolean.
+ * Eligibility is a data question, not a pricing rule, so none of it lives in `@debridgers/pricing`.
+ * That package already takes a `freeDelivery` boolean and already returns the pre-promotion figure; this decides the boolean.
  */
 @Injectable()
 export class DeliveryPromotionService {
@@ -152,9 +149,7 @@ export class DeliveryPromotionService {
   /**
    * The campaign that applies to this basket, or null.
    *
-   * A `first_order` campaign is checked against orders already on file rather
-   * than against a flag, so it fires exactly once per buyer however many times
-   * they reprice a cart during the window.
+   * A `first_order` campaign is checked against orders already on file rather than against a flag, so it fires exactly once per buyer however many times they reprice a cart during the window.
    */
   async resolve(
     zoneId: number,
@@ -254,9 +249,7 @@ export class DeliveryPromotionService {
   /**
    * What each campaign gave away, in kobo.
    *
-   * The whole reason the pre-promotion fee is stored on the order: a campaign's
-   * cost is this one query rather than a reconstruction from rates that may
-   * since have changed.
+   * The whole reason the pre-promotion fee is stored on the order: a campaign's cost is this one query rather than a reconstruction from rates that may since have changed.
    */
   async cost() {
     const rows = await this.db
@@ -311,8 +304,7 @@ export class DeliveryPromotionService {
       .values({
         name: input.name,
         scope: input.scope,
-        /* Held null off the zone scope so a scope change cannot leave a stale
-           zone silently narrowing a global campaign. */
+        // Held null off the zone scope so a scope change cannot leave a stale zone silently narrowing a global campaign.
         zone_id: input.scope === "zone" ? (input.zone_id ?? null) : null,
         starts_at: startsAt,
         ends_at: endsAt,
@@ -327,9 +319,7 @@ export class DeliveryPromotionService {
   /**
    * Ends a campaign now.
    *
-   * `ends_at` is moved to this instant rather than only clearing `is_active`,
-   * so the row still says how long the campaign actually ran when its cost is
-   * totalled later.
+   * `ends_at` is moved to this instant rather than only clearing `is_active`, so the row still says how long the campaign actually ran when its cost is totalled later.
    */
   async endNow(id: number) {
     const now = new Date();
@@ -350,8 +340,7 @@ export class DeliveryPromotionService {
       .update(schema.deliveryPromotions)
       .set({
         is_active: false,
-        /* A campaign that never started keeps its window; ending it early only
-           means it will not run. */
+        // A campaign that never started keeps its window; ending it early only means it will not run.
         ends_at:
           existing.starts_at.getTime() <= now.getTime()
             ? now

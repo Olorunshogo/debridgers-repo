@@ -8,9 +8,8 @@ import type {
 } from "../../types/payment-config";
 
 /*
- * Balance and paginated transaction history for any role. The endpoint and
- * response mapping both come from config, so this hook never branches on
- * role - see RolePaymentConfig.
+ * Balance and paginated transaction history for any role.
+ * The endpoint and response mapping both come from config, so this hook never branches on role - see RolePaymentConfig.
  */
 
 export interface UseWalletOptions {

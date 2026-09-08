@@ -30,13 +30,10 @@ import type {
 /*
  * The dialog engine.
  *
- * Solves, once, what every hand-rolled modal in this codebase currently solves
- * badly or not at all: responsive bottom-sheet on mobile and centered panel on
- * desktop, backdrop and Escape dismissal, stacking, focus trapping and
- * restoration, a blocking loading overlay, and auto-close on route change.
+ * Solves, once, what every hand-rolled modal in this codebase currently solves badly or not at all: responsive bottom-sheet on mobile and centered panel on desktop, backdrop and Escape dismissal, stacking, focus trapping and restoration, a blocking loading overlay, and auto-close on route change.
  *
- * Never build a bespoke useState-driven modal in a page again. Register the
- * dialog and call triggerDialog.
+ * Never build a bespoke useState-driven modal in a page again.
+ * Register the dialog and call triggerDialog.
  */
 
 const DialogContext = createContext<DialogContextValue | null>(null);
@@ -55,8 +52,7 @@ export function DialogProvider({ registry, children }: DialogProviderProps) {
   const location = useLocation();
 
   /*
-   * Lazy components are cached per key so reopening a dialog does not re-trigger
-   * Suspense, and so the same component identity is reused across renders.
+   * Lazy components are cached per key so reopening a dialog does not re-trigger Suspense, and so the same component identity is reused across renders.
    */
   const componentCache = useRef<Map<string, DialogComponent>>(new Map());
 
@@ -82,8 +78,8 @@ export function DialogProvider({ registry, children }: DialogProviderProps) {
     (key: string, props: DialogProps = {}): void => {
       if (!registry[key]) {
         /*
-         * A missing key is a wiring mistake, not a user-facing error. Fail loudly
-         * in development rather than silently rendering nothing.
+         * A missing key is a wiring mistake, not a user-facing error.
+         * Fail loudly in development rather than silently rendering nothing.
          */
         console.error(
           `[DialogProvider] No dialog registered for key "${key}". Add it to the registry.`,
@@ -116,8 +112,7 @@ export function DialogProvider({ registry, children }: DialogProviderProps) {
     closeAllDialogs();
   }, [location.pathname, closeAllDialogs]);
 
-  /* Escape closes the topmost dialog, unless a blocking action is running or
-     the dialog has opted out of dismissal. */
+  /* Escape closes the topmost dialog, unless a blocking action is running or the dialog has opted out of dismissal. */
   useEffect(() => {
     if (openDialogs.length === 0) return;
 
@@ -181,11 +176,12 @@ export function DialogProvider({ registry, children }: DialogProviderProps) {
   );
 }
 
+/*
+ * `onDismiss` is undefined while a blocking action runs, or while the dialog is a gate, either of which disables dismissal.
+ */
 interface DialogPanelProps {
   isTop: boolean;
   stackIndex: number;
-  /** Undefined while a blocking action runs, or while the dialog is a gate,
-      either of which disables dismissal. */
   onDismiss?: () => void;
   children: ReactNode;
 }
@@ -193,13 +189,10 @@ interface DialogPanelProps {
 /*
  * Centered panel at every breakpoint, vertically and horizontally.
  *
- * Was a bottom sheet below md. Centering everywhere is what the admin password
- * dialog needed to stop reading as clipped, and the wrapper's py-6 is the other
- * half of it: max-height alone still let a tall panel sit flush against the
- * viewport edge with nothing to show it was scrollable.
+ * Was a bottom sheet below md.
+ * Centering everywhere is what the admin password dialog needed to stop reading as clipped, and the wrapper's py-6 is the other half of it: max-height alone still let a tall panel sit flush against the viewport edge with nothing to show it was scrollable.
  *
- * The wrapper is pointer-events-none so a click lands on the backdrop
- * underneath it rather than the empty space beside the panel.
+ * The wrapper is pointer-events-none so a click lands on the backdrop underneath it rather than the empty space beside the panel.
  */
 function DialogPanel({
   isTop,
@@ -248,14 +241,11 @@ function DialogPanel({
           /*
            * max-w-150 (37.5rem), not max-w-md.
            *
-           * The app theme defines a named spacing scale including
-           * --spacing-md: 0.75rem, and in Tailwind v4 max-w-* reads the spacing
-           * namespace - so max-w-md compiled to 12px and the panel collapsed to
-           * the width of its padding. Numeric widths cannot be shadowed.
+           * The app theme defines a named spacing scale including --spacing-md: 0.75rem, and in Tailwind v4 max-w-* reads the spacing namespace - so max-w-md compiled to 12px and the panel collapsed to the width of its padding.
+           * Numeric widths cannot be shadowed.
            *
-           * The admin branch independently reached for max-w-160; this keeps the
-           * narrower value already chosen here. Widen if an admin dialog needs
-           * the extra room.
+           * The admin branch independently reached for max-w-160; this keeps the narrower value already chosen here.
+           * Widen if an admin dialog needs the extra room.
            */
           className="border-line pointer-events-auto max-h-[calc(100dvh-3rem)] w-full max-w-150 overflow-y-auto rounded-2xl border bg-white p-6 outline-none"
           variants={dialogPanelVariants}
@@ -273,8 +263,7 @@ function DialogPanel({
 
 /*
  * The context without the throw, for engines that can work without a provider.
- * The table engine uses this: a DataTable with no confirm action must render
- * fine outside a DialogProvider, and only a confirm action needs one.
+ * The table engine uses this: a DataTable with no confirm action must render fine outside a DialogProvider, and only a confirm action needs one.
  */
 export function useOptionalDialog(): DialogContextValue | null {
   return useContext(DialogContext);

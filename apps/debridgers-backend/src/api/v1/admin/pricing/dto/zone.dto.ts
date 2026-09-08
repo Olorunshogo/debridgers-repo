@@ -14,21 +14,22 @@ const taperDescends = <T extends { tier_one: number; tier_two: number }>(
 const TAPER_MESSAGE =
   "Tier two must be strictly below tier one. A flat or inverted taper over-charges large orders.";
 
+/*
+ * delivery_fee is the base fee covering the first two packages, in kobo.
+ * tier_one_per_package_kobo is charged per package for packages 3 to 6, in kobo.
+ * tier_two_per_package_kobo is charged per package for package 7 and beyond, in kobo.
+ * delivery_cap_kobo is the absolute ceiling on the delivery fee for this zone, in kobo.
+ * free_delivery is a standing policy for this area, not a campaign. It wins independently of any promotion window.
+ * A permanently free zone does not start charging when a campaign ends.
+ */
 const zoneFields = {
   name: z.string().min(2, "Zone name required"),
   description: z.string().max(500).nullish(),
-  /** Base fee covering the first two packages, in kobo. */
   delivery_fee: z.number().int().nonnegative(),
   areas: z.array(z.string().min(1)).default([]),
-  /** Charged per package for packages 3 to 6, in kobo. */
   tier_one_per_package_kobo: z.number().int().nonnegative(),
-  /** Charged per package for package 7 and beyond, in kobo. */
   tier_two_per_package_kobo: z.number().int().nonnegative(),
-  /** Absolute ceiling on the delivery fee for this zone, in kobo. */
   delivery_cap_kobo: z.number().int().positive(),
-  /* Standing policy for this area, not a campaign. It wins independently of
-     any promotion window, so a permanently free zone does not start charging
-     when a campaign ends. */
   free_delivery: z.boolean().default(false),
   is_active: z.boolean().default(true),
 };

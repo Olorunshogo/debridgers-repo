@@ -30,11 +30,9 @@ const ZONES = [
     name: "Kaduna South",
     description: "Narayi, Kakuri, Barnawa, Tudun Wada, Makera",
     /*
-     * Measured, not estimated: a two-package outbound leg from Central Market
-     * to Mai Gero, near Barnawa, wholly inside this zone. That route is what
-     * the base is priced against, so it is the one to re-time when fuel or
-     * haulage rates move. The other two zones are scaled from it by distance
-     * rather than separately measured, and should be measured in turn.
+     * Measured, not estimated: a two-package outbound leg from Central Market to Mai Gero, near Barnawa, wholly inside this zone.
+     * That route is what the base is priced against, so it is the one to re-time when fuel or haulage rates move.
+     * The other two zones are scaled from it by distance rather than separately measured, and should be measured in turn.
      */
     delivery_fee: naira(4000),
     tier_one_per_package_kobo: taper(700),
@@ -69,9 +67,8 @@ const ZONES = [
     delivery_cap_kobo: naira(14000),
     /*
      * Kachia, Kafanchan, Kagoro and Jema'a used to sit here at a ₦800 base.
-     * None of them are in Chikun LGA and all are 80 to 120km out, so a single
-     * drop lost more than the whole margin on the goods. They belong in an
-     * inter-city zone quoted per trip, not in a metro zone.
+     * None of them are in Chikun LGA and all are 80 to 120km out, so a single drop lost more than the whole margin on the goods.
+     * They belong in an inter-city zone quoted per trip, not in a metro zone.
      */
     areas: ["Kujama", "Sabon Sarki", "Nasarawa", "Ungwan Yero"],
     is_active: true,
@@ -235,9 +232,8 @@ async function seed() {
       role: "admin",
       is_email_verified: true,
       /*
-       * Explicit, because AdminKeyGuard reads this column rather than the JWT
-       * claim. The token signer defaults a null tier to "super", so a seeded
-       * admin looked fine at login and then got 401 on every admin endpoint.
+       * Explicit, because AdminKeyGuard reads this column rather than the JWT claim.
+       * The token signer defaults a null tier to "super", so a seeded admin looked fine at login and then got 401 on every admin endpoint.
        */
       admin_tier: "super",
     });

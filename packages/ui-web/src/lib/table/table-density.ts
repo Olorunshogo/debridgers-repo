@@ -3,9 +3,8 @@ import type { TableDensity } from "./table-types";
 /*
  * One padding scale for every table in the codebase.
  *
- * Before this existed, tables ran px-5 py-4 in one place and px-6 py-4 in
- * another, with header text sometimes uppercase-xs and sometimes sm. Density is
- * a prop now, not a per-page decision.
+ * Before this existed, tables ran px-5 py-4 in one place and px-6 py-4 in another, with header text sometimes uppercase-xs and sometimes sm.
+ * Density is a prop now, not a per-page decision.
  */
 export interface DensityTokens {
   headerCell: string;

@@ -3,9 +3,7 @@ import { usePaymentAdapter } from "./payment-adapter";
 import type { Bank, RolePaymentConfig } from "../../types/payment-config";
 
 /*
- * The bank list is a large, slow upstream call, so it only fetches when a
- * caller actually calls `load` - never on mount, and never more than once
- * unless the caller forces it.
+ * The bank list is a large, slow upstream call, so it only fetches when a caller actually calls `load` - never on mount, and never more than once unless the caller forces it.
  */
 
 export interface UseBanksOptions {

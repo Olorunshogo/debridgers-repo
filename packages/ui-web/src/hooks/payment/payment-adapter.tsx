@@ -1,17 +1,13 @@
 import { createContext, useContext, type ReactNode } from "react";
 
 /*
- * Dependency injection boundary for the shared payment hooks, mirroring
- * ../auth/auth-adapter.tsx.
+ * Dependency injection boundary for the shared payment hooks, mirroring ../auth/auth-adapter.tsx.
  *
- * This package must never import the API client - doing so would drag
- * transport into a UI package. So the app supplies these once via
- * PaymentAdapterProvider, and the hooks stay pure: form/loading state and
- * calling the adapter with the endpoint each role's config provides.
+ * This package must never import the API client - doing so would drag transport into a UI package.
+ * So the app supplies these once via PaymentAdapterProvider, and the hooks stay pure: form/loading state and calling the adapter with the endpoint each role's config provides.
  *
- * Every method returns Promise<unknown> rather than a typed shape, because
- * the response shape differs per role. The role's RolePaymentConfig maps the
- * raw response to the canonical domain type - see ../../types/payment-config.
+ * Every method returns Promise<unknown> rather than a typed shape, because the response shape differs per role.
+ * The role's RolePaymentConfig maps the raw response to the canonical domain type - see ../../types/payment-config.
  */
 export interface PaymentAdapter {
   getWallet: (

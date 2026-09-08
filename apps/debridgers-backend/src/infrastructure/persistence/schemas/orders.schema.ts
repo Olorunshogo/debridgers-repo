@@ -33,23 +33,31 @@ export const orderSourceEnum = pgEnum("order_source", [
   "agent",
 ]);
 
-export const orderModeEnum = pgEnum("order_mode", [
-  "field", // Mode 1 - agent submits, Debridgers delivers
-  "referral", // Mode 3 - buyer ordered via referral link
-]);
+/* field is Mode 1, agent submits and Debridgers delivers; referral is Mode 3, the buyer ordered via a referral link. */
+export const orderModeEnum = pgEnum("order_mode", ["field", "referral"]);
 
+/* awaiting means a virtual account was created and is waiting for the transfer. */
 export const paymentStatusEnum = pgEnum("payment_status", [
   "unpaid",
-  "awaiting", // virtual account created, waiting for transfer
+  "awaiting",
   "paid",
   "failed",
 ]);
 
+/*
+ * `order_reference` is the "ord_xxxxx" format.
+ * `unit_price` and `handling_fee` have no default: prices come from the catalogue, per order. The old ₦1,400 and ₦100 defaults predate the current catalogue and silently mispriced any insert that omitted them.
+ * `delivery_fee` is from the zone, in kobo.
+ * `delivery_fee_before_promo` is what delivery would have cost without a promotion, in kobo; it is recorded on every order, not only discounted ones, so the cost of a campaign is one query afterwards.
+ * `delivery_promotion_id` is the campaign that made this delivery free, when one did.
+ * `delivery_proof_photos` is an array of {url, caption}.
+ * `delivery_recipient_name` is who actually took delivery, which is not always the buyer.
+ */
 export const orders = pgTable("orders", {
   id: serial().primaryKey().notNull(),
   order_reference: varchar("order_reference", { length: 30 })
     .unique()
-    .notNull(), // ord_xxxxx format
+    .notNull(),
   buyer_id: integer()
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
@@ -59,21 +67,10 @@ export const orders = pgTable("orders", {
     .references(() => zones.id, { onDelete: "restrict" }),
   rider_id: integer().references(() => riders.id, { onDelete: "set null" }),
   quantity: integer().notNull(),
-  /* No default: prices come from the catalogue, per order. The old ₦1,400 and
-     ₦100 defaults predate the current catalogue and silently mispriced any
-     insert that omitted them. */
   unit_price: integer().notNull(),
   handling_fee: integer().notNull(),
-  delivery_fee: integer().notNull(), // from zone, in kobo
-  /*
-   * What delivery would have cost without a promotion, in kobo.
-   *
-   * Recorded on every order, not only discounted ones, so the cost of a
-   * campaign is one query afterwards. Without it, a free-delivery week left no
-   * trace of what it gave away.
-   */
+  delivery_fee: integer().notNull(),
   delivery_fee_before_promo: integer().notNull().default(0),
-  /** The campaign that made this delivery free, when one did. */
   delivery_promotion_id: integer().references(() => deliveryPromotions.id, {
     onDelete: "set null",
   }),
@@ -85,9 +82,7 @@ export const orders = pgTable("orders", {
   cancellation_reason: text(),
   notes: text(),
   delivered_at: timestamp(),
-  // Paystack invoice tracking
   paystack_invoice_code: varchar("paystack_invoice_code", { length: 100 }),
-  // SafeHaven payment
   payment_status: paymentStatusEnum().notNull().default("unpaid"),
   payment_reference: varchar("payment_reference", { length: 100 }),
   virtual_account_number: varchar("virtual_account_number", { length: 20 }),
@@ -95,14 +90,12 @@ export const orders = pgTable("orders", {
   virtual_account_account_name: text(),
   virtual_account_expires_at: timestamp(),
   paid_at: timestamp(),
-  // Delivery verification by buyer admin
   delivery_verified_at: timestamp(),
   delivery_verified_by_admin_id: integer().references(() => users.id, {
     onDelete: "set null",
   }),
-  delivery_proof_photos: jsonb(), // array of {url, caption}
+  delivery_proof_photos: jsonb(),
   delivery_notes: text(),
-  /* Who actually took delivery, which is not always the buyer. */
   delivery_recipient_name: text(),
   ...timestamps,
 });

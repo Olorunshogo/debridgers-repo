@@ -7,10 +7,8 @@ import type {
 } from "../../types/payment-config";
 
 /*
- * Two-step deposit flow: initiate returns the Paystack authorization URL to
- * redirect the buyer to, and confirm reconciles the wallet once they return.
- * Both steps share one submitting/error state since a caller only ever runs
- * one of them at a time.
+ * Two-step deposit flow: initiate returns the Paystack authorization URL to redirect the buyer to, and confirm reconciles the wallet once they return.
+ * Both steps share one submitting/error state since a caller only ever runs one of them at a time.
  */
 
 export interface UseDepositOptions {

@@ -22,6 +22,7 @@ import { SystemSettingsService } from "../settings/system-settings.service";
 import { AgentWalletService } from "../wallet/agent-wallet.service";
 import { TaxonomyService } from "../catalog/taxonomy.service";
 import { AuditLogService } from "../../../infrastructure/audit/audit-log.service";
+import { RatingsService } from "../ratings/ratings.service";
 import { parseSort } from "../../../infrastructure/helper/query.helper";
 import {
   ORDER_STATUS_TRANSITIONS,
@@ -53,6 +54,7 @@ export class AdminService {
     private readonly wallet: AgentWalletService,
     private readonly taxonomy: TaxonomyService,
     private readonly audit: AuditLogService,
+    private readonly ratings: RatingsService,
   ) {}
 
   async getAdminMe(userId: number) {
@@ -125,6 +127,10 @@ export class AdminService {
   // === Agents
 
   async getAgents(status?: "pending" | "approved" | "rejected" | "suspended") {
+    /*
+     * kyc_status, bank_code and bank_name are selected explicitly.
+     * Omitting them made KYC state and the bank-code backfill invisible through the API.
+     */
     const query = this.db
       .select({
         id: schema.users.id,
@@ -141,8 +147,6 @@ export class AdminService {
         admin_notes: schema.agent_profiles.admin_notes,
         referral_buyer_code: schema.agent_profiles.referral_buyer_code,
         referral_agent_code: schema.agent_profiles.referral_agent_code,
-        /* Omitting these made KYC state and the bank-code backfill invisible
-           through the API. */
         kyc_status: schema.agent_profiles.kyc_status,
         bank_code: schema.agent_profiles.bank_code,
         bank_name: schema.agent_profiles.bank_name,
@@ -253,7 +257,7 @@ export class AdminService {
     const name = `${user.first_name} ${user.last_name}`;
 
     if (dto.status === "approved") {
-      // Auto-verify email on approval — admin has vetted the agent
+      // Auto-verify email on approval: admin has vetted the agent.
       await this.db
         .update(schema.users)
         .set({ is_email_verified: true })
@@ -534,11 +538,12 @@ export class AdminService {
 
   // === Orders
 
+  // filters.search matches buyer name or email.
   async getAllOrders(
     filters: {
       status?: string;
       payment_status?: string;
-      search?: string; // buyer name or email
+      search?: string;
       page?: number;
       limit?: number;
       sort?: string;
@@ -736,6 +741,10 @@ export class AdminService {
       read: false,
     });
 
+    if (status === "delivered") {
+      await this.ratings.notifyPendingOnDelivery(updated);
+    }
+
     this.logger.log(
       `Admin ${adminId} moved order ${orderId} from ${order.status} to ${status}`,
     );
@@ -793,8 +802,10 @@ export class AdminService {
         is_email_verified: schema.users.is_email_verified,
         is_phone_verified: schema.users.is_phone_verified,
         is_blocked: schema.users.is_blocked,
-        /* Present so the suspend mutation is verifiable from this endpoint;
-           without it an admin cannot confirm their own action took effect. */
+        /*
+         * Present so the suspend mutation is verifiable from this endpoint.
+         * Without it an admin cannot confirm their own action took effect.
+         */
         is_suspended: schema.users.is_suspended,
         zone_id: schema.users.zone_id,
         referred_by_agent_id: schema.users.referred_by_agent_id,
@@ -1646,8 +1657,7 @@ export class AdminService {
         rejection_reason: schema.withdrawals.rejection_reason,
         payout_reference: schema.withdrawals.payout_reference,
         processed_at: schema.withdrawals.processed_at,
-        /* The point of F20: stamping the actor is useless if the list that an
-           admin actually reads does not project it. */
+        // The point of F20: stamping the actor is useless if the list an admin actually reads does not project it.
         processed_by: schema.withdrawals.processed_by,
         created_at: schema.withdrawals.created_at,
       })
@@ -1815,12 +1825,27 @@ export class AdminService {
       throw new BadRequestException("No password set on this account");
 
     const valid = await bcrypt.compare(dto.current_password, admin.password);
-    if (!valid) throw new BadRequestException("Current password is incorrect");
+    if (!valid)
+      throw new BadRequestException({
+        message: "Current password is incorrect",
+        errors: [
+          {
+            field: "current_password",
+            message: "Current password is incorrect",
+          },
+        ],
+      });
 
     if (dto.current_password === dto.new_password) {
-      throw new BadRequestException(
-        "New password must be different from current password",
-      );
+      throw new BadRequestException({
+        message: "New password must be different from current password",
+        errors: [
+          {
+            field: "password",
+            message: "New password must be different from current password",
+          },
+        ],
+      });
     }
 
     const hashed = await bcrypt.hash(dto.new_password, 12);

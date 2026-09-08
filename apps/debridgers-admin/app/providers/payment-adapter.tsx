@@ -6,12 +6,8 @@ import {
 import { apiFetch } from "@debridgers/api-client";
 
 /*
- * Wires the shared payment hooks in @debridgers/ui-web to this app's transport,
- * the same seam AppAuthAdapterProvider gives the auth hooks.
- *
- * Endpoints arrive as arguments rather than being hardcoded here: each role's
- * RolePaymentConfig owns its paths, which is what lets buyer and agent share
- * one set of hooks.
+ * Wires the shared payment hooks in @debridgers/ui-web to this app's transport, the same seam AppAuthAdapterProvider gives the auth hooks.
+ * Endpoints arrive as arguments rather than being hardcoded here: each role's RolePaymentConfig owns its paths, which is what lets buyer and agent share one set of hooks.
  */
 export function AppPaymentAdapterProvider({
   children,

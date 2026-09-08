@@ -5,13 +5,9 @@ import { dashboardAppUrl } from "../../utils/app-urls";
 
 /*
  * The checkout auth gate, replacing AuthDialog.
- *
- * debridgers-marketing has no buyer dashboard, so authenticating inline here
- * (as AuthDialog used to) would create a session on the wrong origin - useless
- * on buyer.debridgers.com, which manages its own login independently. This
- * dialog does one thing instead: stage the guest cart server-side, then send
- * the browser to buyer.debridgers.com/login with the resulting token. Signup
- * is reached from that login page's own "Sign up" link, not from here.
+ * debridgers-marketing has no buyer dashboard, so authenticating inline here (as AuthDialog used to) would create a session on the wrong origin - useless on buyer.debridgers.com, which manages its own login independently.
+ * This dialog does one thing instead: stage the guest cart server-side, then send the browser to buyer.debridgers.com/login with the resulting token.
+ * Signup is reached from that login page's own "Sign up" link, not from here.
  */
 
 interface CheckoutGateDialogProps {
@@ -30,8 +26,7 @@ export default function CheckoutGateDialog({ items }: CheckoutGateDialogProps) {
       const { token } = await stageCart(items);
       window.location.href = `${dashboardAppUrl("buyer")}/login?cartToken=${encodeURIComponent(token)}`;
     } catch {
-      /* Staging failed - still let the buyer log in, just without the cart
-         carried over, rather than blocking checkout entirely. */
+      /* Staging failed - still let the buyer log in, just without the cart carried over, rather than blocking checkout entirely. */
       window.location.href = `${dashboardAppUrl("buyer")}/login`;
     }
   }

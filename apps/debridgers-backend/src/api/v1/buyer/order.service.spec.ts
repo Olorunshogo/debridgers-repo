@@ -163,8 +163,10 @@ describe.skipIf(!hasDb)("OrderService order creation", () => {
     const first = await orders.createOrder(userId, dto());
     const second = await orders.createOrder(
       userId,
-      /* Two packages, not one: a single ₦14,000 garri is below the
-         minimum order and would be rejected before the basket is compared. */
+      /*
+       * Two packages, not one: a single ₦14,000 garri is below the minimum order.
+       * It would be rejected before the basket is even compared.
+       */
       dto({ cart: [{ product_id: garriId, qty: 2 }] }),
     );
 

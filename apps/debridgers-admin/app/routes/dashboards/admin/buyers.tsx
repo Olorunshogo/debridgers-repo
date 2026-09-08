@@ -36,10 +36,8 @@ export function meta() {
 }
 
 /*
- * Blocked and suspended are different fields on the user row and mean different
- * things: blocking is permanent, suspension is a hold. This list used to show
- * only blocking while the buyer-admin list showed only suspension, so neither
- * screen told the whole truth about an account.
+ * Blocked and suspended are different fields on the user row and mean different things: blocking is permanent, suspension is a hold.
+ * This list used to show only blocking while the buyer-admin list showed only suspension, so neither screen told the whole truth about an account.
  */
 type BuyerStatus = "active" | "suspended" | "blocked";
 
@@ -65,6 +63,7 @@ interface ApiBuyer {
   joined_at: string;
 }
 
+/* Blocking outranks suspension: it is the stronger and permanent state, so it decides `status` before suspension is even checked. */
 function mapBuyer(b: ApiBuyer): BuyerRow {
   return {
     id: b.id,
@@ -72,7 +71,6 @@ function mapBuyer(b: ApiBuyer): BuyerRow {
     email: b.email,
     phone: b.phone ?? "",
     verified: b.is_email_verified,
-    /* Blocking outranks suspension: it is the stronger and permanent state. */
     status: b.is_blocked ? "blocked" : b.is_suspended ? "suspended" : "active",
     joinedDate: new Date(b.joined_at).toLocaleDateString("en-NG", {
       month: "short",
@@ -89,9 +87,9 @@ const STATUS_BADGE: Record<BuyerStatus, { tone: StatusTone; label: string }> = {
 };
 
 /*
- * Module scope, not inline: the engine re-derives every row when the `columns`
- * identity changes, which for an inline array is every keystroke in the search
- * box. See the note in table-types.ts.
+ * Module scope, not inline: the engine re-derives every row when the `columns` identity changes, which for an inline array is every keystroke in the search box.
+ * See the note in table-types.ts.
+ * The email column's minWidth is deliberate: it used to be a bare 1fr share of a crushed grid with no way to scroll to it, so it now gets a real minimum plus the engine's scroll container.
  */
 const COLUMNS: readonly TableColumn<BuyerRow>[] = [
   {
@@ -113,8 +111,6 @@ const COLUMNS: readonly TableColumn<BuyerRow>[] = [
     id: "email",
     header: "Email",
     priority: "secondary",
-    /* The column that used to vanish: a 1fr share of a crushed grid with no way
-       to scroll to it. A real minimum plus the engine's scroll container. */
     minWidth: "16rem",
     sortable: true,
     sortValue: (b) => b.email,
@@ -160,7 +156,7 @@ export default function AdminBuyers() {
   const [loading, setLoading] = useState<boolean>(true);
   /* A failed load must not render as "no buyers", which is a different story. */
   const [loadError, setLoadError] = useState<string | null>(null);
-  /* Per-row, so one buyer's pending action does not freeze the others. */
+  /* actioningId is per-row, so one buyer's pending action does not freeze the others. */
   const [actioningId, setActioningId] = useState<number | null>(null);
 
   const load = useCallback(async (): Promise<void> => {
@@ -203,8 +199,7 @@ export default function AdminBuyers() {
   // === Row actions
 
   /*
-   * Errors from the mutation are left to propagate: the confirm dialog catches
-   * them, stays open and shows the message.
+   * Errors from the mutation are left to propagate: the confirm dialog catches them, stays open and shows the message.
    */
   const rowActions = useMemo<RowAction<BuyerRow>[]>(
     () => [

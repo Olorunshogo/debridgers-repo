@@ -113,6 +113,7 @@ export class DeliveryAdminService {
 
     // Update order
     await this.db
+      // delivery_recipient_name records who actually took delivery, rather than who placed the order.
       .update(schema.orders)
       .set({
         status: "delivered",
@@ -120,7 +121,6 @@ export class DeliveryAdminService {
         delivery_verified_by_admin_id: adminId,
         delivery_proof_photos: data.photos,
         delivery_notes: data.notes || null,
-        /* Who actually took delivery, rather than who placed the order. */
         delivery_recipient_name: data.recipient_name || null,
       })
       .where(eq(schema.orders.id, orderId));

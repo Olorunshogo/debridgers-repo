@@ -4,9 +4,8 @@ export default defineConfig({
   test: {
     passWithNoTests: true,
     /*
-     * Every database-backed suite creates and drops its own Postgres database
-     * in a hook. Those run in parallel across suites, so teardown regularly
-     * overruns the 10s default and fails a suite whose tests all passed.
+     * DB suites create and drop their own Postgres db in a hook.
+     * Those run in parallel, so teardown regularly overruns the 10s default.
      */
     hookTimeout: 120000,
   },

@@ -1,9 +1,8 @@
 import { apiFetch } from "../../apiFetch";
 
 /*
- * Server-side cart. localStorage stays the source of truth while browsing;
- * these keep the account copy in step so the cart follows the buyer to another
- * device.
+ * Server-side cart.
+ * localStorage stays the source of truth while browsing; these keep the account copy in step so the cart follows the buyer to another device.
  */
 
 export interface ServerCartLine {
@@ -33,8 +32,8 @@ export function syncServerCart(items: CartSyncLine[]): Promise<unknown> {
 }
 
 /*
- * Merge on login. Takes the higher quantity per product rather than summing, so
- * adding the same item on two devices does not double the order.
+ * Merge on login.
+ * Takes the higher quantity per product rather than summing, so adding the same item on two devices does not double the order.
  */
 export function mergeServerCart(
   items: CartSyncLine[],

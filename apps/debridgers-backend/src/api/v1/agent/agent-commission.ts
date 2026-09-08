@@ -63,12 +63,9 @@ export function commissionPerPackageKobo(productName: string): number {
 }
 
 /**
- * What an agent owes per package taken on consignment: the price the buyer
- * pays, less the agent's commission on that package.
+ * What an agent owes per package taken on consignment: the price the buyer pays, less the agent's commission on that package.
  *
- * Floored at zero so a commission band misconfigured above a product's price
- * can never record a negative debt, which would read as the company owing the
- * agent for taking stock.
+ * Floored at zero so a commission band misconfigured above a product's price can never record a negative debt, which would read as the company owing the agent for taking stock.
  */
 export function remitPerPackageKobo(
   productName: string,

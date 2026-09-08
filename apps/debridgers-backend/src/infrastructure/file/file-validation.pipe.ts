@@ -14,13 +14,14 @@ export class FileValidationPipe implements PipeTransform {
   private readonly logger = new Logger(FileValidationPipe.name);
 
   // Configuration
-  private readonly MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  private readonly MAX_FILE_SIZE = 5 * 1024 * 1024;
 
+  // application/pdf is allowed for CVs.
   private readonly ALLOWED_MIME_TYPES = new Set([
     "image/jpeg",
     "image/png",
     "image/webp",
-    "application/pdf", // For CVs
+    "application/pdf",
   ]);
 
   private readonly ALLOWED_EXTENSIONS = new Set([
@@ -31,12 +32,15 @@ export class FileValidationPipe implements PipeTransform {
     ".pdf",
   ]);
 
-  // Magic bytes (file signatures) for verification
+  /*
+   * Magic bytes (file signatures) for verification.
+   * image/webp is RIFF; application/pdf is %PDF.
+   */
   private readonly FILE_SIGNATURES: Record<string, Buffer[]> = {
     "image/jpeg": [Buffer.from([0xff, 0xd8, 0xff])],
     "image/png": [Buffer.from([0x89, 0x50, 0x4e, 0x47])],
-    "image/webp": [Buffer.from([0x52, 0x49, 0x46, 0x46])], // RIFF
-    "application/pdf": [Buffer.from([0x25, 0x50, 0x44, 0x46])], // %PDF
+    "image/webp": [Buffer.from([0x52, 0x49, 0x46, 0x46])],
+    "application/pdf": [Buffer.from([0x25, 0x50, 0x44, 0x46])],
   };
 
   transform(file: Express.Multer.File): Express.Multer.File {
@@ -84,22 +88,17 @@ export class FileValidationPipe implements PipeTransform {
     return file;
   }
 
-  /**
-   * Extract file extension from filename
-   */
   private getFileExtension(filename: string): string {
     const dot = filename.lastIndexOf(".");
     return dot === -1 ? "" : filename.substring(dot);
   }
 
-  /**
-   * Verify file magic bytes match MIME type
-   * Prevents attackers from renaming executables as images
-   */
+  /* Magic-byte check stops an attacker from renaming an executable with an image extension/MIME type. */
   private verifyFileSignature(buffer: Buffer, mimeType: string): void {
     const signatures = this.FILE_SIGNATURES[mimeType];
     if (!signatures || signatures.length === 0) {
-      return; // No signature check for this MIME type
+      // No signature check for this MIME type.
+      return;
     }
 
     const hasValidSignature = signatures.some((signature) =>

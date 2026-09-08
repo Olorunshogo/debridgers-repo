@@ -18,9 +18,8 @@ export function meta() {
 }
 
 /*
- * This app only ever serves agents, so there is no role tab to choose - the
- * form is agent's config, fixed. AuthSignupForm hides its tab row when given
- * a single role, so this composes the same way the multi-role picker used to.
+ * This app only ever serves agents, so there is no role tab to choose - the form is agent's config, fixed.
+ * AuthSignupForm hides its tab row when given a single role, so this composes the same way the multi-role picker used to.
  */
 export default function SignupPage() {
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);

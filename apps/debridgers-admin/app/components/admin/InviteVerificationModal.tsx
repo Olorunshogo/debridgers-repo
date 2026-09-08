@@ -8,7 +8,6 @@ interface InviteVerificationModalProps {
   onVerified: () => void;
 }
 
-// Modal for authenticated admins to verify invite code during account activation
 export function InviteVerificationModal({
   isOpen,
   onVerified,

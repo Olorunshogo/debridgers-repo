@@ -12,15 +12,13 @@ import {
 
 /*
  * Update password, on the shared useUpdatePassword hook from @debridgers/ui-web.
- * One dialog, reused by every role's settings screen and by the app's own
- * "you're still on a temporary password" nag (DashboardLayout), which is the
- * only caller that overrides the copy below.
+ * One dialog, reused by every role's settings screen and by the app's own "you're still on a temporary password" nag (DashboardLayout), which is the only caller that overrides the copy below.
  *
  * Registered as CHANGE_PASSWORD in app/providers/dialog-registry.ts.
  */
 
+/* `onChanged` fires once the new password is accepted, so the caller can stop asking. */
 interface ChangePasswordDialogProps {
-  /** Fires once the new password is accepted, so the caller can stop asking. */
   onChanged?: () => void;
   title?: string;
   description?: string;
@@ -46,8 +44,7 @@ export default function ChangePasswordDialog({
     onSuccess: onChanged,
   });
 
-  /* Blocks dismissal mid-request; a half-submitted password change is not
-     something to close out from under. */
+  /* Blocks dismissal mid-request; a half-submitted password change is not something to close out from under. */
   useEffect(() => {
     setDialogLoading(isSubmitting);
   }, [isSubmitting, setDialogLoading]);
@@ -113,12 +110,14 @@ export default function ChangePasswordDialog({
           {...register("confirmPassword")}
         />
 
+        {/*
+         * mode: "onChange" in useUpdatePassword keeps isValid live from the first keystroke.
+         * Same reasoning as the shared auth forms.
+         */}
         <SubmitButton
           variant="primary"
           loading={isSubmitting}
           loadingText="Updating..."
-          /* mode: "onChange" in useUpdatePassword keeps isValid live from the
-             first keystroke, same reasoning as the shared auth forms. */
           disabled={!formState.isValid}
         >
           Update password

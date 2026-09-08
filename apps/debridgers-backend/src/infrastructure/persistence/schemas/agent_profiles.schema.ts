@@ -32,6 +32,12 @@ export const agentIdTypeEnum = pgEnum("agent_id_type", [
   "Drivers License",
 ]);
 
+/*
+ * Fields group into referral, state manager, bank details, KYC and identity verification, roughly in that order.
+ * `paystack_subaccount_code` is the split-payment destination for money coming in; it is not a payout target.
+ * `paystack_recipient_code` is the transfer recipient (RCP_...) for money going out, required by POST /transfer.
+ * Both payout paths previously passed the subaccount code instead, which /transfer does not accept.
+ */
 export const agent_profiles = pgTable(
   "agent_profiles",
   {
@@ -44,40 +50,28 @@ export const agent_profiles = pgTable(
     lga: text(),
     status: agentStatusEnum().notNull().default("pending"),
     admin_notes: text(),
-    // referral
     referred_by_agent_id: integer().references(() => users.id, {
       onDelete: "set null",
     }),
     referral_buyer_code: varchar("referral_buyer_code", { length: 20 }),
     referral_agent_code: varchar("referral_agent_code", { length: 20 }),
-    // state manager
     is_state_manager: boolean().notNull().default(false),
     managed_state: text(),
-    // bank details
     bank_name: text(),
     bank_code: varchar("bank_code", { length: 10 }),
     bank_account_number: varchar("bank_account_number", { length: 20 }),
     bank_account_name: text(),
-    // KYC
     kyc_status: kycStatusEnum().notNull().default("not_submitted"),
     kyc_rejection_reason: text(),
-    // identity verification
     id_type: agentIdTypeEnum(),
     id_front_url: text(),
     id_selfie_url: text(),
-    // legacy / payment
     nin: varchar("nin", { length: 20 }),
     cv_url: text(),
     target: integer().notNull().default(0),
-    /* Split-payment destination for money coming IN. Not a payout target. */
     paystack_subaccount_code: varchar("paystack_subaccount_code", {
       length: 100,
     }),
-    /*
-     * Transfer recipient (RCP_...) for money going OUT. POST /transfer requires
-     * this; both payout paths previously passed the subaccount code above,
-     * which /transfer does not accept.
-     */
     paystack_recipient_code: varchar("paystack_recipient_code", {
       length: 100,
     }),

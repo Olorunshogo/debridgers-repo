@@ -7,11 +7,21 @@ export * from "./lib/is-external-href";
 // === Email validation
 export * from "./lib/is-valid-email";
 
+// === Server field-error mapping
+export * from "./lib/server-errors";
+
 // === Formatting helpers
 export * from "./utils";
 
 // === Shared types
 export * from "./types";
+
+// === Ratings config, re-exported so apps never need @debridgers/ratings as a direct dependency
+export type {
+  RatingContextKey,
+  RatingTargetType,
+  RaterRole,
+} from "@debridgers/ratings";
 
 // === Reference data
 export * from "./data";
@@ -87,6 +97,9 @@ export * from "./components/coming-soon";
 
 // === Notifications
 export * from "./components/notifications";
+
+// === Ratings
+export * from "./components/ratings";
 
 // === Product sorting
 export * from "./components/sort-menu";

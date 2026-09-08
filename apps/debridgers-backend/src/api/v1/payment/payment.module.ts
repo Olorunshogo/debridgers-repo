@@ -31,7 +31,7 @@ import { WalletModule } from "../wallet/wallet.module";
     WebhookModule,
     JwtModule.register({}),
     ScheduleModule.forRoot(),
-    EmailModule, // ← Add this
+    EmailModule,
     forwardRef(() => WalletModule),
   ],
   controllers: [PaymentController, PaystackWebhookController],

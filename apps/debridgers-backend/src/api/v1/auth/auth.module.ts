@@ -24,7 +24,7 @@ import { AdminInviteService } from "../admin/admin-invite/admin-invite.service";
     RedisModule,
     AnalyticsModule,
     forwardRef(() => PaymentModule),
-    EmailModule, // ← Import EmailModule instead
+    EmailModule,
   ],
   controllers: [AuthController, AdminRegisterController],
   providers: [

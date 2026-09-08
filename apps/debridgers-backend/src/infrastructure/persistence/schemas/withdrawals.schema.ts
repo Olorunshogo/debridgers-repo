@@ -18,12 +18,13 @@ export const withdrawalStatusEnum = pgEnum("withdrawal_status", [
   "paid",
 ]);
 
+/* `amount` is kobo. `processed_by` is the admin user's id. */
 export const withdrawals = pgTable("withdrawals", {
   id: serial().primaryKey().notNull(),
   agent_id: integer()
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  amount: integer().notNull(), // in kobo
+  amount: integer().notNull(),
   bank_name: text().notNull(),
   bank_code: varchar("bank_code", { length: 10 }).notNull(),
   bank_account_number: text().notNull(),
@@ -32,7 +33,7 @@ export const withdrawals = pgTable("withdrawals", {
   status: withdrawalStatusEnum().notNull().default("pending"),
   rejection_reason: text(),
   processed_at: timestamp(),
-  processed_by: integer().references(() => users.id, { onDelete: "set null" }), // admin user id
+  processed_by: integer().references(() => users.id, { onDelete: "set null" }),
   ...timestamps,
 });
 

@@ -36,6 +36,10 @@ export const deliveryPromotionScopeEnum = pgEnum("delivery_promotion_scope", [
  * `zones.free_delivery` is a different thing and is not superseded: that is
  * standing policy for one area and wins independently of any window here, so
  * a permanently free area does not start charging when a campaign ends.
+ *
+ * `zone_id` is null unless scope is `zone`.
+ * `is_active` is the kill switch: a campaign also ends by itself at `ends_at`, but this is how an admin ends one early without losing the window it actually ran for.
+ * `activeWindowIndex` serves resolution on the checkout path, once per quote.
  */
 export const deliveryPromotions = pgTable(
   "delivery_promotions",
@@ -43,14 +47,9 @@ export const deliveryPromotions = pgTable(
     id: serial().primaryKey().notNull(),
     name: text().notNull(),
     scope: deliveryPromotionScopeEnum().notNull().default("global"),
-    /** Null unless scope is `zone`. */
     zone_id: integer().references(() => zones.id, { onDelete: "cascade" }),
     starts_at: timestamp().notNull(),
     ends_at: timestamp().notNull(),
-    /*
-     * The kill switch. A campaign ends by itself at `ends_at`; this is how an
-     * admin ends one early without losing the window it actually ran for.
-     */
     is_active: boolean().notNull().default(true),
     created_by_admin_id: integer().references(() => users.id, {
       onDelete: "set null",
@@ -58,7 +57,6 @@ export const deliveryPromotions = pgTable(
     ...timestamps,
   },
   (table) => ({
-    /* Resolution runs on the checkout path, once per quote. */
     activeWindowIndex: index().on(table.is_active, table.starts_at),
     zoneIndex: index().on(table.zone_id),
   }),

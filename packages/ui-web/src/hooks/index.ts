@@ -13,5 +13,8 @@ export * from "./use-async-resource";
 // === Notifications
 export * from "./use-notifications-service";
 
+// === Ratings
+export * from "./ratings";
+
 // === Dashboard navigation
 export * from "./use-dashboard-nav";

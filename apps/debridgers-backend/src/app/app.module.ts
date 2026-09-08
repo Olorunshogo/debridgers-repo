@@ -80,7 +80,7 @@ import { refreshJwtConfig } from "../api/v1/auth/config/refresh-jwt";
   providers: [
     AppService,
     UserListeners,
-    /* UserListeners fans admin-facing events out as in-app notifications. */
+    // UserListeners fans admin-facing events out as in-app notifications via NotificationsService.
     NotificationsService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],

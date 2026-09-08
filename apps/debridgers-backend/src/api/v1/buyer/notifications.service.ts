@@ -170,8 +170,8 @@ export class NotificationsService {
   // === Reading
 
   /**
-   * Get notifications for any user. Role is enforced by the calling
-   * controller's guard; the query itself is only ever scoped by user id.
+   * Get notifications for any user.
+   * Role is enforced by the calling controller's guard; the query itself is only ever scoped by user id.
    */
   async getNotifications(userId: number, page: number = 1, limit: number = 10) {
     const offset = (page - 1) * limit;

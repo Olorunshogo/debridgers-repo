@@ -47,6 +47,7 @@ export function meta() {
 
 type MeasureUnit = "kg" | "litre" | "piece";
 
+/* `category_name` is the leaf name from the taxonomy join, for the list row. */
 interface Product {
   id: number;
   name: string;
@@ -56,7 +57,6 @@ interface Product {
   image_url: string | null;
   category: string | null;
   category_id: number | null;
-  /* Leaf name from the taxonomy join, for the list row. */
   category_name: string | null;
   measure_value: number | null;
   measure_unit: MeasureUnit;
@@ -65,18 +65,17 @@ interface Product {
   sort_order: number;
 }
 
+/*
+ * `category_id`, `measure_value` and `weight_grams` are held as strings because that is what an input yields.
+ * The conversion at each end is the form boundary, not redundancy: the API types these as numbers, and did so falsely until `measure_value` became an integer column.
+ * Keep the parse honest rather than removing it.
+ */
 interface ProductForm {
   name: string;
   unit: string;
   price: string;
   description: string;
   image_url: string;
-  /*
-   * Numeric fields are held as strings because that is what an input yields.
-   * The conversion at each end is the form boundary, not redundancy: the API
-   * types these as numbers, and did so falsely until `measure_value` became an
-   * integer column. Keep the parse honest rather than removing it.
-   */
   category_id: string;
   measure_value: string;
   measure_unit: MeasureUnit;
@@ -107,9 +106,7 @@ const measureUnitOptions: { value: MeasureUnit; label: string }[] = [
 ];
 
 /*
- * Photos shipped with the app under public/images/products. Held as a literal
- * list rather than read at runtime because the folder is a build asset, and the
- * alt text has to be written by a human anyway.
+ * Photos shipped with the app under public/images/products. Held as a literal list rather than read at runtime because the folder is a build asset, and the alt text has to be written by a human anyway.
  */
 
 const bundledImages: BundledImage[] = [
@@ -126,10 +123,10 @@ const bundledImages: BundledImage[] = [
 
 const bundledImagePath = (file: string): string => `/images/products/${file}`;
 
+/* `path` is e.g. "Grains > Rice > Ofada"; a leaf name alone is ambiguous. */
 interface CategoryLeaf {
   id: number;
   name: string;
-  /* "Grains > Rice > Ofada". A leaf name alone is ambiguous. */
   path: string;
 }
 
@@ -143,12 +140,10 @@ export default function AdminProductsPage() {
   const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   /*
-   * The `error` banner above lives inside the add/edit panel, so it cannot
-   * report failures triggered from the list itself. This one sits at page level.
+   * The `error` banner above lives inside the add/edit panel, so it cannot report failures triggered from the list itself. This one sits at page level.
    */
   const [actionError, setActionError] = useState<string | null>(null);
-  /* Distinct from actionError: a failed load must not render as "no products",
-     which is a different story entirely. */
+  /* Distinct from actionError: a failed load must not render as "no products", which is a different story entirely. */
   const [loadError, setLoadError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [uploadingImage, setUploadingImage] = useState<boolean>(false);
@@ -324,9 +319,8 @@ export default function AdminProductsPage() {
   }
 
   /*
-   * Throws rather than swallowing: the confirm dialog runs this, and it is the
-   * dialog that shows the failure and stays open. Catching here would close it
-   * on a delete that never happened.
+   * Throws rather than swallowing: the confirm dialog runs this, and it is the dialog that shows the failure and stays open.
+   * Catching here would close it on a delete that never happened.
    */
   async function handleDelete(id: number) {
     setDeletingId(id);
@@ -345,8 +339,7 @@ export default function AdminProductsPage() {
   }
 
   /*
-   * Memoised, as the table engine requires: an inline array would be a new
-   * identity every render and re-derive every row on each keystroke.
+   * Memoised, as the table engine requires: an inline array would be a new identity every render and re-derive every row on each keystroke.
    */
   const columns = useMemo<TableColumn<Product>[]>(
     () => [
@@ -415,8 +408,7 @@ export default function AdminProductsPage() {
             type="button"
             title={p.is_active ? "Deactivate product" : "Activate product"}
             onClick={(event) => {
-              /* The row is not clickable here, but the badge must not become
-                 one either if that changes. */
+              /* The row is not clickable here, but the badge must not become one either if that changes. */
               event.stopPropagation();
               void handleToggleActive(p);
             }}
@@ -579,11 +571,8 @@ export default function AdminProductsPage() {
                   setForm((p) => ({ ...p, description: e.target.value }))
                 }
               />
-              {/*
-                Bound to a taxonomy leaf, shown with its full path so "White" is
-                distinguishable as garri or beans. Searchable because the leaf
-                list grows with every variety added.
-              */}
+              {/* Bound to a taxonomy leaf, shown with its full path so "White" is distinguishable as garri or beans.
+                Searchable because the leaf list grows with every variety added. */}
               <SelectInputField
                 label="Category"
                 name="category_id"
@@ -621,8 +610,7 @@ export default function AdminProductsPage() {
                     }))
                   }
                 />
-                {/* Shipping weight. The column existed with no way to set it,
-                    so every product read as weightless to delivery pricing. */}
+                {/* Shipping weight. The column existed with no way to set it, so every product read as weightless to delivery pricing. */}
                 <NumberInputField
                   label="Weight (grams)"
                   id="weight-grams"

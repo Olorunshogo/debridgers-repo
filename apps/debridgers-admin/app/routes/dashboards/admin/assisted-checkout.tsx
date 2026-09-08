@@ -66,9 +66,7 @@ interface Decision {
 // === Content
 
 /*
- * This page is the specification, not a placeholder for one. It is deliberately
- * dated and phase-tracked: a proposal that cannot show its own staleness stops
- * being read and starts being guessed at.
+ * This page is the specification, not a placeholder for one. It is deliberately dated and phase-tracked: a proposal that cannot show its own staleness stops being read and starts being guessed at.
  */
 
 const LAST_REVIEWED = "29 August 2026";

@@ -17,6 +17,9 @@ import {
   formatFromKobo,
   useAsyncResource,
   AsyncBoundary,
+  useAuth,
+  useRatingAggregate,
+  RatingSummary,
 } from "@debridgers/ui-web";
 
 import { buildPageMeta } from "../../../lib/seo";
@@ -121,9 +124,8 @@ function mapToDashboard(
         : "Good Evening 🌙";
 
   /*
-   * GET /agent/dashboard returns total_earned / commission_pending as kobo
-   * strings, not naira. The backend contract should return kobo ints; until it
-   * does, parse as an integer number of kobo and format from there.
+   * GET /agent/dashboard returns total_earned / commission_pending as kobo strings, not naira.
+   * The backend contract should return kobo ints; until it does, parse as an integer number of kobo and format from there.
    */
   const fmtKobo = (val: string | number): string => {
     const kobo = typeof val === "string" ? parseInt(val, 10) : Math.round(val);
@@ -309,9 +311,14 @@ export default function AgentOverviewPage() {
 }
 
 function AgentOverviewContent({ data }: { data: AgentDashData }) {
+  const { user } = useAuth();
+  const { aggregate, loading: ratingLoading } = useRatingAggregate(
+    "agent",
+    user?.sub ?? null,
+  );
+
   return (
     <div className="flex flex-col gap-6">
-      {/* Hero */}
       <HeroGreetingCard
         greeting={data.greeting}
         userName={data.name}
@@ -364,16 +371,22 @@ function AgentOverviewContent({ data }: { data: AgentDashData }) {
         }
       />
 
-      {/* Stat cards */}
+      {!ratingLoading && aggregate && (
+        <div className="border-line rounded-2xl border bg-white p-4">
+          <p className="text-body mb-3 text-xs font-semibold tracking-wide uppercase">
+            Rated by buyers
+          </p>
+          <RatingSummary data={aggregate} />
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {data.stats.map((stat, i) => (
           <StatCard key={stat.label} stat={stat} index={i} />
         ))}
       </div>
 
-      {/* Checklist + Leaderboard */}
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-        {/* Checklist */}
         <div className="border-line flex flex-col gap-3 rounded-2xl border bg-white p-5">
           <h3 className="font-syne text-heading font-semibold">
             Today&apos;s checklist
@@ -403,7 +416,6 @@ function AgentOverviewContent({ data }: { data: AgentDashData }) {
           </div>
         </div>
 
-        {/* Leaderboard preview */}
         <div className="border-line flex flex-col gap-3 rounded-2xl border bg-white p-5">
           <div className="flex items-center justify-between">
             <h3 className="font-syne text-heading font-semibold">
@@ -450,9 +462,7 @@ function AgentOverviewContent({ data }: { data: AgentDashData }) {
         </div>
       </div>
 
-      {/* Chart + Next payout */}
       <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
-        {/* Bags sold chart */}
         <div className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5">
           <h3 className="font-syne text-heading font-semibold">
             Bag sold - this week
@@ -503,7 +513,6 @@ function AgentOverviewContent({ data }: { data: AgentDashData }) {
           </ResponsiveContainer>
         </div>
 
-        {/* Next payout */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}

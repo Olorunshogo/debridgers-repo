@@ -10,17 +10,18 @@ import type {
 /*
  * The one place a dashboard talks to the notifications API.
  *
- * Every role gets the same shape back, so NotificationsPage never learns who
- * is looking at it. Adding a role means adding an entry to ROLE_CONFIG and a
- * two-line route wrapper, not another copy of the page.
+ * Every role gets the same shape back, so NotificationsPage never learns who is looking at it.
+ * Adding a role means adding an entry to ROLE_CONFIG and a two-line route wrapper, not another copy of the page.
  */
 
 export type NotificationRole = "admin" | "buyer" | "agent";
 
+/*
+ * `base` is the collection endpoint; per-item paths are derived from it.
+ * `listPath` is where "view all" and the bell link to.
+ */
 interface RoleConfig {
-  /** Collection endpoint. Per-item paths are derived from it. */
   base: string;
-  /** Where "view all" and the bell link to. */
   listPath: string;
 }
 
@@ -40,8 +41,7 @@ const ROLE_CONFIG: Record<NotificationRole, RoleConfig> = {
 };
 
 /*
- * The bell's dot is read from localStorage by DashboardLayout on every
- * navigation, so it stays in step with whatever this hook last saw.
+ * The bell's dot is read from localStorage by DashboardLayout on every navigation, so it stays in step with whatever this hook last saw.
  */
 const HAS_UNREAD_KEY = "debridgers_has_unread";
 
@@ -63,17 +63,17 @@ interface ApiNotification {
   status: NotificationStatus;
 }
 
+/** `recent` is the most recent few, for the topbar dropdown. */
 export interface UseNotificationsServiceResult extends NotificationsViewProps {
   unreadCount: number;
-  /** The most recent few, for the topbar dropdown. */
   recent: NotificationItem[];
   listPath: string;
   reload: () => void;
 }
 
 /*
- * One page per request. The backend caps `limit` at 50 and pages by offset;
- * this stays well under the cap so "Load more" has somewhere to go.
+ * One page per request.
+ * The backend caps `limit` at 50 and pages by offset; this stays well under the cap so "Load more" has somewhere to go.
  */
 const PAGE_SIZE = 20;
 
@@ -103,8 +103,7 @@ export function useNotificationsService({
       setHasMore(rows.length === PAGE_SIZE);
       setError(null);
     } catch (err) {
-      /* An empty list would read as "nothing has happened", which is a
-         different and misleading story. */
+      /* An empty list would read as "nothing has happened", which is a different and misleading story. */
       setNotifications([]);
       setHasMore(false);
       setError(
@@ -125,8 +124,7 @@ export function useNotificationsService({
       const rows = await apiFetch<ApiNotification[]>(
         `${base}?page=${next}&limit=${PAGE_SIZE}`,
       );
-      /* Dedupe on id: a row inserted between page reads shifts the offset and
-         could otherwise repeat the last item of the previous page. */
+      /* Dedupe on id: a row inserted between page reads shifts the offset and could otherwise repeat the last item of the previous page. */
       setNotifications((prev) => {
         const seen = new Set(prev.map((n) => n.id));
         return [...prev, ...rows.filter((r) => !seen.has(r.id))];
@@ -154,17 +152,15 @@ export function useNotificationsService({
   }, [unreadCount, loading, error]);
 
   /*
-   * Every mutation is optimistic with a rollback. The server's row is the
-   * source of truth, so a failed PATCH must put the old status back rather
-   * than leave the list showing a change that did not happen.
+   * Every mutation is optimistic with a rollback.
+   * The server's row is the source of truth, so a failed PATCH must put the old status back rather than leave the list showing a change that did not happen.
    */
   const mutate = useCallback(
     (
       apply: (rows: NotificationItem[]) => NotificationItem[],
       request: () => Promise<unknown>,
     ): void => {
-      /* The snapshot is taken from the closure, not inside a state updater:
-         React may invoke an updater twice, which would fire the PATCH twice. */
+      /* The snapshot is taken from the closure, not inside a state updater: React may invoke an updater twice, which would fire the PATCH twice. */
       const previous = notifications;
       setNotifications(apply(previous));
       request().catch(() => setNotifications(previous));

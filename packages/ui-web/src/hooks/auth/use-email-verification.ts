@@ -2,24 +2,27 @@ import { useState, useCallback, useEffect } from "react";
 import { useAuthAdapter } from "./auth-adapter";
 
 /*
- * OTP email verification. Not RHF-based: the UI is a segmented code input
- * driven by one string, not a multi-field form, so a plain controlled value is
- * the honest fit. Validation is the length/digits check on submit.
+ * OTP email verification. Not RHF-based: the UI is a segmented code input driven by one string, not a multi-field form, so a plain controlled value is the honest fit.
+ * Validation is the length/digits check on submit.
  *
- * Some backends return a session on successful verification and some do not, so
- * tokens are stored only when present and the user is redirected to login
- * otherwise.
+ * Some backends return a session on successful verification and some do not, so tokens are stored only when present and the user is redirected to login otherwise.
  */
 
+/*
+ * `resendCooldownSeconds` is the number of seconds before a resend is allowed again.
+ * `maxResends` is the cap on resends before the user must contact support.
+ */
 export interface UseEmailVerificationOptions {
   email: string;
   onVerified?: (role: string) => void;
-  /** Seconds before a resend is allowed again. */
   resendCooldownSeconds?: number;
-  /** Cap on resends before the user must contact support. */
   maxResends?: number;
 }
 
+/*
+ * `cooldown` is seconds remaining before resend is allowed; 0 means allowed now.
+ * `isCodeComplete` is true once every digit is entered, for gating the submit button.
+ */
 export interface UseEmailVerificationResult {
   code: string;
   setCode: (value: string) => void;
@@ -30,11 +33,9 @@ export interface UseEmailVerificationResult {
   isResending: boolean;
   resent: boolean;
   verified: boolean;
-  /** Seconds remaining before resend is allowed. 0 means allowed now. */
   cooldown: number;
   canResend: boolean;
   maxResendsReached: boolean;
-  /** True once every digit is entered, for gating the submit button. */
   isCodeComplete: boolean;
 }
 
@@ -60,7 +61,6 @@ export function useEmailVerification(
   const [cooldown, setCooldown] = useState<number>(resendCooldownSeconds);
   const [resendCount, setResendCount] = useState<number>(0);
 
-  // Tick the resend cooldown down to zero
   useEffect(() => {
     if (cooldown <= 0) return;
     const timer = window.setInterval(() => {

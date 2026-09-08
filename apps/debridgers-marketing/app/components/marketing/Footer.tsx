@@ -93,10 +93,7 @@ export default function Footer() {
         {/* Top section: tagline + columns */}
         {/*
           Three explicit tracks, side by side from lg.
-
-          minmax(0,…) on each: the email addresses are long unbreakable strings,
-          and a bare fr floors at min-content, so the middle track would push the
-          headline narrower than its share until it wrapped.
+          minmax(0,...) on each: the email addresses are long unbreakable strings, and a bare fr floors at min-content, so the middle track would push the headline narrower than its share until it wrapped.
         */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)_minmax(0,1.2fr)] lg:items-start">
           {/* Tagline */}
@@ -223,12 +220,11 @@ export default function Footer() {
             &copy; 2026 Debridgers. Delivering fresh to Kaduna.
           </p>
           <div className="hidden items-center gap-6 md:flex">
+            {/*
+              Terms, not Privacy. /privacy had no route and 404'd for every visitor who clicked it.
+              It comes back when there is a privacy document to point at, as /legal/privacy.
+            */}
             {[
-              /*
-               * Terms, not Privacy. /privacy had no route and 404'd for every
-               * visitor who clicked it. It comes back when there is a privacy
-               * document to point at, as /legal/privacy.
-               */
               { label: "Terms", to: "/legal/buyer-terms" },
               { label: "Contact", to: "/contact" },
               {

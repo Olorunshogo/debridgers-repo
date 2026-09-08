@@ -5,8 +5,7 @@ import { RedisService } from "../redis/features/redis.service";
  * SECURITY: Prevents webhook replay attacks via Redis-based deduplication
  *
  * Webhooks are idempotent by storing a deduplication key in Redis.
- * If the same webhook ID is received multiple times, it's skipped
- * on subsequent attempts, preventing duplicate processing.
+ * If the same webhook ID is received multiple times, it's skipped on subsequent attempts, preventing duplicate processing.
  */
 @Injectable()
 export class WebhookDeduplicationService {
@@ -30,7 +29,8 @@ export class WebhookDeduplicationService {
       this.logger.warn(
         `${provider}: webhook ID missing, cannot check for duplicates`,
       );
-      return true; // Process anyway if ID is missing
+      // Process anyway if ID is missing.
+      return true;
     }
 
     const dedupeKey = `webhook:${provider}:${webhookId}`;

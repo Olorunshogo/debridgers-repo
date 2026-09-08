@@ -3,14 +3,12 @@ import type { ComponentType, ReactNode } from "react";
 /*
  * Types for the table engine.
  *
- * A consuming page declares a `columns` array describing its own rows, and the
- * engine renders it two ways: a real <table> on desktop and a stack of cards on
- * mobile, from the same definitions. The engine knows no column names, the same
- * way the dialog engine knows no dialog names.
+ * A consuming page declares a `columns` array describing its own rows, and the engine renders it two ways: a real <table> on desktop and a stack of cards on mobile, from the same definitions.
+ * The engine knows no column names, the same way the dialog engine knows no dialog names.
  *
- * IMPORTANT: `columns` must be stable across renders. Declare it at module
- * scope, or wrap it in useMemo. An inline array is a new identity every render,
- * which re-derives every row on every keystroke.
+ * IMPORTANT: `columns` must be stable across renders.
+ * Declare it at module scope, or wrap it in useMemo.
+ * An inline array is a new identity every render, which re-derives every row on every keystroke.
  */
 
 // === Layout
@@ -46,66 +44,69 @@ export type ColumnPriority =
 
 export type SortDirection = "asc" | "desc";
 
+/** `key` is a column's `sortKey`, which is what the server allowlist expects. */
 export interface TableSort {
-  /** A column's `sortKey`, which is what the server allowlist expects. */
   key: string;
   direction: SortDirection;
 }
 
 // === Columns
 
+/*
+ * `id` is the stable identity, also the default `sortKey`.
+ * `minWidth` is any CSS width, applied as a min-width so content is never squeezed.
+ * `priority` defaults to "secondary".
+ * `headerSrOnly` hides the header text visually but keeps it for screen readers.
+ * `sortKey` is the public sort key sent to the API, defaulting to `id`.
+ * `sortValue` is the client-mode comparator source, required for sorting in client mode.
+ * `searchValue` is the client-mode search source; a column without one is not searched.
+ * `cardLabel` defaults to `header` when it is a string.
+ * `hideInCards` and `hideInTable` skip this column entirely in the named mode.
+ */
 export interface TableColumn<TRow> {
-  /** Stable identity. Also the default `sortKey`. */
   id: string;
   header: ReactNode;
   cell: (row: TRow) => ReactNode;
 
   align?: TableAlign;
-  /** Any CSS width, applied as a min-width so content is never squeezed. */
   minWidth?: string;
-  /** Defaults to "secondary". */
   priority?: ColumnPriority;
-  /** Hides the header text visually but keeps it for screen readers. */
   headerSrOnly?: boolean;
 
   sortable?: boolean;
-  /** Public sort key sent to the API. Defaults to `id`. */
   sortKey?: string;
-  /** Client-mode comparator source. Required for sorting in client mode. */
   sortValue?: (row: TRow) => string | number | null | undefined;
-  /** Client-mode search source. A column without one is not searched. */
   searchValue?: (row: TRow) => string;
 
-  /** Card-mode label. Defaults to `header` when it is a string. */
   cardLabel?: ReactNode;
-  /** Skips this column in card mode entirely. */
   hideInCards?: boolean;
-  /** Skips this column in table mode entirely. */
   hideInTable?: boolean;
 }
 
 // === Row actions
 
+/** `dialogKey` is a key in the app's dialog registry, opened via the dialog engine. */
 export interface RowActionConfirm<TRow> {
-  /** A key in the app's dialog registry. Opened via the dialog engine. */
   dialogKey: string;
   props?: (row: TRow) => Record<string, unknown>;
 }
 
+/*
+ * `label` is also the accessible name when the action renders icon-only.
+ * `iconOnly` shows the icon only in table mode; card mode always shows the label.
+ * `isBusy` is per-row in-flight state, so one row's spinner cannot block the others.
+ * `confirm` routes through the dialog engine before `onSelect` runs.
+ */
 export interface RowAction<TRow> {
   id: string;
-  /** Also the accessible name when the action renders icon-only. */
   label: string;
   icon?: ComponentType<{ size?: number; className?: string }>;
-  /** Icon only in table mode; card mode always shows the label. */
   iconOnly?: boolean;
   onSelect?: (row: TRow) => void | Promise<void>;
   tone?: "default" | "primary" | "danger";
   hidden?: (row: TRow) => boolean;
   disabled?: (row: TRow) => boolean;
-  /** Per-row in-flight state, so one row's spinner cannot block the others. */
   isBusy?: (row: TRow) => boolean;
-  /** Routes through the dialog engine before `onSelect` runs. */
   confirm?: RowActionConfirm<TRow>;
 }
 
@@ -124,34 +125,42 @@ export interface BulkAction<TRow> {
 
 export type RowId = string | number;
 
-/** What the engine emits to a server-mode consumer on every meaningful change. */
+/*
+ * What the engine emits to a server-mode consumer on every meaningful change.
+ * `search` is already debounced.
+ */
 export interface TableStateSnapshot {
   page: number;
   pageSize: number;
-  /** Already debounced. */
   search: string;
   sort: TableSort | null;
 }
 
 export type PageSelectionState = "none" | "some" | "all";
 
+/*
+ * `pageSelectionState`: select-all covers the visible page only.
+ * In server mode the engine has never seen the other pages, so claiming to select them would be a lie.
+ * `selectedRows` is the selected rows among those currently visible.
+ */
 export interface TableSelectionApi<TRow> {
   enabled: boolean;
   selectedIds: ReadonlySet<RowId>;
   count: number;
   isSelected: (row: TRow) => boolean;
   toggleRow: (row: TRow) => void;
-  /*
-   * Select-all covers the visible page only. In server mode the engine has
-   * never seen the other pages, so claiming to select them would be a lie.
-   */
   pageSelectionState: PageSelectionState;
   togglePage: () => void;
   clear: () => void;
-  /** Selected rows among those currently visible. */
   selectedRows: TRow[];
 }
 
+/*
+ * `search` is the raw input value, updated on every keystroke; `debouncedSearch` is the value the engine actually filters and emits on.
+ * `toggleSort` cycles asc, then desc, then off.
+ * `visibleRows` is the rows to render: a client-side slice, or whatever the server returned.
+ * `rangeStart` is the 1-based index of the first visible row, for "Showing 11 to 20 of 84".
+ */
 export interface TableStateApi<TRow> {
   page: number;
   pageSize: number;
@@ -160,21 +169,16 @@ export interface TableStateApi<TRow> {
   setPage: (page: number) => void;
   setPageSize: (size: number) => void;
 
-  /** The raw input value, updated on every keystroke. */
   search: string;
   setSearch: (value: string) => void;
-  /** The debounced value the engine actually filters and emits on. */
   debouncedSearch: string;
 
   sort: TableSort | null;
   setSort: (sort: TableSort | null) => void;
-  /** asc, then desc, then off. */
   toggleSort: (key: string) => void;
 
-  /** The rows to render: a client-side slice, or whatever the server returned. */
   visibleRows: TRow[];
   getRowId: (row: TRow) => RowId;
-  /** 1-based index of the first visible row, for "Showing 11 to 20 of 84". */
   rangeStart: number;
   rangeEnd: number;
 

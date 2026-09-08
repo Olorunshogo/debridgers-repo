@@ -16,10 +16,9 @@ const naira = (n: number): number => n * 100;
 // === The taper
 
 /*
- * The taper's whole point is that the marginal package gets cheaper, because
- * the cost is the trip and not the bag. A schedule where the two rates are
- * equal is flat, and one where tier two is higher is inverted. Both have
- * shipped before, so both are asserted against here rather than assumed.
+ * The taper's whole point is that the marginal package gets cheaper, because the cost is the trip and not the bag.
+ * A schedule where the two rates are equal is flat, and one where tier two is higher is inverted.
+ * Both have shipped before, so both are asserted against here rather than assumed.
  */
 describe("the delivery taper", () => {
   const lockedZoneRates: ReadonlyArray<readonly [string, number, number]> = [
@@ -58,8 +57,8 @@ describe("the delivery taper", () => {
   });
 
   /*
-   * The revert contract. Widening the band back to the locked range must be the
-   * only edit needed, so the mapping has to be the identity there.
+   * The revert contract.
+   * Widening the band back to the locked range must be the only edit needed, so the mapping has to be the identity there.
    */
   it("is the identity when the band is the locked range", () => {
     const identity = (kobo: number): number => {
@@ -88,9 +87,8 @@ describe("the delivery taper", () => {
 // === Minimum order
 
 /*
- * The rule is "25,000 naira OR 2 packages", so an order is refused only when it
- * fails both. The implementation reads as a bug against a careless reading of
- * that sentence, and has nearly been "fixed" into one, hence this test.
+ * The rule is "25,000 naira OR 2 packages", so an order is refused only when it fails both.
+ * The implementation reads as a bug against a careless reading of that sentence, and has nearly been "fixed" into one, hence this test.
  */
 describe("minimumOrderViolation", () => {
   it("accepts one expensive package", () => {

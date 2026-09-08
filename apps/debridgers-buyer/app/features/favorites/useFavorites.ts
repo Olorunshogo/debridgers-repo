@@ -3,16 +3,13 @@ import { apiFetch } from "@debridgers/api-client";
 import { useAuth, type ProductCardProduct } from "@debridgers/ui-web";
 
 /*
- * Favourites: explicit bookmarks, kept server-side because they are meant to
- * follow the account across devices.
+ * Favourites: explicit bookmarks, kept server-side because they are meant to follow the account across devices.
  *
- * Distinct from "buy again", which is derived from order history. A favourite
- * is a stated intention; a frequent purchase is observed behaviour. Conflating
- * them makes the heart unpredictable.
+ * Distinct from "buy again", which is derived from order history.
+ * A favourite is a stated intention; a frequent purchase is observed behaviour.
+ * Conflating them makes the heart unpredictable.
  *
- * Requires a session, so for anonymous visitors this reports `canFavorite:
- * false` and the shop hides the heart rather than showing a control that
- * always fails.
+ * Requires a session, so for anonymous visitors this reports `canFavorite: false` and the shop hides the heart rather than showing a control that always fails.
  */
 
 export interface UseFavoritesResult {

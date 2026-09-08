@@ -23,9 +23,8 @@ export function meta() {
 }
 
 /*
- * The token arrives in the URL here, so it is prefilled and not shown as a
- * field. Contrast with /forgot-password, where the user types the code they were
- * emailed.
+ * The token arrives in the URL here, so it is prefilled and not shown as a field.
+ * Contrast with /forgot-password, where the user types the code they were emailed.
  */
 const PASSWORD_FIELDS: readonly AuthFieldDescriptor[] = [
   {
@@ -48,9 +47,9 @@ export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") ?? "";
 
+  /* Stays on the page to show the confirmation, not bounce to /login. */
   const { form, submit, apiError, isSubmitting, done } = useResetPassword({
     token,
-    /* Stay on the page to show the confirmation rather than bouncing to /login. */
     onSuccess: () => undefined,
   });
 

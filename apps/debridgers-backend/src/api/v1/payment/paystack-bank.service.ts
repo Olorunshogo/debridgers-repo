@@ -91,9 +91,16 @@ export class PaystackBankService {
     const match = banks.find((b) => b.code === bankCode);
 
     if (!match) {
-      throw new BadRequestException(
-        "That bank is not on our list. Pick one from the dropdown.",
-      );
+      throw new BadRequestException({
+        message: "That bank is not on our list. Pick one from the dropdown.",
+        errors: [
+          {
+            field: "bank_code",
+            message:
+              "That bank is not on our list. Pick one from the dropdown.",
+          },
+        ],
+      });
     }
 
     return match.name;
@@ -122,9 +129,11 @@ export class PaystackBankService {
     };
 
     if (!data.status || !data.data) {
-      throw new BadRequestException(
-        `Could not verify account: ${data.message ?? "Unknown error"}`,
-      );
+      const message = `Could not verify account: ${data.message ?? "Unknown error"}`;
+      throw new BadRequestException({
+        message,
+        errors: [{ field: "account_number", message }],
+      });
     }
 
     return {

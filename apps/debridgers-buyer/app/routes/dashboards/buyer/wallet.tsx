@@ -25,6 +25,7 @@ import {
   TableDateCell,
   TableStatusBadge,
   TableEmptyState,
+  extractServerFieldErrors,
   type StatusTone,
   type TableColumn,
   type SelectOption,
@@ -43,9 +44,11 @@ export function meta() {
 
 type TransactionType = "deposit" | "withdraw" | "refund";
 
-/* The buyer's own Debridgers account number, issued by Paystack at signup. Not
-   supplied by the buyer - money in. Distinct from the payout account, which the
-   buyer does supply, and which is money out. */
+/*
+ * The buyer's own Debridgers account number, issued by Paystack at signup.
+ * Not supplied by the buyer - money in.
+ * Distinct from the payout account, which the buyer does supply, and which is money out.
+ */
 interface DedicatedAccount {
   account_number: string;
   bank_name: string;
@@ -55,21 +58,20 @@ interface DedicatedAccount {
 /*
  * A transfer that has been shown to the buyer but not yet seen to settle.
  *
- * Kept in sessionStorage, not component state: settlement is observed by
- * comparing the balance against what it was when the buyer was given the
- * account details, and that baseline has to survive the refresh they will
- * inevitably do while waiting for a bank transfer to land.
+ * Kept in sessionStorage, not component state: settlement is observed by comparing the balance against what it was when the buyer was given the account details, and that baseline has to survive the refresh they will inevitably do while waiting for a bank transfer to land.
  */
 const PENDING_TRANSFER_KEY = "debridgers_pending_transfer";
 
+/* `baselineKobo` is available_balance in kobo at the moment the details were shown. */
 interface PendingTransfer {
-  /* available_balance in kobo at the moment the details were shown. */
   baselineKobo: number;
   startedAt: number;
 }
 
-/* Stop watching eventually. A transfer can outlive any session, and at that
-   point the webhook plus the transactions list are the record, not a spinner. */
+/*
+ * Stop watching eventually.
+ * A transfer can outlive any session, and at that point the webhook plus the transactions list are the record, not a spinner.
+ */
 const TRANSFER_WATCH_TIMEOUT_MS = 10 * 60 * 1000;
 const TRANSFER_POLL_MS = 4000;
 /* Long enough to read "it landed" before the page changes under them. */
@@ -78,9 +80,8 @@ const SETTLED_REDIRECT_DELAY_MS = 3000;
 /*
  * The wallet deposit floor, in naira.
  *
- * TODO: this should come from `@debridgers/pricing` so the floor lives in one
- * place. Not adding that export in this batch - kept as a named const with the
- * value the backend already enforces.
+ * TODO: this should come from `@debridgers/pricing` so the floor lives in one place.
+ * Not adding that export in this batch - kept as a named const with the value the backend already enforces.
  */
 const MIN_DEPOSIT_NAIRA = 100;
 
@@ -107,8 +108,10 @@ function writePendingTransfer(baselineKobo: number): void {
       JSON.stringify({ baselineKobo, startedAt: Date.now() }),
     );
   } catch {
-    /* Without storage the watcher simply does not arm. The webhook still
-       credits the wallet; the buyer just has to refresh to see it. */
+    /*
+     * Without storage the watcher simply does not arm.
+     * The webhook still credits the wallet; the buyer just has to refresh to see it.
+     */
   }
 }
 
@@ -122,9 +125,8 @@ function clearPendingTransfer(): void {
 type TransactionStatus = "pending" | "completed" | "failed";
 
 /*
- * Raw kobo and an ISO timestamp, not display strings. The table sorts on these,
- * and a formatted date sorts alphabetically while a naira-rounded amount loses
- * the kobo the sort needs.
+ * Raw kobo and an ISO timestamp, not display strings.
+ * The table sorts on these, and a formatted date sorts alphabetically while a naira-rounded amount loses the kobo the sort needs.
  */
 interface Transaction {
   id: string;
@@ -150,8 +152,7 @@ const TRANSACTION_LABEL: Record<TransactionType, string> = {
   refund: "Refund",
 };
 
-/* Money coming in is signed and coloured differently from money going out,
-   which is the one thing a reader scans a transaction list for. */
+/* Money coming in is signed and coloured differently from money going out, which is the one thing a reader scans a transaction list for. */
 function isInbound(type: TransactionType): boolean {
   return type === "deposit" || type === "refund";
 }
@@ -216,6 +217,7 @@ const TRANSACTION_COLUMNS: readonly TableColumn<Transaction>[] = [
       />
     ),
   },
+  /* Signed, so a sort puts withdrawals and deposits on opposite ends rather than interleaving them by magnitude. */
   {
     id: "amount",
     header: "Amount",
@@ -223,8 +225,6 @@ const TRANSACTION_COLUMNS: readonly TableColumn<Transaction>[] = [
     align: "right",
     minWidth: "9rem",
     sortable: true,
-    /* Signed, so a sort puts withdrawals and deposits on opposite ends
-       rather than interleaving them by magnitude. */
     sortValue: (t) => (isInbound(t.type) ? t.amountKobo : -t.amountKobo),
     cell: (t) => (
       <span
@@ -309,8 +309,10 @@ function buildWalletData(api: ApiWalletResponse): WalletData {
   };
 }
 
-/* Shows the last 4 digits only, matching how the bank itself would mask it.
-   Commented out with the payout-account card it belongs to, below. */
+/*
+ * Shows the last 4 digits only, matching how the bank itself would mask it.
+ * Commented out with the payout-account card it belongs to, below.
+ */
 /* function maskAccountNumber(accountNumber: string): string {
   return `****${accountNumber.slice(-4)}`;
 } */
@@ -334,8 +336,10 @@ export default function BuyerWallet() {
   const [dvaLoading, setDvaLoading] = useState<boolean>(true);
   const [dvaRepairing, setDvaRepairing] = useState<boolean>(false);
   const [dvaRepairFailed, setDvaRepairFailed] = useState<boolean>(false);
-  /* One automatic repair attempt per mount. Creating a virtual account calls
-     Paystack, so it must not fire on every render or modal reopen. */
+  /*
+   * One automatic repair attempt per mount.
+   * Creating a virtual account calls Paystack, so it must not fire on every render or modal reopen.
+   */
   const dvaRepairTried = useRef<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
   /* Set only once the balance has actually been observed to rise. */
@@ -361,6 +365,9 @@ export default function BuyerWallet() {
   const [payoutAccountError, setPayoutAccountError] = useState<string | null>(
     null,
   );
+  const [payoutFieldErrors, setPayoutFieldErrors] = useState<
+    Record<string, string>
+  >({});
   const [confirmedAccountName, setConfirmedAccountName] = useState<
     string | null
   >(null);
@@ -393,9 +400,8 @@ export default function BuyerWallet() {
   /*
    * Recreates the virtual account when signup could not.
    *
-   * Registration deliberately swallows a Paystack outage rather than blocking
-   * the buyer, which leaves some accounts unmade. Without this the panel above
-   * would read "still being set up" forever, because nothing else ever retries.
+   * Registration deliberately swallows a Paystack outage rather than blocking the buyer, which leaves some accounts unmade.
+   * Without this the panel above would read "still being set up" forever, because nothing else ever retries.
    */
   const repairDva = () => {
     if (dvaRepairing) return;
@@ -425,16 +431,12 @@ export default function BuyerWallet() {
   /*
    * Watches for a bank transfer to land.
    *
-   * Settlement is decided by one thing only: the wallet balance, read back from
-   * our own ledger, being higher than it was when the buyer was shown the
-   * account details. Not a timer, not the fact that a poll happened to fire,
-   * not anything Paystack's widget reports - the webhook credits the wallet and
-   * this observes the result.
+   * Settlement is decided by one thing only: the wallet balance, read back from our own ledger, being higher than it was when the buyer was shown the account details.
+   * Not a timer, not the fact that a poll happened to fire, not anything Paystack's widget reports - the webhook credits the wallet and this observes the result.
    *
-   * That makes it idempotent by construction. The baseline lives in
-   * sessionStorage, so a refresh mid-transfer re-reads the balance, compares it
-   * to the same baseline, and reaches the same conclusion. Nothing about the
-   * outcome depends on this component having stayed mounted.
+   * That makes it idempotent by construction.
+   * The baseline lives in sessionStorage, so a refresh mid-transfer re-reads the balance, compares it to the same baseline, and reaches the same conclusion.
+   * Nothing about the outcome depends on this component having stayed mounted.
    */
   useEffect(() => {
     if (!watchingTransfer) return;
@@ -455,21 +457,21 @@ export default function BuyerWallet() {
           setData(buildWalletData(walletData));
 
           if (walletData.wallet.available_balance > pending.baselineKobo) {
-            /* Consume the baseline first: settlement is now recorded in the
-               balance itself, and must not be re-detected on a later mount. */
+            /* Consume the baseline first: settlement is now recorded in the balance itself, and must not be re-detected on a later mount. */
             clearPendingTransfer();
             setWatchingTransfer(false);
             setTransferSettled(true);
           }
         })
         .catch(() => {
-          /* A failed poll is not a failed transfer. Leave the baseline in place
-             and try again on the next tick. */
+          /*
+           * A failed poll is not a failed transfer.
+           * Leave the baseline in place and try again on the next tick.
+           */
         });
     }
 
-    /* Immediately, so a refresh after settlement resolves on first paint
-       rather than after a poll interval. */
+    /* Immediately, so a refresh after settlement resolves on first paint rather than after a poll interval. */
     check();
     const timer = window.setInterval(check, TRANSFER_POLL_MS);
 
@@ -479,8 +481,10 @@ export default function BuyerWallet() {
     };
   }, [watchingTransfer]);
 
-  /* The pause is a courtesy so the buyer can read the outcome. It runs after
-     settlement was observed, and is never what decides that it settled. */
+  /*
+   * The pause is a courtesy so the buyer can read the outcome.
+   * It runs after settlement was observed, and is never what decides that it settled.
+   */
   useEffect(() => {
     if (!transferSettled) return;
     const timer = window.setTimeout(() => {
@@ -515,10 +519,10 @@ export default function BuyerWallet() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showFundModal, dvaLoading, dva]);
 
-  /* Banks are a large, slow-to-fetch list, so they load only when the form
-     that needs them is actually opened. Left live, unlike its caller: the
-     payout modal it feeds is still in the file, so commenting it out would
-     strand the banks state that modal reads. */
+  /*
+   * Banks are a large, slow-to-fetch list, so they load only when the form that needs them is actually opened.
+   * Left live, unlike its caller: the payout modal it feeds is still in the file, so commenting it out would strand the banks state that modal reads.
+   */
   function loadBanksIfNeeded(): void {
     if (banksLoaded || banksLoading) return;
     setBanksLoading(true);
@@ -546,13 +550,16 @@ export default function BuyerWallet() {
   ) {
     e.preventDefault();
     setPayoutAccountError(null);
+    setPayoutFieldErrors({});
 
     if (!selectedBankCode) {
-      setPayoutAccountError("Select a bank.");
+      setPayoutFieldErrors({ bankCode: "Select a bank." });
       return;
     }
     if (!/^\d{10}$/.test(accountNumber)) {
-      setPayoutAccountError("Account number must be 10 digits.");
+      setPayoutFieldErrors({
+        accountNumber: "Account number must be 10 digits.",
+      });
       return;
     }
 
@@ -576,6 +583,7 @@ export default function BuyerWallet() {
           ? err.message
           : "Could not verify this account. Please check the details and try again.",
       );
+      setPayoutFieldErrors(extractServerFieldErrors(err));
     } finally {
       setSavingPayoutAccount(false);
     }
@@ -631,11 +639,9 @@ export default function BuyerWallet() {
   }
 
   /*
-   * Returning from Paystack. The reference in the URL only proves the buyer
-   * came back, not that they paid, so nothing is treated as successful until
-   * the backend has verified the charge with Paystack and credited the wallet.
-   * The Paystack webhook does the same job server-side; confirmTransaction is
-   * idempotent, so whichever arrives second is a no-op.
+   * Returning from Paystack.
+   * The reference in the URL only proves the buyer came back, not that they paid, so nothing is treated as successful until the backend has verified the charge with Paystack and credited the wallet.
+   * The Paystack webhook does the same job server-side; confirmTransaction is idempotent, so whichever arrives second is a no-op.
    */
   useEffect(() => {
     const ref = searchParams.get("trxref") ?? searchParams.get("reference");
@@ -721,8 +727,10 @@ export default function BuyerWallet() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Deposit outcome. Lives at page level because returning from Paystack
-          closes the modal, so a banner inside it would never be seen. */}
+      {/*
+        Deposit outcome.
+        Lives at page level because returning from Paystack closes the modal, so a banner inside it would never be seen.
+      */}
       {confirmingDeposit && (
         <div className="border-line text-body rounded-xl border bg-white px-4 py-3 text-sm">
           Confirming your deposit...
@@ -739,8 +747,7 @@ export default function BuyerWallet() {
         </div>
       )}
 
-      {/* Transfer outcome, also at page level: the buyer can close the modal
-          and wander off, and the watcher keeps running either way. */}
+      {/* Transfer outcome, also at page level: the buyer can close the modal and wander off, and the watcher keeps running either way. */}
       {watchingTransfer && (
         <div className="border-line text-body flex items-center gap-2 rounded-xl border bg-white px-4 py-3 text-sm">
           <Loader2 size={16} className="animate-spin" />
@@ -896,10 +903,11 @@ export default function BuyerWallet() {
                 Add Funds
               </h3>
 
-              {/* === Transfer to your own Debridgers account
-                  Issued at signup, so there is nothing for the buyer to set up.
-                  Shown before the card form because a transfer costs them
-                  nothing and settles into the same wallet. */}
+              {/* === Transfer to your own Debridgers account */}
+              {/*
+                Issued at signup, so there is nothing for the buyer to set up.
+                Shown before the card form because a transfer costs them nothing and settles into the same wallet.
+              */}
               {!depositSuccess && !transferSettled && (
                 <div className="border-line mb-4 flex flex-col gap-3 rounded-xl border p-4">
                   <div className="flex items-start justify-between gap-3">
@@ -1103,6 +1111,7 @@ export default function BuyerWallet() {
                     onSelectOption={(option) =>
                       setSelectedBankCode(option.value)
                     }
+                    error={payoutFieldErrors.bankCode}
                     required
                   />
                   <TextInputField
@@ -1110,6 +1119,7 @@ export default function BuyerWallet() {
                     inputMode="numeric"
                     maxLength={10}
                     value={accountNumber}
+                    error={payoutFieldErrors.accountNumber}
                     onChange={(e) =>
                       setAccountNumber(e.target.value.replace(/\D/g, ""))
                     }

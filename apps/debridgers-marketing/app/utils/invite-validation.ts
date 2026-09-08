@@ -7,7 +7,6 @@ export const verifyInviteSchema = z.object({
 
 export type VerifyInviteForm = z.infer<typeof verifyInviteSchema>;
 
-// Validates invite verification form and returns field-level errors
 export function validateInviteForm(
   formData: VerifyInviteForm,
 ): Partial<VerifyInviteForm> {

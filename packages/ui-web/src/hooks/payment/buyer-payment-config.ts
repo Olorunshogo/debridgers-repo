@@ -9,17 +9,14 @@ import type {
 } from "../../types/payment-config";
 
 /*
- * Buyer's RolePaymentConfig. This is the TABLE half of the payment config
- * seam - it lives here, not in a consuming app, because the buyer endpoints
- * and their raw field names are already known and stable. Agent's config
- * (different paths: /agent/wallet, /agent/banks, /agent/bank-details,
- * /agent/withdrawals, and its own field names) drops in beside this one as
- * AGENT_PAYMENT_CONFIG without any change to the hooks that consume it.
+ * Buyer's RolePaymentConfig.
+ * This is the TABLE half of the payment config seam - it lives here, not in a consuming app, because the buyer endpoints and their raw field names are already known and stable.
+ * Agent's config (different paths: /agent/wallet, /agent/banks, /agent/bank-details, /agent/withdrawals, and its own field names) drops in beside this one as AGENT_PAYMENT_CONFIG without any change to the hooks that consume it.
  */
 
 // === Raw response shapes
-// The backend responds in snake_case; these interfaces exist only to narrow
-// the adapter's `unknown` before mapping to the camelCase domain types.
+//
+// The backend responds in snake_case; these interfaces exist only to narrow the adapter's `unknown` before mapping to the camelCase domain types.
 
 interface RawWalletSummary {
   id: number;

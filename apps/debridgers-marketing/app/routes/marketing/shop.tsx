@@ -149,13 +149,8 @@ export default function PublicShop() {
 
   /*
    * Checkout lives in the dashboard, and only there.
-   *
-   * The marketing shop is browse-and-collect: it fills the cart, then hands
-   * over to buyer.debridgers.com, which owns both the session and the
-   * checkout page. Marketing itself never holds a real buyer session (no
-   * shared cookie domain), so this always goes through the cross-subdomain
-   * gate rather than branching on a local isAuthenticated that can never be
-   * true here - see CheckoutGateDialog for the staged-cart handoff.
+   * The marketing shop is browse-and-collect: it fills the cart, then hands over to buyer.debridgers.com, which owns both the session and the checkout page.
+   * Marketing itself never holds a real buyer session (no shared cookie domain), so this always goes through the cross-subdomain gate rather than branching on a local isAuthenticated that can never be true here - see CheckoutGateDialog for the staged-cart handoff.
    */
   function handleCheckout() {
     setCartOpen(false);
@@ -165,19 +160,18 @@ export default function PublicShop() {
   return (
     <>
       <div className="flex min-h-screen flex-col bg-white">
+        {/*
+          cartCount/onCartClick: the cart bar sits in the flow below the catalogue, which grows with the product count, so it is out of reach on any real page of products - the header is the one thing always on screen.
+          orderNowHref is overridden to "#top" since Order Now defaults to WhatsApp, which is wrong on the one page with a live cart in it.
+        */}
         <Header
           navLinks={marketingNavLinks}
           signUpHref="/signup"
           dashboardPath={dashboardPath}
           isAuthenticated={isAuthenticated}
           surface="solid"
-          /* The cart bar sits in the flow below the catalogue, which grows with
-             the product count, so it is out of reach on any real page of
-             products. The header is the one thing always on screen. */
           cartCount={cartProductCount}
           onCartClick={() => setCartOpen(true)}
-          /* Order Now defaults to WhatsApp, which is wrong on the one page with
-             a live cart in it. */
           orderNowHref="#top"
         />
 
@@ -311,8 +305,7 @@ export default function PublicShop() {
             </div>
             {/* end content */}
 
-            {/* Cart bar - in flow, directly under the catalogue rather than
-                pinned to the viewport, so it reads as part of the same panel */}
+            {/* Cart bar - in flow, directly under the catalogue rather than pinned to the viewport, so it reads as part of the same panel */}
             <AnimatePresence>
               {cartProductCount > 0 && (
                 <motion.div
@@ -362,10 +355,8 @@ export default function PublicShop() {
                     className="fixed inset-0 z-40 cursor-pointer bg-black/40"
                     onClick={() => setCartOpen(false)}
                   />
-                  {/* Fixed, not absolute: the wrapper is now taller than the
-                      viewport, so an absolute drawer scrolled away with the page.
-                      h-dvh over h-screen because on mobile 100vh exceeds what is
-                      actually visible, which pushes the checkout button off. */}
+                  {/* Fixed, not absolute: the wrapper is now taller than the viewport, so an absolute drawer scrolled away with the page. */}
+                  {/* h-dvh over h-screen because on mobile 100vh exceeds what is actually visible, which pushes the checkout button off. */}
                   <motion.div
                     key="panel"
                     initial={{ x: "100%" }}

@@ -26,6 +26,7 @@ export function meta() {
 
 type RequestStatus = "pending" | "fulfilled" | "cancelled";
 
+/* category_id is the leaf of the taxonomy tree, null for products not yet categorised. */
 interface Product {
   id: number;
   name: string;
@@ -33,7 +34,6 @@ interface Product {
   price_kobo: number;
   description: string | null;
   image_url: string | null;
-  /* Leaf of the taxonomy tree. Null for products not yet categorised. */
   category_id: number | null;
 }
 
@@ -104,10 +104,7 @@ export default function AgentRequestStockPage() {
   const [productMap, setProductMap] = useState<Record<number, Product>>({});
 
   useEffect(() => {
-    /*
-     * Products and taxonomy together: the picker needs both to place a product
-     * on a branch, and showing a half-loaded tree would hide categories.
-     */
+    /* Products and taxonomy together: the picker needs both to place a product on a branch, and showing a half-loaded tree would hide categories. */
     Promise.all([
       apiFetch<Product[]>("/agent/products"),
       apiFetch<TaxonomyNode[]>("/categories"),
@@ -227,7 +224,6 @@ export default function AgentRequestStockPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Success banner */}
       <AnimatePresence>
         {submitted && (
           <motion.div
@@ -257,7 +253,6 @@ export default function AgentRequestStockPage() {
       </AnimatePresence>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-        {/* Left: hierarchical picker */}
         <div className="border-line flex flex-col gap-5 rounded-2xl border bg-white p-6">
           <h3 className="font-syne text-heading text-lg font-semibold">
             Request new stock
@@ -289,7 +284,6 @@ export default function AgentRequestStockPage() {
           )}
         </div>
 
-        {/* Right: past requests */}
         <div className="border-line flex flex-col gap-3 rounded-2xl border bg-white p-5">
           <h3 className="font-syne text-heading font-semibold">
             Past Requests
@@ -373,7 +367,6 @@ export default function AgentRequestStockPage() {
         </div>
       </div>
 
-      {/* Sticky request cart at bottom */}
       <AnimatePresence>
         {requestItems.length > 0 && (
           <motion.div
@@ -384,7 +377,6 @@ export default function AgentRequestStockPage() {
           >
             <div className="px-4 py-4">
               <div className="flex flex-col gap-3">
-                {/* Item list */}
                 <div className="flex flex-wrap gap-2">
                   {requestItems.map((item) => (
                     <div
@@ -421,7 +413,6 @@ export default function AgentRequestStockPage() {
                   ))}
                 </div>
 
-                {/* Total + submit */}
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-body text-xs">

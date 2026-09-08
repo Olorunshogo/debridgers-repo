@@ -1,11 +1,8 @@
 import type { AuthImageSlide } from "@debridgers/ui-web";
 
 /*
- * Marketing has no single role of its own, so its login/signup pickers
- * rotate through every role it advertises (see public-roles.ts) - the same
- * images and copy each role app uses on its own auth pages
- * (debridgers-buyer/agent's features/auth/auth-image.ts), kept here rather
- * than imported cross-app since these are separate deployable apps.
+ * Marketing has no single role of its own, so its login/signup pickers rotate through every role it advertises (see public-roles.ts).
+ * Same images and copy each role app uses on its own auth pages (debridgers-buyer/agent's features/auth/auth-image.ts), kept here rather than imported cross-app since these are separate deployable apps.
  */
 export const AUTH_IMAGES: readonly AuthImageSlide[] = [
   {

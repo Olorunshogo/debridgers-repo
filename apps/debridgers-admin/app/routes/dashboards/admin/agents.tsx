@@ -75,8 +75,7 @@ const STATUS_BADGE: Record<AgentStatus, { tone: StatusTone; label: string }> = {
   rejected: { tone: "danger", label: "Rejected" },
 };
 
-/* Module scope: an inline array is a new identity every render, which
-   re-derives every row on every keystroke. See table-types.ts. */
+/* Module scope: an inline array is a new identity every render, which re-derives every row on every keystroke. See table-types.ts. */
 const COLUMNS: readonly TableColumn<AgentRow>[] = [
   {
     id: "name",
@@ -161,9 +160,7 @@ export default function AdminAgents() {
   }, [load]);
 
   /*
-   * One mutation path for all four transitions. They differ only in endpoint
-   * and resulting status, and four near-identical handlers is how the old file
-   * grew to 313 lines.
+   * One mutation path for all four transitions. They differ only in endpoint and resulting status, and four near-identical handlers is how the old file grew to 313 lines.
    */
   const mutateStatus = useCallback(
     async (

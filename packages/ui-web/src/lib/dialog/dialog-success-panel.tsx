@@ -5,11 +5,8 @@ import { successPanelVariants, springPop } from "../motion/variants";
 /*
  * Replaces a dialog's form when a submission succeeds.
  *
- * Use this instead of closing the dialog the instant a request resolves -
- * closing instantly reads as if nothing happened. The glue component should hold
- * the dialog open before calling closeDialog, using
- * DIALOG_SUCCESS_CLOSE_DELAY_MS so every dialog in the app waits the same
- * amount of time.
+ * Use this instead of closing the dialog the instant a request resolves - closing instantly reads as if nothing happened.
+ * The glue component should hold the dialog open before calling closeDialog, using DIALOG_SUCCESS_CLOSE_DELAY_MS so every dialog in the app waits the same amount of time.
  */
 
 export interface DialogSuccessPanelProps {

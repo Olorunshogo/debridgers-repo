@@ -9,10 +9,13 @@ import { z } from "zod";
  * the products table is the only one that can be trusted, since a
  * client-supplied price lets anyone pay whatever they like. The price, name and
  * unit fields are accepted so existing clients keep working, then ignored.
+ *
+ * `zone_id` is chosen at checkout and falls back to the buyer's registered zone.
+ * Each cart line accepts both `qty` and `quantity` (the cart-sync spelling) and normalises to `qty` below.
+ * `name`, `unit` and `price_kobo` are accepted for client compatibility, re-derived server-side, and never trusted.
  */
 export const createOrderSchema = z.object({
   delivery_address: z.string().min(10),
-  /* Chosen at checkout; falls back to the buyer's registered zone. */
   zone_id: z.number().int().positive().optional(),
   delivery_time: z.string(),
   notes: z.string().max(500).optional(),
@@ -21,10 +24,8 @@ export const createOrderSchema = z.object({
       z
         .object({
           product_id: z.number().int().positive(),
-          // `quantity` is the cart-sync spelling; both normalise to qty below.
           qty: z.number().int().min(1).max(999).optional(),
           quantity: z.number().int().min(1).max(999).optional(),
-          // Accepted for compatibility, re-derived server-side. Never trusted.
           name: z.string().optional(),
           unit: z.string().optional(),
           price_kobo: z.number().optional(),

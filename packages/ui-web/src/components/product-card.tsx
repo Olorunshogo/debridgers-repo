@@ -17,6 +17,12 @@ export interface ProductCardProduct {
   category?: string | null;
 }
 
+/*
+ * `isFavorite` and `onToggleFavorite` are optional together, so this component
+ * stays usable where favouriting does not apply. Omit `onToggleFavorite` and no
+ * heart renders at all - the card knows nothing about who is signed in, which
+ * is the consumer's business.
+ */
 interface ProductCardProps {
   product: ProductCardProduct;
   /*
@@ -32,11 +38,6 @@ interface ProductCardProps {
   onIncrement: () => void;
   /** At a quantity of 1 this removes the item from the cart. */
   onDecrement: () => void;
-  /*
-   * Favouriting is optional so this component stays usable where it does not
-   * apply. Omit onToggleFavorite and no heart renders at all - the card knows
-   * nothing about who is signed in, which is the consumer's business.
-   */
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
 }

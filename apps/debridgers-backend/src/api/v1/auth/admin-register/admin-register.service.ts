@@ -59,6 +59,7 @@ export class AdminRegisterService {
       // Create the new sub_admin user
       const [newUser] = await this.db
         .insert(users)
+        // is_email_verified is true because the invite flow already validated email ownership.
         .values({
           first_name: dto.first_name,
           last_name: dto.last_name,
@@ -67,7 +68,7 @@ export class AdminRegisterService {
           role: "admin",
           admin_tier: "sub_admin",
           admin_api_key: adminApiKey,
-          is_email_verified: true, // Invite validates email ownership
+          is_email_verified: true,
         })
         .returning();
 
@@ -87,7 +88,10 @@ export class AdminRegisterService {
       // Handle duplicate email (race condition)
       const dbError = error as { code?: string };
       if (dbError.code === "23505") {
-        throw new ConflictException("Email already registered");
+        throw new ConflictException({
+          message: "Email already registered",
+          errors: [{ field: "email", message: "Email already registered" }],
+        });
       }
       throw error;
     }

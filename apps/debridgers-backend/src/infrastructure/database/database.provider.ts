@@ -39,8 +39,10 @@ const connectionProvider = {
 
     const pool = new Pool({
       connectionString: url,
-      // Certificates are always verified when SSL is on; only a database that
-      // has explicitly been declared local is allowed to skip SSL entirely.
+      /*
+       * Certificates are always verified when SSL is on.
+       * Only a database that has explicitly been declared local is allowed to skip SSL entirely.
+       */
       ssl: shouldUseSsl(url, configService)
         ? {
             rejectUnauthorized: true,
@@ -51,13 +53,13 @@ const connectionProvider = {
         : false,
       allowExitOnIdle: true,
       connectionTimeoutMillis: 72000,
-      // Keep connections alive so the server (Neon in particular) does not
-      // silently close them while they sit idle in the pool.
+      // Keep connections alive so the server (Neon in particular) does not silently close them while they sit idle in the pool.
       keepAlive: true,
       keepAliveInitialDelayMillis: 10000,
-      // Give idle connections 30 s before the pool recycles them. This is long
-      // enough to survive brief quiet spells but short enough that the pool
-      // does not try to reuse a connection that Neon has already terminated.
+      /*
+       * Give idle connections 30s before the pool recycles them.
+       * This is long enough to survive brief quiet spells but short enough that the pool does not try to reuse a connection Neon has already terminated.
+       */
       idleTimeoutMillis: 30000,
       // Default pg max is 10, which is easily exhausted under concurrent load.
       max: 20,

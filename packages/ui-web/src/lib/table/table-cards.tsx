@@ -22,10 +22,8 @@ import type {
 /*
  * The card renderer.
  *
- * The same column definitions as the table, arranged by each column's
- * `priority`. This is what makes a six-column admin table usable on a phone
- * without a second, hand-maintained mobile markup tree - and it is also the
- * list layout for pages that want cards at every width.
+ * The same column definitions as the table, arranged by each column's `priority`.
+ * This is what makes a six-column admin table usable on a phone without a second, hand-maintained mobile markup tree - and it is also the list layout for pages that want cards at every width.
  */
 
 function isColumnPriority<TRow>(

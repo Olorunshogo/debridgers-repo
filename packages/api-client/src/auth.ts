@@ -8,16 +8,13 @@ import {
 import { BASE_BACKEND_URL } from "./api";
 
 /**
- * Store access and refresh tokens as browser cookies.
- * Note: HttpOnly cannot be set via JS - for true HttpOnly protection the server
- * must set these via Set-Cookie response headers. This client-side path is used
- * for SPA flows where SSR headers aren't available.
+ * Store access and refresh tokens as browser cookies: a 15 minute TTL for the access token, 7 days for the refresh token.
+ * Note: HttpOnly cannot be set via JS - for true HttpOnly protection the server must set these via Set-Cookie response headers.
+ * This client-side path is used for SPA flows where SSR headers aren't available.
  */
 export function storeTokens(accessToken: string, refreshToken: string): void {
   if (typeof document === "undefined") return;
-  // 15 min TTL for access token
   document.cookie = `${ACCESS_TOKEN_COOKIE}=${accessToken}; Path=/; Max-Age=900; SameSite=Strict`;
-  // 7 day TTL for refresh token
   document.cookie = `${REFRESH_TOKEN_COOKIE}=${refreshToken}; Path=/; Max-Age=604800; SameSite=Strict`;
 }
 
@@ -65,12 +62,9 @@ export async function logout(): Promise<void> {
 // === Single-flight refresh
 
 /*
- * The backend rotates the refresh token on every use and stores exactly one
- * bcrypt hash per user (auth.service.ts saveRefreshToken). Two concurrent
- * refreshes therefore invalidate each other: the first rotates the stored
- * hash, the second fails bcrypt.compare, gets a 401, and clears the session.
- * Pages that fire parallel requests (agent/overview.tsx does three in one
- * Promise.all) hit this the moment the access token expires.
+ * The backend rotates the refresh token on every use and stores exactly one bcrypt hash per user (auth.service.ts saveRefreshToken).
+ * Two concurrent refreshes therefore invalidate each other: the first rotates the stored hash, the second fails bcrypt.compare, gets a 401, and clears the session.
+ * Pages that fire parallel requests (agent/overview.tsx does three in one Promise.all) hit this the moment the access token expires.
  *
  * Every caller shares one in-flight request so only one rotation happens.
  * Each caller then retries its own original request with the new token.
@@ -92,10 +86,7 @@ export function refreshTokens(): Promise<AuthTokens> {
   return inFlightRefresh;
 }
 
-/**
- * Sends the stored refresh token to POST /api/v1/auth/refresh using
- * the `Authorization: Refresh <token>` header.
- */
+/** Sends the stored refresh token to POST /api/v1/auth/refresh using the `Authorization: Refresh <token>` header. */
 async function performRefresh(): Promise<AuthTokens> {
   const refreshToken = getRefreshToken();
   if (!refreshToken) {

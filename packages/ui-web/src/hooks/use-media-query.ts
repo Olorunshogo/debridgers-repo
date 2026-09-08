@@ -3,10 +3,8 @@ import { useCallback, useSyncExternalStore } from "react";
 /**
  * Subscribes to a media query.
  *
- * useSyncExternalStore rather than useEffect + useState, because it gives a
- * stable server snapshot: SSR renders `serverSnapshot` and the client swaps on
- * hydration without React complaining about a mismatch. Callers that switch
- * layouts on this should pass the layout the server should assume.
+ * useSyncExternalStore rather than useEffect + useState, because it gives a stable server snapshot: SSR renders `serverSnapshot` and the client swaps on hydration without React complaining about a mismatch.
+ * Callers that switch layouts on this should pass the layout the server should assume.
  */
 export function useMediaQuery(
   query: string,

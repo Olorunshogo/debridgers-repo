@@ -53,10 +53,10 @@ export class AgentWalletService {
     return { message: "Wallet retrieved", data: wallet };
   }
 
-  // Internal - called by other services to credit the wallet
+  // Internal - called by other services to credit the wallet. amount is in kobo.
   async credit(
     agentId: number,
-    amount: number, // in kobo
+    amount: number,
     opts: { pending?: boolean } = {},
     exec: WalletExecutor = this.db,
   ): Promise<void> {

@@ -35,9 +35,10 @@ export class PostHogService implements OnModuleDestroy {
       return;
     }
 
+    // Flush events every 10 seconds.
     this.posthog = new PostHog(key, {
       host: process.env.POSTHOG_HOST || "https://us.posthog.com",
-      flushInterval: 10000, // Flush events every 10 seconds
+      flushInterval: 10000,
     });
   }
 

@@ -34,7 +34,7 @@ describe("Buyer", () => {
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const loginData = (await loginRes.json()) as any;
-    // Token may be absent if email verification is required — skip token-dependent tests
+    // Token may be absent if email verification is required; skip token-dependent tests
     buyerToken = loginData.data?.accessToken ?? "";
 
     // Get admin token
@@ -129,13 +129,14 @@ describe("Buyer", () => {
   });
 
   it("POST /admin/outreach should reject missing required fields → 400", async () => {
+    // Body is missing full_name and phone.
     const res = await fetch(`${BASE}/admin/outreach`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${adminToken}`,
       },
-      body: JSON.stringify({ lga: "Kaduna North" }), // missing full_name and phone
+      body: JSON.stringify({ lga: "Kaduna North" }),
     });
     expect(res.status).toBe(400);
   });
@@ -160,7 +161,8 @@ describe("Buyer", () => {
   });
 
   it("GET /buyer/me should return profile when authenticated", async () => {
-    if (!buyerToken) return; // skip if email verification required
+    // Skip if email verification is required.
+    if (!buyerToken) return;
     const res = await fetch(`${BASE}/buyer/me`, {
       headers: { Authorization: `Bearer ${buyerToken}` },
     });

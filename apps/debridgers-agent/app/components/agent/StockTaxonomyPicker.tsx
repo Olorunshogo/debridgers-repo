@@ -9,14 +9,9 @@ import {
 
 /*
  * Category > Type > Variety drill-down for the agent stock request.
- *
- * Walks the taxonomy to whatever depth each branch actually has rather than
- * assuming three levels, because the catalogue is not uniform: Grains reaches
- * Grains > Rice > Ofada, while Oil stops at Oil > Palm Oil. A fixed three-step
- * wizard would need an invented middle step for every shallow branch.
- *
- * This replaces grouping products by their `description` text, which put the
- * blurb to work as a category and produced one bucket per product.
+ * Walks the taxonomy to whatever depth each branch actually has rather than assuming three levels, because the catalogue is not uniform: Grains reaches Grains > Rice > Ofada, while Oil stops at Oil > Palm Oil.
+ * A fixed three-step wizard would need an invented middle step for every shallow branch.
+ * This replaces grouping products by their `description` text, which put the blurb to work as a category and produced one bucket per product.
  */
 
 // === Types
@@ -40,10 +35,10 @@ export interface PickerProduct {
   category_id: number | null;
 }
 
+/* `addedProductIds` are product ids already in the request, shown with a tick. */
 export interface StockTaxonomyPickerProps {
   tree: TaxonomyNode[];
   products: PickerProduct[];
-  /** Product ids already in the request, shown with a tick. */
   addedProductIds: readonly number[];
   onAdd: (product: PickerProduct, quantity: number) => void;
 }
@@ -60,9 +55,8 @@ export function StockTaxonomyPicker({
   const [quantity, setQuantity] = useState<number>(1);
 
   /*
-   * Every descendant id of a node, so selecting "Rice" can show products
-   * attached at any depth beneath it. Without this, a product filed directly on
-   * a type rather than a variety would be invisible.
+   * Every descendant id of a node, so selecting "Rice" can show products attached at any depth beneath it.
+   * Without this, a product filed directly on a type rather than a variety would be invisible.
    */
   const descendantsById = useMemo<Map<number, number[]>>(() => {
     const map = new Map<number, number[]>();
@@ -128,10 +122,7 @@ export function StockTaxonomyPicker({
 
   // === Level rendering
 
-  /*
-   * The rows to render: roots, then the children of each selected node, stopping
-   * when a selected node has no children of its own.
-   */
+  /* The rows to render: roots, then the children of each selected node, stopping when a selected node has no children of its own. */
   const levels: { nodes: TaxonomyNode[]; selectedId: number | null }[] = [];
   let currentNodes: TaxonomyNode[] = tree.filter(hasAnythingBelow);
   for (let level = 0; currentNodes.length > 0; level += 1) {
@@ -150,12 +141,8 @@ export function StockTaxonomyPicker({
 
   /*
    * What to show under the current selection.
-   *
-   * When there is nothing further to drill into, show everything beneath the
-   * node. When there IS, show only products attached directly to it: a product
-   * filed on "Beans" rather than on a specific variety (because its name named
-   * two of them) would otherwise be unreachable, visible at no level of the
-   * drill-down while its siblings sat one level down.
+   * When there is nothing further to drill into, show everything beneath the node.
+   * When there IS, show only products attached directly to it: a product filed on "Beans" rather than on a specific variety (because its name named two of them) would otherwise be unreachable, visible at no level of the drill-down while its siblings sat one level down.
    */
   const drillableChildren = deepestSelected
     ? deepestSelected.children.filter(hasAnythingBelow)
@@ -176,10 +163,7 @@ export function StockTaxonomyPicker({
           <p className="text-heading text-xs font-semibold tracking-wider uppercase opacity-60">
             Step {i + 1} - {stepLabels[i] ?? "Narrow down"}
           </p>
-          {/*
-            Horizontal scroll rather than wrapping on mobile: a category row that
-            wraps to three lines pushes the actual products off-screen.
-          */}
+          {/* Horizontal scroll rather than wrapping on mobile: a category row that wraps to three lines pushes the actual products off-screen. */}
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
             {level.nodes.map((node) => {
               const isActive = level.selectedId === node.id;

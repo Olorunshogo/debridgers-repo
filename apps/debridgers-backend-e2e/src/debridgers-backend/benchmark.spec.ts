@@ -4,22 +4,21 @@ import { TERMS_CONSENT } from "../support/terms-consent";
 /**
  * Speed benchmark for the Debridgers backend.
  *
- * Measures per-endpoint latency (min / avg / p50 / p95 / p99 / max) and
- * throughput (req/s under concurrent load) across three tiers:
- *   1. Public  — no auth, no DB (health)
- *   2. Public  — no auth, DB-backed (products, config)
- *   3. Authenticated — buyer token
- *   4. Authenticated — admin token
+ * Measures per-endpoint latency (min / avg / p50 / p95 / p99 / max) and throughput (req/s under concurrent load) across three tiers:
+ * 1. Public, no auth, no DB (health)
+ * 2. Public, no auth, DB-backed (products, config)
+ * 3. Authenticated, buyer token
+ * 4. Authenticated, admin token
  *
  * Run against a live server:
- *   VITE_API_URL=http://localhost:4000/api/v1 pnpm nx run debridgers-backend-e2e:e2e
+ * VITE_API_URL=http://localhost:4000/api/v1 pnpm nx run debridgers-backend-e2e:e2e
  *
  * Env vars:
- *   VITE_API_URL      backend base URL (default: http://localhost:4000/api/v1)
- *   ADMIN_EMAIL       admin account email  (default: admin@debridgers.com)
- *   ADMIN_PASSWORD    admin account password (default: WGxMWQP8RfIMjNWVTpJo)
- *   BENCH_N           sequential samples per endpoint (default: 30)
- *   BENCH_CONCURRENCY concurrent workers for throughput test (default: 20)
+ * VITE_API_URL backend base URL (default: http://localhost:4000/api/v1)
+ * ADMIN_EMAIL admin account email (default: admin@debridgers.com)
+ * ADMIN_PASSWORD admin account password (default: WGxMWQP8RfIMjNWVTpJo)
+ * BENCH_N sequential samples per endpoint (default: 30)
+ * BENCH_CONCURRENCY concurrent workers for throughput test (default: 20)
  */
 
 const BASE = process.env.VITE_API_URL ?? "http://localhost:4000/api/v1";
@@ -180,7 +179,7 @@ describe("Tier 1 — Health (no DB)", () => {
 });
 
 // === Tier 2: Public DB-backed endpoints
-// Threshold: <700ms p95 sequential — Neon serverless adds ~250ms of network
+// Threshold: <700ms p95 sequential; Neon serverless adds ~250ms of network
 // latency per query. Concurrent Neon connections are pooled and will queue
 // under load; p99 threshold reflects that reality (~3s burst).
 
@@ -194,7 +193,7 @@ describe("Tier 2 — Public (DB-backed)", () => {
   it(`GET /products  concurrent (C=${CONCURRENCY})`, async () => {
     const { rps, stats } = await throughput(`${BASE}/products`);
     record("GET /products [concurrent]", stats, rps);
-    // Neon serverless queues connections — 20 concurrent requests will stack
+    // Neon serverless queues connections; 20 concurrent requests will stack
     expect(stats.p99).toBeLessThan(3000);
   });
 
@@ -240,7 +239,7 @@ describe("Tier 3 — Auth endpoints", () => {
 
 // === Tier 4: Authenticated buyer endpoints
 // Single-query endpoints: p95 < 700ms.
-// Dashboard runs multiple aggregate queries sequentially — each adds ~280ms,
+// Dashboard runs multiple aggregate queries sequentially; each adds ~280ms,
 // so we use a smaller N and a per-test timeout to avoid the global 30s limit.
 
 describe("Tier 4 — Authenticated (buyer)", () => {
@@ -285,7 +284,7 @@ describe("Tier 4 — Authenticated (buyer)", () => {
 });
 
 // === Tier 5: Authenticated admin endpoints
-// Dashboard is the heaviest endpoint — multiple aggregation queries.
+// Dashboard is the heaviest endpoint: multiple aggregation queries.
 
 describe("Tier 5 — Authenticated (admin)", () => {
   // Use N=10 and 90s timeout for the multi-query dashboard.
@@ -306,7 +305,7 @@ describe("Tier 5 — Authenticated (admin)", () => {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
     record("GET /admin/dashboard [concurrent]", stats, rps);
-    // 20 concurrent multi-query requests will saturate Neon — budget 6s p99
+    // 20 concurrent multi-query requests will saturate Neon; budget 6s p99
     expect(stats.p99).toBeLessThan(6000);
   });
 

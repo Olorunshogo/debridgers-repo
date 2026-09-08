@@ -32,8 +32,7 @@ type OrderStatus =
   | "delivered"
   | "cancelled";
 
-/* Mirrors the columns /admin/orders selects. The previous shape claimed a
-   `buyer_name` the endpoint has never returned. */
+/* Mirrors the columns /admin/orders selects. The previous shape claimed a `buyer_name` the endpoint has never returned. */
 interface Order {
   id: number;
   status: OrderStatus;
@@ -85,8 +84,7 @@ export default function BuyerAdminDeliveries() {
   const [total, setTotal] = useState<number>(0);
   const [onTheRoad, setOnTheRoad] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
-  /* A failed request used to render as "No orders found". It is not the same
-     thing, and an admin acting on that would be acting on a lie. */
+  /* A failed request used to render as "No orders found". It is not the same thing, and an admin acting on that would be acting on a lie. */
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actioningId, setActioningId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("");
@@ -94,9 +92,8 @@ export default function BuyerAdminDeliveries() {
   const [snapshot, setSnapshot] = useState<TableStateSnapshot | null>(null);
 
   /*
-   * Server mode: the endpoint paginates, sorts and searches, and the engine
-   * renders the page it is handed. Sort keys below are the endpoint's own
-   * allowlist, so an unknown one is a 400 rather than a silent full-table sort.
+   * Server mode: the endpoint paginates, sorts and searches, and the engine renders the page it is handed.
+   * Sort keys below are the endpoint's own allowlist, so an unknown one is a 400 rather than a silent full-table sort.
    */
   const loadOrders = useCallback(
     async (state: TableStateSnapshot, status: string): Promise<void> => {
@@ -128,8 +125,7 @@ export default function BuyerAdminDeliveries() {
     [],
   );
 
-  /* Counted server-side rather than from the visible page, which would only
-     ever count ten rows. */
+  /* Counted server-side rather than from the visible page, which would only ever count ten rows. */
   const loadOnTheRoadCount = useCallback(async (): Promise<void> => {
     try {
       const { meta } = await apiFetchPaged<Order>("/admin/orders", {
@@ -166,8 +162,7 @@ export default function BuyerAdminDeliveries() {
         if (snapshot) await loadOrders(snapshot, statusFilter);
         await loadOnTheRoadCount();
       } catch (error) {
-        /* Throws so the confirm dialog reports it and stays open, instead of
-           closing over a delivery that was never marked. */
+        /* Throws so the confirm dialog reports it and stays open, instead of closing over a delivery that was never marked. */
         throw new Error(
           error instanceof ApiError
             ? error.message

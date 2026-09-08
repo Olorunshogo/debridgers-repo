@@ -12,12 +12,8 @@ import { CommissionModule } from "./commission/commission.module";
 import { SystemSettingsModule } from "./settings/system-settings.module";
 import { PublicModule } from "./public/public.module";
 import { CatalogModule } from "./catalog/catalog.module";
+import { RatingsModule } from "./ratings/ratings.module";
 
-/**
- * V1 API Module
- * Bundles all v1 feature modules for the API
- * Routes are prefixed with /api/v1
- */
 @Module({
   imports: [
     AuthModule,
@@ -31,6 +27,7 @@ import { CatalogModule } from "./catalog/catalog.module";
     SystemSettingsModule,
     PublicModule,
     CatalogModule,
+    RatingsModule,
   ],
 })
 export class V1AppModule {}

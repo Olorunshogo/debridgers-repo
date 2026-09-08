@@ -154,10 +154,7 @@ export default function AgentWalletPage() {
   const [commissions, setCommissions] = useState<CommissionRow[]>([]);
   const [withdrawals, setWithdrawals] = useState<WithdrawalRow[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  /*
-   * Payouts are rejected server-side without bank details, so the button is
-   * disabled rather than letting the agent hit a guaranteed error.
-   */
+  /* Payouts are rejected server-side without bank details, so the button is disabled rather than letting the agent hit a guaranteed error. */
   const [bankReady, setBankReady] = useState<boolean>(false);
   const nextPayoutDate = getNextPayoutDate();
   const { triggerDialog } = useDialog();
@@ -199,7 +196,6 @@ export default function AgentWalletPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Hero */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -256,7 +252,6 @@ export default function AgentWalletPage() {
         </div>
       </motion.div>
 
-      {/* Commission history */}
       <div className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5">
         <h3 className="font-syne text-heading font-semibold">
           Commission History
@@ -320,7 +315,6 @@ export default function AgentWalletPage() {
         )}
       </div>
 
-      {/* Payout history */}
       <div className="border-gray-border flex flex-col gap-4 rounded-2xl border bg-white p-5">
         <h3 className="font-syne text-heading font-semibold">Payout History</h3>
 

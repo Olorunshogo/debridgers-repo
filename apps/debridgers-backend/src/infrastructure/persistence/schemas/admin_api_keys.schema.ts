@@ -23,16 +23,18 @@ import { users } from "./users.schema";
  * On delete cascades rather than restricts: a removed admin's keys must not
  * outlive them. This differs from product.category_id on purpose, because that
  * is a soft delete and this is not.
+ *
+ * `revoked_at` records when, not just whether: `is_active` alone cannot date a revocation.
  */
 export const admin_api_keys = pgTable("admin_api_keys", {
   id: serial("id").primaryKey().notNull(),
   admin_id: integer("admin_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  key_hash: text("key_hash").notNull(), // SHA256 hash of the API key
-  name: varchar("name", { length: 255 }).notNull(), // Friendly name: "Production Key"
+  key_hash: text("key_hash").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
   last_used_at: timestamp("last_used_at"),
   is_active: boolean("is_active").notNull().default(true),
-  revoked_at: timestamp("revoked_at"), // When, not just whether: is_active alone cannot date a revocation
+  revoked_at: timestamp("revoked_at"),
   ...timestamps,
 });

@@ -18,6 +18,7 @@ import { AgentWalletService } from "../wallet/agent-wallet.service";
 import { PricingAdminController } from "./pricing/pricing-admin.controller";
 import { ZoneAdminService } from "./pricing/zone-admin.service";
 import { DeliveryPromotionModule } from "./pricing/delivery-promotion.module";
+import { RatingsModule } from "../ratings/ratings.module";
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { DeliveryPromotionModule } from "./pricing/delivery-promotion.module";
     AuditModule,
     EmailModule,
     DeliveryPromotionModule,
+    RatingsModule,
   ],
   controllers: [
     AdminController,

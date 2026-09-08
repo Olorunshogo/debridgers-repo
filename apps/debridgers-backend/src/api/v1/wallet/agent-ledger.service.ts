@@ -138,7 +138,7 @@ export class AgentLedgerService {
 
   /*
    * Refund available balance (e.g., rejected withdrawal).
-   * Does NOT increase total_earned — reversing already-earned commission.
+   * Does NOT increase total_earned: it is reversing already-earned commission.
    */
   async refundAvailable(
     agentId: number,

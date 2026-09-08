@@ -1,9 +1,8 @@
 import { createPageMetaBuilder } from "@debridgers/ui-web";
 
 /*
- * The only app with public, indexable pages, so the only one carrying the
- * full OG/Twitter defaults. Change the og-image, site name, twitter handle or
- * locale here once and every route calling buildPageMeta picks it up.
+ * The only app with public, indexable pages, so the only one carrying the full OG/Twitter defaults.
+ * Change the og-image, site name, twitter handle or locale here once and every route calling buildPageMeta picks it up.
  */
 export const buildPageMeta = createPageMetaBuilder({
   siteName: "Debridgers",

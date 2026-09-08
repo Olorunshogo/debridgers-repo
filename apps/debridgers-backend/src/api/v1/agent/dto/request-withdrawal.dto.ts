@@ -7,9 +7,9 @@ import { z } from "zod";
  * read from the profile when it is paid: an agent who edits their account
  * details afterwards must not silently redirect a payout that is already
  * in the approval queue.
+ * amount_kobo is kobo, so no float ever reaches the ledger.
  */
 export const requestWithdrawalSchema = z.object({
-  /* Kobo, so no float ever reaches the ledger. */
   amount_kobo: z
     .number()
     .int("Amount must be a whole number of kobo")

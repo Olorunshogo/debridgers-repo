@@ -159,8 +159,11 @@ const whatWeDeliverCategories: WhatWeDeliverCategory[] = [
   },
 ];
 
-// === DeliverCard: images static on load, cycle right-to-left only on hover
-// === Subtitle fades out on index change, fades in 1.6s later (600ms transition + 1s hold)
+// === DeliverCard
+/*
+ * Images are static on load, cycling right-to-left only on hover.
+ * The subtitle fades out on index change, then fades in 1.6s later (600ms transition + 1s hold).
+ */
 function DeliverCard({
   whatWeDeliverCategory,
 }: {
@@ -239,7 +242,7 @@ function DeliverCard({
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-linear-to-t from-black/60 via-[#666666]/30 to-transparent" />
 
-      {/* Label — title always visible, subtitle fades on index change */}
+      {/* Label - title always visible, subtitle fades on index change */}
       <div className="font-open-sans absolute right-0 bottom-4 left-0 flex flex-col gap-1 p-4 text-white">
         <p className="text-lg font-semibold">{whatWeDeliverCategory.title}</p>
         <motion.p
@@ -271,18 +274,20 @@ function DeliverCard({
   );
 }
 
-// === WhatWeDeliver: infinite seamless loop, 4 cards visible on lg
+// === WhatWeDeliver
+/* Infinite seamless loop, 4 cards visible on lg. */
 function WhatWeDeliver() {
   const [offset, setOffset] = useState<number>(0);
   const [isAnimating, setIsAnimating] = useState<boolean>(true);
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const autoScrollRef = useRef<NodeJS.Timeout | null>(null);
 
-  const cardWidth = 260; // w-65
-  const gap = 24; // gap-6 = 24px
+  // cardWidth matches w-65, gap matches gap-6 (24px).
+  const cardWidth = 260;
+  const gap = 24;
   const step = cardWidth + gap;
   const totalCards = whatWeDeliverCategories.length;
-  // === Render doubled list - when offset hits totalCards, silently snap back to 0
+  /* Doubled so scrolling past the real list can snap back to index 0 unnoticed once offset reaches totalCards. */
   const doubled = [...whatWeDeliverCategories, ...whatWeDeliverCategories];
 
   useEffect(() => {
@@ -294,15 +299,18 @@ function WhatWeDeliver() {
       setOffset((prev) => {
         const next = prev + 1;
         if (next >= totalCards) {
-          // Schedule a silent snap back to 0 after the spring animation completes
+          /*
+           * Schedule a silent snap back to 0 after the spring animation completes.
+           * The 700ms delay matches the spring animation duration.
+           * Animation is re-enabled on the next tick after the snap.
+           */
           setTimeout(() => {
             setIsAnimating(false);
             setOffset(0);
-            // Re-enable animation on next tick
             requestAnimationFrame(() => {
               requestAnimationFrame(() => setIsAnimating(true));
             });
-          }, 700); // matches spring duration
+          }, 700);
         }
         return next;
       });
@@ -366,7 +374,8 @@ function WhatWeDeliver() {
   );
 }
 
-// === BlurDot: reusable yellow radial-gradient blur dot
+// === BlurDot
+/* Reusable yellow radial-gradient blur dot. */
 function BlurDot({ className = "" }: { className?: string }) {
   return (
     <div

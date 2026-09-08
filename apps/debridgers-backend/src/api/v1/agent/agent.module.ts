@@ -17,7 +17,7 @@ import { CloudinaryService } from "../../../infrastructure/cloudinary/cloudinary
   imports: [
     DatabaseModule,
     AuthModule,
-    /* For SafeHavenService: bank list and account name resolution. */
+    // PaymentModule is needed for SafeHavenService: bank list and account name resolution.
     PaymentModule,
     WalletModule,
     MulterModule.register({ dest: "/tmp/uploads" }),

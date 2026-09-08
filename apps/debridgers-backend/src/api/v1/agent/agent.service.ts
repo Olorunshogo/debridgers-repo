@@ -96,7 +96,10 @@ export class AgentService {
       .limit(1);
 
     if (existing.length > 0) {
-      throw new ConflictException("Email already registered");
+      throw new ConflictException({
+        message: "Email already registered",
+        errors: [{ field: "email", message: "Email already registered" }],
+      });
     }
 
     // Auto-assign zone from the supplied LGA/area
@@ -136,8 +139,8 @@ export class AgentService {
           role: "agent",
           zone_id: zoneId,
           /*
-           * Stamped server-side. The request says which document was accepted;
-           * when is the server's to record, or it is worth nothing as evidence.
+           * Stamped server-side. The request says which document was accepted.
+           * When is the server's to record, or it is worth nothing as evidence.
            */
           terms_accepted_at: new Date(),
           terms_document: dto.terms_document,
@@ -187,6 +190,7 @@ export class AgentService {
   }
 
   async getProfile(user: JwtPayload) {
+    // referral_buyer_code/referral_agent_code: Swagger advertised these but the select never included them, so an approved agent had no way to read the codes they're supposed to share.
     const [agent] = await this.db
       .select({
         id: schema.users.id,
@@ -202,11 +206,6 @@ export class AgentService {
         address: schema.agent_profiles.address,
         state: schema.agent_profiles.state,
         lga: schema.agent_profiles.lga,
-        /*
-         * The Swagger example advertised these but the select never included
-         * them, so an approved agent had no way to read the codes they are
-         * supposed to share. Referral cannot function without this.
-         */
         referral_buyer_code: schema.agent_profiles.referral_buyer_code,
         referral_agent_code: schema.agent_profiles.referral_agent_code,
       })
@@ -292,7 +291,15 @@ export class AgentService {
 
     const valid = await bcrypt.compare(dto.current_password, agent.password);
     if (!valid)
-      throw new UnauthorizedException("Current password is incorrect");
+      throw new UnauthorizedException({
+        message: "Current password is incorrect",
+        errors: [
+          {
+            field: "current_password",
+            message: "Current password is incorrect",
+          },
+        ],
+      });
 
     const hashed = await bcrypt.hash(dto.new_password, 12);
     await this.db

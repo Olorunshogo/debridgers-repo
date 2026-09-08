@@ -6,15 +6,13 @@ import {
   type UpdatePasswordValues,
 } from "../../schemas/auth/update-password";
 import { useAuthAdapter } from "./auth-adapter";
+import { applyServerFieldErrors } from "../../lib/server-errors";
 
 /*
- * For a logged-in user who knows their current password. Contrast with
- * use-reset-password.ts, which is for a user who does not.
+ * For a logged-in user who knows their current password.
+ * Contrast with use-reset-password.ts, which is for a user who does not.
  *
- * One hook, reused by every role's settings screen (and by an app-local
- * "you're still on a temporary password" nag, where one exists) - the fields
- * and rules are identical regardless of who is asking, so there is no
- * role-specific variant of this hook.
+ * One hook, reused by every role's settings screen (and by an app-local "you're still on a temporary password" nag, where one exists) - the fields and rules are identical regardless of who is asking, so there is no role-specific variant of this hook.
  */
 
 export interface UseUpdatePasswordOptions {
@@ -56,11 +54,13 @@ export function useUpdatePassword(
       setDone(true);
       onSuccess?.();
     } catch (error) {
-      setApiError(
+      const message =
         error instanceof Error
           ? error.message
-          : "Could not update your password. Please try again.",
-      );
+          : "Could not update your password. Please try again.";
+
+      setApiError(message);
+      applyServerFieldErrors(error, form);
     }
   });
 

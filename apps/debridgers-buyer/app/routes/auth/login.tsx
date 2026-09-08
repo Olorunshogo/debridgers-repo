@@ -58,8 +58,7 @@ export default function LoginPage({ variant = "public" }: LoginPageProps) {
     void getStagedCart(token).then((staged) => {
       if (cancelled) return;
       if (staged.length > 0) {
-        /* Union with any cart already on this device, higher quantity wins per
-           line, matching the server-side merge the buyer hits after login. */
+        /* Union with any cart already on this device, higher quantity wins per line, matching the server-side merge the buyer hits after login. */
         const merged: CartItem[] = items.map((existing) => ({ ...existing }));
         for (const line of staged) {
           const match = merged.find((existing) => existing.id === line.id);
@@ -87,8 +86,7 @@ export default function LoginPage({ variant = "public" }: LoginPageProps) {
     return () => {
       cancelled = true;
     };
-    /* Runs once for the token present on mount; items/setters are stable enough
-       and re-running on cart edits would fight the single-use token. */
+    /* Runs once for the token present on mount; items/setters are stable enough and re-running on cart edits would fight the single-use token. */
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

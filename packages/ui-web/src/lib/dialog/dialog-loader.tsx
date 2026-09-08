@@ -1,10 +1,10 @@
 import { Loader2 } from "lucide-react";
 
+/*
+ * `inline` renders inside a panel (for Suspense while a lazy dialog loads).
+ * Otherwise it covers the viewport, blocking interaction during a submission.
+ */
 export interface DialogLoaderOverlayProps {
-  /*
-   * Inline renders inside a panel (for Suspense while a lazy dialog loads).
-   * Otherwise it covers the viewport, blocking interaction during a submission.
-   */
   inline?: boolean;
   label?: string;
 }

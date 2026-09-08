@@ -94,14 +94,13 @@ export default function AgentSettingsPage() {
   const avatarFileRef = useRef<HTMLInputElement>(null);
 
   // === Profile state
+  /* Kaduna is the launch state, so it is the sensible default until the agent picks otherwise. */
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
     address: "",
-    /* Kaduna is the launch state, so it is the sensible default until the
-       agent picks otherwise. */
     state: defaultStateName,
     lga: "",
   });
@@ -158,8 +157,8 @@ export default function AgentSettingsPage() {
   }, []);
 
   /*
-   * Bank list for the picker. Failing to load leaves the select empty rather
-   * than blocking the rest of the KYC form, which does not depend on it.
+   * Bank list for the picker.
+   * Failing to load leaves the select empty rather than blocking the rest of the KYC form, which does not depend on it.
    */
   const loadBanks = useCallback(async () => {
     try {
@@ -242,6 +241,7 @@ export default function AgentSettingsPage() {
     setProfileError(null);
     setSavingProfile(true);
     try {
+      /* Setting the LGA re-resolves the agent's delivery zone server-side. */
       await apiFetch("/agent/profile", {
         method: "PATCH",
         body: JSON.stringify({
@@ -250,7 +250,6 @@ export default function AgentSettingsPage() {
           phone: form.phone.trim() || undefined,
           address: form.address.trim() || undefined,
           state: form.state.trim() || undefined,
-          /* Setting the LGA re-resolves the agent's delivery zone server-side. */
           lga: form.lga.trim() || undefined,
         }),
       });
@@ -279,11 +278,7 @@ export default function AgentSettingsPage() {
       setKycError("Please upload a selfie holding your ID.");
       return;
     }
-    /*
-     * Guarded here as well as server-side: without a bank code the profile saves
-     * but every later payout request is rejected, which is the failure this
-     * whole field was added to remove.
-     */
+    /* Guarded here as well as server-side: without a bank code the profile saves but every later payout request is rejected, which is the failure this whole field was added to remove. */
     if (!kycForm.bank_code) {
       setKycError("Please select your bank.");
       return;
@@ -343,7 +338,6 @@ export default function AgentSettingsPage() {
         </div>
       </div>
 
-      {/* Avatar */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -392,7 +386,6 @@ export default function AgentSettingsPage() {
         </div>
       </motion.div>
 
-      {/* Profile */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -481,6 +474,7 @@ export default function AgentSettingsPage() {
                 }
                 placeholder="Your business/delivery address"
               />
+              {/* LGAs are state-specific, so a stale one must not survive a state change. */}
               <SelectInputField
                 label="State"
                 value={form.state}
@@ -489,8 +483,6 @@ export default function AgentSettingsPage() {
                   setForm((p) => ({
                     ...p,
                     state: e.target.value,
-                    /* LGAs are state-specific, so a stale one must not survive
-                       a state change. */
                     lga: "",
                   }))
                 }
@@ -515,7 +507,6 @@ export default function AgentSettingsPage() {
         </AnimatePresence>
       </motion.div>
 
-      {/* KYC Verification */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -596,7 +587,6 @@ export default function AgentSettingsPage() {
                   </p>
                 )}
 
-                {/* ID Type */}
                 <SelectInputField
                   label="ID Type"
                   value={kycForm.id_type}
@@ -609,11 +599,7 @@ export default function AgentSettingsPage() {
                   }
                 />
 
-                {/*
-                  Bank is picked from the payable-banks list rather than typed:
-                  a payout transfer needs the numeric bank code, and free text
-                  only ever produced a name, which left agents unpayable.
-                */}
+                {/* Bank is picked from the payable-banks list rather than typed: a payout transfer needs the numeric bank code, and free text only ever produced a name, which left agents unpayable. */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <SelectInputField
                     label="Bank"
@@ -663,7 +649,6 @@ export default function AgentSettingsPage() {
                   required
                 />
 
-                {/* File uploads */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="flex flex-col gap-1">
                     <label className="text-heading text-sm font-medium">
@@ -720,7 +705,6 @@ export default function AgentSettingsPage() {
         )}
       </motion.div>
 
-      {/* Password */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}

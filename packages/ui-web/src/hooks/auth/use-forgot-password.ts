@@ -6,13 +6,13 @@ import {
   type ForgotPasswordValues,
 } from "../../schemas/auth/password-reset";
 import { useAuthAdapter } from "./auth-adapter";
+import { applyServerFieldErrors } from "../../lib/server-errors";
 
 /*
  * Step one of password reset: request the emailed reset token.
  *
- * `sent` is the success state the UI switches on. Deliberately does not reveal
- * whether the email existed - the backend's response is the same either way,
- * and surfacing a difference here would leak account existence.
+ * `sent` is the success state the UI switches on.
+ * Deliberately does not reveal whether the email existed - the backend's response is the same either way, and surfacing a difference here would leak account existence.
  */
 
 export interface UseForgotPasswordResult {
@@ -62,6 +62,7 @@ export function useForgotPassword(): UseForgotPasswordResult {
           ? error.message
           : "Could not send the reset link. Please try again.",
       );
+      applyServerFieldErrors(error, form);
     }
   });
 

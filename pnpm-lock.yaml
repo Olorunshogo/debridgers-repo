@@ -296,6 +296,9 @@ importers:
       '@debridgers/pricing':
         specifier: workspace:*
         version: link:../../packages/pricing
+      '@debridgers/ratings':
+        specifier: workspace:*
+        version: link:../../packages/ratings
       '@keyv/redis':
         specifier: ^5.1.6
         version: 5.1.6(keyv@5.6.0)
@@ -689,6 +692,18 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@22.19.17)(jsdom@29.0.1)(less@4.5.1)(lightningcss@1.32.0)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.46.1)
 
+  packages/ratings:
+    devDependencies:
+      tsup:
+        specifier: ^8.0.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.8)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@22.19.17)(jsdom@29.0.1)(less@4.5.1)(lightningcss@1.32.0)(sass-embedded@1.100.0)(sass@1.100.0)(terser@5.46.1)
+
   packages/ui-app:
     dependencies:
       react:
@@ -710,6 +725,9 @@ importers:
       '@debridgers/api-client':
         specifier: workspace:*
         version: link:../api-client
+      '@debridgers/ratings':
+        specifier: workspace:*
+        version: link:../ratings
       '@iconify/react':
         specifier: ^6.0.2
         version: 6.0.2(react@18.3.1)

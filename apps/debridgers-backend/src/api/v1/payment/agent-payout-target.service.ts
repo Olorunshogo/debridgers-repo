@@ -52,9 +52,8 @@ export class AgentPayoutTargetService {
   ) {}
 
   /**
-   * The agent's transfer recipient, creating it from their stored bank details
-   * on first use. Throws AgentPayoutTargetError so callers can tell "this agent
-   * has not given us bank details yet" apart from "Paystack refused".
+   * The agent's transfer recipient, creating it from their stored bank details on first use.
+   * Throws AgentPayoutTargetError so callers can tell "this agent has not given us bank details yet" apart from "Paystack refused".
    */
   async resolve(agentUserId: number): Promise<AgentPayoutTarget> {
     const [profile] = await this.db

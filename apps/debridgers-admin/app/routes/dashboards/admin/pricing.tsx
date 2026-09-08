@@ -47,11 +47,11 @@ export function meta() {
 
 // === Types
 
+/* `delivery_fee` is the base fee covering the first two packages, in kobo. */
 interface Zone {
   id: number;
   name: string;
   description: string | null;
-  /** Base fee covering the first two packages, in kobo. */
   delivery_fee: number;
   areas: string[];
   tier_one_per_package_kobo: number;
@@ -83,9 +83,7 @@ interface PromotionCost {
 }
 
 /*
- * Every figure here is served by the API from `@debridgers/pricing`. None of
- * them is restated in this file, which is the whole point of the panel: it is a
- * window onto the code-owned rules, not a second home for them.
+ * Every figure here is served by the API from `@debridgers/pricing`. None of them is restated in this file, which is the whole point of the panel: it is a window onto the code-owned rules, not a second home for them.
  */
 interface FeeRules {
   service_fee_rate: number;
@@ -103,9 +101,7 @@ interface FeeRules {
 }
 
 /*
- * Money is typed in naira and held as strings, because that is what an input
- * yields and what an operator thinks in. The conversion to kobo happens once,
- * on submit.
+ * Money is typed in naira and held as strings, because that is what an input yields and what an operator thinks in. The conversion to kobo happens once, on submit.
  */
 interface ZoneForm {
   name: string;
@@ -186,9 +182,8 @@ function startOfLocalDay(date: string): Date {
 }
 
 /*
- * The campaign window is half open on the server: live from `starts_at` until
- * `ends_at` exclusive. An operator picking an end date means that day is
- * included, so the boundary sent is the following midnight.
+ * The campaign window is half open on the server: live from `starts_at` until `ends_at` exclusive.
+ * An operator picking an end date means that day is included, so the boundary sent is the following midnight.
  */
 function endBoundary(date: string): Date {
   const next = startOfLocalDay(date);
@@ -266,8 +261,7 @@ export default function AdminPricingPage() {
 
   const tierOneKobo: number = nairaToKobo(zoneForm.tier_one);
   const tierTwoKobo: number = nairaToKobo(zoneForm.tier_two);
-  /* Only a pair of real numbers can be judged. A half-typed form is incomplete,
-     not inverted, and must not be scolded for it. */
+  /* Only a pair of real numbers can be judged. A half-typed form is incomplete, not inverted, and must not be scolded for it. */
   const taperInverted: boolean =
     !Number.isNaN(tierOneKobo) &&
     !Number.isNaN(tierTwoKobo) &&
@@ -378,8 +372,7 @@ export default function AdminPricingPage() {
   }
 
   /*
-   * Throws rather than swallowing: the confirm dialog runs this, and it is the
-   * dialog that shows the failure and stays open.
+   * Throws rather than swallowing: the confirm dialog runs this, and it is the dialog that shows the failure and stays open.
    */
   async function handleDeactivateZone(zone: Zone): Promise<void> {
     setDeactivatingId(zone.id);
@@ -457,8 +450,7 @@ export default function AdminPricingPage() {
   }
 
   /*
-   * Held in a ref so row actions can call the current implementation without
-   * the memo below having to list a function that is re-declared each render.
+   * Held in a ref so row actions can call the current implementation without the memo below having to list a function that is re-declared each render.
    */
   const endPromotionRef = useRef<(promotion: Promotion) => Promise<void>>(
     async () => {},
@@ -716,6 +708,10 @@ export default function AdminPricingPage() {
 
   const promotionActions = useMemo<RowAction<Promotion>[]>(
     () => [
+      /*
+       * `onSelect` reads `endPromotionRef` through a ref, not captured directly.
+       * The memo is keyed on endingId so the busy spinner updates, and re-running it on every render to chase a freshly declared function would defeat the memo entirely.
+       */
       {
         id: "end",
         label: "End now",
@@ -724,11 +720,6 @@ export default function AdminPricingPage() {
         tone: "danger",
         hidden: (promotion) => !promotion.is_active,
         isBusy: (promotion) => endingId === promotion.id,
-        /*
-         * Read through a ref, not captured. The memo is keyed on endingId so
-         * the busy spinner updates, and re-running it on every render to chase
-         * a freshly declared function would defeat the memo entirely.
-         */
         onSelect: (promotion) => endPromotionRef.current(promotion),
         confirm: {
           dialogKey: "CONFIRM",
@@ -999,8 +990,7 @@ export default function AdminPricingPage() {
                   icon={Check}
                   loading={savingZone}
                   loadingText="Saving..."
-                  /* The server refuses an inverted taper too, but a disabled
-                     button with a reason beats relaying a 400. */
+                  /* The server refuses an inverted taper too, but a disabled button with a reason beats relaying a 400. */
                   disabled={taperInverted}
                   onClick={() => void handleSaveZone()}
                 >

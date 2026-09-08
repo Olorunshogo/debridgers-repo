@@ -29,7 +29,6 @@ export const meta: MetaFunction = () => [
     content:
       "Fresh foodstuff delivery Kaduna, market price food delivery Nigeria, rice beans delivery Kaduna, Debridgers, affordable food delivery, Kaduna food delivery, fresh produce Nigeria",
   },
-  // === Author and Robots
   { name: "author", content: "Debridgers Team" },
   { name: "robots", content: "index, follow" },
 ];
@@ -63,22 +62,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    // reducedMotion="user" makes every framer-motion animation honour the OS
-    // "reduce motion" setting without each call site checking it.
+    /* reducedMotion="user" makes every framer-motion animation honour the OS "reduce motion" setting without each call site checking it. */
     <MotionConfig reducedMotion="user">
       <AuthProvider>
-        {/* Outermost of the data providers: the commission rate is read by the
-          public agents page as well as the dashboards, signed in or not. */}
+        {/* Outermost of the data providers: the commission rate is read by the public agents page as well as the dashboards, signed in or not. */}
         <PlatformConfigProvider>
-          {/* Inside the router and AuthProvider - the adapter needs both */}
+          {/* Inside the router and AuthProvider - the adapter needs both. */}
           <AppAuthAdapterProvider>
-            {/* Supplies transport to the shared payment hooks, as the auth
-              adapter does for the auth hooks. Inside AppAuthAdapterProvider
-              so its requests carry a session. */}
+            {/* Supplies transport to the shared payment hooks, as the auth adapter does for the auth hooks.
+              Inside AppAuthAdapterProvider so its requests carry a session. */}
             <AppPaymentAdapterProvider>
-              {/* Innermost, because the engine renders dialogs at its own
-                position in the tree rather than at the caller's. Any provider
-                above it here is a context its dialogs could not reach. */}
+              {/* Innermost, because the engine renders dialogs at its own position in the tree rather than at the caller's.
+                Any provider above it here is a context its dialogs could not reach. */}
               <DialogProvider registry={DIALOG_REGISTRY}>
                 <Outlet />
               </DialogProvider>

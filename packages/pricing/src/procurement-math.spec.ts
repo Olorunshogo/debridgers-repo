@@ -9,9 +9,8 @@ import {
 import { impliedLandedCostKobo, LOADING_50KG_KOBO } from "./assumptions";
 
 /*
- * The rules the API currently serves, in naira. Stated here rather than
- * imported so a change to the live fee structure fails these tests loudly
- * instead of silently re-baselining them.
+ * The rules the API currently serves, in naira.
+ * Stated here rather than imported so a change to the live fee structure fails these tests loudly instead of silently re-baselining them.
  */
 const RULES: PricingRules = {
   serviceFeeRate: 0.03,
@@ -73,10 +72,9 @@ describe("procurement math, ₦98,000 bag", () => {
 
   it("inverts: farmer price to required sell price", () => {
     /*
-     * ₦99,677 rather than the ₦99,676 that continuous algebra gives. Paystack
-     * rounds to the naira, so the margin is a step function near the solution
-     * and the bisection returns the first price that actually clears the
-     * target. A "sell at or above" figure must round that way.
+     * ₦99,677 rather than the ₦99,676 that continuous algebra gives.
+     * Paystack rounds to the naira, so the margin is a step function near the solution and the bisection returns the first price that actually clears the target.
+     * A "sell at or above" figure must round that way.
      */
     const p = sellPriceForMargin({ ...base, buyPrice: 90000 }, 0.1, RULES);
     expect(Math.round(p)).toBe(99677);
@@ -97,8 +95,8 @@ describe("procurement math, ₦98,000 bag", () => {
 // === procurementTargets, in kobo
 
 /*
- * The same order as above, in kobo, with a zone whose taper is its own rather
- * than the served default. Kaduna South figures.
+ * The same order as above, in kobo, with a zone whose taper is its own rather than the served default.
+ * Kaduna South figures.
  */
 const KOBO_CONTEXT = {
   packages: 1,
@@ -182,10 +180,8 @@ describe("procurementTargets", () => {
   });
 
   /*
-   * The property that matters: whichever price was solved, feeding the solved
-   * order back through the same arithmetic reproduces the margin that was
-   * asked for. Rounding each price outward by a kobo can only move the margin
-   * by about a ten-millionth, so the tolerance is well inside a kobo.
+   * The property that matters: whichever price was solved, feeding the solved order back through the same arithmetic reproduces the margin that was asked for.
+   * Rounding each price outward by a kobo can only move the margin by about a ten-millionth, so the tolerance is well inside a kobo.
    */
   const CASES: Array<[number, number, number, number]> = [
     /* margin %, packages, drops per trip, price in kobo */

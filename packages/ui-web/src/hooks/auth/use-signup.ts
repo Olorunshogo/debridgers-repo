@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { useForm, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuthAdapter } from "./auth-adapter";
+import { applyServerFieldErrors } from "../../lib/server-errors";
 import { normalizeNigerianPhone } from "../../schemas/generics";
 import type {
   RoleSignupConfig,
@@ -9,14 +10,14 @@ import type {
 } from "../../types/signup-config";
 
 /*
- * Signup for any self-registerable role. The role's schema, fields, and
- * redirect all come from ROLE_SIGNUP_CONFIG, so adding a role (farmer) needs no
- * change here.
+ * Signup for any self-registerable role.
+ * The role's schema, fields, and redirect all come from ROLE_SIGNUP_CONFIG, so adding a role (farmer) needs no change here.
  */
 
+/*
+ * `config`: the role's schema, fields, and redirect all come from its config, so this hook never branches on which role it is handling.
+ */
 export interface UseSignupOptions {
-  /* The role's schema, fields, and redirect all come from its config, so this
-     hook never branches on which role it is handling. */
   config: RoleSignupConfig;
   onRequiresVerification?: (email: string, role: string) => void;
 }
@@ -34,13 +35,11 @@ export interface UseSignupResult {
 
 /*
  * A 409 carrying this code means the account exists but was never verified.
- * register() has already reissued the OTP by that point, so it is the
- * verification path rather than a failure. Showing it as an error banner would
- * strand the user on the signup screen with no way forward.
+ * register() has already reissued the OTP by that point, so it is the verification path rather than a failure.
+ * Showing it as an error banner would strand the user on the signup screen with no way forward.
  *
- * Read structurally instead of importing ApiError, which lives in the API
- * client. Pulling that in would drag the transport layer into this UI package,
- * which is the coupling the adapter exists to avoid.
+ * Read structurally instead of importing ApiError, which lives in the API client.
+ * Pulling that in would drag the transport layer into this UI package, which is the coupling the adapter exists to avoid.
  */
 function isUnverifiedEmailError(error: unknown): boolean {
   const body = (error as { body?: { code?: unknown } } | null)?.body;
@@ -78,9 +77,8 @@ export function useSignup(options: UseSignupOptions): UseSignupResult {
   }, []);
 
   /*
-   * The consent to record, taken from the role's own config rather than from
-   * the form. What the user ticked is a boolean; which document that tick
-   * refers to is a property of the role, and only the role table knows it.
+   * The consent to record, taken from the role's own config rather than from the form.
+   * What the user ticked is a boolean; which document that tick refers to is a property of the role, and only the role table knows it.
    */
   const termsConsent = config.terms
     ? {
@@ -109,10 +107,9 @@ export function useSignup(options: UseSignupOptions): UseSignupResult {
 
     try {
       /*
-       * The role decides how its account is created, not this hook. A role with
-       * its own endpoint supplies `register` in its config; everything else
-       * falls through to the shared one. There is deliberately no branch on
-       * which role this is, so a new role is a config entry and nothing here.
+       * The role decides how its account is created, not this hook.
+       * A role with its own endpoint supplies `register` in its config; everything else falls through to the shared one.
+       * There is deliberately no branch on which role this is, so a new role is a config entry and nothing here.
        */
       if (config.register) {
         await config.register(values, { first_name, last_name, role });
@@ -138,11 +135,13 @@ export function useSignup(options: UseSignupOptions): UseSignupResult {
         return;
       }
 
-      setApiError(
+      const message =
         error instanceof Error
           ? error.message
-          : "Could not create your account. Please try again.",
-      );
+          : "Could not create your account. Please try again.";
+
+      setApiError(message);
+      applyServerFieldErrors(error, form);
     }
   });
 

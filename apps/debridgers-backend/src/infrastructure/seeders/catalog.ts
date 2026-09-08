@@ -52,11 +52,8 @@ export const TAXONOMY: TaxonomyNodeSeed[] = [
       { name: "Millet" },
     ],
   },
-  /*
-   * Beans is a root, not a child of Grains. Legumes are not cereals, and while
-   * it sat under Grains a bag of Wake Gida filtered as a grain.
-   */
   {
+    // Beans is a root, not a child of Grains: legumes are not cereals, and while it sat under Grains a bag of Wake Gida filtered as a grain.
     name: "Beans",
     children: [
       { name: "Wake Gida" },
@@ -71,12 +68,8 @@ export const TAXONOMY: TaxonomyNodeSeed[] = [
     children: [{ name: "Yam" }, { name: "Irish Potato" }],
   },
   { name: "Oil", children: [{ name: "Palm Oil" }, { name: "Groundnut Oil" }] },
-  /*
-   * Garri is milled cassava, so botanically it belongs under roots and tubers.
-   * It sits under Processed instead because that is how a buyer looks for it -
-   * nobody shops for garri by thinking about the tuber it came from.
-   */
   {
+    // Garri is milled cassava, botanically under roots and tubers, but sits under Processed because that's how a buyer looks for it, not by the tuber it came from.
     name: "Processed",
     children: [
       {
@@ -198,9 +191,10 @@ export const PRODUCTS: ProductSeed[] = [
   {
     name: "Millet",
     unit: "100kg bag",
-    /* Purchased and resold since before it was listed, which meant it could not
-       be ordered, costed or reported on. `!todo()` confirm the retail price
-       against a real invoice - this is the last figure paid, not a set price. */
+    /*
+     * Purchased and resold since before it was listed, which meant it could not be ordered, costed or reported on.
+     * `!todo()` confirm the retail price against a real invoice - this is the last figure paid, not a set price.
+     */
     price_kobo: naira(40000),
     description: "Locally sourced millet grain. Sold per 100kg bag.",
     image_url: null,

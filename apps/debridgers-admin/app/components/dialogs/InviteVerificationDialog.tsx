@@ -13,14 +13,11 @@ import { apiMutate } from "@debridgers/api-client";
 
 /*
  * Invite code verification, on the dialog engine.
- *
- * Same story as the password dialog: it painted its own backdrop and carried
- * its own max-w-md. Registered as VERIFY_INVITE in
- * app/providers/dialog-registry.ts.
+ * Same story as the password dialog: it painted its own backdrop and carried its own max-w-md. Registered as VERIFY_INVITE in app/providers/dialog-registry.ts.
+ * `onVerified` fires once the code is accepted, so the caller can stop asking.
  */
 
 interface InviteVerificationDialogProps {
-  /** Fires once the code is accepted, so the caller can stop asking. */
   onVerified?: () => void;
 }
 

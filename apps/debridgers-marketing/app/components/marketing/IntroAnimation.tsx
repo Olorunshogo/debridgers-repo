@@ -2,12 +2,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 
 // === Timing constants (ms) - total = 8000ms (phase 5 removed)
+/*
+ * 1 is letter slide-in, 2 is letter slide-out, 3 is split entry + image drop together, 4 is hold before exit, and done is overlay fade-out.
+ */
 const PHASE_DURATIONS = {
-  1: 2000, // letter slide-in
-  2: 1500, // letter slide-out
-  3: 2000, // split entry + image drop together
-  4: 1000, // hold before exit
-  done: 500, // overlay fade-out
+  1: 2000,
+  2: 1500,
+  3: 2000,
+  4: 1000,
+  done: 500,
 } as const;
 
 const TOTAL_DURATION_MS = 7000;
@@ -15,8 +18,8 @@ const LETTER_STAGGER_IN = 0.18;
 const LETTER_STAGGER_OUT = 0.15;
 
 const LETTERS = "Debridgers ".split("");
-const SPLIT_LEFT = "Debri"; // Debri
-const SPLIT_RIGHT = "dgers"; // dgers
+const SPLIT_LEFT = "Debri";
+const SPLIT_RIGHT = "dgers";
 
 type Phase = 1 | 2 | 3 | 4 | "done";
 
@@ -69,14 +72,17 @@ function LetterSlideOut() {
 // === Phase 3: Split entry + image drops onto the "i"
 // We measure the "i" ref position relative to the container to land precisely
 
-// === Tuning knobs - adjust these to reposition the dropped image ===
-// DOT_TOP_OFFSET: px offset from top of "i" bounding box. 0 = top of letter (dot area). Positive = move down.
+// === Tuning knobs
+/*
+ * Adjust these to reposition the dropped image.
+ * DOT_TOP_OFFSET is a px offset from the top of the "i" bounding box - 0 is the top of the letter (dot area), positive moves it down.
+ * DOT_HEIGHT_RATIO is the image height as a fraction of the "i" letter height - 0.39 is about the dot region.
+ * DOT_WIDTH_RATIO is the image width as a multiple of the "i" letter width - 2.2 is wider than the stem.
+ * DOT_HORIZONTAL_OFFSET shifts the image left (negative) or right (positive) as a multiple of "i" width.
+ */
 const DOT_TOP_OFFSET = -8;
-// DOT_HEIGHT_RATIO: image height as a fraction of the "i" letter height. 0.39 ≈ just the dot region.
 const DOT_HEIGHT_RATIO = 0.39;
-// DOT_WIDTH_RATIO: image width as a multiple of the "i" letter width. 2.2 = wider than the stem.
 const DOT_WIDTH_RATIO = 2.2;
-// DOT_HORIZONTAL_OFFSET: shifts image left (negative) or right (positive) as a multiple of "i" width.
 const DOT_HORIZONTAL_OFFSET = -0.6;
 
 function SplitEntryWithDrop() {
@@ -147,9 +153,10 @@ function SplitEntryWithDrop() {
           aria-hidden
           initial={{ y: -160, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
+          // ease gives a bouncy spring feel.
           transition={{
             duration: 0.55,
-            ease: [0.34, 1.3, 0.64, 1], // bouncy spring feel
+            ease: [0.34, 1.3, 0.64, 1],
           }}
           className="pointer-events-none absolute"
           style={{
@@ -164,7 +171,8 @@ function SplitEntryWithDrop() {
   );
 }
 
-// === Progress bar: fills linearly over TOTAL_DURATION_MS
+// === Progress bar
+/* Fills linearly over TOTAL_DURATION_MS. */
 // function ProgressBar() {
 //   return (
 //     <div className="bg-primary/15 mt-8 h-[3px] w-full max-w-100 overflow-hidden rounded-full">
@@ -228,11 +236,9 @@ export function IntroAnimation() {
     document.body.style.overflow = "hidden";
 
     /*
-     * Cleanup below covers the normal path (visible flips false once the
-     * splash finishes). This timer is the fallback for anything that stops
-     * that from happening - a thrown error mid-animation, a Strict Mode
-     * double-invoke ordering quirk - so the page is never left permanently
-     * unscrollable. Comfortably past the real animation's own end.
+     * Cleanup below covers the normal path (visible flips false once the splash finishes).
+     * This timer is the fallback for anything that stops that from happening - a thrown error mid-animation, a Strict Mode double-invoke ordering quirk - so the page is never left permanently unscrollable.
+     * Comfortably past the real animation's own end.
      */
     const safety = setTimeout(
       () => {

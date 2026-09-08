@@ -6,9 +6,8 @@ import type {
 } from "../../types/payment-config";
 
 /*
- * Submits a payout request. The caller supplies the max allowed amount at the
- * form layer (see AgentRequestPayoutDialog's use of createWithdrawalSchema) -
- * this hook only owns the submit call and its result.
+ * Submits a payout request.
+ * The caller supplies the max allowed amount at the form layer (see AgentRequestPayoutDialog's use of createWithdrawalSchema) - this hook only owns the submit call and its result.
  */
 
 export interface UseWithdrawOptions {

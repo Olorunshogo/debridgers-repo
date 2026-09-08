@@ -2,9 +2,8 @@ import type { SelectOption } from "@debridgers/ui-web";
 
 // === Unsold Reasons
 
-/* Agent-only: the daily report's "why didn't this sell" options. Not shared
-   geography data, so it stays local rather than living in the shared
-   Nigerian-states dataset. */
+/* Agent-only: the daily report's "why didn't this sell" options.
+Not shared geography data, so it stays local rather than living in the shared Nigerian-states dataset. */
 export const unsoldReasons: SelectOption[] = [
   { value: "no_customers", label: "No customers today" },
   { value: "price_too_high", label: "Price too high" },

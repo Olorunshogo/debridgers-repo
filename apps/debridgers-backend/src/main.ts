@@ -1,5 +1,5 @@
 import "reflect-metadata";
-// Must be set before libuv initialises — expand thread pool for bcrypt burst.
+// Must be set before libuv initialises, to expand the thread pool for a bcrypt burst.
 process.env.UV_THREADPOOL_SIZE = process.env.UV_THREADPOOL_SIZE ?? "16";
 import { Logger, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
@@ -85,20 +85,11 @@ async function bootstrap() {
 
   Logger.log("🟢 [4] Creating NestFactory app...", "Bootstrap");
   /*
-   * rawBody is needed by the Paystack webhook: the signature is an HMAC over
-   * the exact bytes Paystack sent, and re-serialising the parsed body with
-   * JSON.stringify only happens to match while key order and escaping survive
-   * the round trip.
-   */
-  /*
-   * The default body limit is 100kb, which delivery verification exceeded on a
-   * single photo: proof images are posted as base64 data URLs, and base64 adds
-   * roughly a third on top of the file size. The upload control accepts several
-   * photos at up to 5MB each, so the request needs real headroom or the whole
-   * flow fails with a 413 the admin cannot interpret.
+   * rawBody is needed by the Paystack webhook: the signature is an HMAC over the exact bytes Paystack sent, and re-serialising the parsed body with JSON.stringify only happens to match while key order and escaping survive the round trip.
    *
-   * Sized for the control's own limits rather than picked round: MAX_PHOTOS
-   * files at MAX_PHOTO_MB each, encoded, plus a margin for the rest of the body.
+   * The default body limit is 100kb, which delivery verification exceeded on a single photo: proof images are posted as base64 data URLs, and base64 adds roughly a third on top of the file size.
+   * The upload control accepts several photos at up to 5MB each, so the request needs real headroom or the whole flow fails with a 413 the admin cannot interpret.
+   * Sized for the control's own limits rather than picked round: MAX_PHOTOS files at MAX_PHOTO_MB each, encoded, plus a margin for the rest of the body.
    * If either limit changes in photo-upload-field.tsx, change it here too.
    */
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -135,8 +126,9 @@ async function bootstrap() {
 
   // === Security headers (Helmet)
   app.use(
+    // Disabled so Cloudinary-hosted images embed without a COEP block.
     helmet({
-      crossOriginEmbedderPolicy: false, // allow Cloudinary images
+      crossOriginEmbedderPolicy: false,
       contentSecurityPolicy: isProd
         ? {
             directives: {
@@ -150,44 +142,43 @@ async function bootstrap() {
     }),
   );
 
-  // === CORS — explicit allowlist, never reflect origin
+  // === CORS
+  /* Explicit allowlist; never reflect the request origin back. Curl/server-to-server calls (no origin header) are allowed only outside prod. */
   app.enableCors({
     origin: (
       origin: string | undefined,
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
-      // Allow server-to-server / curl (no origin) only in non-prod
       if (!origin) return callback(null, !isProd);
       if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
       callback(new Error(`CORS: origin ${origin} not allowed`));
     },
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
-    // Added X-Admin-Key for two-tier admin authentication
     allowedHeaders: ["Content-Type", "Authorization", "X-Admin-Key"],
     credentials: true,
   });
 
   app.setGlobalPrefix("api/v1");
 
-  // SECURITY FIX: Global validation pipe with strict whitelisting
-  // Prevents mass assignment attacks by rejecting unknown properties
+  /* Strict whitelisting rejects unknown properties, closing off mass assignment attacks. */
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // Remove unknown properties
-      forbidNonWhitelisted: true, // Throw error if unknown properties sent
-      transform: true, // Auto-transform to DTO class
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
       transformOptions: {
         enableImplicitConversion: true,
       },
-      stopAtFirstError: false, // Report all validation errors at once
-      skipMissingProperties: false, // Require all properties per DTO
+      stopAtFirstError: false,
+      skipMissingProperties: false,
     }),
   );
 
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalInterceptors(new ApiResponseInterceptor());
 
-  // === Swagger — dev/staging only
+  // === Swagger
+  /* Dev/staging only. */
   if (!isProd) {
     const config = new DocumentBuilder()
       .setTitle("Debridgers API")

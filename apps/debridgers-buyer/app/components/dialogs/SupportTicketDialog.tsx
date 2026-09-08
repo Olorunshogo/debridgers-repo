@@ -11,15 +11,14 @@ import { BASE_BACKEND_URL } from "@debridgers/api-client";
 /*
  * Glue between the dialog engine and the contact endpoint.
  *
- * Posts to the same /contact endpoint the marketing page form uses, so a message
- * raised from inside a dashboard lands in the same inbox as a public enquiry.
+ * Posts to the same /contact endpoint the marketing page form uses, so a message raised from inside a dashboard lands in the same inbox as a public enquiry.
  * Registered as SUPPORT_TICKET in app/providers/dialog-registry.ts.
  */
 
+/* `contextNote` is appended to the message, e.g. the order the user is asking about. */
 interface SupportTicketDialogProps {
   defaultName?: string;
   defaultEmail?: string;
-  /* Appended to the message, e.g. the order the user is asking about. */
   contextNote?: string;
 }
 
@@ -29,7 +28,8 @@ export default function SupportTicketDialog({
   contextNote,
 }: SupportTicketDialogProps) {
   const { closeDialog, setDialogLoading } = useDialog();
-  const { status, error, run, isSubmitting } = useDialogSubmission<void>();
+  const { status, error, fieldErrors, run, isSubmitting } =
+    useDialogSubmission<void>();
 
   /* A half-sent message is not something to let someone click away from. */
   useEffect(() => {
@@ -42,10 +42,7 @@ export default function SupportTicketDialog({
     return () => window.clearTimeout(timer);
   }, [status, closeDialog]);
 
-  /*
-   * Deliberately not apiFetch: /contact is public and unauthenticated, and a
-   * support message must still send when the session is the thing that broke.
-   */
+  /* Deliberately not apiFetch: /contact is public and unauthenticated, and a support message must still send when the session is the thing that broke. */
   async function submit(values: SupportTicketValues): Promise<void> {
     const res = await fetch(`${BASE_BACKEND_URL}/contact`, {
       method: "POST",
@@ -58,11 +55,14 @@ export default function SupportTicketDialog({
     });
 
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(
+      const body: unknown = await res.json().catch(() => ({}));
+      const err = new Error(
         (body as { message?: string })?.message ??
           "Could not send your message. Please try again.",
-      );
+      ) as Error & { body?: unknown };
+      /* Carries the field-attributed validation errors so extractServerFieldErrors can read them - a plain fetch here means nothing else attaches the response body the way ApiError does. */
+      err.body = body;
+      throw err;
     }
   }
 
@@ -73,6 +73,7 @@ export default function SupportTicketDialog({
       contextNote={contextNote}
       isSubmitting={isSubmitting}
       error={error}
+      serverFieldErrors={fieldErrors}
       success={status === "success"}
       onClose={closeDialog}
       onSubmit={(values) => run(() => submit(values))}

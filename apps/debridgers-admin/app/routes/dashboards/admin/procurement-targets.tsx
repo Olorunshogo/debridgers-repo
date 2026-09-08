@@ -14,18 +14,10 @@ import { usePlatformConfig } from "@/contexts/PlatformConfigContext";
 
 /*
  * Procurement Targets: the buying desk's screen.
- *
- * Debridgers sells at the market reference price and takes no markup, so every
- * naira of profit is the gap between that price and what we actually paid.
- * Nothing else in the product tells the person doing the buying what that gap
- * has to be, which means prices get agreed against a feeling about whether they
- * leave room.
- *
- * The desk states two things, the cost and the target margin, and one call to
- * `procurementTargets` derives the rest. It used to solve each output through a
- * separate call that assembled its own arguments, which is how two figures on
- * one screen came to be computed against different assumptions.
- *
+ * Debridgers sells at the market reference price and takes no markup, so every naira of profit is the gap between that price and what we actually paid.
+ * Nothing else in the product tells the person doing the buying what that gap has to be, which means prices get agreed against a feeling about whether they leave room.
+ * The desk states two things, the cost and the target margin, and one call to `procurementTargets` derives the rest.
+ * It used to solve each output through a separate call that assembled its own arguments, which is how two figures on one screen came to be computed against different assumptions.
  * Derivation in docs/business/BusinessModel.md.
  */
 
@@ -46,7 +38,7 @@ type Direction = "fromMarket" | "fromFarmer";
 
 type PackageSize = "50kg" | "100kg";
 
-/* What GET /zones serves. The taper and the ceiling are the zone's own. */
+/* What GET /zones serves; the taper and the ceiling are the zone's own. */
 interface DeliveryZone {
   id: number;
   name: string;
@@ -183,9 +175,7 @@ export default function ProcurementTargets() {
   const [farmerPriceNaira, setFarmerPriceNaira] = useState<number>(90000);
   const [targetMarginPercent, setTargetMarginPercent] = useState<number>(10);
   /*
-   * The margin persisted in system_settings, once loaded. The field above stays
-   * freely editable for what-if runs; only "Save as default" writes it back, and
-   * the button only appears while the two disagree.
+   * The margin persisted in system_settings, once loaded. The field above stays freely editable for what-if runs; only "Save as default" writes it back, and the button only appears while the two disagree.
    */
   const [persistedMarginPercent, setPersistedMarginPercent] = useState<
     number | null
@@ -238,8 +228,7 @@ export default function ProcurementTargets() {
         setTargetMarginPercent(stored);
       })
       .catch(() => {
-        /* A missing setting is not fatal here: the field keeps its default and
-           the "Save as default" affordance simply never shows. */
+        /* A missing setting is not fatal here: the field keeps its default and the "Save as default" affordance simply never shows. */
       });
 
     return () => {
@@ -274,8 +263,7 @@ export default function ProcurementTargets() {
   );
 
   /*
-   * The fee rules come from the API, never from a local copy, so this page
-   * cannot quote against a fee structure the buyer is not billed under.
+   * The fee rules come from the API, never from a local copy, so this page cannot quote against a fee structure the buyer is not billed under.
    */
   const rules: PricingRules | null = pricing;
 
@@ -323,9 +311,7 @@ export default function ProcurementTargets() {
   ]);
 
   /*
-   * A finished request that returned no zones is its own state, not a slow one.
-   * Without this branch `!zone` below keeps the loading copy on screen forever
-   * once an empty `/zones` response comes back.
+   * A finished request that returned no zones is its own state, not a slow one. Without this branch `!zone` below keeps the loading copy on screen forever once an empty `/zones` response comes back.
    */
   const zonesLoadedEmpty: boolean =
     !isLoading && !zonesLoading && !error && !zonesError && zones.length === 0;
@@ -347,9 +333,7 @@ export default function ProcurementTargets() {
   }
 
   /*
-   * Deliberately refuses to render numbers rather than falling back to a local
-   * copy of the fee rules or a typed zone base. A buying desk quoting against
-   * invented fees is worse than a buying desk that has to wait for a page load.
+   * Deliberately refuses to render numbers rather than falling back to a local copy of the fee rules or a typed zone base. A buying desk quoting against invented fees is worse than a buying desk that has to wait for a page load.
    */
   if (isLoading || zonesLoading || !rules || !zone || !targets) {
     return (

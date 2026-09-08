@@ -15,14 +15,18 @@ export interface SupportTicketValues {
   message: string;
 }
 
+/*
+ * `defaultName` and `defaultEmail` are pre-filled from the signed-in profile so the buyer retypes nothing.
+ * `contextNote` is appended to the message so support opens the ticket with the context.
+ * `serverFieldErrors` is whatever the backend attributed to a specific field on the last submit (from `useDialogSubmission`'s `fieldErrors`), shown alongside this component's own client-side validation.
+ */
 export interface SupportTicketDialogProps {
-  /* Pre-filled from the signed-in profile so the buyer retypes nothing. */
   defaultName?: string;
   defaultEmail?: string;
-  /* Appended to the message so support opens the ticket with the context. */
   contextNote?: string;
   isSubmitting: boolean;
   error?: string | null;
+  serverFieldErrors?: Partial<Record<keyof SupportTicketValues, string>>;
   success: boolean;
   onClose: () => void;
   onSubmit: (values: SupportTicketValues) => void;
@@ -62,6 +66,7 @@ export function SupportTicketDialog({
   contextNote,
   isSubmitting,
   error,
+  serverFieldErrors,
   success,
   onClose,
   onSubmit,
@@ -129,7 +134,7 @@ export function SupportTicketDialog({
         required
         value={values.fullName}
         onChange={handleChange("fullName")}
-        error={fieldErrors.fullName}
+        error={fieldErrors.fullName ?? serverFieldErrors?.fullName}
       />
 
       {/*
@@ -145,7 +150,7 @@ export function SupportTicketDialog({
         aria-describedby={defaultEmail ? "support-email-hint" : undefined}
         value={values.email}
         onChange={handleChange("email")}
-        error={fieldErrors.email}
+        error={fieldErrors.email ?? serverFieldErrors?.email}
       />
       {defaultEmail && (
         <p id="support-email-hint" className="text-body -mt-2 text-xs">
@@ -161,7 +166,7 @@ export function SupportTicketDialog({
         placeholder="Include your order number if your question is about an order."
         value={values.message}
         onChange={handleChange("message")}
-        error={fieldErrors.message}
+        error={fieldErrors.message ?? serverFieldErrors?.message}
       />
 
       <SubmitButton fullWidth loading={isSubmitting} loadingText="Sending...">

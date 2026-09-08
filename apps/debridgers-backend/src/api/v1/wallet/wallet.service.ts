@@ -141,7 +141,8 @@ export class WalletService {
         throw new NotFoundException("Transaction not found");
       }
 
-      return existing; // Already confirmed by the other caller
+      // Already confirmed by the other caller.
+      return existing;
     }
 
     await this.notificationsService.notifyWalletTransaction(
@@ -214,8 +215,9 @@ export class WalletService {
    * Validate amount
    */
   validateAmount(amount: number) {
-    const MIN_AMOUNT = 20000; // ₦200 (test mode)
-    const MAX_AMOUNT = 10000000; // ₦100,000
+    // Kobo bounds: ₦200 (test mode) minimum, ₦100,000 maximum.
+    const MIN_AMOUNT = 20000;
+    const MAX_AMOUNT = 10000000;
 
     if (amount < MIN_AMOUNT || amount > MAX_AMOUNT) {
       throw new BadRequestException(

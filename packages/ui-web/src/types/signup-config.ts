@@ -10,16 +10,20 @@ import type { SignupValues } from "../schemas/auth/signup";
  * each collects is app policy, not shared UI.
  */
 
-/** Union of every field any role's signup form can carry. */
+/**
+ * Union of every field any role's signup form can carry.
+ *
+ * `lga`, `address` and `cv` are fields only some roles collect - optional here
+ * because this type is the union across every role, not the shape of any one
+ * form.
+ * acceptedTerms is consent to the active role's terms.
+ * It is `true` rather than boolean once validated, since the schema rejects anything else.
+ */
 export interface SignupFormValues extends SignupValues {
   referredByAgentCode?: string;
-  /* Fields only some roles collect. Optional here because this type is the
-     union across every role, not the shape of any one form. */
   lga?: string;
   address?: string;
   cv?: File;
-  /* Consent to the active role's terms. `true` rather than boolean once
-     validated, since the schema rejects anything else. */
   acceptedTerms?: boolean;
 }
 
@@ -36,34 +40,31 @@ export interface RoleTermsRef {
   version: string;
 }
 
+/*
+ * label is the tab label on the signup page.
+ * terms is the terms this role accepts. Each role has its own document, so the tab
+ * that is active decides both what the checkbox links to and what the
+ * consent record names. A role with no published terms omits this, and the
+ * signup form then collects no consent for it rather than pointing the user
+ * at another role's document.
+ * redirectTo is where to send the user once registration and verification succeed.
+ * `successTitle` and `successDescription` are the post-signup confirmation
+ * copy. They live with the role so a new role brings its own wording with it.
+ * register is how this role's account is created. Omitted means the shared register
+ * endpoint, which is right for any role the plain form can express.
+ * A role needing its own endpoint - an agent application carries an LGA, a
+ * home address and a CV file, so it is multipart against /agent/apply -
+ * supplies it here rather than the hook learning role names.
+ */
 export interface RoleSignupConfig {
   role: string;
-  /** Tab label on the signup page. */
   label: string;
   schema: ZodType<SignupFormValues, SignupFormValues>;
   fields: readonly AuthFieldDescriptor[];
-  /*
-   * The terms this role accepts. Each role has its own document, so the tab
-   * that is active decides both what the checkbox links to and what the
-   * consent record names. A role with no published terms omits this, and the
-   * signup form then collects no consent for it rather than pointing the user
-   * at another role's document.
-   */
   terms?: RoleTermsRef;
-  /** Where to send the user once registration and verification succeed. */
   redirectTo: string;
-  /* Post-signup confirmation copy. Lives with the role so a new role brings its
-     own wording with it. */
   successTitle: string;
   successDescription: string;
-  /*
-   * How this role's account is created. Omitted means the shared register
-   * endpoint, which is right for any role the plain form can express.
-   *
-   * A role needing its own endpoint - an agent application carries an LGA, a
-   * home address and a CV file, so it is multipart against /agent/apply -
-   * supplies it here rather than the hook learning role names.
-   */
   register?: (
     values: SignupFormValues,
     identity: SignupIdentity,

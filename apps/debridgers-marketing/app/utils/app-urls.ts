@@ -1,7 +1,6 @@
 /*
- * Where each role's dashboard app actually lives. Read from env rather than
- * hardcoded so local dev points at each app's own Vite dev server while
- * staging/production point at the real subdomains - see .env.development.
+ * Where each role's dashboard app actually lives.
+ * Read from env rather than hardcoded so local dev points at each app's own Vite dev server while staging/production point at the real subdomains - see .env.development.
  */
 
 type DashboardRole = "buyer" | "agent" | "admin";

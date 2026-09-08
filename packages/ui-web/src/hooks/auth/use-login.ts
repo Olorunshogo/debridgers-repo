@@ -3,20 +3,19 @@ import { useForm, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, type LoginValues } from "../../schemas/auth/login";
 import { useAuthAdapter, type LoginVariant } from "./auth-adapter";
+import { applyServerFieldErrors } from "../../lib/server-errors";
 
 /*
- * Owns login form state, validation, error mapping, and the post-login
- * redirect. The network call and navigation come from the adapter, so this file
- * contains no fetch, axios, cookie, Response, or router reference.
+ * Owns login form state, validation, error mapping, and the post-login redirect.
+ * The network call and navigation come from the adapter, so this file contains no fetch, axios, cookie, Response, or router reference.
  */
 
 export type { LoginVariant };
 
+/*
+ * `variant`: the admin session is issued by a separate backend endpoint, so the variant selects the call while the UI stays shared.
+ */
 export interface UseLoginOptions {
-  /*
-   * The admin session is issued by a separate backend endpoint, so the variant
-   * selects the call while the UI stays shared.
-   */
   variant?: LoginVariant;
   onSuccess?: (role: string) => void;
 }
@@ -60,6 +59,7 @@ export function useLogin(options: UseLoginOptions = {}): UseLoginResult {
           ? error.message
           : "Something went wrong. Please try again.",
       );
+      applyServerFieldErrors(error, form);
     }
   });
 

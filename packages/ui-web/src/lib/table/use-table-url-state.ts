@@ -9,12 +9,10 @@ import type {
 /*
  * Keeps a table's page, sort and search in the query string.
  *
- * Opt-in, because not every table wants it. Worth it for admin lists: a
- * refresh keeps your place, a link to page 4 is a link to page 4, and coming
- * back from a detail route lands where you left rather than at the top.
+ * Opt-in, because not every table wants it.
+ * Worth it for admin lists: a refresh keeps your place, a link to page 4 is a link to page 4, and coming back from a detail route lands where you left rather than at the top.
  *
- * `prefix` namespaces the params so two tables on one page do not fight over
- * `?page`.
+ * `prefix` namespaces the params so two tables on one page do not fight over `?page`.
  */
 
 export interface UseTableUrlStateOptions {
@@ -44,8 +42,8 @@ export function useTableUrlState(
   );
 
   /*
-   * Read once. After mount the engine owns the state, and re-reading on every
-   * params change would fight the writes this same hook makes.
+   * Read once.
+   * After mount the engine owns the state, and re-reading on every params change would fight the writes this same hook makes.
    */
   const initial = useRef<Omit<TableUrlState, "writeState">>({
     initialPage: 1,

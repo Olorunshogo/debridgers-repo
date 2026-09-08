@@ -6,10 +6,6 @@ import { RedisService } from "../../../infrastructure/redis/features/redis.servi
 export class BuyerRateLimitService {
   constructor(private readonly redis: RedisService) {}
 
-  /**
-   * Check if buyer can place an order
-   * Limit: 5 orders per hour per buyer
-   */
   async checkOrderLimit(userId: number): Promise<{
     allowed: boolean;
     remaining?: number;
@@ -17,7 +13,7 @@ export class BuyerRateLimitService {
   }> {
     const key = `buyer_orders:${userId}`;
     const limit = 5;
-    const window = 60 * 60 * 1000; // 1 hour
+    const window = 60 * 60 * 1000;
 
     const count = await this.redis.get<number>(key);
     const currentCount = (count ?? 0) + 1;
@@ -30,7 +26,6 @@ export class BuyerRateLimitService {
       };
     }
 
-    // Set with TTL
     await this.redis.set(key, currentCount, window);
 
     return {
@@ -39,21 +34,14 @@ export class BuyerRateLimitService {
     };
   }
 
-  /**
-   * Record an order attempt
-   */
   async recordOrderAttempt(userId: number): Promise<void> {
     const key = `buyer_orders:${userId}`;
-    const window = 60 * 60 * 1000; // 1 hour
+    const window = 60 * 60 * 1000;
 
     const count = await this.redis.get<number>(key);
     await this.redis.set(key, (count ?? 0) + 1, window);
   }
 
-  /**
-   * Check payment attempts to prevent duplicate payments
-   * Limit: 3 payment attempts per order per minute
-   */
   async checkPaymentAttempt(
     userId: number,
     orderId: number,
@@ -64,7 +52,7 @@ export class BuyerRateLimitService {
   }> {
     const key = `payment_attempt:${userId}:${orderId}`;
     const limit = 3;
-    const window = 60 * 1000; // 1 minute
+    const window = 60 * 1000;
 
     const count = await this.redis.get<number>(key);
     const currentCount = (count ?? 0) + 1;
@@ -85,10 +73,6 @@ export class BuyerRateLimitService {
     };
   }
 
-  /**
-   * Check wallet deposit frequency
-   * Limit: 10 deposits per day per buyer
-   */
   async checkDepositLimit(userId: number): Promise<{
     allowed: boolean;
     remaining?: number;
@@ -96,7 +80,7 @@ export class BuyerRateLimitService {
   }> {
     const key = `wallet_deposits:${userId}`;
     const limit = 10;
-    const window = 24 * 60 * 60 * 1000; // 24 hours
+    const window = 24 * 60 * 60 * 1000;
 
     const count = await this.redis.get<number>(key);
     const currentCount = (count ?? 0) + 1;

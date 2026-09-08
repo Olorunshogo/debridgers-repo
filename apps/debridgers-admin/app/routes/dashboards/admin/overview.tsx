@@ -50,12 +50,10 @@ function mapStats(api: ApiAdminStats): AdminStats {
 
 export default function AdminOverview() {
   const { triggerDialog } = useDialog();
-  /* Opened once per mount; the dialog is dismissable and re-triggering on every
-     render would trap the admin behind it. */
+  /* Opened once per mount; the dialog is dismissable and re-triggering on every render would trap the admin behind it. */
   const promptedRef = useRef<boolean>(false);
 
   useEffect(() => {
-    // Check if admin needs to verify invite code
     const inviteVerified = localStorage.getItem("admin_invite_verified");
     if (!inviteVerified && !promptedRef.current) {
       promptedRef.current = true;

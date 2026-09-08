@@ -3,14 +3,10 @@ import { densityTokens } from "./table-density";
 import type { TableColumn, TableDensity } from "./table-types";
 
 /*
- * Skeletons derived from the column definitions, so the placeholder has the
- * same column count, the same widths and the same padding as the real thing.
- * A skeleton that does not match is worse than none: the page settles, then
- * jumps.
+ * Skeletons derived from the column definitions, so the placeholder has the same column count, the same widths and the same padding as the real thing.
+ * A skeleton that does not match is worse than none: the page settles, then jumps.
  *
- * Widths cycle through a fixed list rather than being random, because a random
- * width differs between server and client render and React calls that a
- * hydration mismatch.
+ * Widths cycle through a fixed list rather than being random, because a random width differs between server and client render and React calls that a hydration mismatch.
  */
 const barWidths = ["w-24", "w-32", "w-20", "w-28", "w-16"] as const;
 

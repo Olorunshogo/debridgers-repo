@@ -6,9 +6,8 @@ import type {
 } from "../../types/payment-config";
 
 /*
- * Reads and sets the bank account payouts go to. `account` is null when
- * nothing has been set yet, which the caller shows as an empty state rather
- * than an error.
+ * Reads and sets the bank account payouts go to.
+ * `account` is null when nothing has been set yet, which the caller shows as an empty state rather than an error.
  */
 
 export interface UsePayoutAccountOptions {

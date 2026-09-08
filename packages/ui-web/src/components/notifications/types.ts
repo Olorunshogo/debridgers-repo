@@ -22,8 +22,10 @@ export type NotificationType =
   | "kyc"
   | "withdrawal"
   | "stock"
+  | "rating"
   | "general";
 
+/* actionUrl is where clicking the notification should take the viewer, if anywhere. */
 export interface NotificationItem {
   id: number;
   type: NotificationType;
@@ -31,7 +33,6 @@ export interface NotificationItem {
   description: string;
   created_at: string;
   status: NotificationStatus;
-  /** Where clicking the notification should take the viewer, if anywhere. */
   actionUrl?: string;
 }
 
@@ -39,6 +40,8 @@ export interface NotificationItem {
  * What a role's service hook hands the page. The page itself is presentational:
  * it never fetches, so the same component serves admin, buyer and anyone added
  * later.
+ * hasMore is whether more pages exist on the server than are currently loaded.
+ * loadingMore is whether a "load more" append is in flight.
  */
 export interface NotificationsViewProps {
   notifications: NotificationItem[];
@@ -49,9 +52,7 @@ export interface NotificationsViewProps {
   onMarkAsDone: (id: number) => void;
   onMarkAllRead: () => void;
   onItemClick?: (item: NotificationItem) => void;
-  /** More pages exist on the server than are currently loaded. */
   hasMore?: boolean;
-  /** A "load more" append is in flight. */
   loadingMore?: boolean;
   onLoadMore?: () => void;
 }

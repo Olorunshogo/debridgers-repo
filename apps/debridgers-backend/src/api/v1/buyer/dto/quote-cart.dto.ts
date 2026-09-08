@@ -3,9 +3,9 @@ import { z } from "zod";
 /*
  * Prices a basket without creating an order, so the checkout summary can show
  * delivery and handling before the buyer commits.
+ * zone_id is where it is going. Omitted falls back to the buyer's registered zone.
  */
 export const quoteCartSchema = z.object({
-  /* Where it is going. Omitted falls back to the buyer's registered zone. */
   zone_id: z.number().int().positive().optional(),
   cart: z
     .array(

@@ -19,10 +19,9 @@ export interface UseAsyncResourceResult<T> {
 /**
  * Runs `fetcher` whenever `deps` change, with a fresh AbortController per run.
  *
- * Previous `data` stays visible while a re-run is in flight (`refetching`), so a
- * refresh never flashes a skeleton over content that is already good. `loading`
- * is reserved for the very first run with nothing to show yet. An aborted run is
- * a normal outcome of a superseding run and never becomes an error.
+ * Previous `data` stays visible while a re-run is in flight (`refetching`), so a refresh never flashes a skeleton over content that is already good.
+ * `loading` is reserved for the very first run with nothing to show yet.
+ * An aborted run is a normal outcome of a superseding run and never becomes an error.
  */
 export function useAsyncResource<T>(
   fetcher: (signal: AbortSignal) => Promise<T>,

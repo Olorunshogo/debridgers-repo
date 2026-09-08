@@ -16,10 +16,9 @@ export function meta() {
 }
 
 /*
- * Marketing owns no auth of its own - it only asks which role's dashboard to
- * send the visitor to. Mirrors Stayar's landing-page login: a role picker,
- * not a form. Driven by PUBLIC_ROLES so a new role is a config entry here,
- * not new markup.
+ * Marketing owns no auth of its own - it only asks which role's dashboard to send the visitor to.
+ * Mirrors Stayar's landing-page login: a role picker, not a form.
+ * Driven by PUBLIC_ROLES so a new role is a config entry here, not new markup.
  */
 export default function LoginPage() {
   return (

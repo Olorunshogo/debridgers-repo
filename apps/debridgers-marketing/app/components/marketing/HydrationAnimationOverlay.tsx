@@ -27,7 +27,8 @@ function LetterByLetterAnimation({
         currentIndex++;
       } else {
         clearInterval(interval);
-        setTimeout(onComplete, 500); // === Small delay before moving to next stage
+        // Small delay before moving to next stage
+        setTimeout(onComplete, 500);
       }
     }, duration / letters.length);
 
@@ -156,9 +157,10 @@ function LogoDrop({ duration, onComplete }: LogoDropProps) {
     <motion.div
       initial={{ y: -150, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
+      // ease is a cubic bezier for a gravity-like feel.
       transition={{
         duration: duration / 1000,
-        ease: [0.34, 1.56, 0.64, 1], // Cubic bezier for gravity-like feel
+        ease: [0.34, 1.56, 0.64, 1],
       }}
       className="absolute top-0"
     >
@@ -168,9 +170,10 @@ function LogoDrop({ duration, onComplete }: LogoDropProps) {
         className="h-12 w-12 object-contain"
         initial={{ scale: 0, rotate: -180 }}
         animate={{ scale: 1, rotate: 0 }}
+        // ease is a cubic bezier for a gravity-like feel.
         transition={{
           duration: duration / 1000,
-          ease: [0.34, 1.56, 0.64, 1], // Cubic bezier for gravity-like feel
+          ease: [0.34, 1.56, 0.64, 1],
         }}
       />
     </motion.div>
@@ -208,15 +211,14 @@ export function HydrationAnimationOverlay() {
     "letterByLetter" | "disappear" | "split" | "drop" | "complete"
   >("letterByLetter");
 
-  // Skip animation if prefers reduced motion
   if (!isHydrating || prefersReducedMotion) {
     return null;
   }
 
-  const letterByLetterDuration = 3000; // 3s for letter-by-letter
-  const disappearDuration = 800; // 0.8s
-  const splitDuration = 1500; // 1.5s
-  const dropDuration = 1500; // 1.5s
+  const letterByLetterDuration = 3000;
+  const disappearDuration = 800;
+  const splitDuration = 1500;
+  const dropDuration = 1500;
 
   const handleLetterByLetterComplete = () => setStage("disappear");
   const handleDisappearComplete = () => setStage("split");

@@ -10,10 +10,11 @@ import {
 } from "drizzle-orm/pg-core";
 import { adminAccounts } from "./admin_accounts.schema";
 
+/* order_payment: user paid for an order with wallet. vendor_payout: platform paid a vendor/agent. refund: refund to a user. */
 export const adminTransactionTypeEnum = pgEnum("admin_transaction_type", [
-  "order_payment", // User paid for order with wallet
-  "vendor_payout", // Platform paid vendor/agent
-  "refund", // Refund to user
+  "order_payment",
+  "vendor_payout",
+  "refund",
   "manual_adjustment",
   "platform_fee",
 ]);
@@ -25,6 +26,7 @@ export const adminTransactionStatusEnum = pgEnum("admin_transaction_status", [
   "reversed",
 ]);
 
+/* `amount` is kobo. `reference` is an order id, payment reference, or similar. `related_user_id` is whoever initiated the transaction. */
 export const adminTransactions = pgTable(
   "admin_transactions",
   {
@@ -33,11 +35,11 @@ export const adminTransactions = pgTable(
       .notNull()
       .references(() => adminAccounts.id, { onDelete: "restrict" }),
     type: adminTransactionTypeEnum().notNull(),
-    amount: integer().notNull(), // in kobo
+    amount: integer().notNull(),
     status: adminTransactionStatusEnum().notNull().default("completed"),
-    reference: varchar({ length: 100 }), // order ID, payment reference, etc.
+    reference: varchar({ length: 100 }),
     description: text(),
-    related_user_id: integer(), // who initiated this (buyer, vendor, admin)
+    related_user_id: integer(),
     created_at: timestamp().defaultNow().notNull(),
   },
   (table) => ({
