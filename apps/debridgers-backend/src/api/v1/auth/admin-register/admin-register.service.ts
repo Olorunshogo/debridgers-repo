@@ -41,12 +41,23 @@ export class AdminRegisterService {
 
     // Double-check email matches
     if (inviteDetails.email !== dto.email) {
-      throw new BadRequestException("Email does not match invite");
+      throw new BadRequestException({
+        message: "Email does not match invite",
+        errors: [{ field: "email", message: "Email does not match invite" }],
+      });
     }
 
     // Check password length (minimum 8 chars)
     if (dto.password.length < 8) {
-      throw new BadRequestException("Password must be at least 8 characters");
+      throw new BadRequestException({
+        message: "Password must be at least 8 characters",
+        errors: [
+          {
+            field: "password",
+            message: "Password must be at least 8 characters",
+          },
+        ],
+      });
     }
 
     // Hash password

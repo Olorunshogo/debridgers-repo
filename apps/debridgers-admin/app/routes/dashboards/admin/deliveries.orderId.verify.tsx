@@ -9,6 +9,7 @@ import {
   TextareaField,
   SubmitButton,
   TableStatusBadge,
+  extractServerFieldErrors,
 } from "@debridgers/ui-web";
 import { UploadField, type PhotoUpload } from "@debridgers/ui-web";
 
@@ -63,6 +64,10 @@ export default function VerifyDelivery() {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<boolean>(false);
+  const [fieldErrors, setFieldErrors] = useState<{
+    recipientName?: string;
+    notes?: string;
+  }>({});
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -93,6 +98,7 @@ export default function VerifyDelivery() {
 
     setSubmitting(true);
     setError("");
+    setFieldErrors({});
 
     try {
       await apiMutate(`/admin/deliveries/${orderId}/verify`, {
@@ -109,6 +115,11 @@ export default function VerifyDelivery() {
         navigate("/admin-dashboard/deliveries");
       }, 2000);
     } catch (err) {
+      const server = extractServerFieldErrors(err);
+      setFieldErrors({
+        recipientName: server.recipientName,
+        notes: server.notes,
+      });
       setError(
         err instanceof Error
           ? err.message
@@ -265,6 +276,7 @@ export default function VerifyDelivery() {
             label="Received by"
             placeholder="Name of the person who took delivery"
             value={recipientName}
+            error={fieldErrors.recipientName}
             onChange={(e) => setRecipientName(e.target.value)}
           />
         </div>
@@ -275,6 +287,7 @@ export default function VerifyDelivery() {
             rows={4}
             placeholder="Add any notes about the delivery (e.g. 'Left with security guard', 'Partial delivery')."
             value={notes}
+            error={fieldErrors.notes}
             onChange={(e) => setNotes(e.target.value)}
           />
         </div>

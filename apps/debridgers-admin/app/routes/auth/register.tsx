@@ -2,6 +2,13 @@ import { useState } from "react";
 import { buildPageMeta } from "../../lib/seo";
 import { useNavigate } from "react-router";
 import { apiMutate } from "@debridgers/api-client";
+import {
+  TextInputField,
+  EmailInputField,
+  PasswordInputField,
+  SubmitButton,
+  extractServerFieldErrors,
+} from "@debridgers/ui-web";
 
 export function meta() {
   return buildPageMeta({
@@ -22,6 +29,13 @@ export default function AdminRegister() {
     invite_code: "",
   });
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+    password?: string;
+    invite_code?: string;
+  }>({});
   const [loading, setLoading] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
@@ -40,6 +54,7 @@ export default function AdminRegister() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setFieldErrors({});
     setLoading(true);
 
     try {
@@ -61,6 +76,17 @@ export default function AdminRegister() {
 
       setApiKey(result.admin_api_key);
     } catch (err) {
+      /* email/first_name/last_name/password/invite_code are already the
+         form's own field names, so the camelCased keys the backend reports
+         need mapping back rather than a direct merge. */
+      const server = extractServerFieldErrors(err);
+      setFieldErrors({
+        email: server.email,
+        first_name: server.firstName,
+        last_name: server.lastName,
+        password: server.password,
+        invite_code: server.inviteCode,
+      });
       const message =
         err instanceof Error ? err.message : "Registration failed";
       setError(message);
@@ -156,93 +182,73 @@ export default function AdminRegister() {
             </div>
           )}
 
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Email Address
-            </label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+          <EmailInputField
+            label="Email Address"
+            required
+            value={formData.email}
+            error={fieldErrors.email}
+            onChange={(e) =>
+              setFormData({ ...formData, email: e.target.value })
+            }
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <TextInputField
+              label="First Name"
               required
+              value={formData.first_name}
+              error={fieldErrors.first_name}
+              onChange={(e) =>
+                setFormData({ ...formData, first_name: e.target.value })
+              }
+            />
+            <TextInputField
+              label="Last Name"
+              required
+              value={formData.last_name}
+              error={fieldErrors.last_name}
+              onChange={(e) =>
+                setFormData({ ...formData, last_name: e.target.value })
+              }
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                First Name
-              </label>
-              <input
-                type="text"
-                value={formData.first_name}
-                onChange={(e) =>
-                  setFormData({ ...formData, first_name: e.target.value })
-                }
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                required
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Last Name
-              </label>
-              <input
-                type="text"
-                value={formData.last_name}
-                onChange={(e) =>
-                  setFormData({ ...formData, last_name: e.target.value })
-                }
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                required
-              />
-            </div>
-          </div>
-
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              type="password"
+            <PasswordInputField
+              label="Password"
+              required
+              minLength={8}
               value={formData.password}
+              error={fieldErrors.password}
               onChange={(e) =>
                 setFormData({ ...formData, password: e.target.value })
               }
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-              minLength={8}
-              required
             />
             <p className="mt-1 text-xs text-gray-500">
               Minimum 8 characters required
             </p>
           </div>
 
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Invitation Code
-            </label>
-            <input
-              type="text"
-              value={formData.invite_code}
-              onChange={(e) =>
-                setFormData({ ...formData, invite_code: e.target.value })
-              }
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm text-xs focus:border-blue-500 focus:outline-none"
-              required
-            />
-          </div>
+          <TextInputField
+            label="Invitation Code"
+            required
+            className="font-mono"
+            value={formData.invite_code}
+            error={fieldErrors.invite_code}
+            onChange={(e) =>
+              setFormData({ ...formData, invite_code: e.target.value })
+            }
+          />
 
-          <button
-            type="submit"
-            disabled={loading || !isFormValid}
-            className="mt-6 w-full rounded-lg bg-blue-600 py-2 font-medium text-white transition hover:bg-blue-700 disabled:bg-gray-400"
+          <SubmitButton
+            fullWidth
+            disabled={!isFormValid}
+            loading={loading}
+            loadingText="Creating Account..."
+            className="mt-6"
           >
-            {loading ? "Creating Account..." : "Create Admin Account"}
-          </button>
+            Create Admin Account
+          </SubmitButton>
         </form>
 
         <p className="mt-4 text-center text-sm text-gray-600">

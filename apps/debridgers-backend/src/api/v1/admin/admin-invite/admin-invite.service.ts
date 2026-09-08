@@ -187,12 +187,23 @@ export class AdminInviteService {
     const inv = invite[0];
 
     if (inv.used_at !== null) {
-      throw new BadRequestException("Invite code has already been used");
+      throw new BadRequestException({
+        message: "Invite code has already been used",
+        errors: [
+          {
+            field: "invite_code",
+            message: "Invite code has already been used",
+          },
+        ],
+      });
     }
 
     const now = new Date();
     if (inv.expires_at <= now) {
-      throw new BadRequestException("Invite code has expired");
+      throw new BadRequestException({
+        message: "Invite code has expired",
+        errors: [{ field: "invite_code", message: "Invite code has expired" }],
+      });
     }
 
     return {

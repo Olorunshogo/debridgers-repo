@@ -60,7 +60,7 @@ export default function SupportTicketDialog({
         (body as { message?: string })?.message ??
           "Could not send your message. Please try again.",
       ) as Error & { body?: unknown };
-      /* Carries the field-attributed validation errors so extractServerFieldErrors can read them - a plain fetch here means nothing else attaches the response body the way ApiError does. */
+      /* So extractServerFieldErrors can read the field errors. */
       err.body = body;
       throw err;
     }

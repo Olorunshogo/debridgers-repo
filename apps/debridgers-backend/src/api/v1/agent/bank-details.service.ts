@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from "@nestjs/common";
+import { Inject, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
@@ -62,29 +56,21 @@ export class BankDetailsService {
     return banks.map((b) => ({ bankCode: b.code, name: b.name }));
   }
 
-  private async requireBankName(bankCode: string): Promise<string> {
-    const banks = await this.loadBanks();
-    const match = banks.find((b) => b.bankCode === bankCode);
-    if (!match) {
-      throw new BadRequestException(
-        "That bank is not on our list. Pick one from the dropdown.",
-      );
-    }
-    return match.name;
-  }
-
   // === Account resolution
 
   /*
    * Confirms an account exists and belongs to whom the agent expects, before
    * anything is saved. The agent sees the resolved name and confirms it, which
    * is the only guard against a typo sending money to a stranger.
+   * Bank-name lookup goes through PaystackBankService.requireBankName rather
+   * than a local copy, so an unlisted bank_code is reported the same
+   * field-attributed way everywhere it is checked.
    */
   async resolve(dto: ResolveBankAccountDto): Promise<{
     message: string;
     data: { account_name: string; bank_name: string };
   }> {
-    const bankName = await this.requireBankName(dto.bank_code);
+    const bankName = await this.bankService.requireBankName(dto.bank_code);
 
     const resolved = await this.bankService.resolveAccount(
       dto.account_number,

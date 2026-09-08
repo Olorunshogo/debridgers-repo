@@ -26,7 +26,8 @@ export default function SupportTicketDialog({
   contextNote,
 }: SupportTicketDialogProps) {
   const { closeDialog, setDialogLoading } = useDialog();
-  const { status, error, run, isSubmitting } = useDialogSubmission<void>();
+  const { status, error, fieldErrors, run, isSubmitting } =
+    useDialogSubmission<void>();
 
   /* A half-sent message is not something to let someone click away from. */
   useEffect(() => {
@@ -52,11 +53,14 @@ export default function SupportTicketDialog({
     });
 
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(
+      const body: unknown = await res.json().catch(() => ({}));
+      const err = new Error(
         (body as { message?: string })?.message ??
           "Could not send your message. Please try again.",
-      );
+      ) as Error & { body?: unknown };
+      /* So extractServerFieldErrors can read the field errors. */
+      err.body = body;
+      throw err;
     }
   }
 
@@ -67,6 +71,7 @@ export default function SupportTicketDialog({
       contextNote={contextNote}
       isSubmitting={isSubmitting}
       error={error}
+      serverFieldErrors={fieldErrors}
       success={status === "success"}
       onClose={closeDialog}
       onSubmit={(values) => run(() => submit(values))}

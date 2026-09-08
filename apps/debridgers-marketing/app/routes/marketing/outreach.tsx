@@ -13,6 +13,7 @@ import {
   useAuth,
   kadunaLgas,
   kadunaAreasByLga,
+  extractServerFieldErrors,
 } from "@debridgers/ui-web";
 import { BASE_BACKEND_URL } from "@debridgers/api-client";
 
@@ -124,15 +125,32 @@ export default function OutreachPage() {
           notes: form.notes.trim() || undefined,
         }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message ?? "Submission failed.");
+      const json: unknown = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const err = new Error(
+          (json as { message?: string })?.message ?? "Submission failed.",
+        ) as Error & { body?: unknown };
+        /* So extractServerFieldErrors can read the field errors. */
+        err.body = json;
+        throw err;
+      }
       setSubmitted(true);
     } catch (err) {
-      setApiError(
-        err instanceof Error
-          ? err.message
-          : "Something went wrong. Please try again.",
-      );
+      /* owner_name/phone are already the form's own field keys, so the camelCased ownerName/phone the backend reports needs mapping back rather than a direct merge. */
+      const server = extractServerFieldErrors(err);
+      if (server.ownerName || server.phone) {
+        setErrors((prev) => ({
+          ...prev,
+          owner_name: server.ownerName ?? prev.owner_name,
+          phone: server.phone ?? prev.phone,
+        }));
+      } else {
+        setApiError(
+          err instanceof Error
+            ? err.message
+            : "Something went wrong. Please try again.",
+        );
+      }
     } finally {
       setLoading(false);
     }

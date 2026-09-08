@@ -20,6 +20,7 @@ import {
   SelectInputField,
   TextInputField,
   NumberInputField,
+  extractServerFieldErrors,
   DataTable,
   TablePrimaryCell,
   TableAmountCell,
@@ -87,6 +88,8 @@ interface BundledImage {
   alt: string;
 }
 
+type ProductFormErrors = Partial<Record<keyof ProductForm, string>>;
+
 const emptyForm: ProductForm = {
   name: "",
   unit: "",
@@ -139,6 +142,7 @@ export default function AdminProductsPage() {
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<ProductFormErrors>({});
   /*
    * The `error` banner above lives inside the add/edit panel, so it cannot report failures triggered from the list itself. This one sits at page level.
    */
@@ -179,6 +183,7 @@ export default function AdminProductsPage() {
     setEditingId(null);
     setForm(emptyForm);
     setError(null);
+    setFieldErrors({});
     setShowForm(true);
   }
 
@@ -196,6 +201,7 @@ export default function AdminProductsPage() {
       weight_grams: p.weight_grams === null ? "" : String(p.weight_grams),
     });
     setError(null);
+    setFieldErrors({});
     setShowForm(true);
   }
 
@@ -252,6 +258,7 @@ export default function AdminProductsPage() {
     const weight_grams = toOptionalInt(form.weight_grams);
     setSaving(true);
     setError(null);
+    setFieldErrors({});
     try {
       if (editingId !== null) {
         await apiFetch(`/admin/products/${editingId}`, {
@@ -289,6 +296,23 @@ export default function AdminProductsPage() {
       setShowForm(false);
       await load();
     } catch (err) {
+      /*
+       * The backend reports price_kobo/category_id/etc, not the form's own
+       * snake_case-but-differently-named fields (price is naira here, not
+       * price_kobo), so the camelCased keys are mapped back by hand.
+       */
+      const server = extractServerFieldErrors(err);
+      setFieldErrors({
+        name: server.name,
+        unit: server.unit,
+        price: server.priceKobo,
+        category_id: server.categoryId,
+        measure_value: server.measureValue,
+        measure_unit: server.measureUnit,
+        weight_grams: server.weightGrams,
+        description: server.description,
+        image_url: server.imageUrl,
+      });
       setError(
         err instanceof ApiError ? err.message : "Failed to save product.",
       );
@@ -540,6 +564,7 @@ export default function AdminProductsPage() {
                 required
                 placeholder="e.g. Rice, Palm Oil"
                 value={form.name}
+                error={fieldErrors.name}
                 onChange={(e) =>
                   setForm((p) => ({ ...p, name: e.target.value }))
                 }
@@ -549,6 +574,7 @@ export default function AdminProductsPage() {
                 required
                 placeholder="e.g. Modu, Half Bag, Full Bag"
                 value={form.unit}
+                error={fieldErrors.unit}
                 onChange={(e) =>
                   setForm((p) => ({ ...p, unit: e.target.value }))
                 }
@@ -559,6 +585,7 @@ export default function AdminProductsPage() {
                 min={1}
                 placeholder="e.g. 1300"
                 value={form.price}
+                error={fieldErrors.price}
                 onChange={(e) =>
                   setForm((p) => ({ ...p, price: e.target.value }))
                 }
@@ -567,6 +594,7 @@ export default function AdminProductsPage() {
                 label="Description"
                 placeholder="Optional note"
                 value={form.description}
+                error={fieldErrors.description}
                 onChange={(e) =>
                   setForm((p) => ({ ...p, description: e.target.value }))
                 }
@@ -583,6 +611,7 @@ export default function AdminProductsPage() {
                   label: leaf.path,
                 }))}
                 value={form.category_id}
+                error={fieldErrors.category_id}
                 onChange={(e) =>
                   setForm((p) => ({ ...p, category_id: e.target.value }))
                 }
@@ -594,6 +623,7 @@ export default function AdminProductsPage() {
                   min={0}
                   placeholder="e.g. 50"
                   value={form.measure_value}
+                  error={fieldErrors.measure_value}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, measure_value: e.target.value }))
                   }
@@ -603,6 +633,7 @@ export default function AdminProductsPage() {
                   name="measure_unit"
                   options={measureUnitOptions}
                   value={form.measure_unit}
+                  error={fieldErrors.measure_unit}
                   onChange={(e) =>
                     setForm((p) => ({
                       ...p,
@@ -617,6 +648,7 @@ export default function AdminProductsPage() {
                   min={0}
                   placeholder="e.g. 25000 for a 25kg bag"
                   value={form.weight_grams}
+                  error={fieldErrors.weight_grams}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, weight_grams: e.target.value }))
                   }
@@ -737,6 +769,7 @@ export default function AdminProductsPage() {
                 id="image-url"
                 placeholder="https://... or /images/products/rice-bowl.jpg"
                 value={form.image_url}
+                error={fieldErrors.image_url}
                 onChange={(e) =>
                   setForm((p) => ({ ...p, image_url: e.target.value }))
                 }

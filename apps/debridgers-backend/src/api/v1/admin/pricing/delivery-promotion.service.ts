@@ -277,18 +277,40 @@ export class DeliveryPromotionService {
     const startsAt = new Date(input.starts_at);
     const endsAt = new Date(input.ends_at);
 
-    if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
-      throw new BadRequestException("Start and end must be valid dates.");
+    if (Number.isNaN(startsAt.getTime())) {
+      throw new BadRequestException({
+        message: "Start must be a valid date.",
+        errors: [
+          { field: "starts_at", message: "Start must be a valid date." },
+        ],
+      });
+    }
+    if (Number.isNaN(endsAt.getTime())) {
+      throw new BadRequestException({
+        message: "End must be a valid date.",
+        errors: [{ field: "ends_at", message: "End must be a valid date." }],
+      });
     }
     if (endsAt.getTime() <= startsAt.getTime()) {
-      throw new BadRequestException("The end must be after the start.");
+      throw new BadRequestException({
+        message: "The end must be after the start.",
+        errors: [
+          { field: "ends_at", message: "The end must be after the start." },
+        ],
+      });
     }
 
     if (input.scope === "zone") {
       if (!input.zone_id) {
-        throw new BadRequestException(
-          "A zone-scoped promotion needs a zone to apply to.",
-        );
+        throw new BadRequestException({
+          message: "A zone-scoped promotion needs a zone to apply to.",
+          errors: [
+            {
+              field: "zone_id",
+              message: "A zone-scoped promotion needs a zone to apply to.",
+            },
+          ],
+        });
       }
       const [zone] = await this.db
         .select({ id: schema.zones.id })

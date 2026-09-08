@@ -206,22 +206,30 @@ export default function ContactPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(
-          (data as { message?: string })?.message ??
+        const body: unknown = await res.json().catch(() => ({}));
+        const err = new Error(
+          (body as { message?: string })?.message ??
             "Something went wrong. Please try again.",
-        );
+        ) as Error & { body?: unknown };
+        /* So extractServerFieldErrors can read the field errors. */
+        err.body = body;
+        throw err;
       }
 
       setSubmitted(true);
       setForm({ fullName: "", email: "", message: "" });
     } catch (err) {
-      setErrors({
-        message:
-          err instanceof Error
-            ? err.message
-            : "Network error. Please try again.",
-      });
+      const serverFieldErrors = extractServerFieldErrors(err);
+      if (Object.keys(serverFieldErrors).length > 0) {
+        setErrors(serverFieldErrors);
+      } else {
+        setErrors({
+          message:
+            err instanceof Error
+              ? err.message
+              : "Network error. Please try again.",
+        });
+      }
     } finally {
       setLoading(false);
     }

@@ -20,6 +20,7 @@ import {
   SelectInputField,
   ToggleField,
   SubmitButton,
+  extractServerFieldErrors,
   DataTable,
   TablePrimaryCell,
   TableAmountCell,
@@ -222,6 +223,9 @@ export default function AdminPricingPage() {
   const [promotionForm, setPromotionForm] =
     useState<PromotionForm>(emptyPromotionForm);
   const [promotionError, setPromotionError] = useState<string | null>(null);
+  const [promotionFieldErrors, setPromotionFieldErrors] = useState<
+    Partial<Record<keyof PromotionForm, string>>
+  >({});
   const [savingPromotion, setSavingPromotion] = useState<boolean>(false);
   const [endingId, setEndingId] = useState<number | null>(null);
 
@@ -399,6 +403,7 @@ export default function AdminPricingPage() {
   function openAddPromotion(): void {
     setPromotionForm(emptyPromotionForm);
     setPromotionError(null);
+    setPromotionFieldErrors({});
     setShowPromotionForm(true);
   }
 
@@ -425,6 +430,7 @@ export default function AdminPricingPage() {
 
     setSavingPromotion(true);
     setPromotionError(null);
+    setPromotionFieldErrors({});
     try {
       await apiMutate("/admin/pricing/promotions", {
         method: "POST",
@@ -443,6 +449,18 @@ export default function AdminPricingPage() {
       setNotice(`Campaign ${promotionForm.name.trim()} scheduled.`);
       await load();
     } catch (err) {
+      /*
+       * The backend reports starts_at/ends_at/zone_id, the payload's own
+       * field names, not the form's starts_on/ends_on date-only inputs, so
+       * the camelCased keys are mapped back onto the form's fields by hand.
+       */
+      const server = extractServerFieldErrors(err);
+      setPromotionFieldErrors({
+        name: server.name,
+        zone_id: server.zoneId,
+        starts_on: server.startsAt,
+        ends_on: server.endsAt,
+      });
       setPromotionError(errorMessage(err, "Could not create that campaign."));
     } finally {
       setSavingPromotion(false);
@@ -1088,6 +1106,7 @@ export default function AdminPricingPage() {
                   required
                   placeholder="e.g. Ramadan free delivery"
                   value={promotionForm.name}
+                  error={promotionFieldErrors.name}
                   onChange={(e) =>
                     setPromotionForm((p) => ({ ...p, name: e.target.value }))
                   }
@@ -1117,6 +1136,7 @@ export default function AdminPricingPage() {
                         label: zone.name,
                       }))}
                     value={promotionForm.zone_id}
+                    error={promotionFieldErrors.zone_id}
                     onChange={(e) =>
                       setPromotionForm((p) => ({
                         ...p,
@@ -1130,6 +1150,7 @@ export default function AdminPricingPage() {
                   id="promotion-starts-on"
                   required
                   value={promotionForm.starts_on}
+                  error={promotionFieldErrors.starts_on}
                   onChange={(e) =>
                     setPromotionForm((p) => ({
                       ...p,
@@ -1142,6 +1163,7 @@ export default function AdminPricingPage() {
                   id="promotion-ends-on"
                   required
                   value={promotionForm.ends_on}
+                  error={promotionFieldErrors.ends_on}
                   onChange={(e) =>
                     setPromotionForm((p) => ({ ...p, ends_on: e.target.value }))
                   }

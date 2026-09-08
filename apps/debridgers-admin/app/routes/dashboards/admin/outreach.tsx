@@ -29,6 +29,7 @@ import {
   kadunaLgas,
   kadunaAreas,
   kadunaAreasByLga,
+  extractServerFieldErrors,
 } from "@debridgers/ui-web";
 
 import { buildPageMeta } from "../../../lib/seo";
@@ -236,6 +237,9 @@ export default function AdminOutreachPage() {
   });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<keyof FormState, string>>
+  >({});
   const [filterLga, setFilterLga] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
   /* A failed load must not render as "no outreach yet", which is a different story, so the table gets its own error and retry. */
@@ -296,6 +300,7 @@ export default function AdminOutreachPage() {
       return;
     }
     setFormError(null);
+    setFieldErrors({});
     setSaving(true);
     try {
       await apiFetch("/admin/outreach", {
@@ -319,6 +324,14 @@ export default function AdminOutreachPage() {
       setForm({ ...emptyForm, visit_date: todayString() });
       await load();
     } catch (err) {
+      /* full_name is derived from owner_name (or shop_name), so a backend
+         complaint about it is shown under owner_name, the field an operator
+         actually typed into. */
+      const server = extractServerFieldErrors(err);
+      setFieldErrors({
+        phone: server.phone,
+        owner_name: server.fullName,
+      });
       setFormError(
         err instanceof ApiError ? err.message : "Failed to save. Try again.",
       );
@@ -486,6 +499,7 @@ export default function AdminOutreachPage() {
                   label="Owner / Contact Name"
                   placeholder="e.g. Ngozi Eze"
                   value={form.owner_name}
+                  error={fieldErrors.owner_name}
                   onChange={handleChange("owner_name")}
                 />
               </div>
@@ -498,6 +512,7 @@ export default function AdminOutreachPage() {
                   inputMode="tel"
                   placeholder="08012345678"
                   value={form.phone}
+                  error={fieldErrors.phone}
                   onChange={handleChange("phone")}
                 />
                 <SelectInputField

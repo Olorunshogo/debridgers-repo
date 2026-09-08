@@ -22,6 +22,7 @@ import {
   stateSelectOptions,
   lgaSelectOptions,
   useDialog,
+  extractServerFieldErrors,
 } from "@debridgers/ui-web";
 
 import { buildPageMeta } from "../../../lib/seo";
@@ -108,6 +109,9 @@ export default function AgentSettingsPage() {
   const [profileSaved, setProfileSaved] = useState<boolean>(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [savingProfile, setSavingProfile] = useState<boolean>(false);
+  const [profileFieldErrors, setProfileFieldErrors] = useState<
+    Record<string, string>
+  >({});
 
   // === KYC state
   const [kyc, setKyc] = useState<KycStatus | null>(null);
@@ -127,6 +131,9 @@ export default function AgentSettingsPage() {
   const [kycSaving, setKycSaving] = useState<boolean>(false);
   const [kycSaved, setKycSaved] = useState<boolean>(false);
   const [kycError, setKycError] = useState<string | null>(null);
+  const [kycFieldErrors, setKycFieldErrors] = useState<Record<string, string>>(
+    {},
+  );
 
   const loadProfile = useCallback(async () => {
     try {
@@ -239,6 +246,7 @@ export default function AgentSettingsPage() {
   async function handleProfile(e: React.FormEvent) {
     e.preventDefault();
     setProfileError(null);
+    setProfileFieldErrors({});
     setSavingProfile(true);
     try {
       /* Setting the LGA re-resolves the agent's delivery zone server-side. */
@@ -261,6 +269,7 @@ export default function AgentSettingsPage() {
           ? err.message
           : "Failed to save. Please try again.",
       );
+      setProfileFieldErrors(extractServerFieldErrors(err));
     } finally {
       setSavingProfile(false);
     }
@@ -269,6 +278,7 @@ export default function AgentSettingsPage() {
   async function handleKycSubmit(e: React.FormEvent) {
     e.preventDefault();
     setKycError(null);
+    setKycFieldErrors({});
 
     if (!idFront) {
       setKycError("Please upload a photo of your ID (front side).");
@@ -303,7 +313,13 @@ export default function AgentSettingsPage() {
         body: fd,
       });
       const json = (await res.json()) as { message?: string };
-      if (!res.ok) throw new Error(json.message ?? "Submission failed.");
+      /* Thrown as ApiError, not a plain Error, so extractServerFieldErrors below can read the field-level `errors` the ZodValidationPipe put on the response body. */
+      if (!res.ok)
+        throw new ApiError(
+          res.status,
+          json.message ?? "Submission failed.",
+          json,
+        );
 
       setKycSaved(true);
       setTimeout(() => setKycSaved(false), 4000);
@@ -318,6 +334,7 @@ export default function AgentSettingsPage() {
           ? err.message
           : "Failed to submit. Please try again.",
       );
+      setKycFieldErrors(extractServerFieldErrors(err));
     } finally {
       setKycSaving(false);
     }
@@ -434,6 +451,7 @@ export default function AgentSettingsPage() {
                 <TextInputField
                   label="First Name"
                   value={form.firstName}
+                  error={profileFieldErrors.firstName}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, firstName: e.target.value }))
                   }
@@ -442,6 +460,7 @@ export default function AgentSettingsPage() {
                 <TextInputField
                   label="Last Name"
                   value={form.lastName}
+                  error={profileFieldErrors.lastName}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, lastName: e.target.value }))
                   }
@@ -461,6 +480,7 @@ export default function AgentSettingsPage() {
                 type="tel"
                 inputMode="tel"
                 value={form.phone}
+                error={profileFieldErrors.phone}
                 onChange={(e) =>
                   setForm((p) => ({ ...p, phone: e.target.value }))
                 }
@@ -469,6 +489,7 @@ export default function AgentSettingsPage() {
               <TextInputField
                 label="Home Address"
                 value={form.address}
+                error={profileFieldErrors.address}
                 onChange={(e) =>
                   setForm((p) => ({ ...p, address: e.target.value }))
                 }
@@ -610,6 +631,7 @@ export default function AgentSettingsPage() {
                       label: b.name,
                     }))}
                     value={kycForm.bank_code}
+                    error={kycFieldErrors.bankCode}
                     onSelectOption={(option) =>
                       setKycForm((p) => ({
                         ...p,
@@ -625,6 +647,7 @@ export default function AgentSettingsPage() {
                     inputMode="numeric"
                     maxLength={10}
                     value={kycForm.bank_account_number}
+                    error={kycFieldErrors.bankAccountNumber}
                     onChange={(e) =>
                       setKycForm((p) => ({
                         ...p,
@@ -640,6 +663,7 @@ export default function AgentSettingsPage() {
                   label="Account Name"
                   placeholder="Name on your bank account"
                   value={kycForm.bank_account_name}
+                  error={kycFieldErrors.bankAccountName}
                   onChange={(e) =>
                     setKycForm((p) => ({
                       ...p,

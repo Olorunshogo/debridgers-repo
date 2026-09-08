@@ -9,6 +9,7 @@ import {
   fadeUpVariants,
   fadeDownVariants,
   transitionBase,
+  extractServerFieldErrors,
 } from "@debridgers/ui-web";
 
 /*
@@ -61,6 +62,7 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
   const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<boolean>(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   /*
    * Held in a ref so `load` can stay dependency-free.
@@ -107,17 +109,20 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
     setBankCode(value);
     setResolved(null);
     setError(null);
+    setFieldErrors({});
   }
 
   function handleAccountNumberChange(value: string): void {
     setAccountNumber(value.replace(/\D/g, "").slice(0, 10));
     setResolved(null);
     setError(null);
+    setFieldErrors({});
   }
 
   async function handleVerify(): Promise<void> {
     setVerifying(true);
     setError(null);
+    setFieldErrors({});
     try {
       const result = await apiFetch<ResolvedAccount>(
         "/agent/bank-details/resolve",
@@ -137,6 +142,7 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
           ? err.message
           : "Could not verify that account. Check the number and try again.",
       );
+      setFieldErrors(extractServerFieldErrors(err));
     } finally {
       setVerifying(false);
     }
@@ -146,6 +152,7 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
     e.preventDefault();
     setSaving(true);
     setError(null);
+    setFieldErrors({});
     try {
       const updated = await apiFetch<BankDetails>("/agent/bank-details", {
         method: "PATCH",
@@ -166,6 +173,7 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
           ? err.message
           : "Could not save your bank details. Please try again.",
       );
+      setFieldErrors(extractServerFieldErrors(err));
     } finally {
       setSaving(false);
     }
@@ -175,6 +183,7 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
     setEditing(true);
     setResolved(null);
     setError(null);
+    setFieldErrors({});
     setBankCode(details?.bank_code ?? "");
     setAccountNumber(details?.bank_account_number ?? "");
   }
@@ -183,6 +192,7 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
     setEditing(false);
     setResolved(null);
     setError(null);
+    setFieldErrors({});
   }
 
   // === Derived
@@ -193,7 +203,8 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
   const accountNumberError =
     accountNumber.length > 0 && accountNumber.length < 10
       ? "Account number must be 10 digits"
-      : undefined;
+      : fieldErrors.accountNumber;
+  const bankCodeError = fieldErrors.bankCode;
 
   if (loading) {
     return (
@@ -274,6 +285,7 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
               placeholder="Select your bank"
               options={bankOptions}
               value={bankCode}
+              error={bankCodeError}
               onChange={(e) => handleBankChange(e.target.value)}
               required
             />
