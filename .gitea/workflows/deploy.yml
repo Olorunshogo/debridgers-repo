@@ -162,25 +162,21 @@ jobs:
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "docker login -u '$DOCKERHUB_USERNAME' --password-stdin" <<< "$DOCKERHUB_TOKEN"
 
+          # Always rebuild. Skipping on an existing tag re-deploys a broken
+          # image forever (see @debridgers/ratings MODULE_NOT_FOUND).
+          # Build + local up first; Hub push after so CI can go green on health.
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "set -eu
             cd /opt/debridgers
             IMAGE_SHA='${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${SHORT_SHA}'
             IMAGE_BRANCH='${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${BRANCH_TAG}'
-            if docker manifest inspect \"\$IMAGE_SHA\" >/dev/null 2>&1 \
-              || docker image inspect \"\$IMAGE_SHA\" >/dev/null 2>&1; then
-              echo \"==> \$IMAGE_SHA already exists — skipping build/push, will restart\"
-            else
-              docker build --target=prod \
-                -t \"\$IMAGE_SHA\" \
-                -t \"\$IMAGE_BRANCH\" \
-                -f ./docker/backend.Dockerfile .
-              docker push \"\$IMAGE_SHA\"
-              docker push \"\$IMAGE_BRANCH\"
-            fi"
-
-          # Deploy / restart
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "chmod +x /opt/debridgers/deploy.sh && /opt/debridgers/deploy.sh ${SHORT_SHA}"
+            docker build --target=prod \
+              -t \"\$IMAGE_SHA\" \
+              -t \"\$IMAGE_BRANCH\" \
+              -f ./docker/backend.Dockerfile .
+            chmod +x /opt/debridgers/deploy.sh
+            /opt/debridgers/deploy.sh ${SHORT_SHA}
+            docker push \"\$IMAGE_SHA\"
+            docker push \"\$IMAGE_BRANCH\""
 
   deploy-production:
     needs: [build, test]
@@ -254,18 +250,11 @@ jobs:
             cd /opt/debridgers
             IMAGE_SHA='${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${SHORT_SHA}'
             IMAGE_BRANCH='${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${BRANCH_TAG}'
-            if docker manifest inspect \"\$IMAGE_SHA\" >/dev/null 2>&1 \
-              || docker image inspect \"\$IMAGE_SHA\" >/dev/null 2>&1; then
-              echo \"==> \$IMAGE_SHA already exists — skipping build/push, will restart\"
-            else
-              docker build --target=prod \
-                -t \"\$IMAGE_SHA\" \
-                -t \"\$IMAGE_BRANCH\" \
-                -f ./docker/backend.Dockerfile .
-              docker push \"\$IMAGE_SHA\"
-              docker push \"\$IMAGE_BRANCH\"
-            fi"
-
-          # Deploy / restart
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "chmod +x /opt/debridgers/deploy.sh && /opt/debridgers/deploy.sh ${SHORT_SHA}"
+            docker build --target=prod \
+              -t \"\$IMAGE_SHA\" \
+              -t \"\$IMAGE_BRANCH\" \
+              -f ./docker/backend.Dockerfile .
+            chmod +x /opt/debridgers/deploy.sh
+            /opt/debridgers/deploy.sh ${SHORT_SHA}
+            docker push \"\$IMAGE_SHA\"
+            docker push \"\$IMAGE_BRANCH\""

@@ -19,6 +19,7 @@ COPY libs/shared-theme/package.json libs/shared-theme/
 COPY libs/shared-utils/package.json libs/shared-utils/
 COPY packages/api-client/package.json packages/api-client/
 COPY packages/pricing/package.json packages/pricing/
+COPY packages/ratings/package.json packages/ratings/
 COPY packages/ui-app/package.json packages/ui-app/
 COPY packages/ui-web/package.json packages/ui-web/
 
@@ -39,9 +40,12 @@ CMD ["pnpm", "--filter", "@debridgers/debridgers-backend", "dev"]
 
 # === Production
 # Last stage, so a build with no explicit target still produces this.
+# Workspace packages the API imports at runtime must be built to dist
+# (Node cannot load their TypeScript source). Nest does not bundle them.
 FROM base AS prod
 
 RUN pnpm --filter @debridgers/pricing build && \
+    pnpm --filter @debridgers/ratings build && \
     pnpm --filter @debridgers/debridgers-backend build
 
 # Install tsx for database migrations

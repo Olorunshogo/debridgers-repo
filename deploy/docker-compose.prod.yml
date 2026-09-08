@@ -1,3 +1,8 @@
+# Explicit project name so `down`/`up` always hit the same stack, even when
+# the compose file is invoked from different paths (CI used to flip between
+# /opt/debridgers/docker-compose.yml and deploy/docker-compose.prod.yml).
+name: debridgers
+
 services:
   debridgers-backend:
     image: 1techhunter/debridgers:${IMAGE_TAG:-develop}
