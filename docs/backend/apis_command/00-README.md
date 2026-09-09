@@ -20,16 +20,17 @@ chmod +x *.sh
 
 ## Module Overview
 
-| #   | Module         | File               | Authentication | Purpose                                           |
-| --- | -------------- | ------------------ | -------------- | ------------------------------------------------- |
-| 1   | **Auth**       | `01-auth.sh`       | Public         | Register, Login, Password Reset, Token Management |
-| 2   | **Payment**    | `02-payment.sh`    | Mixed          | Payment Processing, Payouts, Refunds, Webhooks    |
-| 3   | **Public**     | `03-public.sh`     | None           | Products, Zones, Categories, Config (No Auth)     |
-| 4   | **Agent**      | `04-agent.sh`      | Agent Required | Agent Profile, Stock, KYC, Wallet, Withdrawals    |
-| 5   | **Buyer**      | `05-buyer.sh`      | Buyer Required | Cart, Favorites, Orders, Checkout                 |
-| 6   | **Admin**      | `06-admin.sh`      | Admin Required | User Management, Approvals, Orders, Disputes      |
-| 7   | **Commission** | `07-commission.sh` | Agent/Admin    | Commission Tracking, History, Payouts             |
-| 8   | **Contact**    | `08-contact.sh`    | User Required  | Support Tickets, Customer Service                 |
+| #   | Module         | File                      | Authentication | Purpose                                            |
+| --- | -------------- | ------------------------- | -------------- | -------------------------------------------------- |
+| 1   | **Auth**       | `01-auth.sh`              | Public         | Register, Login, Password Reset, Token Management  |
+| 2   | **Payment**    | `02-payment.sh`           | Mixed          | Payment Processing, Payouts, Refunds, Webhooks     |
+| 3   | **Public**     | `03-public.sh`            | None           | Products, Zones, Categories, Config (No Auth)      |
+| 4   | **Agent**      | `04-agent.sh`             | Agent Required | Agent Profile, Stock, KYC, Wallet, Withdrawals     |
+| 5   | **Buyer**      | `05-buyer.sh`             | Buyer Required | Cart, Favorites, Orders, Checkout                  |
+| 6   | **Admin**      | `06-admin.sh`             | Admin Required | User Management, Approvals, Orders, Disputes       |
+| 7   | **Commission** | `07-commission.sh`        | Agent/Admin    | Commission Tracking, History, Payouts              |
+| 8   | **Contact**    | `08-contact.sh`           | User Required  | Support Tickets, Customer Service                  |
+| 9   | **HR**         | `09-hr-security-smoke.sh` | Mixed          | Auth/Roles matrix + HR smoke (careers → analytics) |
 
 ---
 

@@ -1,0 +1,64 @@
+{
+  "name": "debridgers-hr",
+  "root": "apps/debridgers-hr",
+  "sourceRoot": "apps/debridgers-hr/app",
+  "projectType": "application",
+  "tags": ["scope:frontend", "type:app"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "outputs": ["{projectRoot}/build"],
+      "options": {
+        "command": "pnpm run build",
+        "cwd": "apps/debridgers-hr"
+      }
+    },
+    "build:staging": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "outputs": ["{projectRoot}/build"],
+      "options": {
+        "command": "pnpm run build:staging",
+        "cwd": "apps/debridgers-hr"
+      }
+    },
+    "build:production": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "outputs": ["{projectRoot}/build"],
+      "options": {
+        "command": "pnpm run build:production",
+        "cwd": "apps/debridgers-hr"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run dev",
+        "cwd": "apps/debridgers-hr"
+      }
+    },
+    "start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run start",
+        "cwd": "apps/debridgers-hr"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run lint",
+        "cwd": "apps/debridgers-hr"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run typecheck",
+        "cwd": "apps/debridgers-hr"
+      }
+    }
+  }
+}

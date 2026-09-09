@@ -38,3 +38,5 @@ export * from "./schemas/admin_invites.schema";
 export * from "./schemas/delivery_promotions.schema";
 export * from "./schemas/newsletter.schema";
 export * from "./schemas/ratings_submissions.schema";
+export * from "./schemas/hr.schema";
+export * from "./schemas/hr-ops.schema";

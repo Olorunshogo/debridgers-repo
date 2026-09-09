@@ -1,8 +1,18 @@
 /*
  * investor, farmer and logistics are reserved, not active roles: no schema, signup config or dashboard exists for them yet.
  * Uncomment as each gets real backend support, matching apps/debridgers-backend's roles.type.ts.
+ *
+ * hr / applicant / employee power the HR product. Offer accept flips applicant → employee.
  */
-export type UserRole = "admin" | "agent" | "buyer" | "company";
+export type UserRole =
+  | "admin"
+  | "agent"
+  | "buyer"
+  | "company"
+  | "hr"
+  | "hiring_manager"
+  | "applicant"
+  | "employee";
 // | "investor"
 // | "farmer"
 // | "logistics";

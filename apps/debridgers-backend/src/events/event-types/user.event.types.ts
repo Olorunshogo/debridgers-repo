@@ -1,3 +1,5 @@
+import type { UserRole } from "../../interfaces/users/roles.type";
+
 export const USER_EVENTS = {
   USER_REGISTERED: "user.registered",
   CONTACT_SUBMITTED: "contact.submitted",
@@ -21,7 +23,7 @@ export interface UserRegisteredPayload {
   name: string;
   email: string;
   otp: string;
-  role: "admin" | "agent" | "buyer" | "company";
+  role: UserRole;
 }
 
 export interface AgentAppliedPayload {
@@ -55,24 +57,26 @@ export interface PasswordResetRequestedPayload {
   name: string;
   email: string;
   token: string;
+  role: UserRole;
 }
 
 export interface PasswordResetCompletedPayload {
   name: string;
   email: string;
+  role: UserRole;
 }
 
 export interface EmailVerificationRequestedPayload {
   name: string;
   email: string;
   token: string;
-  role: "admin" | "agent" | "buyer" | "company";
+  role: UserRole;
 }
 
 export interface UserLoggedInPayload {
   name: string;
   email: string;
-  role: "admin" | "agent" | "buyer" | "company";
+  role: UserRole;
   device?: string;
   ip_address?: string;
 }

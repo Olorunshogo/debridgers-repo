@@ -206,6 +206,7 @@ export class UserListeners {
         payload.email,
         payload.name,
         payload.token,
+        payload.role,
       );
     } catch (error) {
       this.logger.warn(`Password reset email failed for ${payload.email}`);
@@ -221,6 +222,7 @@ export class UserListeners {
       await this.emailService.sendPasswordResetConfirmation(
         payload.email,
         payload.name,
+        payload.role,
       );
     } catch (error) {
       this.logger.warn(

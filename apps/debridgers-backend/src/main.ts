@@ -221,6 +221,8 @@ async function bootstrap() {
 bootstrap().catch((err) => {
   const message = err instanceof Error ? err.message : String(err);
   const stack = err instanceof Error ? err.stack : undefined;
-  Logger.error(`❌ Bootstrap failed: ${message}`, stack, "Bootstrap");
+  // bufferLogs: true swallows Nest Logger output if boot dies before useLogger.
+  console.error(`❌ Bootstrap failed: ${message}`);
+  if (stack) console.error(stack);
   process.exit(1);
 });

@@ -19,7 +19,14 @@ import type { JwtPayload } from "@debridgers/api-client";
 export interface AuthUser {
   sub: number;
   email: string;
-  role: "buyer" | "agent" | "admin";
+  role:
+    | "buyer"
+    | "agent"
+    | "admin"
+    | "hr"
+    | "hiring_manager"
+    | "applicant"
+    | "employee";
   admin_tier?: "super" | "sub";
 }
 
@@ -66,6 +73,11 @@ function dashboardForRole(role: string, _adminTier?: string): string {
       return "/admin-dashboard";
     case "agent":
       return "/agent-dashboard";
+    case "hr":
+    case "hiring_manager":
+    case "applicant":
+    case "employee":
+      return "/hr-dashboard";
     default:
       return "/buyer-dashboard";
   }
