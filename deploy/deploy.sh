@@ -104,14 +104,26 @@ fi
 echo "==> Stopping and removing old ${DEPLOY_ENV} containers"
 compose down --remove-orphans || true
 
-# Legacy single-stack names from before the dual-env split.
-if [[ "${DEPLOY_ENV}" == "prod" ]]; then
-  for name in debridgers-backend; do
-    if docker container inspect "${name}" >/dev/null 2>&1; then
-      echo "==> Removing legacy container ${name}"
-      docker rm -f "${name}" || true
-    fi
-  done
+# Pre-split compose bound both 4001 and 4002 on one container named
+# debridgers-backend. That blocks debridgers-backend-dev/prod from starting.
+# Tear it down on every env deploy, then retire the file so nothing restarts it.
+LEGACY_COMPOSE="${ROOT_DIR}/docker-compose.yml"
+if [[ -f "${LEGACY_COMPOSE}" ]]; then
+  echo "==> Stopping legacy single-stack backend from ${LEGACY_COMPOSE}"
+  COMPOSE_PROJECT_NAME="debridgers" \
+    docker compose -f "${LEGACY_COMPOSE}" stop debridgers-backend 2>/dev/null || true
+  COMPOSE_PROJECT_NAME="debridgers" \
+    docker compose -f "${LEGACY_COMPOSE}" rm -f debridgers-backend 2>/dev/null || true
+  if [[ ! -e "${ROOT_DIR}/docker-compose.yml.pre-dual-stack" ]]; then
+    mv "${LEGACY_COMPOSE}" "${ROOT_DIR}/docker-compose.yml.pre-dual-stack"
+  else
+    rm -f "${LEGACY_COMPOSE}"
+  fi
+fi
+
+if docker container inspect debridgers-backend >/dev/null 2>&1; then
+  echo "==> Removing legacy container debridgers-backend"
+  docker rm -f debridgers-backend || true
 fi
 
 BACKEND_NAME="debridgers-backend-${DEPLOY_ENV}"
