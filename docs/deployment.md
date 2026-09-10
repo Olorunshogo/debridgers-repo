@@ -8,8 +8,8 @@ Production-grade deployment of Debridgers backend to Hetzner using Docker, Codeb
 Internet
     ↓
 Cloudflare Tunnel (one tunnel on the VPS)
-    ├── api-test.debridgers.com → 127.0.0.1:4002  (dev stack)
-    └── api.debridgers.com      → 127.0.0.1:4001  (prod stack)
+    ├── api-test.debridgers.com → 127.0.0.1:4001  (dev stack)
+    └── api.debridgers.com      → 127.0.0.1:4002  (prod stack)
     ↓
 Hetzner VPS (single host)
     ├── /opt/debridgers/dev   → debridgers-backend-dev  (Neon test DB)
@@ -225,7 +225,8 @@ docker compose logs -f
 curl https://api-test.debridgers.com/api/v1/health
 
 # From VPS (localhost)
-curl -f http://127.0.0.1:4001/api/v1/health
+curl -f http://127.0.0.1:4001/api/v1/health   # dev
+curl -f http://127.0.0.1:4002/api/v1/health   # prod
 ```
 
 ### Container Status
@@ -296,12 +297,13 @@ Use Hetzner's built-in backup/snapshots:
 
 | Issue                        | Check                                                      |
 | ---------------------------- | ---------------------------------------------------------- |
-| "Connection refused on 4001" | `docker compose ps` — is backend running?                  |
+| "Connection refused on 4001/4002" | `docker compose ps` in `/opt/debridgers/dev` or `prod` |
 | "docker: permission denied"  | `sudo usermod -aG docker $USER`                            |
 | "Tunnel not connected"       | `docker compose logs cloudflared` — check creds.json       |
 | "Image pull failed"          | `docker login code.codeberg.org`                           |
 | "Migration failed"           | `docker compose logs debridgers-backend`                   |
-| "Health check timeout"       | Wait 30s; check `curl http://127.0.0.1:4001/api/v1/health` |
+| "Health check timeout"       | Wait 30s; `curl http://127.0.0.1:4001/api/v1/health` (dev) or `:4002` (prod) |
+| "port is already allocated"  | Wrong HOST_PORT for the stack, or old container still bound |
 | ".env not found"             | Verify `/opt/debridgers/.env` exists and readable          |
 
 ### Common Commands on VPS

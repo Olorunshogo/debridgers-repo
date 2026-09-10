@@ -1,5 +1,5 @@
 # One compose file for both stacks on a single VPS.
-# DEPLOY_ENV and HOST_PORT come from deploy.sh (dev → 4002, prod → 4001).
+# DEPLOY_ENV and HOST_PORT come from deploy.sh (dev → 4001, prod → 4002).
 name: debridgers-${DEPLOY_ENV:-prod}
 
 services:

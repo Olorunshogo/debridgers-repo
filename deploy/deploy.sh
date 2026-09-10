@@ -3,8 +3,8 @@
 # Usage: deploy.sh <image-tag> <dev|prod>
 #
 # One VPS, two stacks:
-#   prod → /opt/debridgers/prod  host port 4001  (api.debridgers.com)
-#   dev  → /opt/debridgers/dev   host port 4002  (api-test.debridgers.com)
+#   prod → /opt/debridgers/prod  host port 4002  (api.debridgers.com)
+#   dev  → /opt/debridgers/dev   host port 4001  (api-test.debridgers.com)
 # Each stack has its own .env (and therefore its own DATABASE_URL).
 set -euo pipefail
 
@@ -14,11 +14,11 @@ DEPLOY_ENV="${2:?Usage: deploy.sh <image-tag> <dev|prod>}"
 case "${DEPLOY_ENV}" in
   dev)
     APP_DIR="/opt/debridgers/dev"
-    HOST_PORT="4002"
+    HOST_PORT="4001"
     ;;
   prod)
     APP_DIR="/opt/debridgers/prod"
-    HOST_PORT="4001"
+    HOST_PORT="4002"
     ;;
   *)
     echo "==> DEPLOY_ENV must be 'dev' or 'prod' (got: ${DEPLOY_ENV})" >&2

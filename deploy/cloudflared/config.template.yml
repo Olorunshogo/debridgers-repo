@@ -1,7 +1,7 @@
 # Cloudflare Tunnel ingress for a single VPS running both stacks.
 # cloudflared uses host networking, so it reaches the published host ports:
-#   prod  → 127.0.0.1:4001  (api.debridgers.com)
-#   dev   → 127.0.0.1:4002  (api-test.debridgers.com)
+#   prod  → 127.0.0.1:4002  (api.debridgers.com)
+#   dev   → 127.0.0.1:4001  (api-test.debridgers.com)
 #
 # If the tunnel is token-managed in the Cloudflare dashboard, mirror these
 # hostname → service mappings there instead of (or as well as) this file.
@@ -11,7 +11,7 @@ credentials-file: /etc/cloudflared/creds.json
 
 ingress:
   - hostname: api-test.debridgers.com
-    service: http://127.0.0.1:4002
-  - hostname: api.debridgers.com
     service: http://127.0.0.1:4001
+  - hostname: api.debridgers.com
+    service: http://127.0.0.1:4002
   - service: http_status:404

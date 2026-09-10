@@ -2,8 +2,8 @@
 # Frontend apps are handled by frontend.yml.
 #
 # One VPS, two stacks (different Neon DATABASE_URL per Codeberg environment secret):
-#   develop  → /opt/debridgers/dev  :4002  api-test.debridgers.com
-#   main     → /opt/debridgers/prod :4001  api.debridgers.com
+#   develop  → /opt/debridgers/dev  :4001  api-test.debridgers.com
+#   main     → /opt/debridgers/prod :4002  api.debridgers.com
 name: Backend
 
 on:
