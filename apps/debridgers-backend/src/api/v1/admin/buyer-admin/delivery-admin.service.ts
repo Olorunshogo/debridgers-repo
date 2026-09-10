@@ -9,6 +9,7 @@ import { eq, and, desc, isNull, inArray } from "drizzle-orm";
 import * as schema from "../../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../../infrastructure/database/database.provider";
 import { NotificationsService } from "../../buyer/notifications.service";
+import { RatingsService } from "../../ratings/ratings.service";
 import type { VerifyDeliveryDto } from "./dto/verify-delivery.dto";
 import type { OrderStatus } from "../../../shared/order-status";
 
@@ -36,6 +37,7 @@ export class DeliveryAdminService {
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
     private readonly notificationsService: NotificationsService,
+    private readonly ratings: RatingsService,
   ) {}
 
   async listPendingDeliveries() {
@@ -90,6 +92,7 @@ export class DeliveryAdminService {
       .select({
         id: schema.orders.id,
         buyer_id: schema.orders.buyer_id,
+        agent_id: schema.orders.agent_id,
         order_reference: schema.orders.order_reference,
         status: schema.orders.status,
         delivery_verified_at: schema.orders.delivery_verified_at,
@@ -117,6 +120,7 @@ export class DeliveryAdminService {
       .update(schema.orders)
       .set({
         status: "delivered",
+        delivered_at: new Date(),
         delivery_verified_at: new Date(),
         delivery_verified_by_admin_id: adminId,
         delivery_proof_photos: data.photos,
@@ -152,6 +156,12 @@ export class DeliveryAdminService {
         ? `Order ${order.order_reference} was delivered and received by ${data.recipient_name}.`
         : `Order ${order.order_reference} was delivered.`,
     );
+
+    await this.ratings.notifyPendingOnDelivery({
+      id: order.id,
+      buyer_id: order.buyer_id,
+      agent_id: order.agent_id,
+    });
 
     return {
       order_id: orderId,

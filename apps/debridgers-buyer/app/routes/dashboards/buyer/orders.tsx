@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Package } from "lucide-react";
 import { apiFetch, ApiError } from "@debridgers/api-client";
@@ -186,8 +187,13 @@ const COLUMNS: readonly TableColumn<Order>[] = [
 
 export default function BuyerOrders() {
   const { triggerDialog } = useDialog();
-  const { pending: pendingRatings, reload: reloadPendingRatings } =
-    usePendingRatings();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const {
+    pending: pendingRatings,
+    loading: pendingLoading,
+    reload: reloadPendingRatings,
+  } = usePendingRatings();
+  const ratingPromptOpened = useRef(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("all");
@@ -260,6 +266,42 @@ export default function BuyerOrders() {
   useEffect(() => {
     load();
   }, [load]);
+
+  /*
+   * After delivery, open the first pending rating sheet once.
+   * ?rate=1 comes from the notification deep-link; otherwise any visit with pending ratings also prompts.
+   */
+  useEffect(() => {
+    if (
+      pendingLoading ||
+      ratingPromptOpened.current ||
+      pendingRatings.length === 0
+    ) {
+      return;
+    }
+
+    ratingPromptOpened.current = true;
+    const first = pendingRatings[0];
+    triggerDialog("RATE_ORDER", {
+      contextKey: first.contextKey,
+      orderId: first.orderId,
+      subjectLabel: first.description,
+      onRated: reloadPendingRatings,
+    });
+
+    if (searchParams.get("rate") === "1") {
+      const next = new URLSearchParams(searchParams);
+      next.delete("rate");
+      setSearchParams(next, { replace: true });
+    }
+  }, [
+    pendingLoading,
+    pendingRatings,
+    reloadPendingRatings,
+    searchParams,
+    setSearchParams,
+    triggerDialog,
+  ]);
 
   const filtered = useMemo(
     () =>

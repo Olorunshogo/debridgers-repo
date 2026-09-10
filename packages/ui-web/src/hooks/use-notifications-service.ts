@@ -40,6 +40,30 @@ const ROLE_CONFIG: Record<NotificationRole, RoleConfig> = {
   },
 };
 
+/* Rating notifications deep-link to the page that can open the rating sheet. */
+const RATING_ACTION_URL: Partial<Record<NotificationRole, string>> = {
+  buyer: "/buyer-dashboard/orders?rate=1",
+  agent: "/agent-dashboard/deliveries?rate=1",
+};
+
+function mapNotification(
+  row: ApiNotification,
+  role: NotificationRole,
+): NotificationItem {
+  const ratingUrl = row.type === "rating" ? RATING_ACTION_URL[role] : undefined;
+  return {
+    id: row.id,
+    type: row.type,
+    title: row.title,
+    description: row.description,
+    created_at: row.created_at,
+    status: row.status,
+    ...(row.actionUrl || ratingUrl
+      ? { actionUrl: row.actionUrl ?? ratingUrl }
+      : {}),
+  };
+}
+
 /*
  * The bell's dot is read from localStorage by DashboardLayout on every navigation, so it stays in step with whatever this hook last saw.
  */
@@ -61,6 +85,7 @@ interface ApiNotification {
   description: string;
   created_at: string;
   status: NotificationStatus;
+  actionUrl?: string;
 }
 
 /** `recent` is the most recent few, for the topbar dropdown. */
@@ -98,7 +123,7 @@ export function useNotificationsService({
       const rows = await apiFetch<ApiNotification[]>(
         `${base}?page=1&limit=${PAGE_SIZE}`,
       );
-      setNotifications(rows);
+      setNotifications(rows.map((row) => mapNotification(row, role)));
       setPage(1);
       setHasMore(rows.length === PAGE_SIZE);
       setError(null);
@@ -114,7 +139,7 @@ export function useNotificationsService({
     } finally {
       setLoading(false);
     }
-  }, [base]);
+  }, [base, role]);
 
   const onLoadMore = useCallback(async (): Promise<void> => {
     if (loadingMore || !hasMore) return;
@@ -127,7 +152,10 @@ export function useNotificationsService({
       /* Dedupe on id: a row inserted between page reads shifts the offset and could otherwise repeat the last item of the previous page. */
       setNotifications((prev) => {
         const seen = new Set(prev.map((n) => n.id));
-        return [...prev, ...rows.filter((r) => !seen.has(r.id))];
+        const mapped = rows
+          .filter((r) => !seen.has(r.id))
+          .map((row) => mapNotification(row, role));
+        return [...prev, ...mapped];
       });
       setPage(next);
       setHasMore(rows.length === PAGE_SIZE);
@@ -136,7 +164,7 @@ export function useNotificationsService({
     } finally {
       setLoadingMore(false);
     }
-  }, [base, page, hasMore, loadingMore]);
+  }, [base, page, hasMore, loadingMore, role]);
 
   useEffect(() => {
     void load();

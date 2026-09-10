@@ -7,15 +7,16 @@ Production-grade deployment of Debridgers backend to Hetzner using Docker, Codeb
 ```
 Internet
     ↓
-Cloudflare Tunnel (encrypted outbound-only connection)
+Cloudflare Tunnel (one tunnel on the VPS)
+    ├── api-test.debridgers.com → 127.0.0.1:4002  (dev stack)
+    └── api.debridgers.com      → 127.0.0.1:4001  (prod stack)
     ↓
-Hetzner VPS (no public ports exposed)
-    ↓
-Docker
-├─ debridgers-backend (NestJS, port 4001)
-└─ cloudflared (tunnel daemon)
+Hetzner VPS (single host)
+    ├── /opt/debridgers/dev   → debridgers-backend-dev  (Neon test DB)
+    ├── /opt/debridgers/prod  → debridgers-backend-prod (Neon live DB)
+    └── debridgers-cloudflared (shared)
 
-Database: Neon PostgreSQL (managed, automated backups)
+Database: two Neon databases (or branches), one per stack. Never share DATABASE_URL.
 ```
 
 ## Prerequisites
@@ -59,61 +60,32 @@ scp deploy/docker-compose.prod.yml <SSH_USER>@<VPS_IP>:/opt/debridgers/docker-co
 scp deploy/cloudflared/config.template.yml <SSH_USER>@<VPS_IP>:/opt/debridgers/cloudflared/
 ```
 
-### 4. Create `.env` File
+### 4. Create `.env` files (one per stack)
 
-On the VPS, create `/opt/debridgers/.env`:
+The API only reads **`DATABASE_URL`**. There is no `PROD_DATABASE_URL` or
+`DEV_DATABASE_URL`. Dev and prod each get their own file with a different Neon URL.
+
+Templates (fill secrets with `openssl rand -hex 32`, never commit the filled files):
+
+- `deploy/env.dev.example` → `/opt/debridgers/dev/.env` → Codeberg secret `ENV_FILE_DEV`
+- `deploy/env.prod.example` → `/opt/debridgers/prod/.env` → Codeberg secret `ENV_FILE_PROD`
 
 ```bash
-cat > /opt/debridgers/.env <<'EOF'
-# Database (from Neon)
-DATABASE_URL="postgresql://user:password@host:5432/dbname?sslmode=require"
-
-# Cloudflare Tunnel
-TUNNEL_ID="<tunnel-id-from-cloudflare>"
-
-# Application
-NODE_ENV=production
-PORT=4001
-APP_URL=https://api-test.debridgers.com
-
-# Auth Tokens (generate random 64-char hex strings: `openssl rand -hex 32`)
-ACCESS_TOKEN_SECRET="<64-random-hex>"
-ACCESS_TOKEN_EXPIRY=15m
-REFRESH_TOKEN_SECRET="<64-random-hex>"
-REFRESH_TOKEN_EXPIRY=7d
-
-# Cloudinary (image uploads)
-CLOUDINARY_CLOUD_NAME="<your-cloud-name>"
-CLOUDINARY_API_KEY="<your-api-key>"
-CLOUDINARY_API_SECRET="<your-api-secret>"
-
-# Mailtrap (email)
-MAILTRAP_TOKEN="<your-token>"
-MAILTRAP_FROM_EMAIL="noreply@debridgers.com"
-MAILTRAP_FROM_NAME="Debridgers"
-
-# Paystack (payments)
-PAYSTACK_SECRET_KEY="sk_live_..."
-PAYSTACK_PUBLIC_KEY="pk_live_..."
-PAYSTACK_WEBHOOK_SECRET="whsec_..."
-
-# CORS
-ALLOWED_ORIGINS="https://api-test.debridgers.com"
-
-# Admin Seed
-ADMIN_EMAIL="admin@debridgers.com"
-ADMIN_PASSWORD="<strong-password>"
-
-# Analytics (optional)
-POSTHOG_API_KEY="phc_..."
-POSTHOG_HOST="https://us.i.posthog.com"
-
-# Image Tag (set by CI/CD, leave empty initially)
-IMAGE_TAG=""
-EOF
-
-chmod 600 /opt/debridgers/.env
+# On the VPS
+mkdir -p /opt/debridgers/dev /opt/debridgers/prod
+# Copy filled templates into place (or let CI write them from ENV_FILE_* secrets)
+chmod 600 /opt/debridgers/dev/.env /opt/debridgers/prod/.env
 ```
+
+Do **not** use values like `debridgers_access_secret_change_in_production`. Generate:
+
+```bash
+openssl rand -hex 32   # ACCESS_TOKEN_SECRET
+openssl rand -hex 32   # REFRESH_TOKEN_SECRET
+openssl rand -base64 24  # ADMIN_PASSWORD
+```
+
+Use different secrets for dev and prod.
 
 ### 5. Install Cloudflare Tunnel Credentials
 
@@ -146,27 +118,17 @@ In `https://codeberg.org/DEBRIDGERS_LTD/Debridgers/settings/secrets`:
 
 #### For Dev Environment (`dev`)
 
-```
-SSH_HOST=<dev-vps-ip>
-SSH_USER=<deployment-user>  # e.g., "root" or "debridgers"
-SSH_PRIVATE_KEY=<private-key-content>
-```
+Same `SSH_HOST` / `SSH_USER` / `SSH_PRIVATE_KEY` as production when both stacks share one VPS.
 
-#### For Production Environment (`production`)
+Codeberg/Forgejo usually has repo **Secrets** and **Variables**, not GitHub-style Environments.
+Put the two env payloads under **Secrets** (not Variables):
 
 ```
-SSH_HOST=<prod-vps-ip>
-SSH_USER=<deployment-user>
-SSH_PRIVATE_KEY=<private-key-content>
+ENV_FILE_DEV=<full contents of /opt/debridgers/dev/.env — test Neon DATABASE_URL>
+ENV_FILE_PROD=<full contents of /opt/debridgers/prod/.env — live Neon DATABASE_URL>
 ```
 
-#### Global Secrets (both environments)
-
-```
-CODEBERG_TOKEN=<your-personal-access-token>
-ENV_FILE=<entire-.env-file-multiline>
-CLOUDFLARE_TUNNEL_CREDENTIALS=<credentials.json-multiline>
-```
+`develop` deploys use `ENV_FILE_DEV`; `main` uses `ENV_FILE_PROD`. You can keep the old `ENV_FILE` secret or delete it once both are set.
 
 ### Generate SSH Key for Deployments
 
@@ -215,7 +177,7 @@ ssh <SSH_USER>@<VPS_IP>
 cd /opt/debridgers
 
 # Deploy specific image
-./deploy.sh abc1234  # or 'latest', 'develop'
+./deploy.sh abc1234 prod  # or: ./deploy.sh abc1234 dev
 ```
 
 ## Database Migrations

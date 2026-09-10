@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router";
 import { motion } from "framer-motion";
 import { Truck, MapPin, Phone } from "lucide-react";
 import { apiFetch, ApiError } from "@debridgers/api-client";
@@ -64,8 +65,13 @@ const STATUS_LABEL: Record<AgentOrderStatus, string> = {
 // === Page
 export default function AgentDeliveriesPage() {
   const { triggerDialog } = useDialog();
-  const { pending: pendingRatings, reload: reloadPendingRatings } =
-    usePendingRatings();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const {
+    pending: pendingRatings,
+    loading: pendingLoading,
+    reload: reloadPendingRatings,
+  } = usePendingRatings();
+  const ratingPromptOpened = useRef(false);
   const { data, error, loading, refetch, refetching } = useAsyncResource<
     AgentOrder[]
   >(
@@ -78,6 +84,42 @@ export default function AgentDeliveriesPage() {
   const [actionError, setActionError] = useState<string | null>(null);
 
   const orders: AgentOrder[] = data ?? [];
+
+  /*
+   * After delivery, open the first pending rating sheet once.
+   * ?rate=1 comes from the notification deep-link.
+   */
+  useEffect(() => {
+    if (
+      pendingLoading ||
+      ratingPromptOpened.current ||
+      pendingRatings.length === 0
+    ) {
+      return;
+    }
+
+    ratingPromptOpened.current = true;
+    const first = pendingRatings[0];
+    triggerDialog("RATE_ORDER", {
+      contextKey: first.contextKey,
+      orderId: first.orderId,
+      subjectLabel: first.description,
+      onRated: reloadPendingRatings,
+    });
+
+    if (searchParams.get("rate") === "1") {
+      const next = new URLSearchParams(searchParams);
+      next.delete("rate");
+      setSearchParams(next, { replace: true });
+    }
+  }, [
+    pendingLoading,
+    pendingRatings,
+    reloadPendingRatings,
+    searchParams,
+    setSearchParams,
+    triggerDialog,
+  ]);
 
   async function markOutForDelivery(id: number): Promise<void> {
     setMovingId(id);

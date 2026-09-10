@@ -451,6 +451,10 @@ export default function BuyerCheckout() {
           Your payment was received. We&apos;ll notify you when your order is
           picked up.
         </p>
+        <p className="text-body max-w-87.5 text-sm">
+          After delivery, you can rate your experience with a star score and an
+          optional comment.
+        </p>
         <Link
           to="/buyer-dashboard/orders"
           className="bg-primary rounded-full px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"

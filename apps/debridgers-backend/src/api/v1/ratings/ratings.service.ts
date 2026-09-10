@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, isNull, sql } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";
@@ -129,7 +129,7 @@ export class RatingsService {
   }
 
   /*
-   * Called once, from the single place that closes an order out as "delivered" (AdminService.updateOrderStatus).
+   * Called when an order closes as "delivered" (AdminService.updateOrderStatus or DeliveryAdminService.verifyDelivery).
    * Writes a real notification row per context that now applies, so a pending rating shows up in the same bell and the same unread count as everything else.
    * There is no separate pending-ratings inbox to keep in sync.
    */
@@ -361,6 +361,99 @@ export class RatingsService {
       formulaVersion: 1,
     };
   }
+
+  /*
+   * Landing-page testimonials. Delivery ratings only: agent and buyer scores stay private by design.
+   * First name, avatar, and delivery zone only; score 4+, non-empty comment, not disputed.
+   * Empty list is fine; the marketing page keeps curated fallbacks.
+   */
+  async listPublicTestimonials(limit: number = 6): Promise<{
+    items: Array<{
+      score: number;
+      comment: string;
+      createdAt: string;
+      authorLabel: string;
+      avatarUrl: string | null;
+      location: string;
+    }>;
+    summary: {
+      score: string;
+      count: number;
+      displayable: boolean;
+    };
+  }> {
+    const capped = Math.min(Math.max(limit, 1), 12);
+
+    const rows = await this.db
+      .select({
+        score: schema.ratingsSubmissions.score,
+        comment: schema.ratingsSubmissions.comment,
+        created_at: schema.ratingsSubmissions.created_at,
+        first_name: schema.users.first_name,
+        avatar_url: schema.users.avatar_url,
+        zone_name: schema.zones.name,
+      })
+      .from(schema.ratingsSubmissions)
+      .innerJoin(
+        schema.users,
+        eq(schema.ratingsSubmissions.rater_id, schema.users.id),
+      )
+      .leftJoin(schema.zones, eq(schema.users.zone_id, schema.zones.id))
+      .where(
+        and(
+          eq(
+            schema.ratingsSubmissions.context_key,
+            "ORDER_COMPLETED_BUYER_RATES_DELIVERY",
+          ),
+          eq(schema.ratingsSubmissions.disputed, false),
+          isNull(schema.ratingsSubmissions.deleted_at),
+          gte(schema.ratingsSubmissions.score, 4),
+          isNotNull(schema.ratingsSubmissions.comment),
+          sql`length(trim(${schema.ratingsSubmissions.comment})) >= 12`,
+        ),
+      )
+      .orderBy(desc(schema.ratingsSubmissions.created_at))
+      .limit(capped);
+
+    const summaryRows = await this.db
+      .select({
+        score: schema.ratingsSubmissions.score,
+        weight: schema.ratingsSubmissions.weight,
+      })
+      .from(schema.ratingsSubmissions)
+      .where(
+        and(
+          eq(schema.ratingsSubmissions.target_type, "delivery"),
+          eq(schema.ratingsSubmissions.disputed, false),
+          isNull(schema.ratingsSubmissions.deleted_at),
+        ),
+      );
+
+    const weightedSum = summaryRows.reduce(
+      (total, row) => total + weightedScore(row.score, row.weight),
+      0,
+    );
+    const weightedCount = summaryRows.reduce(
+      (total, row) => total + row.weight,
+      0,
+    );
+
+    return {
+      items: rows.map((row) => ({
+        score: row.score,
+        comment: (row.comment ?? "").trim().slice(0, 280),
+        createdAt: row.created_at.toISOString(),
+        authorLabel: publicAuthorLabel(row.first_name),
+        avatarUrl: row.avatar_url,
+        location: row.zone_name?.trim() || "Kaduna",
+      })),
+      summary: {
+        score: formatScore(shrinkScore(weightedSum, weightedCount)),
+        count: summaryRows.length,
+        displayable: isDisplayable(summaryRows.length),
+      },
+    };
+  }
 }
 
 // === Helpers
@@ -380,4 +473,10 @@ function resolveTarget(
   if (type === "buyer")
     return { targetType: "buyer", targetId: order.buyer_id };
   return { targetType: "delivery", targetId: null };
+}
+
+function publicAuthorLabel(firstName: string | null): string {
+  const trimmed = firstName?.trim();
+  if (!trimmed) return "A buyer in Kaduna";
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
 }

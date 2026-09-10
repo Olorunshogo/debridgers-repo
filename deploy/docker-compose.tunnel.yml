@@ -1,0 +1,18 @@
+# Shared tunnel service. Runs once on the VPS and routes both APIs by host port.
+# Started from /opt/debridgers (not from the per-env stack dirs).
+name: debridgers-tunnel
+
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: debridgers-cloudflared
+    restart: unless-stopped
+    network_mode: host
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_CREDENTIALS}
+    environment:
+      - CLOUDFLARE_TUNNEL_CREDENTIALS=${CLOUDFLARE_TUNNEL_CREDENTIALS}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

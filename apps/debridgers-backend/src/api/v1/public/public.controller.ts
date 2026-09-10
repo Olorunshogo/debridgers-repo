@@ -34,6 +34,7 @@ import {
   TIER_TWO_PER_PACKAGE_KOBO,
 } from "@debridgers/pricing";
 import { DeliveryPromotionService } from "../admin/pricing/delivery-promotion.service";
+import { RatingsService } from "../ratings/ratings.service";
 
 const webLeadSchema = z.object({
   owner_name: z.string().min(2, "Name required"),
@@ -89,6 +90,7 @@ export class PublicController {
     private readonly taxonomy: TaxonomyService,
     private readonly promotions: DeliveryPromotionService,
     private readonly redis: RedisService,
+    private readonly ratings: RatingsService,
   ) {}
 
   @Get("products")
@@ -177,6 +179,20 @@ export class PublicController {
   @ApiResponse({ status: 200, description: "Categories retrieved" })
   async getCategories() {
     return this.taxonomy.getTreeResponse(true);
+  }
+
+  @Get("testimonials")
+  @SkipThrottle({ short: true })
+  @ApiOperation({
+    summary:
+      "Public buyer delivery ratings for the marketing testimonials section",
+    description:
+      "Anonymised first-name quotes from 4+ star delivery ratings with comments. Agent and buyer scores are never included.",
+  })
+  @ApiResponse({ status: 200, description: "Testimonials retrieved" })
+  async getTestimonials() {
+    const data = await this.ratings.listPublicTestimonials(6);
+    return { message: "Testimonials retrieved", data };
   }
 
   @Get("config/public")

@@ -1,16 +1,14 @@
-# Explicit project name so `down`/`up` always hit the same stack, even when
-# the compose file is invoked from different paths (CI used to flip between
-# /opt/debridgers/docker-compose.yml and deploy/docker-compose.prod.yml).
-name: debridgers
+# One compose file for both stacks on a single VPS.
+# DEPLOY_ENV and HOST_PORT come from deploy.sh (dev → 4002, prod → 4001).
+name: debridgers-${DEPLOY_ENV:-prod}
 
 services:
   debridgers-backend:
     image: 1techhunter/debridgers:${IMAGE_TAG:-develop}
-    container_name: debridgers-backend
+    container_name: debridgers-backend-${DEPLOY_ENV:-prod}
     restart: unless-stopped
     ports:
-      - "4001:4001"
-      - "4002:4001"
+      - "${HOST_PORT:-4001}:4001"
     env_file:
       - .env
     environment:
@@ -19,31 +17,17 @@ services:
     healthcheck:
       test:
         [
-          'CMD',
-          'node',
-          '-e',
+          "CMD",
+          "node",
+          "-e",
           "require('http').get('http://127.0.0.1:4001/api/v1/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
         ]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 60s
-    logging: 
-      driver: json-file
-      options:
-        max-size: '10m'
-        max-file: '3'
-
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: debridgers-cloudflared
-    restart: unless-stopped
-    network_mode: host
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_CREDENTIALS}
-    environment:
-      - CLOUDFLARE_TUNNEL_CREDENTIALS=${CLOUDFLARE_TUNNEL_CREDENTIALS}
     logging:
       driver: json-file
       options:
-        max-size: '10m'
-        max-file: '3'
+        max-size: "10m"
+        max-file: "3"

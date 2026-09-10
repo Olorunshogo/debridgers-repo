@@ -17,6 +17,7 @@ import {
 } from "@debridgers/ui-web";
 
 import { marketingNavLinks } from "@/components/marketing/data/data";
+import { TestimonialsSection } from "../../components/marketing/TestimonialsSection";
 // === Why Debridgers
 interface WhyCardData {
   icon: string;
@@ -702,6 +703,8 @@ export default function Home() {
 
       {/* What We Deliver */}
       <WhatWeDeliver />
+
+      <TestimonialsSection />
 
       {/* Stats Section */}
       <section

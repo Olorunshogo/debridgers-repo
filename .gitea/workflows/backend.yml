@@ -1,14 +1,39 @@
-# Manual full-stack CI + backend VPS deploy.
-# Push-triggered work lives in backend.yml and frontend.yml so one commit
-# does not run this workflow and those in parallel.
-name: CI/CD (manual)
+# Backend only: lint/typecheck/build the API, then deploy the Docker image on the VPS.
+# Frontend apps are handled by frontend.yml.
+#
+# One VPS, two stacks (different Neon DATABASE_URL per Codeberg environment secret):
+#   develop  → /opt/debridgers/dev  :4002  api-test.debridgers.com
+#   main     → /opt/debridgers/prod :4001  api.debridgers.com
+name: Backend
 
 on:
+  push:
+    branches:
+      - develop
+      - main
+    paths:
+      - "apps/debridgers-backend/**"
+      - "packages/pricing/**"
+      - "packages/ratings/**"
+      - "packages/api-client/**"
+      - "libs/**"
+      - "deploy/**"
+      - "docker/backend.Dockerfile"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "nx.json"
+      - ".gitea/workflows/backend.yml"
   workflow_dispatch: {}
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   REGISTRY: docker.io
   IMAGE_NAME: 1techhunter/debridgers
+  PNPM_VERSION: "10.32.1"
 
 jobs:
   lint:
@@ -20,7 +45,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: "10.32.1"
+          version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -31,11 +56,11 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
-        run: pnpm lint
+      - name: Lint backend
+        run: pnpm lint:backend
 
-      - name: Typecheck
-        run: pnpm typecheck
+      - name: Typecheck backend
+        run: pnpm typecheck:backend
 
   build:
     runs-on: codeberg-small
@@ -47,31 +72,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: "10.32.1"
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install
-        run: pnpm install --frozen-lockfile
-
-      - name: Build
-        run: pnpm build
-
-  test:
-    runs-on: codeberg-small
-    needs: lint
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: "10.32.1"
+          version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -86,7 +87,7 @@ jobs:
         run: pnpm build:backend
 
   deploy-dev:
-    needs: [build, test]
+    needs: [build]
     if: github.ref == 'refs/heads/develop'
     runs-on: codeberg-small
     environment: dev
@@ -102,7 +103,7 @@ jobs:
       - name: Add host to known_hosts
         run: mkdir -p ~/.ssh && ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy to VPS (build + push + deploy)
+      - name: Deploy dev stack to VPS
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -111,37 +112,47 @@ jobs:
         run: |
           SHORT_SHA=$(git rev-parse --short HEAD)
           BRANCH_TAG="develop"
+          STACK_ENV="dev"
+          STACK_DIR="/opt/debridgers/${STACK_ENV}"
 
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /opt/debridgers/dev /opt/debridgers/cloudflared"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "mkdir -p ${STACK_DIR} /opt/debridgers/cloudflared /opt/debridgers/deploy"
+
           tar --exclude=node_modules --exclude=.git --exclude=dist -czf /tmp/code.tar.gz .
           scp /tmp/code.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/code.tar.gz
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /opt/debridgers && tar -xzf /tmp/code.tar.gz && rm -f /tmp/code.tar.gz"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "cd /opt/debridgers && tar -xzf /tmp/code.tar.gz && rm -f /tmp/code.tar.gz"
 
-          scp deploy/docker-compose.prod.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/dev/docker-compose.yml
-          scp deploy/docker-compose.tunnel.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/docker-compose.tunnel.yml
-          scp deploy/deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/deploy.sh
-          scp deploy/cloudflared/config.template.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/cloudflared/config.template.yml
+          scp deploy/docker-compose.prod.yml \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${STACK_DIR}/docker-compose.yml
+          scp deploy/docker-compose.tunnel.yml \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/docker-compose.tunnel.yml
+          scp deploy/deploy.sh \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/deploy.sh
+          scp deploy/cloudflared/config.template.yml \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/cloudflared/config.template.yml
 
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} '
+          # Codeberg environment "dev" must hold the test Neon DATABASE_URL in ENV_FILE.
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
             set -eu
-            cd /opt/debridgers/dev
+            cd ${STACK_DIR}
             cat > .env.incoming
             if [ ! -s .env.incoming ]; then
-              echo "incoming env is empty — refusing to replace .env" >&2
+              echo 'incoming env is empty — refusing to replace .env' >&2
               rm -f .env.incoming
               exit 1
             fi
             if [ -f .env ]; then
-              cp -a .env ".env.bak.$(date +%s)"
+              cp -a .env \".env.bak.\$(date +%s)\"
               ls -1t .env.bak.* 2>/dev/null | tail -n +6 | xargs -r rm -f
             fi
             install -m 600 .env.incoming .env
             rm -f .env.incoming
-          ' <<< "$ENV_FILE"
+          " <<< "$ENV_FILE"
 
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /opt/debridgers/cloudflared"
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "cat > /opt/debridgers/cloudflared/creds.json && chmod 600 /opt/debridgers/cloudflared/creds.json" <<< "$TUNNEL_CREDENTIALS"
+            "cat > /opt/debridgers/cloudflared/creds.json && chmod 600 /opt/debridgers/cloudflared/creds.json" \
+            <<< "$TUNNEL_CREDENTIALS"
 
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "docker login -u '$DOCKERHUB_USERNAME' --password-stdin" <<< "$DOCKERHUB_TOKEN"
@@ -155,12 +166,12 @@ jobs:
               -t \"\$IMAGE_BRANCH\" \
               -f ./docker/backend.Dockerfile .
             chmod +x /opt/debridgers/deploy.sh
-            /opt/debridgers/deploy.sh ${SHORT_SHA} dev
+            /opt/debridgers/deploy.sh ${SHORT_SHA} ${STACK_ENV}
             docker push \"\$IMAGE_SHA\"
             docker push \"\$IMAGE_BRANCH\""
 
   deploy-production:
-    needs: [build, test]
+    needs: [build]
     if: github.ref == 'refs/heads/main'
     runs-on: codeberg-small
     environment: production
@@ -176,7 +187,7 @@ jobs:
       - name: Add host to known_hosts
         run: mkdir -p ~/.ssh && ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy to VPS (build + push + deploy)
+      - name: Deploy prod stack to VPS
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -185,37 +196,47 @@ jobs:
         run: |
           SHORT_SHA=$(git rev-parse --short HEAD)
           BRANCH_TAG="latest"
+          STACK_ENV="prod"
+          STACK_DIR="/opt/debridgers/${STACK_ENV}"
 
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /opt/debridgers/prod /opt/debridgers/cloudflared"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "mkdir -p ${STACK_DIR} /opt/debridgers/cloudflared /opt/debridgers/deploy"
+
           tar --exclude=node_modules --exclude=.git --exclude=dist -czf /tmp/code.tar.gz .
           scp /tmp/code.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/code.tar.gz
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /opt/debridgers && tar -xzf /tmp/code.tar.gz && rm -f /tmp/code.tar.gz"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "cd /opt/debridgers && tar -xzf /tmp/code.tar.gz && rm -f /tmp/code.tar.gz"
 
-          scp deploy/docker-compose.prod.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/prod/docker-compose.yml
-          scp deploy/docker-compose.tunnel.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/docker-compose.tunnel.yml
-          scp deploy/deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/deploy.sh
-          scp deploy/cloudflared/config.template.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/cloudflared/config.template.yml
+          scp deploy/docker-compose.prod.yml \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${STACK_DIR}/docker-compose.yml
+          scp deploy/docker-compose.tunnel.yml \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/docker-compose.tunnel.yml
+          scp deploy/deploy.sh \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/deploy.sh
+          scp deploy/cloudflared/config.template.yml \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/cloudflared/config.template.yml
 
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} '
+          # Codeberg environment "production" must hold the live Neon DATABASE_URL in ENV_FILE.
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
             set -eu
-            cd /opt/debridgers/prod
+            cd ${STACK_DIR}
             cat > .env.incoming
             if [ ! -s .env.incoming ]; then
-              echo "incoming env is empty — refusing to replace .env" >&2
+              echo 'incoming env is empty — refusing to replace .env' >&2
               rm -f .env.incoming
               exit 1
             fi
             if [ -f .env ]; then
-              cp -a .env ".env.bak.$(date +%s)"
+              cp -a .env \".env.bak.\$(date +%s)\"
               ls -1t .env.bak.* 2>/dev/null | tail -n +6 | xargs -r rm -f
             fi
             install -m 600 .env.incoming .env
             rm -f .env.incoming
-          ' <<< "$ENV_FILE"
+          " <<< "$ENV_FILE"
 
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /opt/debridgers/cloudflared"
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "cat > /opt/debridgers/cloudflared/creds.json && chmod 600 /opt/debridgers/cloudflared/creds.json" <<< "$TUNNEL_CREDENTIALS"
+            "cat > /opt/debridgers/cloudflared/creds.json && chmod 600 /opt/debridgers/cloudflared/creds.json" \
+            <<< "$TUNNEL_CREDENTIALS"
 
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "docker login -u '$DOCKERHUB_USERNAME' --password-stdin" <<< "$DOCKERHUB_TOKEN"
@@ -229,6 +250,6 @@ jobs:
               -t \"\$IMAGE_BRANCH\" \
               -f ./docker/backend.Dockerfile .
             chmod +x /opt/debridgers/deploy.sh
-            /opt/debridgers/deploy.sh ${SHORT_SHA} prod
+            /opt/debridgers/deploy.sh ${SHORT_SHA} ${STACK_ENV}
             docker push \"\$IMAGE_SHA\"
             docker push \"\$IMAGE_BRANCH\""

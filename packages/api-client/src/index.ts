@@ -27,6 +27,9 @@ export * from "./services/buyer/cart";
 // === Cross-subdomain checkout handoff
 export * from "./services/public/cart-stage";
 
+// === Public testimonials (landing)
+export * from "./services/public/testimonials";
+
 // === Newsletter
 export * from "./services/newsletter";
 

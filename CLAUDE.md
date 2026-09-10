@@ -7,18 +7,19 @@ nx.
 
 ## Layout
 
-| Path                                     | What it is                                                                                                            |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `apps/debridgers-backend`                | Nest API, Drizzle schema, migrations, seeders                                                                         |
-| `apps/debridgers-marketing`              | React Router 7 app: marketing site and auth entry point (login, signup, password flows). Ports 5173                   |
-| `apps/debridgers-buyer`                  | React Router 7 app: buyer dashboard, its own login. Port 5174                                                         |
-| `apps/debridgers-agent`                  | React Router 7 app: agent dashboard, its own login. Port 5175                                                         |
-| `apps/debridgers-admin`                  | React Router 7 app: admin dashboard, its own login. Port 5176                                                         |
-| `packages/pricing`                       | **Money rules. The source of truth.** Delivery, cost-to-serve, minimum order, procurement maths, business assumptions |
-| `packages/ui-web`                        | Shared components and hooks. Anything used by more than one role belongs here                                         |
-| `packages/api-client`                    | Fetch layer, auth tokens, cookies                                                                                     |
-| `libs/shared-theme`, `libs/shared-utils` | Tokens, email templates                                                                                               |
-| `docs/business`                          | Company, model, diagnosis, strategy. Start at `docs/business/README.md`                                               |
+| Path                                     | What it is                                                                                                                    |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `apps/debridgers-backend`                | Nest API, Drizzle schema, migrations, seeders                                                                                 |
+| `apps/debridgers-marketing`              | React Router 7 app: marketing site and auth entry point (login, signup, password flows). Ports 5173                           |
+| `apps/debridgers-buyer`                  | React Router 7 app: buyer dashboard, its own login. Port 5174                                                                 |
+| `apps/debridgers-agent`                  | React Router 7 app: agent dashboard, its own login. Port 5175                                                                 |
+| `apps/debridgers-admin`                  | React Router 7 app: admin dashboard, its own login. Port 5176                                                                 |
+| `apps/debridgers-hr`                     | React Router 7 app: careers + applicant/employee/admin staffing. Port 5177. Doc: `docs/debridgers_features_docs/hr-system.md` |
+| `packages/pricing`                       | **Money rules. The source of truth.** Delivery, cost-to-serve, minimum order, procurement maths, business assumptions         |
+| `packages/ui-web`                        | Shared components and hooks. Anything used by more than one role belongs here                                                 |
+| `packages/api-client`                    | Fetch layer, auth tokens, cookies                                                                                             |
+| `libs/shared-theme`, `libs/shared-utils` | Tokens, email templates                                                                                                       |
+| `docs/business`                          | Company, model, diagnosis, strategy. Start at `docs/business/README.md`                                                       |
 
 ## Rules that are not obvious
 
@@ -97,6 +98,7 @@ pnpm dev:marketing              # port 5173
 pnpm dev:buyer                  # port 5174
 pnpm dev:agent                  # port 5175
 pnpm dev:admin                  # port 5176
+pnpm dev:hr                     # port 5177
 pnpm --filter @debridgers/debridgers-backend exec vitest run   # 8 suites
 pnpm --filter @debridgers/pricing test
 ```

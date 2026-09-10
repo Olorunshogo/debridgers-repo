@@ -1,0 +1,106 @@
+# Frontend apps only: lint, typecheck, and build.
+# Hosting is separate (Vercel per app). This workflow does not touch the API VPS.
+# Backend deploys live in backend.yml.
+name: Frontend
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+    paths:
+      - "apps/debridgers-marketing/**"
+      - "apps/debridgers-buyer/**"
+      - "apps/debridgers-agent/**"
+      - "apps/debridgers-admin/**"
+      - "apps/debridgers-hr/**"
+      - "packages/ui-web/**"
+      - "packages/api-client/**"
+      - "packages/pricing/**"
+      - "packages/ratings/**"
+      - "libs/shared-theme/**"
+      - "libs/shared-utils/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "nx.json"
+      - ".gitea/workflows/frontend.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PNPM_VERSION: "10.32.1"
+
+jobs:
+  lint:
+    runs-on: codeberg-small
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint frontends
+        run: |
+          pnpm lint:marketing
+          pnpm lint:buyer
+          pnpm lint:agent
+          pnpm lint:admin
+          pnpm lint:hr
+
+      - name: Typecheck frontends
+        run: |
+          pnpm typecheck:marketing
+          pnpm typecheck:buyer
+          pnpm typecheck:agent
+          pnpm typecheck:admin
+          pnpm typecheck:hr
+
+  build:
+    runs-on: codeberg-small
+    needs: lint
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared packages
+        run: |
+          pnpm build:pricing
+          pnpm build:ui-web
+
+      - name: Build frontends
+        run: |
+          pnpm build:marketing
+          pnpm build:buyer
+          pnpm build:agent
+          pnpm build:admin
+          pnpm build:hr

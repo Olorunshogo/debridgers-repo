@@ -1,18 +1,17 @@
-# Cloudflare Tunnel ingress, rendered by deploy/deploy.sh into
-# /opt/debridgers/cloudflared/config.yml with TUNNEL_ID
-# substituted from /opt/debridgers/.env.
+# Cloudflare Tunnel ingress for a single VPS running both stacks.
+# cloudflared uses host networking, so it reaches the published host ports:
+#   prod  → 127.0.0.1:4001  (api.debridgers.com)
+#   dev   → 127.0.0.1:4002  (api-test.debridgers.com)
 #
-# Routing lives here rather than in the Cloudflare dashboard so that it is
-# reviewable in a PR and reproduced automatically on a rebuilt host.
+# If the tunnel is token-managed in the Cloudflare dashboard, mirror these
+# hostname → service mappings there instead of (or as well as) this file.
 
 tunnel: __TUNNEL_ID__
 credentials-file: /etc/cloudflared/creds.json
 
-# cloudflared resolves debridgers-backend and debridgers-marketing over the
-# compose network, so they publish no host ports.
 ingress:
   - hostname: api-test.debridgers.com
-    service: http://debridgers-backend:4001
+    service: http://127.0.0.1:4002
   - hostname: api.debridgers.com
-    service: http://debridgers-backend:4001
+    service: http://127.0.0.1:4001
   - service: http_status:404
