@@ -3,7 +3,15 @@ import { CoreEmailService } from "../../core/email/email.service";
 import { formatNaira } from "../../../api/shared/money";
 import { emailLinks } from "./email-links";
 
-type AppRole = "admin" | "agent" | "buyer" | "company";
+type AppRole =
+  | "admin"
+  | "agent"
+  | "buyer"
+  | "company"
+  | "hr"
+  | "hiring_manager"
+  | "applicant"
+  | "employee";
 
 const BRAND_GREEN = "#1E5925";
 const BRAND_ORANGE = "#EF9E0B";
@@ -13,6 +21,15 @@ const MUTED = "#6B7280";
 
 function isAgentOrAdmin(role: AppRole): boolean {
   return role === "agent" || role === "admin";
+}
+
+function isPeopleRole(role: AppRole): boolean {
+  return (
+    role === "hr" ||
+    role === "hiring_manager" ||
+    role === "applicant" ||
+    role === "employee"
+  );
 }
 
 /*
@@ -191,7 +208,7 @@ export class EmailService {
               ${featureRow("Place a bulk order and pick a delivery window across Kaduna metro")}
               ${featureRow("Fund your wallet to settle deliveries without cash on site")}
             </table>
-            ${button("Go to your account", emailLinks.login())}
+            ${button("Go to your account", emailLinks.login(role))}
           </td>
         </tr>
         ${infoBox(
@@ -212,7 +229,14 @@ export class EmailService {
       return;
     }
 
-    const roleLabel = role === "admin" ? "Admin" : "Agent";
+    const roleLabel =
+      role === "admin"
+        ? "Admin"
+        : isPeopleRole(role)
+          ? role === "hiring_manager"
+            ? "Hiring manager"
+            : role.charAt(0).toUpperCase() + role.slice(1)
+          : "Agent";
     const html = layout({
       title: "Welcome to Debridgers",
       preheader: `Welcome to Debridgers, ${firstName}. Your account is ready.`,
@@ -228,7 +252,7 @@ export class EmailService {
             <p style="margin:0 0 20px 0;font-size:15px;line-height:1.7;color:#374151;">
               We will keep you updated on orders, deliveries, and everything happening on the platform.
             </p>
-            ${button("Go to your account", emailLinks.login())}
+            ${button("Go to your account", emailLinks.login(role))}
           </td>
         </tr>
         ${infoBox(
@@ -457,7 +481,7 @@ export class EmailService {
             <p style="margin:0 0 20px 0;font-size:15px;line-height:1.7;color:#374151;">
               Head to your dashboard to place your first stock request.
             </p>
-            ${button("Go to Agent Dashboard", `${process.env.APP_URL}/agent/login`, BRAND_GREEN)}
+            ${button("Go to Agent Dashboard", emailLinks.login("agent"), BRAND_GREEN)}
           </td>
         </tr>
         <tr>
@@ -508,7 +532,7 @@ export class EmailService {
             <p style="margin:0 0 20px 0;font-size:15px;line-height:1.7;color:#374151;">
               Please log in to your dashboard and resubmit your documents to continue.
             </p>
-            ${button("Resubmit KYC", `${process.env.APP_URL}/agent/login`, "#4b5563")}
+            ${button("Resubmit KYC", emailLinks.login("agent"), "#4b5563")}
           </td>
         </tr>
         <tr>
@@ -579,13 +603,15 @@ export class EmailService {
     role: AppRole,
   ): Promise<void> {
     const firstName = name.split(/\s+/)[0] || name;
-    const verifyLink = emailLinks.verifyEmail(to, otp);
+    const verifyLink = emailLinks.verifyEmail(to, otp, role);
     const spacedOtp = otp.split("").join(" ");
     const eyebrow = isAgentOrAdmin(role)
       ? role === "admin"
         ? "Admin"
         : "Agents"
-      : "Buyers";
+      : isPeopleRole(role)
+        ? "People"
+        : "Buyers";
 
     const html = layout({
       title: "Verify Your Email - Debridgers",
@@ -695,7 +721,7 @@ export class EmailService {
         )}
         <tr>
           <td style="padding:0 32px 24px 32px;">
-            ${button("Review account activity", emailLinks.login())}
+            ${button("Review account activity", emailLinks.login("buyer"))}
           </td>
         </tr>
       `,
@@ -725,9 +751,10 @@ export class EmailService {
     to: string,
     name: string,
     token: string,
+    role?: AppRole,
   ): Promise<void> {
     const firstName = name.split(/\s+/)[0] || name;
-    const resetLink = emailLinks.resetPassword(token);
+    const resetLink = emailLinks.resetPassword(token, role);
 
     const html = layout({
       title: "Reset Your Password - Debridgers",
@@ -767,7 +794,11 @@ export class EmailService {
 
   // === Password Reset Confirmation
 
-  async sendPasswordResetConfirmation(to: string, name: string): Promise<void> {
+  async sendPasswordResetConfirmation(
+    to: string,
+    name: string,
+    role?: AppRole,
+  ): Promise<void> {
     const html = layout({
       headerBg: BRAND_GREEN,
       outerBg: "#f6f9f7",
@@ -780,7 +811,7 @@ export class EmailService {
             <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
               Hi ${name}, your Debridgers account password has been updated successfully. You can now log in with your new password.
             </p>
-            ${button("Log in to your account", emailLinks.login(), BRAND_GREEN)}
+            ${button("Log in to your account", emailLinks.login(role), BRAND_GREEN)}
           </td>
         </tr>
         ${infoBox(
@@ -1230,6 +1261,429 @@ export class EmailService {
     await this.core.send({
       to: opts.email,
       subject: "Admin Invite - Debridgers",
+      html,
+    });
+  }
+
+  // === HR recruitment
+
+  async sendHrJobPosted(opts: {
+    to: string;
+    title: string;
+    department: string;
+    location: string;
+  }): Promise<void> {
+    const html = layout({
+      title: "Job posted",
+      preheader: `${opts.title} is live on the careers board.`,
+      badge: "Recruitment",
+      eyebrow: "HR",
+      body: `
+        <tr>
+          <td style="padding:20px 32px 8px 32px;">
+            <h2 style="margin:0 0 14px 0;font-size:26px;font-weight:700;color:#111827;">Job posted</h2>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              <strong>${opts.title}</strong> (${opts.department}) in ${opts.location} is now open for applications.
+            </p>
+          </td>
+        </tr>
+      `,
+    });
+    await this.core.send({
+      to: opts.to,
+      subject: `Job posted: ${opts.title}`,
+      html,
+    });
+  }
+
+  async sendHrApplicationReceived(opts: {
+    to: string;
+    name: string;
+    jobTitle: string;
+  }): Promise<void> {
+    const firstName = opts.name.split(/\s+/)[0] || opts.name;
+    const html = layout({
+      title: "Application received",
+      preheader: `We received your application for ${opts.jobTitle}.`,
+      badge: "Application received",
+      eyebrow: "Careers",
+      body: `
+        <tr>
+          <td style="padding:20px 32px 8px 32px;">
+            <h2 style="margin:0 0 14px 0;font-size:26px;font-weight:700;color:#111827;">Thank you, ${firstName}</h2>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              We received your application for <strong>${opts.jobTitle}</strong>. Our hiring team will review it and contact you if you are shortlisted.
+            </p>
+          </td>
+        </tr>
+      `,
+    });
+    await this.core.send({
+      to: opts.to,
+      toName: opts.name,
+      subject: `Application received — ${opts.jobTitle}`,
+      html,
+    });
+  }
+
+  async sendHrApplicationRejected(opts: {
+    to: string;
+    name: string;
+    jobTitle: string;
+    feedback?: string;
+  }): Promise<void> {
+    const firstName = opts.name.split(/\s+/)[0] || opts.name;
+    const feedbackBlock = opts.feedback
+      ? `<p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">Feedback: ${opts.feedback}</p>`
+      : "";
+    const html = layout({
+      title: "Application update",
+      preheader: `Update on your application for ${opts.jobTitle}.`,
+      badge: "Application update",
+      eyebrow: "Careers",
+      body: `
+        <tr>
+          <td style="padding:20px 32px 8px 32px;">
+            <h2 style="margin:0 0 14px 0;font-size:26px;font-weight:700;color:#111827;">Hello, ${firstName}</h2>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              Thank you for applying for <strong>${opts.jobTitle}</strong>. We will not be moving forward with your application at this time.
+            </p>
+            ${feedbackBlock}
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              We wish you the best and encourage you to apply again when a matching role opens.
+            </p>
+          </td>
+        </tr>
+      `,
+    });
+    await this.core.send({
+      to: opts.to,
+      toName: opts.name,
+      subject: `Application update — ${opts.jobTitle}`,
+      html,
+    });
+  }
+
+  async sendHrInterviewScheduled(opts: {
+    to: string;
+    name: string;
+    jobTitle: string;
+    scheduledAt: string;
+    location: string;
+    bookedBy?: "staff" | "applicant";
+  }): Promise<void> {
+    const firstName = opts.name.split(/\s+/)[0] || opts.name;
+    const byApplicant = opts.bookedBy === "applicant";
+    const html = layout({
+      title: "Interview scheduled",
+      preheader: `Interview for ${opts.jobTitle} on ${opts.scheduledAt}.`,
+      badge: "Interview",
+      eyebrow: "Careers",
+      body: `
+        <tr>
+          <td style="padding:20px 32px 8px 32px;">
+            <h2 style="margin:0 0 14px 0;font-size:26px;font-weight:700;color:#111827;">${byApplicant ? "Interview booked" : "Interview scheduled"}, ${firstName}</h2>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              ${
+                byApplicant
+                  ? `You booked an interview for <strong>${opts.jobTitle}</strong>.`
+                  : `You are invited to interview for <strong>${opts.jobTitle}</strong>.`
+              }
+            </p>
+            <p style="margin:0 0 8px 0;font-size:15px;line-height:1.7;color:#374151;"><strong>When:</strong> ${opts.scheduledAt}</p>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;"><strong>Where:</strong> ${opts.location}</p>
+            ${button("Open applications", emailLinks.login("applicant"))}
+          </td>
+        </tr>
+      `,
+    });
+    await this.core.send({
+      to: opts.to,
+      toName: opts.name,
+      subject: `Interview scheduled — ${opts.jobTitle}`,
+      html,
+    });
+  }
+
+  async sendHrInterviewScheduledAdminNotice(opts: {
+    to: string;
+    applicantName: string;
+    applicantEmail: string;
+    jobTitle: string;
+    scheduledAt: string;
+    location: string;
+  }): Promise<void> {
+    const html = layout({
+      title: "Applicant booked interview",
+      preheader: `${opts.applicantName} booked an interview for ${opts.jobTitle}.`,
+      badge: "Interview",
+      eyebrow: "Recruitment",
+      body: `
+        <tr>
+          <td style="padding:20px 32px 8px 32px;">
+            <h2 style="margin:0 0 14px 0;font-size:26px;font-weight:700;color:#111827;">Interview booked by applicant</h2>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              <strong>${opts.applicantName}</strong> (${opts.applicantEmail}) booked an interview for <strong>${opts.jobTitle}</strong>.
+            </p>
+            <p style="margin:0 0 8px 0;font-size:15px;line-height:1.7;color:#374151;"><strong>When:</strong> ${opts.scheduledAt}</p>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;"><strong>Where:</strong> ${opts.location}</p>
+            ${button("Open recruitment", emailLinks.login("admin"))}
+          </td>
+        </tr>
+      `,
+    });
+    await this.core.send({
+      to: opts.to,
+      subject: `Interview booked — ${opts.jobTitle}`,
+      html,
+    });
+  }
+
+  async sendHrOfferLetter(opts: {
+    to: string;
+    name: string;
+    position: string;
+    jobTitle: string;
+    startDate: string;
+    expiresAt: string;
+    benefits?: string;
+  }): Promise<void> {
+    const firstName = opts.name.split(/\s+/)[0] || opts.name;
+    const benefitsBlock = opts.benefits
+      ? `<p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;"><strong>Benefits:</strong> ${opts.benefits}</p>`
+      : "";
+    const html = layout({
+      title: "Job offer",
+      preheader: `Offer for ${opts.position} at Debridgers.`,
+      badge: "Offer",
+      eyebrow: "Careers",
+      body: `
+        <tr>
+          <td style="padding:20px 32px 8px 32px;">
+            <h2 style="margin:0 0 14px 0;font-size:26px;font-weight:700;color:#111827;">Congratulations, ${firstName}</h2>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              We are pleased to offer you the role of <strong>${opts.position}</strong> (${opts.jobTitle}).
+            </p>
+            <p style="margin:0 0 8px 0;font-size:15px;line-height:1.7;color:#374151;"><strong>Start date:</strong> ${opts.startDate}</p>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;"><strong>Offer expires:</strong> ${opts.expiresAt}</p>
+            ${benefitsBlock}
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              Log in to your applicant account to accept or decline this offer.
+            </p>
+            ${button("Open offers", emailLinks.login("applicant"))}
+          </td>
+        </tr>
+      `,
+    });
+    await this.core.send({
+      to: opts.to,
+      toName: opts.name,
+      subject: `Job offer — ${opts.position}`,
+      html,
+    });
+  }
+
+  async sendHrWelcomeEmployee(opts: {
+    to: string;
+    name: string;
+    position: string;
+    startDate: string;
+  }): Promise<void> {
+    const firstName = opts.name.split(/\s+/)[0] || opts.name;
+    const html = layout({
+      title: "Welcome to the team",
+      preheader: `Welcome to Debridgers as ${opts.position}.`,
+      badge: "Welcome",
+      eyebrow: "People",
+      body: `
+        <tr>
+          <td style="padding:20px 32px 8px 32px;">
+            <h2 style="margin:0 0 14px 0;font-size:26px;font-weight:700;color:#111827;">Welcome, ${firstName}</h2>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              Your offer for <strong>${opts.position}</strong> is accepted. Your account is now an employee account. Start date: <strong>${opts.startDate}</strong>.
+            </p>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              HR will follow up with onboarding materials and your first-day checklist.
+            </p>
+            ${button("Open dashboard", emailLinks.login("employee"))}
+          </td>
+        </tr>
+      `,
+    });
+    await this.core.send({
+      to: opts.to,
+      toName: opts.name,
+      subject: `Welcome to Debridgers — ${opts.position}`,
+      html,
+    });
+  }
+
+  // === HR people ops
+
+  async sendHrLeaveSubmitted(opts: {
+    to: string;
+    managerName: string;
+    employeeName: string;
+    leaveType: string;
+    startDate: string;
+    endDate: string;
+  }): Promise<void> {
+    const html = layout({
+      title: "Leave request",
+      preheader: `${opts.employeeName} requested ${opts.leaveType} leave.`,
+      badge: "Leave",
+      eyebrow: "People",
+      body: `
+        <tr>
+          <td style="padding:20px 32px 8px 32px;">
+            <h2 style="margin:0 0 14px 0;font-size:26px;font-weight:700;color:#111827;">Leave request</h2>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              Hello ${opts.managerName}, <strong>${opts.employeeName}</strong> requested <strong>${opts.leaveType}</strong> leave from ${opts.startDate} to ${opts.endDate}.
+            </p>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              Review it in the HR leave inbox.
+            </p>
+          </td>
+        </tr>
+      `,
+    });
+    await this.core.send({
+      to: opts.to,
+      subject: `Leave request — ${opts.employeeName}`,
+      html,
+    });
+  }
+
+  async sendHrLeaveDecision(opts: {
+    to: string;
+    name: string;
+    leaveType: string;
+    status: "approved" | "rejected";
+    notes?: string;
+  }): Promise<void> {
+    const firstName = opts.name.split(/\s+/)[0] || opts.name;
+    const notes = opts.notes
+      ? `<p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">Notes: ${opts.notes}</p>`
+      : "";
+    const html = layout({
+      title: "Leave update",
+      preheader: `Your ${opts.leaveType} leave was ${opts.status}.`,
+      badge: "Leave",
+      eyebrow: "People",
+      body: `
+        <tr>
+          <td style="padding:20px 32px 8px 32px;">
+            <h2 style="margin:0 0 14px 0;font-size:26px;font-weight:700;color:#111827;">Hello, ${firstName}</h2>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              Your <strong>${opts.leaveType}</strong> leave request was <strong>${opts.status}</strong>.
+            </p>
+            ${notes}
+          </td>
+        </tr>
+      `,
+    });
+    await this.core.send({
+      to: opts.to,
+      toName: opts.name,
+      subject: `Leave ${opts.status}`,
+      html,
+    });
+  }
+
+  async sendHrWorkReportSubmitted(opts: {
+    to: string;
+    managerName: string;
+    employeeName: string;
+    periodType: string;
+  }): Promise<void> {
+    const html = layout({
+      title: "Work report submitted",
+      preheader: `${opts.employeeName} submitted a ${opts.periodType} work report.`,
+      badge: "Work report",
+      eyebrow: "People",
+      body: `
+        <tr>
+          <td style="padding:20px 32px 8px 32px;">
+            <h2 style="margin:0 0 14px 0;font-size:26px;font-weight:700;color:#111827;">Work report to review</h2>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              Hello ${opts.managerName}, <strong>${opts.employeeName}</strong> submitted a <strong>${opts.periodType}</strong> work activity report.
+            </p>
+          </td>
+        </tr>
+      `,
+    });
+    await this.core.send({
+      to: opts.to,
+      subject: `Work report — ${opts.employeeName}`,
+      html,
+    });
+  }
+
+  async sendHrWorkReportDecision(opts: {
+    to: string;
+    name: string;
+    status: "approved" | "rejected" | "revision_requested";
+    notes?: string;
+  }): Promise<void> {
+    const firstName = opts.name.split(/\s+/)[0] || opts.name;
+    const label =
+      opts.status === "revision_requested" ? "revision requested" : opts.status;
+    const notes = opts.notes
+      ? `<p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">Notes: ${opts.notes}</p>`
+      : "";
+    const html = layout({
+      title: "Work report update",
+      preheader: `Your work report was ${label}.`,
+      badge: "Work report",
+      eyebrow: "People",
+      body: `
+        <tr>
+          <td style="padding:20px 32px 8px 32px;">
+            <h2 style="margin:0 0 14px 0;font-size:26px;font-weight:700;color:#111827;">Hello, ${firstName}</h2>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              Your work activity report was <strong>${label}</strong>.
+            </p>
+            ${notes}
+          </td>
+        </tr>
+      `,
+    });
+    await this.core.send({
+      to: opts.to,
+      toName: opts.name,
+      subject: `Work report ${label}`,
+      html,
+    });
+  }
+
+  async sendHrCriticalIncident(opts: {
+    to: string;
+    reporterName: string;
+    category: string;
+    description: string;
+  }): Promise<void> {
+    const html = layout({
+      title: "Critical incident",
+      preheader: `Critical ${opts.category} incident reported by ${opts.reporterName}.`,
+      badge: "Incident",
+      eyebrow: "People",
+      body: `
+        <tr>
+          <td style="padding:20px 32px 8px 32px;">
+            <h2 style="margin:0 0 14px 0;font-size:26px;font-weight:700;color:#111827;">Critical incident reported</h2>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              <strong>${opts.reporterName}</strong> reported a critical <strong>${opts.category}</strong> incident.
+            </p>
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.7;color:#374151;">
+              ${opts.description}
+            </p>
+          </td>
+        </tr>
+      `,
+    });
+    await this.core.send({
+      to: opts.to,
+      subject: `Critical incident — ${opts.category}`,
       html,
     });
   }

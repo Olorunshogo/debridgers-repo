@@ -13,6 +13,7 @@ import { SystemSettingsModule } from "./settings/system-settings.module";
 import { PublicModule } from "./public/public.module";
 import { CatalogModule } from "./catalog/catalog.module";
 import { RatingsModule } from "./ratings/ratings.module";
+import { HrModule } from "./hr/hr.module";
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { RatingsModule } from "./ratings/ratings.module";
     PublicModule,
     CatalogModule,
     RatingsModule,
+    HrModule,
   ],
 })
 export class V1AppModule {}

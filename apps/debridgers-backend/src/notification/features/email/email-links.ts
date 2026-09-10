@@ -6,12 +6,44 @@
  * button has been a 404 in two live agent emails. A typo in a string spread
  * over 700 lines is invisible; a typo here is a compile error.
  *
- * When a route moves, this file is the only edit. Keep the keys in step with
- * apps/debridgers-frontend/app/routes.ts.
+ * Auth links (verify, reset, login) must land on the app that owns the role.
+ * A single APP_URL cannot cover marketing + buyer + agent + admin + HR, so
+ * role-specific *_APP_URL envs win when set; APP_URL is the fallback.
  */
 
-function appUrl(): string {
-  return (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "");
+type LinkRole =
+  | "admin"
+  | "agent"
+  | "buyer"
+  | "company"
+  | "hr"
+  | "hiring_manager"
+  | "applicant"
+  | "employee"
+  | string;
+
+function trimBase(url: string): string {
+  return url.replace(/\/$/, "");
+}
+
+function defaultAppUrl(): string {
+  return trimBase(process.env.APP_URL || "http://localhost:5173");
+}
+
+function appUrlForRole(role?: LinkRole): string {
+  const envByRole: Record<string, string | undefined> = {
+    buyer: process.env.BUYER_APP_URL,
+    company: process.env.BUYER_APP_URL,
+    agent: process.env.AGENT_APP_URL,
+    admin: process.env.ADMIN_APP_URL,
+    hr: process.env.HR_APP_URL,
+    hiring_manager: process.env.HR_APP_URL,
+    applicant: process.env.HR_APP_URL,
+    employee: process.env.HR_APP_URL,
+  };
+  const specific = role ? envByRole[role] : undefined;
+  if (specific) return trimBase(specific);
+  return defaultAppUrl();
 }
 
 /*
@@ -21,35 +53,39 @@ function appUrl(): string {
  * then the public marketing site which already serves /logos/*.
  */
 function emailAssetUrl(): string {
-  return (
+  return trimBase(
     process.env.EMAIL_ASSET_URL ||
-    process.env.APP_URL ||
-    "https://debridgers.com"
-  ).replace(/\/$/, "");
+      process.env.APP_URL ||
+      "https://debridgers.com",
+  );
 }
 
-function link(path: string): string {
-  return `${appUrl()}${path}`;
+function link(path: string, role?: LinkRole): string {
+  return `${appUrlForRole(role)}${path}`;
 }
 
 export const emailLinks = {
   // === Auth
-  login: (): string => link("/login"),
-  adminLogin: (): string => link("/auth/admin/login"),
-  verifyEmail: (email: string, otp: string): string =>
+  login: (role?: LinkRole): string => link("/login", role),
+  adminLogin: (): string => link("/login", "admin"),
+  verifyEmail: (email: string, otp: string, role?: LinkRole): string =>
     link(
       `/verify-email?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`,
+      role,
     ),
-  resetPassword: (token: string): string =>
-    link(`/reset-password?token=${encodeURIComponent(token)}`),
+  resetPassword: (token: string, role?: LinkRole): string =>
+    link(`/reset-password?token=${encodeURIComponent(token)}`, role),
 
   // === Dashboards
-  adminDashboard: (): string => link("/admin-dashboard"),
-  agentDashboard: (): string => link("/agent-dashboard"),
-  buyerWallet: (): string => link("/buyer-dashboard/wallet"),
-  buyerOrders: (): string => link("/buyer-dashboard/orders"),
+  adminDashboard: (): string => link("/admin-dashboard", "admin"),
+  agentDashboard: (): string => link("/agent-dashboard", "agent"),
+  buyerWallet: (): string => link("/buyer-dashboard/wallet", "buyer"),
+  buyerOrders: (): string => link("/buyer-dashboard/orders", "buyer"),
   buyerOrder: (reference: string): string =>
-    link(`/buyer-dashboard/orders?ref=${encodeURIComponent(reference)}`),
+    link(
+      `/buyer-dashboard/orders?ref=${encodeURIComponent(reference)}`,
+      "buyer",
+    ),
 
   // === Assets (absolute, public — must resolve outside our network)
   logo: (): string => `${emailAssetUrl()}/logos/debridgers-black.png`,
