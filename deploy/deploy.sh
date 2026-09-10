@@ -135,16 +135,22 @@ fi
 echo "==> Starting ${DEPLOY_ENV} backend"
 compose up -d --force-recreate --remove-orphans
 
-# One tunnel for the whole host. Keep credentials at the root; only recreate if needed.
+# One tunnel for the whole host. The pre-split compose also named it
+# debridgers-cloudflared; if that container is already running, leave it.
 TUNNEL_COMPOSE="${ROOT_DIR}/docker-compose.tunnel.yml"
 if [[ ! -f "${TUNNEL_COMPOSE}" && -f "${ROOT_DIR}/deploy/docker-compose.tunnel.yml" ]]; then
   TUNNEL_COMPOSE="${ROOT_DIR}/deploy/docker-compose.tunnel.yml"
 fi
 if [[ -f "${TUNNEL_COMPOSE}" ]]; then
   echo "==> Ensuring shared Cloudflare tunnel is up"
-  CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" \
-    COMPOSE_PROJECT_NAME="debridgers-tunnel" \
-    docker compose -f "${TUNNEL_COMPOSE}" up -d --remove-orphans
+  if docker ps --format '{{.Names}}' | grep -qx 'debridgers-cloudflared'; then
+    echo "==> debridgers-cloudflared already running; leaving shared tunnel alone"
+  else
+    docker rm -f debridgers-cloudflared 2>/dev/null || true
+    CLOUDFLARE_TUNNEL_CREDENTIALS="${CLOUDFLARE_TUNNEL_CREDENTIALS}" \
+      COMPOSE_PROJECT_NAME="debridgers-tunnel" \
+      docker compose -f "${TUNNEL_COMPOSE}" up -d --remove-orphans
+  fi
 fi
 
 echo "==> Skipping database migrations (run against this env's DATABASE_URL before deploy)"
