@@ -30,6 +30,8 @@ import { HrPeopleService } from "./hr-people.service";
 import { HrOpsService } from "./hr-ops.service";
 import { AuthGuard } from "../../shared/guards/auth.guard";
 import { AdminKeyGuard } from "../../shared/guards/admin-key.guard";
+import { AdminDeskGuard } from "../../shared/guards/admin-desk.guard";
+import { AdminDesks } from "../../shared/decorators/admin-desks.decorator";
 import { RolesGuard } from "../../shared/guards/roles.guard";
 import { Roles } from "../../shared/decorators/roles.decorator";
 import { CurrentUser } from "../../shared/decorators/current-user.decorator";
@@ -238,13 +240,13 @@ export class HrController {
     return this.hr.scheduleInterviewAsApplicant(id, dto, user);
   }
 
-  // === Admin staffing (AdminKeyGuard matches /admin: JWT + admin_tier;
-  // optional X-Admin-Key + X-Admin-Tier for scripted calls)
+  // === Admin staffing (AdminKeyGuard + AdminDeskGuard: hr desk or super)
 
   @Get("admin/jobs")
   @ApiBearerAuth()
-  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
+  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard, AdminDeskGuard)
   @Roles("admin")
+  @AdminDesks("hr")
   @ApiOperation({ summary: "List all job postings (HR)" })
   listJobsForHr() {
     return this.hr.listJobsForHr();
@@ -252,8 +254,9 @@ export class HrController {
 
   @Post("admin/jobs")
   @ApiBearerAuth()
-  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
+  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard, AdminDeskGuard)
   @Roles("admin")
+  @AdminDesks("hr")
   @ApiOperation({ summary: "Create a job posting" })
   createJob(@Body() body: unknown, @CurrentUser() user: JwtPayload) {
     const dto = new ZodValidationPipe(createJobPostingSchema).transform(
@@ -264,8 +267,9 @@ export class HrController {
 
   @Patch("admin/jobs/:id")
   @ApiBearerAuth()
-  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
+  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard, AdminDeskGuard)
   @Roles("admin")
+  @AdminDesks("hr")
   @ApiOperation({ summary: "Update a job posting" })
   updateJob(@Param("id", ParseIntPipe) id: number, @Body() body: unknown) {
     const dto = new ZodValidationPipe(updateJobPostingSchema).transform(
@@ -276,8 +280,9 @@ export class HrController {
 
   @Get("admin/applications")
   @ApiBearerAuth()
-  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
+  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard, AdminDeskGuard)
   @Roles("admin")
+  @AdminDesks("hr")
   @ApiOperation({ summary: "List applications, optionally by job_id" })
   listApplications(@Query("job_id") jobId?: string) {
     const parsed =
@@ -290,8 +295,9 @@ export class HrController {
 
   @Get("admin/applications/:id/cv")
   @ApiBearerAuth()
-  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
+  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard, AdminDeskGuard)
   @Roles("admin")
+  @AdminDesks("hr")
   @ApiOperation({
     summary:
       "Signed Cloudinary URL for an applicant CV (public PDF links return 401)",
@@ -306,8 +312,9 @@ export class HrController {
 
   @Patch("admin/applications/:id/screen")
   @ApiBearerAuth()
-  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
+  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard, AdminDeskGuard)
   @Roles("admin")
+  @AdminDesks("hr")
   @ApiOperation({
     summary: "Screen an application (pass / reject / screening)",
   })
@@ -323,8 +330,9 @@ export class HrController {
 
   @Post("admin/applications/:id/interviews")
   @ApiBearerAuth()
-  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
+  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard, AdminDeskGuard)
   @Roles("admin")
+  @AdminDesks("hr")
   @ApiOperation({ summary: "Schedule an interview" })
   scheduleInterview(
     @Param("id", ParseIntPipe) id: number,
@@ -338,8 +346,9 @@ export class HrController {
 
   @Patch("admin/interviews/:id")
   @ApiBearerAuth()
-  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
+  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard, AdminDeskGuard)
   @Roles("admin")
+  @AdminDesks("hr")
   @ApiOperation({ summary: "Record interview feedback or reschedule" })
   updateInterview(
     @Param("id", ParseIntPipe) id: number,
@@ -353,8 +362,9 @@ export class HrController {
 
   @Post("admin/applications/:id/offers")
   @ApiBearerAuth()
-  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
+  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard, AdminDeskGuard)
   @Roles("admin")
+  @AdminDesks("hr")
   @ApiOperation({ summary: "Create and email an offer letter" })
   createOffer(
     @Param("id", ParseIntPipe) id: number,
@@ -369,8 +379,9 @@ export class HrController {
 
   @Post("admin/offers/:id/accept")
   @ApiBearerAuth()
-  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
+  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard, AdminDeskGuard)
   @Roles("admin")
+  @AdminDesks("hr")
   @ApiOperation({
     summary: "HR marks offer accepted (applicant → employee)",
   })
@@ -429,8 +440,9 @@ export class HrController {
 
   @Patch("admin/employees/:userId")
   @ApiBearerAuth()
-  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
+  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard, AdminDeskGuard)
   @Roles("admin")
+  @AdminDesks("hr")
   @ApiOperation({ summary: "HR admin: update employment record" })
   updateEmployeeAdmin(
     @Param("userId", ParseIntPipe) userId: number,
@@ -768,8 +780,9 @@ export class HrController {
 
   @Patch("admin/incidents/:id")
   @ApiBearerAuth()
-  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
+  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard, AdminDeskGuard)
   @Roles("admin")
+  @AdminDesks("hr")
   @ApiOperation({ summary: "Update incident status / assignee" })
   updateIncident(
     @Param("id", ParseIntPipe) id: number,
@@ -841,8 +854,9 @@ export class HrController {
 
   @Post("admin/policies")
   @ApiBearerAuth()
-  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
+  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard, AdminDeskGuard)
   @Roles("admin")
+  @AdminDesks("hr")
   @ApiOperation({ summary: "Publish a policy" })
   createPolicy(@CurrentUser() user: JwtPayload, @Body() body: unknown) {
     const dto = new ZodValidationPipe(createPolicySchema).transform(
@@ -885,8 +899,9 @@ export class HrController {
 
   @Post("admin/sign-requests")
   @ApiBearerAuth()
-  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
+  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard, AdminDeskGuard)
   @Roles("admin")
+  @AdminDesks("hr")
   @ApiOperation({
     summary: "Track a Jotform Sign send (optional JOTFORM_SIGN_BASE_URL)",
   })
@@ -1013,8 +1028,9 @@ export class HrController {
 
   @Get("admin/analytics")
   @ApiBearerAuth()
-  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
+  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard, AdminDeskGuard)
   @Roles("admin")
+  @AdminDesks("hr")
   @ApiOperation({
     summary: "HR analytics: time-to-hire, conversion, headcount, queues",
   })

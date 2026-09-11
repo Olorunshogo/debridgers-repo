@@ -30,11 +30,13 @@ export const userRoleEnum = pgEnum("user_role", [
  * `total_deposited` is kobo.
  * `zone_id` is assigned from the delivery address for buyers, or the LGA for agents.
  * `referred_by_agent_id` is a permanent link to the agent who referred this buyer.
- * `admin_tier` is super_admin (owner) or sub_admin (invited).
+ * `admin_tier` is "super" (owner) or "sub" (invited).
+ * `admin_desk` is which desk an invited sub covers: "buyer", "agent", or "hr". Super has no desk.
+ * Existing subs without a desk default to "buyer" in migration.
  * `must_change_password` stays true while the account is still on the password the invite flow emailed in plaintext; the UI renders this flag and stores nothing of its own, so dismissing the prompt does not clear the obligation, only changing the password does.
  * `terms_accepted_at`, `terms_document` and `terms_version` record the consent given at signup: when, which document, and which version.
  * Null for every account created before consent was collected, which is the truth rather than a default that would claim they agreed to something they were never shown.
- * `admin_api_key` authenticates admin requests via a header instead of a JWT.
+ * `admin_api_key` is legacy; sub header auth now uses SUPER_ADMIN_KEY_1/2 with X-Admin-Tier: sub.
  */
 export const users = pgTable(
   "users",
@@ -61,6 +63,7 @@ export const users = pgTable(
     refresh_token: text(),
     email_notifications: boolean().notNull().default(true),
     admin_tier: varchar("admin_tier", { length: 20 }),
+    admin_desk: varchar("admin_desk", { length: 20 }),
     must_change_password: boolean().notNull().default(false),
     password_changed_at: timestamp("password_changed_at"),
     terms_accepted_at: timestamp("terms_accepted_at"),

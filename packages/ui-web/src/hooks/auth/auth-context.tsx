@@ -28,6 +28,7 @@ export interface AuthUser {
     | "applicant"
     | "employee";
   admin_tier?: "super" | "sub";
+  admin_desk?: "buyer" | "agent" | "hr";
 }
 
 export interface AuthContextType {
@@ -50,7 +51,11 @@ function readUserFromToken(): AuthUser | null {
   const token = getAccessToken();
   if (!token) return null;
   const payload = decodeJwtPayload<
-    JwtPayload & { exp?: number; admin_tier?: "super" | "sub" }
+    JwtPayload & {
+      exp?: number;
+      admin_tier?: "super" | "sub";
+      admin_desk?: "buyer" | "agent" | "hr";
+    }
   >(token);
   if (!payload) return null;
   if (payload.exp && payload.exp * 1000 < Date.now()) return null;
@@ -59,6 +64,7 @@ function readUserFromToken(): AuthUser | null {
     email: payload.email ?? "",
     role: (payload.role as AuthUser["role"]) ?? "buyer",
     admin_tier: payload.admin_tier,
+    admin_desk: payload.admin_desk,
   };
 }
 

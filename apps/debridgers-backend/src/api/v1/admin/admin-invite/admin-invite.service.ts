@@ -43,6 +43,7 @@ export class AdminInviteService {
   async createInvite(
     email: string,
     superAdminId: number,
+    desk: "buyer" | "agent" | "hr" = "buyer",
   ): Promise<CreateInviteResult> {
     const inviteCode: string = randomBytes(16).toString("hex");
     const tempPassword: string = this.generateTempPassword();
@@ -81,6 +82,7 @@ export class AdminInviteService {
           password: hashedPassword,
           role: "admin",
           admin_tier: "sub",
+          admin_desk: desk,
           first_name: email.split("@")[0],
           last_name: "Admin",
           is_email_verified: true,
@@ -89,7 +91,13 @@ export class AdminInviteService {
       } else {
         await tx
           .update(users)
-          .set({ password: hashedPassword, must_change_password: true })
+          .set({
+            password: hashedPassword,
+            must_change_password: true,
+            admin_tier: "sub",
+            admin_desk: desk,
+            role: "admin",
+          })
           .where(eq(users.email, email));
       }
 

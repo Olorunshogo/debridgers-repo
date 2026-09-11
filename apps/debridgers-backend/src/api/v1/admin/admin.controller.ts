@@ -33,9 +33,11 @@ import { TaxonomyService } from "../catalog/taxonomy.service";
 import { AuthGuard } from "../../shared/guards/auth.guard";
 import { RolesGuard } from "../../shared/guards/roles.guard";
 import { AdminKeyGuard } from "../../shared/guards/admin-key.guard";
+import { AdminDeskGuard } from "../../shared/guards/admin-desk.guard";
 import { AdminId } from "../../shared/decorators/admin-id.decorator";
 import { CurrentUser } from "../../shared/decorators/current-user.decorator";
 import { Roles } from "../../shared/decorators/roles.decorator";
+import { AdminDesks } from "../../shared/decorators/admin-desks.decorator";
 import { AdminApiKeysService } from "./admin-api-keys.service";
 import { ZodValidationPipe } from "../../../infrastructure/pipeline/validation.pipeline";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";
@@ -129,7 +131,7 @@ type CreateOutreachDto = z.infer<typeof createOutreachSchema>;
 @ApiTags("Admin")
 @ApiBearerAuth("access-token")
 @Controller("admin")
-@UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
+@UseGuards(AuthGuard, AdminKeyGuard, RolesGuard, AdminDeskGuard)
 @Roles("admin")
 export class AdminController {
   private readonly logger = new Logger(AdminController.name);
@@ -193,6 +195,7 @@ export class AdminController {
   // === Agents
 
   @Get("agents")
+  @AdminDesks("agent")
   @ApiOperation({ summary: "List all agents - filter by status" })
   @ApiQuery({
     name: "status",
@@ -232,6 +235,7 @@ export class AdminController {
   }
 
   @Get("agents/:id")
+  @AdminDesks("agent")
   @ApiOperation({ summary: "Get a single agent's full profile with wallet" })
   @ApiParam({ name: "id", type: "integer", example: 5 })
   @ApiResponse({
@@ -267,6 +271,7 @@ export class AdminController {
   }
 
   @Patch("agents/:id/status")
+  @AdminDesks("agent")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Approve or reject an agent application" })
   @ApiParam({ name: "id", type: "integer", example: 5 })
@@ -309,6 +314,7 @@ export class AdminController {
   }
 
   @Patch("agents/:id/suspend")
+  @AdminDesks("agent")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Suspend an approved agent" })
   @ApiParam({ name: "id", type: "integer", example: 5 })
@@ -326,6 +332,7 @@ export class AdminController {
   }
 
   @Patch("agents/:id/unsuspend")
+  @AdminDesks("agent")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Unsuspend a suspended agent" })
   @ApiParam({ name: "id", type: "integer", example: 5 })
@@ -340,6 +347,7 @@ export class AdminController {
   }
 
   @Patch("agents/:id/promote-manager")
+  @AdminDesks("agent")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Promote an agent to State Manager" })
   @ApiParam({ name: "id", type: "integer", example: 5 })
@@ -370,6 +378,7 @@ export class AdminController {
   }
 
   @Patch("agents/:id/target")
+  @AdminDesks("agent")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Set agent monthly sales target" })
   @ApiParam({ name: "id", type: "integer", example: 5 })
@@ -399,9 +408,18 @@ export class AdminController {
     return this.adminService.setAgentTarget(id, target);
   }
 
+  @Get("agents/:id/target-progress")
+  @AdminDesks("agent")
+  @ApiOperation({ summary: "Agent monthly target progress" })
+  @ApiParam({ name: "id", type: "integer", example: 5 })
+  getAgentTargetProgress(@Param("id", ParseIntPipe) id: number) {
+    return this.adminService.getAgentTargetProgress(id);
+  }
+
   // === Orders
 
   @Get("orders")
+  @AdminDesks("buyer")
   @ApiOperation({
     summary: "List all orders — with buyer name, amount, payment status",
     description:
@@ -447,6 +465,7 @@ export class AdminController {
   }
 
   @Get("orders/:id")
+  @AdminDesks("buyer")
   @ApiOperation({
     summary: "Get a single order with full buyer and payment detail",
   })
@@ -455,6 +474,7 @@ export class AdminController {
   }
 
   @Patch("orders/:id/status")
+  @AdminDesks("buyer")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Advance an order through its lifecycle",
@@ -473,6 +493,7 @@ export class AdminController {
   // === Buyers
 
   @Get("buyers")
+  @AdminDesks("buyer")
   @ApiOperation({
     summary:
       "List all registered buyers - optionally filter by zone or suspended status",
@@ -519,6 +540,7 @@ export class AdminController {
   }
 
   @Get("buyers/:id")
+  @AdminDesks("buyer")
   @ApiOperation({ summary: "Get a single buyer with their order history" })
   @ApiParam({ name: "id", type: "integer", example: 12 })
   @ApiResponse({
@@ -544,6 +566,7 @@ export class AdminController {
   }
 
   @Patch("buyers/:id/block")
+  @AdminDesks("buyer")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Block a buyer from placing orders" })
   @ApiParam({ name: "id", type: "integer", example: 12 })
@@ -561,6 +584,7 @@ export class AdminController {
   }
 
   @Patch("buyers/:id/unblock")
+  @AdminDesks("buyer")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Unblock a buyer" })
   @ApiParam({ name: "id", type: "integer", example: 12 })
@@ -578,6 +602,7 @@ export class AdminController {
   }
 
   @Patch("buyers/:id/suspend")
+  @AdminDesks("buyer")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Suspend a buyer from placing orders" })
   @ApiParam({ name: "id", type: "integer", example: 12 })
@@ -592,6 +617,7 @@ export class AdminController {
   }
 
   @Patch("buyers/:id/unsuspend")
+  @AdminDesks("buyer")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Unsuspend a buyer" })
   @ApiParam({ name: "id", type: "integer", example: 12 })
@@ -606,6 +632,7 @@ export class AdminController {
   }
 
   @Get("buyers/:id/wallet/transactions")
+  @AdminDesks("buyer")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "View any buyer's wallet transaction history" })
   @ApiParam({ name: "id", type: "integer", example: 12 })
@@ -659,6 +686,7 @@ export class AdminController {
   // === Stock & Inventory
 
   @Get("stock/requests")
+  @AdminDesks("agent")
   @ApiOperation({ summary: "List all agent stock requests" })
   @ApiQuery({
     name: "status",
@@ -721,6 +749,7 @@ export class AdminController {
   }
 
   @Get("stock/inventory")
+  @AdminDesks("agent")
   @ApiOperation({
     summary: "Warehouse inventory: total received / dispatched / current stock",
   })
@@ -744,6 +773,7 @@ export class AdminController {
   }
 
   @Post("stock/inventory")
+  @AdminDesks("agent")
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: "Record stock received from supplier" })
   @ApiBody({
@@ -810,6 +840,8 @@ export class AdminController {
   @Post("outreach")
   @HttpCode(HttpStatus.CREATED)
   @Roles("admin", "agent")
+  @AdminDesks("agent")
+  @AdminDesks("agent")
   @ApiOperation({
     summary: "Record a new outreach / offline customer visit (admin + agent)",
   })
@@ -855,12 +887,14 @@ export class AdminController {
   }
 
   @Get("outreach")
+  @AdminDesks("agent")
   @ApiOperation({ summary: "List all outreach records" })
   listOutreachRecords() {
     return this.adminService.listOutreachRecords();
   }
 
   @Delete("outreach/:id")
+  @AdminDesks("agent")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Delete an outreach record" })
   deleteOutreachRecord(@Param("id", ParseIntPipe) id: number) {
@@ -870,6 +904,7 @@ export class AdminController {
   // === KYC
 
   @Get("kyc")
+  @AdminDesks("agent")
   @ApiOperation({ summary: "List all agents with pending KYC submissions" })
   @ApiResponse({
     status: 200,
@@ -905,6 +940,7 @@ export class AdminController {
   }
 
   @Patch("agents/:id/kyc")
+  @AdminDesks("agent")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Approve or reject an agent's KYC submission" })
   @ApiParam({ name: "id", type: "integer", example: 5 })
@@ -1245,6 +1281,7 @@ export class AdminController {
   // === Maintenance
 
   @Post("agents/backfill-bank-codes")
+  @AdminDesks("agent")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Fill in missing agent bank codes",

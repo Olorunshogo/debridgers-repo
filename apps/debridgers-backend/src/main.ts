@@ -154,7 +154,12 @@ async function bootstrap() {
       callback(new Error(`CORS: origin ${origin} not allowed`));
     },
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Admin-Key"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Admin-Key",
+      "X-Admin-Tier",
+    ],
     credentials: true,
   });
 

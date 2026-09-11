@@ -1,5 +1,6 @@
 import { BASE_BACKEND_URL } from "./api";
 import { getAccessToken, refreshTokens, clearTokens } from "./auth";
+import { decodeJwtPayload } from "./auth-cookies";
 import {
   buildQueryString,
   type PagedResponse,
@@ -27,6 +28,35 @@ interface ApiEnvelope<T> {
   message?: string;
 }
 
+/**
+ * Shared admin header key for sub-admin browser calls.
+ * Must match SUPER_ADMIN_KEY_1 or SUPER_ADMIN_KEY_2 on the backend.
+ */
+function sharedAdminKey(): string | undefined {
+  const fromVite = import.meta.env["VITE_ADMIN_SHARED_KEY"] as
+    | string
+    | undefined;
+  return fromVite?.trim() || undefined;
+}
+
+function appendAdminHeaders(
+  headers: Record<string, string>,
+  token: string | null,
+): void {
+  if (!token) return;
+  const payload = decodeJwtPayload<{
+    role?: string;
+    admin_tier?: string;
+  }>(token);
+  if (payload?.role !== "admin" || payload.admin_tier !== "sub") return;
+
+  const key = sharedAdminKey();
+  if (!key) return;
+
+  headers["X-Admin-Key"] = key;
+  headers["X-Admin-Tier"] = "sub";
+}
+
 /*
  * One request, one silent refresh on 401, one retry.
  * Both apiFetch and apiFetchPaged go through here so the auth behaviour cannot drift apart.
@@ -41,6 +71,7 @@ async function requestEnvelope<T>(
     ...(options.headers as Record<string, string>),
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
+  appendAdminHeaders(headers, token);
 
   const url = `${BASE_BACKEND_URL}${path}`;
   let res = await fetch(url, { ...options, headers, credentials: "include" });
@@ -49,6 +80,7 @@ async function requestEnvelope<T>(
     try {
       const { accessToken } = await refreshTokens();
       headers["Authorization"] = `Bearer ${accessToken}`;
+      appendAdminHeaders(headers, accessToken);
       res = await fetch(url, { ...options, headers, credentials: "include" });
     } catch {
       clearTokens();

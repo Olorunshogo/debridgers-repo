@@ -81,6 +81,7 @@ describe.skipIf(!hasDb)("AdminInviteService.createInvite", () => {
     const result = await service.createInvite(
       "new-sub@example.com",
       superAdminId,
+      "buyer",
     );
 
     expect(result.email_sent).toBe(true);
@@ -95,9 +96,20 @@ describe.skipIf(!hasDb)("AdminInviteService.createInvite", () => {
       .where(eq(users.email, "new-sub@example.com"));
     expect(created.role).toBe("admin");
     expect(created.admin_tier).toBe("sub");
+    expect(created.admin_desk).toBe("buyer");
     expect(created.must_change_password).toBe(true);
 
     expect(await invitesFor("new-sub@example.com")).toBe(1);
+  });
+
+  it("creates an hr-desk sub-admin when desk=hr", async () => {
+    await service.createInvite("hr-sub@example.com", superAdminId, "hr");
+    const [created] = await t.db
+      .select()
+      .from(users)
+      .where(eq(users.email, "hr-sub@example.com"));
+    expect(created.admin_tier).toBe("sub");
+    expect(created.admin_desk).toBe("hr");
   });
 
   it("still commits the rows and returns the code when the email fails", async () => {

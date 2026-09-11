@@ -33,18 +33,24 @@ It is **not** inside `debridgers-admin`. Admins who staff hiring log into the HR
 | `admin`          | Yes               | Staffing: jobs, pipeline, offers, people-ops admin APIs |
 | `applicant`      | Yes               | Apply, book interview, accept/reject offer              |
 | `employee`       | Yes               | Created on offer accept; contracts / employee APIs      |
-| `hr`             | Enum only         | Reserved for a future `hr_admin` product surface        |
+| `hr`             | Enum only         | Reserved legacy name; not used for staffing gates       |
 | `hiring_manager` | Enum only         | Reserved; not wired into staffing gates                 |
 
-**Staffing is admin-only for now.** The UI and `@Roles("admin")` on recruitment endpoints do not use `hr` / `hiring_manager`. Those role names remain in the DB enum / TypeScript unions so a later dedicated HR admin dashboard can adopt them without another enum migration.
+**Staffing is admin-only**, gated by desk:
 
-Auth stack on authenticated HR routes:
+- Super admin (`admin_tier: "super"`) can staff HR.
+- Invited sub with `admin_desk: "hr"` can staff HR (same 2-header auth as other subs).
+- Buyer / agent desks cannot call `/hr/admin/*` (403 from `AdminDeskGuard`).
 
-`AuthGuard → AdminKeyGuard → RolesGuard`
+Auth stack on authenticated HR admin routes:
 
-- Browser admin: JWT only. `AdminKeyGuard` checks `users.admin_tier` is set.
-- Scripts may also send `X-Admin-Key` + `X-Admin-Tier` (same as `/admin`).
+`AuthGuard → AdminKeyGuard → RolesGuard → AdminDeskGuard` + `@AdminDesks("hr")`
+
+- Super browser: JWT only.
+- Sub (hr desk): JWT **plus** `X-Admin-Key` ∈ `SUPER_ADMIN_KEY_1|2` and `X-Admin-Tier: sub`. Set `VITE_ADMIN_SHARED_KEY` in the HR app to the same value.
 - Applicants and employees pass through `AdminKeyGuard` (non-admin short-circuit) into `RolesGuard`.
+
+Invite an HR admin from the main admin app: **Admin Invites → Desk = HR**.
 
 ---
 

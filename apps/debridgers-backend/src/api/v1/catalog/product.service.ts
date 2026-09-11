@@ -8,7 +8,6 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq, desc, count, isNull, and } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
-import { remitPerPackageKobo } from "../agent/agent-commission";
 
 export interface CreateProductDto {
   name: string;
@@ -270,11 +269,10 @@ export class ProductService {
         quantity: dto.quantity,
         status: "pending",
         /*
-         * Remit price is the product's own price less the agent's commission per package.
-         * The old ₦1,300 flat assumed an unsold product, overpaying agents by nearly the whole consignment.
+         * Remit is the full catalogue price. Commission is no longer deducted
+         * from consignment cost; agents earn only on bags above monthly target.
          */
-        amount_to_remit:
-          dto.quantity * remitPerPackageKobo(product.name, product.price_kobo),
+        amount_to_remit: dto.quantity * product.price_kobo,
         amount_remitted: 0,
       })
       .returning();

@@ -8,7 +8,7 @@ import {
 } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, sql, desc, sum, and, count } from "drizzle-orm";
+import { eq, sql, desc, sum, and, count, gte, lt } from "drizzle-orm";
 import * as bcrypt from "bcryptjs";
 import * as crypto from "crypto";
 import * as schema from "../../../infrastructure/persistence/index";
@@ -20,12 +20,12 @@ import { UpdateAgentProfileDto } from "./dto/update-agent-profile.dto";
 import { RequestWithdrawalDto } from "./dto/request-withdrawal.dto";
 import { AgentWalletService } from "../wallet/agent-wallet.service";
 import { SystemSettingsService } from "../settings/system-settings.service";
-import { percentOfKobo, nairaToKobo } from "../../shared/money";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";
 import {
   ORDER_STATUS_TRANSITIONS,
   ORDER_STATUS_NOTIFICATION,
 } from "../../shared/order-status";
+import { COMMISSION_DEFAULT_KOBO } from "./agent-commission";
 
 // === Types
 
@@ -39,6 +39,9 @@ export interface AgentDashboardStats {
   days_reported: number;
   commission_pending: number;
   recent_reports: (typeof schema.sales_reports.$inferSelect)[];
+  monthly_target: number;
+  bags_sold_this_month: number;
+  target_progress_percent: number;
 }
 
 @Injectable()
@@ -49,7 +52,9 @@ export class AgentService {
     private readonly eventEmitter: EventEmitter2,
     private readonly walletService: AgentWalletService,
     private readonly settings: SystemSettingsService,
-  ) {}
+  ) {
+    void this.settings;
+  }
 
   /*
    * Resolves an agent's delivery zone from the location string they supplied.
@@ -319,7 +324,10 @@ export class AgentService {
 
   async submitReport(dto: SubmitReportDto, user: JwtPayload) {
     const [profile] = await this.db
-      .select({ status: schema.agent_profiles.status })
+      .select({
+        status: schema.agent_profiles.status,
+        target: schema.agent_profiles.target,
+      })
       .from(schema.agent_profiles)
       .where(eq(schema.agent_profiles.user_id, user.sub))
       .limit(1);
@@ -335,15 +343,30 @@ export class AgentService {
     }
 
     /*
-     * The rate was hardcoded at 0.3 here, so every sales report paid 30%
-     * regardless of what the admin had set. It now reads the same setting every
-     * other commission path reads, and the arithmetic stays in whole kobo.
+     * Commission is earned only on bags that surpass the monthly target.
+     * Remittance is full catalogue price elsewhere; per-bag auto commission
+     * on every sale is retired. Reports do not carry a product id yet, so
+     * overage uses the default band until reports are product-scoped.
      */
-    const rate = await this.settings.getAgentCommissionRate();
-    const commissionKobo = percentOfKobo(
-      nairaToKobo(Number(dto.amount)),
-      rate * 100,
-    );
+    const { start, end } = this.currentMonthBounds();
+    const [mtdRow] = await this.db
+      .select({ total: sum(schema.sales_reports.pages_sold) })
+      .from(schema.sales_reports)
+      .where(
+        and(
+          eq(schema.sales_reports.agent_id, user.sub),
+          gte(schema.sales_reports.created_at, start),
+          lt(schema.sales_reports.created_at, end),
+        ),
+      );
+
+    const soldBefore = Number(mtdRow?.total ?? 0);
+    const soldAfter = soldBefore + dto.pages_sold;
+    const target = profile.target ?? 0;
+    const overageBefore = Math.max(0, soldBefore - target);
+    const overageAfter = Math.max(0, soldAfter - target);
+    const overageBags = overageAfter - overageBefore;
+    const commissionKobo = overageBags * COMMISSION_DEFAULT_KOBO;
 
     const report = await this.db.transaction(async (tx) => {
       const [report] = await tx
@@ -356,32 +379,46 @@ export class AgentService {
         })
         .returning();
 
-      await tx.insert(schema.commissions).values({
-        agent_id: user.sub,
-        type: "direct",
-        amount_kobo: commissionKobo,
-        status: "pending",
-      });
+      if (commissionKobo > 0) {
+        await tx.insert(schema.commissions).values({
+          agent_id: user.sub,
+          type: "direct",
+          amount_kobo: commissionKobo,
+          status: "pending",
+        });
 
-      /*
-       * The commission row alone doesn't move the needle on what the agent
-       * sees - the wallet's pending_balance is what the dashboard reads, so
-       * without this a submitted report never showed as pending earnings.
-       */
-      await this.walletService.credit(
-        user.sub,
-        commissionKobo,
-        { pending: true },
-        tx,
-      );
+        await this.walletService.credit(
+          user.sub,
+          commissionKobo,
+          { pending: true },
+          tx,
+        );
+      }
 
       return report;
     });
 
     return {
       message: "Report submitted successfully",
-      data: { report_id: report.id, commission_earned: commissionKobo },
+      data: {
+        report_id: report.id,
+        commission_earned: commissionKobo,
+        overage_bags: overageBags,
+        monthly_target: target,
+        bags_sold_this_month: soldAfter,
+      },
     };
+  }
+
+  private currentMonthBounds(): { start: Date; end: Date } {
+    const now = new Date();
+    const start = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+    );
+    const end = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
+    );
+    return { start, end };
   }
 
   async getReports(user: JwtPayload) {
@@ -490,6 +527,31 @@ export class AgentService {
     const myIndex = allAgentsRows.findIndex((r) => r.user_id === user.sub);
     const rank = myIndex >= 0 ? myIndex + 1 : null;
 
+    const [profile] = await this.db
+      .select({ target: schema.agent_profiles.target })
+      .from(schema.agent_profiles)
+      .where(eq(schema.agent_profiles.user_id, user.sub))
+      .limit(1);
+
+    const { start, end } = this.currentMonthBounds();
+    const [monthBagsRow] = await this.db
+      .select({ total: sum(schema.sales_reports.pages_sold) })
+      .from(schema.sales_reports)
+      .where(
+        and(
+          eq(schema.sales_reports.agent_id, user.sub),
+          gte(schema.sales_reports.created_at, start),
+          lt(schema.sales_reports.created_at, end),
+        ),
+      );
+
+    const monthlyTarget = profile?.target ?? 0;
+    const bagsSoldThisMonth = Number(monthBagsRow?.total ?? 0);
+    const targetProgressPercent =
+      monthlyTarget > 0
+        ? Math.min(100, Math.round((bagsSoldThisMonth / monthlyTarget) * 100))
+        : 0;
+
     return {
       message: "Dashboard stats retrieved",
       data: {
@@ -499,6 +561,9 @@ export class AgentService {
         days_reported: Number(daysReportedRow?.total ?? 0),
         commission_pending: Number(pendingCommissionRow?.total ?? 0),
         recent_reports: recentReports,
+        monthly_target: monthlyTarget,
+        bags_sold_this_month: bagsSoldThisMonth,
+        target_progress_percent: targetProgressPercent,
       },
     };
   }

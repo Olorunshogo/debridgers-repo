@@ -9,6 +9,7 @@ export interface JwtPayload {
   last_name: string;
   role: UserRole;
   admin_tier?: "super" | "sub";
+  admin_desk?: "buyer" | "agent" | "hr";
   api_version: string;
   device: string;
   ip_address: string;

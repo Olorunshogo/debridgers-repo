@@ -7,7 +7,18 @@ import {
 } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, asc, desc, count, sum, and, inArray, sql } from "drizzle-orm";
+import {
+  eq,
+  asc,
+  desc,
+  count,
+  sum,
+  and,
+  inArray,
+  sql,
+  gte,
+  lt,
+} from "drizzle-orm";
 import * as crypto from "crypto";
 import * as bcrypt from "bcryptjs";
 import * as schema from "../../../infrastructure/persistence/index";
@@ -531,7 +542,59 @@ export class AdminService {
 
     if (!updated) throw new NotFoundException("Agent not found");
 
-    return { message: "Target updated", data: { agentId, target } };
+    return {
+      message: "Monthly target updated",
+      data: { agentId, target, period: "calendar_month" },
+    };
+  }
+
+  async getAgentTargetProgress(agentId: number) {
+    const [profile] = await this.db
+      .select({
+        target: schema.agent_profiles.target,
+        user_id: schema.agent_profiles.user_id,
+      })
+      .from(schema.agent_profiles)
+      .where(eq(schema.agent_profiles.user_id, agentId))
+      .limit(1);
+
+    if (!profile) throw new NotFoundException("Agent not found");
+
+    const now = new Date();
+    const start = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+    );
+    const end = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
+    );
+
+    const [monthBagsRow] = await this.db
+      .select({ total: sum(schema.sales_reports.pages_sold) })
+      .from(schema.sales_reports)
+      .where(
+        and(
+          eq(schema.sales_reports.agent_id, agentId),
+          gte(schema.sales_reports.created_at, start),
+          lt(schema.sales_reports.created_at, end),
+        ),
+      );
+
+    const target = profile.target ?? 0;
+    const bagsSold = Number(monthBagsRow?.total ?? 0);
+    const percent =
+      target > 0 ? Math.min(100, Math.round((bagsSold / target) * 100)) : 0;
+
+    return {
+      message: "Target progress retrieved",
+      data: {
+        agentId,
+        target,
+        bags_sold: bagsSold,
+        percent,
+        month: `${start.getUTCFullYear()}-${String(start.getUTCMonth() + 1).padStart(2, "0")}`,
+        overage_bags: Math.max(0, bagsSold - target),
+      },
+    };
   }
 
   // === Buyers

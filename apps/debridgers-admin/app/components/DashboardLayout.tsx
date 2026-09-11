@@ -83,7 +83,7 @@ export default function DashboardLayout() {
   const { user, isLoading } = useAuth();
   const { withLoader } = usePageLoader();
   const { groups, isActive, basePath, isAgent, isBuyer, isAdmin, isSubAdmin } =
-    useDashboardNav(user?.admin_tier ?? null);
+    useDashboardNav(user?.admin_tier ?? null, user?.admin_desk ?? null);
   /*
    * The flags above come from useDashboardNav, which reads them off the URL - they say which dashboard is being viewed, not who is viewing it.
    * The real role lives here.

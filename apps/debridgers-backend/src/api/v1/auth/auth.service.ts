@@ -637,6 +637,7 @@ export class AuthService {
       last_name: string;
       role: string;
       admin_tier?: string | null;
+      admin_desk?: string | null;
     },
     context?: {
       api_version: string;
@@ -653,6 +654,11 @@ export class AuthService {
       role: user.role as JwtPayload["role"],
       ...(user.role === "admin" && {
         admin_tier: (user.admin_tier as "super" | "sub") || "super",
+        ...(user.admin_desk === "buyer" ||
+        user.admin_desk === "agent" ||
+        user.admin_desk === "hr"
+          ? { admin_desk: user.admin_desk as "buyer" | "agent" | "hr" }
+          : {}),
       }),
       api_version: context?.api_version || "v1",
       device: context?.device || "unknown",

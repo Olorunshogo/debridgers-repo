@@ -24,15 +24,15 @@ import { supportWhatsAppHref } from "../data/support";
 
 export type AdminTier = "super" | "sub";
 
+export type AdminDesk = "buyer" | "agent" | "hr";
+
 /**
  * Which part of the business an admin looks after.
  *
  * Distinct from `AdminTier`, and deliberately so.
  * A tier is a privilege level and is an auth credential: `admin_tier` is checked by admin-key.guard against the SUPER_ADMIN_KEY env values, so it must stay small and boring.
- * A domain is an area of responsibility, several can apply to one person, and they carry no ordering.
- *
- * Today this only records which domain owns a nav item; `tiers` still does the gating.
- * When `users` grows a domains column, gating moves here and the mapping is already written down.
+ * A desk (`admin_desk`) is which invited sub covers; super has no desk and sees everything.
+ * `domain` remains metadata for ownership labels.
  */
 export type AdminDomain =
   | "buyer"
@@ -42,16 +42,14 @@ export type AdminDomain =
   | "catalogue"
   | "fulfilment"
   | "support"
-  | "growth";
+  | "growth"
+  | "hr";
 
 /*
  * `tiers` is which admin tiers may see this item; omitted means every tier.
+ * `desks` is which sub desks may see this item; omitted means every desk.
+ * Super always sees every item (desks are ignored for super).
  * There is one admin dashboard, not two: a sub-admin gets a narrower nav rather than a separate set of routes.
- * Splitting them produced two copies of overview, buyers and settings that had to be kept in step by hand.
- *
- * `domain` is the domain that owns this surface, where one does.
- * Metadata only for now: nothing reads it to decide visibility yet.
- * Items with no domain are the shared admin surface.
  *
  * `badge` marks a surface that is routed and readable but not yet built.
  */
@@ -60,6 +58,7 @@ export interface NavItem {
   href: string;
   icon: LucideIcon;
   tiers?: readonly AdminTier[];
+  desks?: readonly AdminDesk[];
   domain?: AdminDomain;
   badge?: string;
 }
@@ -188,11 +187,21 @@ const adminNavGroups: NavGroup[] = [
         label: "Agents",
         icon: User,
         href: "/admin-dashboard/agents",
-        tiers: ["super"],
+        desks: ["agent"],
         domain: "agent",
       },
-      { label: "Buyers", icon: ShoppingCart, href: "/admin-dashboard/buyers" },
-      { label: "Deliveries", icon: Truck, href: "/admin-dashboard/deliveries" },
+      {
+        label: "Buyers",
+        icon: ShoppingCart,
+        href: "/admin-dashboard/buyers",
+        desks: ["buyer"],
+      },
+      {
+        label: "Deliveries",
+        icon: Truck,
+        href: "/admin-dashboard/deliveries",
+        desks: ["buyer"],
+      },
       {
         label: "Products",
         icon: Package,
@@ -204,7 +213,7 @@ const adminNavGroups: NavGroup[] = [
         label: "Outreach",
         icon: MapPin,
         href: "/admin-dashboard/outreach",
-        tiers: ["super"],
+        desks: ["agent"],
         domain: "growth",
       },
       {
@@ -243,12 +252,14 @@ const adminNavGroups: NavGroup[] = [
         label: "Buyer Desk",
         icon: ClipboardList,
         href: "/admin-dashboard/buyer",
+        desks: ["buyer"],
         domain: "buyer",
       },
       {
         label: "Order Tracking",
         icon: Truck,
         href: "/admin-dashboard/buyer/deliveries",
+        desks: ["buyer"],
         domain: "buyer",
       },
       {
@@ -283,44 +294,52 @@ const adminNavGroups: NavGroup[] = [
   },
 ];
 
-/* Drops what this tier may not see, and any group left empty by that. */
-function navForTier(groups: NavGroup[], tier: AdminTier): NavGroup[] {
+/* Drops what this tier/desk may not see, and any group left empty by that. */
+function navForAdmin(
+  groups: NavGroup[],
+  tier: AdminTier,
+  desk: AdminDesk | null,
+): NavGroup[] {
   return groups
     .map((group) => ({
       ...group,
-      items: group.items.filter(
-        (item) => !item.tiers || item.tiers.includes(tier),
-      ),
+      items: group.items.filter((item) => {
+        if (item.tiers && !item.tiers.includes(tier)) return false;
+        if (tier === "super") return true;
+        if (!item.desks) return true;
+        return desk !== null && item.desks.includes(desk);
+      }),
     }))
     .filter((group) => group.items.length > 0);
 }
 
 /*
- * Tier is supplied by the caller rather than read from an auth context: this hook ships in a package and must not reach into the consuming app's session.
+ * Tier and desk are supplied by the caller rather than read from an auth context: this hook ships in a package and must not reach into the consuming app's session.
  */
-export function useDashboardNav(adminTier?: AdminTier | null) {
+export function useDashboardNav(
+  adminTier?: AdminTier | null,
+  adminDesk?: AdminDesk | null,
+) {
   const { pathname } = useLocation();
 
   const isBuyer = pathname.startsWith("/buyer-dashboard");
   const isAgent = pathname.startsWith("/agent-dashboard");
   const isAdmin = pathname.startsWith("/admin-dashboard");
-  /*
-   * A sub-admin is identified by their tier, not by where they are standing.
-   * This used to be a path check against /buyer-admin-dashboard, which no longer exists: that surface is now a domain inside the one admin dashboard, so a super admin visiting it is still a super admin.
-   */
 
   /*
    * Tier comes from the session, not the URL.
-   *
-   * Nav used to be chosen purely by path, so what an admin saw depended on where they happened to be rather than on what they are allowed to do.
    * Defaults to the narrower tier: showing a sub-admin links they cannot use is worse than hiding one from a super admin until the token loads.
    */
   const tier: AdminTier = adminTier === "super" ? "super" : "sub";
+  const desk: AdminDesk | null =
+    adminDesk === "buyer" || adminDesk === "agent" || adminDesk === "hr"
+      ? adminDesk
+      : null;
 
   const isSubAdmin: boolean = isAdmin && tier === "sub";
 
   const groups = isAdmin
-    ? navForTier(adminNavGroups, tier)
+    ? navForAdmin(adminNavGroups, tier, desk)
     : isAgent
       ? agentNavGroups
       : buyerNavGroups;
@@ -351,5 +370,6 @@ export function useDashboardNav(adminTier?: AdminTier | null) {
     isAgent,
     isAdmin,
     isSubAdmin,
+    adminDesk: desk,
   };
 }

@@ -14,15 +14,21 @@ coverage
 .nyc_output
 
 # Environment variables. Any name (.env, prod.env, staging.env), any depth.
-# Real secrets never get committed; only *.example templates are allowed. This
-# list is wider than ".env*" because a "prod.env" slipped past that and shipped
-# live keys - see the pre-commit guard and the incident note below.
+# Real secrets never get committed; only app *.env*.example templates are
+# allowed. This list is wider than ".env*" because a "prod.env" slipped past
+# that and shipped live keys - see the pre-commit guard and the incident note.
 .env
 .env.*
 *.env
 !.env.example
 !.env.*.example
 !*.env.example
+# Filled deploy dumps (real Neon/Paystack/tunnel secrets). Not the same as
+# apps/*/.env.*.example placeholders. Keep these local; paste into Codeberg
+# ENV_FILE_DEV / ENV_FILE_PROD instead of committing.
+deploy/env.dev.example
+deploy/env.prod.example
+deploy/env.*.local
 .kiro
 
 # Keys and certificates. debridgers_data_config/ carried real committed private

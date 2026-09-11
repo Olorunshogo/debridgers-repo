@@ -53,6 +53,7 @@ export class AuthGuard implements CanActivate {
          * Dropping it here made every super admin look like a sub and 403'd real pricing writes.
          */
         admin_tier: payload.admin_tier,
+        admin_desk: payload.admin_desk,
         api_version: payload.api_version,
         device: payload.device,
         ip_address: payload.ip_address,

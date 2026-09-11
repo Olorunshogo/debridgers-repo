@@ -63,9 +63,9 @@ export function commissionPerPackageKobo(productName: string): number {
 }
 
 /**
- * What an agent owes per package taken on consignment: the price the buyer pays, less the agent's commission on that package.
- *
- * Floored at zero so a commission band misconfigured above a product's price can never record a negative debt, which would read as the company owing the agent for taking stock.
+ * Legacy helper: remit used to be catalogue price minus per-package commission.
+ * Stock requests now remit the full catalogue price; keep this for tests and
+ * any caller that still wants the old formula explicitly.
  */
 export function remitPerPackageKobo(
   productName: string,

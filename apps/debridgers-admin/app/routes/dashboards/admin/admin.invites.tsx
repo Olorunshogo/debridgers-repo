@@ -64,6 +64,7 @@ export default function AdminInvites() {
   const [invites, setInvites] = useState<AdminInvite[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [email, setEmail] = useState<string>("");
+  const [desk, setDesk] = useState<"buyer" | "agent" | "hr">("buyer");
   const [sending, setSending] = useState<boolean>(false);
   /* Carries its own tone: the same slot reports both a sent invite and a failed one, and they must not look alike. */
   const [message, setMessage] = useState<InviteMessage | null>(null);
@@ -102,9 +103,12 @@ export default function AdminInvites() {
     try {
       await apiMutate("/admin/invites", {
         method: "POST",
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, desk }),
       });
-      setMessage({ tone: "success", text: `Invitation sent to ${email}.` });
+      setMessage({
+        tone: "success",
+        text: `Invitation sent to ${email} (${desk} desk).`,
+      });
       setEmail("");
       await loadInvites();
     } catch (err) {
@@ -213,6 +217,20 @@ export default function AdminInvites() {
             className="flex-1"
             required
           />
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-heading font-medium">Desk</span>
+            <select
+              value={desk}
+              onChange={(e) =>
+                setDesk(e.target.value as "buyer" | "agent" | "hr")
+              }
+              className="border-line text-heading rounded-xl border bg-white px-3 py-2"
+            >
+              <option value="buyer">Buyer desk</option>
+              <option value="agent">Agent desk</option>
+              <option value="hr">HR desk</option>
+            </select>
+          </label>
           <SubmitButton icon={Plus} loading={sending} loadingText="Sending...">
             Send Invite
           </SubmitButton>
