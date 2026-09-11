@@ -118,7 +118,7 @@ jobs:
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "mkdir -p ${STACK_DIR} /opt/debridgers/cloudflared /opt/debridgers/deploy"
 
-          tar --exclude=node_modules --exclude=.git --exclude=dist -czf /tmp/code.tar.gz .
+          tar --exclude=node_modules --exclude=.git --exclude=dist --exclude=.nx -czf /tmp/code.tar.gz .
           scp /tmp/code.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/code.tar.gz
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "cd /opt/debridgers && tar -xzf /tmp/code.tar.gz && rm -f /tmp/code.tar.gz"
@@ -202,7 +202,7 @@ jobs:
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "mkdir -p ${STACK_DIR} /opt/debridgers/cloudflared /opt/debridgers/deploy"
 
-          tar --exclude=node_modules --exclude=.git --exclude=dist -czf /tmp/code.tar.gz .
+          tar --exclude=node_modules --exclude=.git --exclude=dist --exclude=.nx -czf /tmp/code.tar.gz .
           scp /tmp/code.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/code.tar.gz
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "cd /opt/debridgers && tar -xzf /tmp/code.tar.gz && rm -f /tmp/code.tar.gz"
