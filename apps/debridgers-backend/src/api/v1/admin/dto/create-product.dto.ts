@@ -15,7 +15,7 @@ export const createProductSchema = z.object({
   category: z.string().max(50).optional(),
   category_id: z.number().int().positive().nullable().optional(),
   measure_value: z.number().int().min(0).optional(),
-  measure_unit: z.enum(["kg", "litre", "piece"]).optional(),
+  measure_unit: z.enum(["kg", "litre", "piece", "measure"]).optional(),
   weight_grams: z.number().int().min(0).optional(),
   description: z.string().max(500).optional(),
   image_url: z

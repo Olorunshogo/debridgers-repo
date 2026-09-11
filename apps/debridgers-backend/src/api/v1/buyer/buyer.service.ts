@@ -19,7 +19,12 @@ import { CreateOrderDto } from "./dto/create-order.dto";
 import { SyncCartDto } from "./dto/sync-cart.dto";
 import { InitializeOrderPaymentDto } from "./dto/initialize-order-payment.dto";
 import { QuoteCartDto } from "./dto/quote-cart.dto";
-import { computeDeliveryFee, computeOrderTotals } from "@debridgers/pricing";
+import {
+  computeDeliveryFee,
+  computeOrderTotals,
+  computeMeasurePriceKobo,
+  measureQuantityViolation,
+} from "@debridgers/pricing";
 import { PaymentService } from "../payment/payment.service";
 import { PaystackInvoiceService } from "../payment/paystack-invoice.service";
 import { ConfigService } from "@nestjs/config";
@@ -189,6 +194,7 @@ export class BuyerService {
           product_id: line.product_id,
           quantity: line.quantity,
           unit_price_kobo: line.unit_price_kobo,
+          unit_mode: line.unit_mode,
         })),
       );
 
@@ -535,9 +541,12 @@ export class BuyerService {
       .select({
         product_id: schema.cart_items.product_id,
         quantity: schema.cart_items.quantity,
+        unit_mode: schema.cart_items.unit_mode,
         name: schema.productsTable.name,
         unit: schema.productsTable.unit,
         price_kobo: schema.productsTable.price_kobo,
+        measure_value: schema.productsTable.measure_value,
+        measure_unit: schema.productsTable.measure_unit,
         image_url: schema.productsTable.image_url,
       })
       .from(schema.cart_items)
@@ -571,6 +580,7 @@ export class BuyerService {
             user_id: user.sub,
             product_id: item.product_id,
             quantity: item.quantity,
+            unit_mode: item.unit_mode,
           })),
         );
       }
@@ -589,23 +599,43 @@ export class BuyerService {
       .select({
         product_id: schema.cart_items.product_id,
         quantity: schema.cart_items.quantity,
+        unit_mode: schema.cart_items.unit_mode,
       })
       .from(schema.cart_items)
       .where(eq(schema.cart_items.user_id, user.sub));
 
-    const merged = new Map<number, number>();
-    for (const row of existing) merged.set(row.product_id, row.quantity);
+    /*
+     * Keyed on product_id + unit_mode, matching cart_items_user_product_mode_idx -
+     * a package line and a measure line of the same product are different rows,
+     * not the same one taking the higher quantity.
+     */
+    const key = (productId: number, unitMode: string) =>
+      `${productId}:${unitMode}`;
+    const merged = new Map<
+      string,
+      { product_id: number; quantity: number; unit_mode: "package" | "measure" }
+    >();
+    for (const row of existing) {
+      const unitMode = (row.unit_mode as "package" | "measure") ?? "package";
+      merged.set(key(row.product_id, unitMode), {
+        product_id: row.product_id,
+        quantity: row.quantity,
+        unit_mode: unitMode,
+      });
+    }
     for (const item of dto.items) {
-      const current = merged.get(item.product_id) ?? 0;
-      merged.set(item.product_id, Math.max(current, item.quantity));
+      const k = key(item.product_id, item.unit_mode);
+      const current = merged.get(k)?.quantity ?? 0;
+      merged.set(k, {
+        product_id: item.product_id,
+        quantity: Math.max(current, item.quantity),
+        unit_mode: item.unit_mode,
+      });
     }
 
     await this.replaceCart(
       {
-        items: Array.from(merged, ([product_id, quantity]) => ({
-          product_id,
-          quantity,
-        })),
+        items: Array.from(merged.values()),
       },
       user,
     );
@@ -756,7 +786,11 @@ export class BuyerService {
    * and what they are charged cannot drift apart.
    */
   private async priceBasket(
-    lines: readonly { product_id: number; qty: number }[],
+    lines: readonly {
+      product_id: number;
+      qty: number;
+      unit_mode?: "package" | "measure";
+    }[],
     zoneId: number,
     buyerId: number,
   ) {
@@ -785,30 +819,84 @@ export class BuyerService {
         `These products are no longer available: ${missing.join(", ")}`,
       );
     }
+    /*
+     * A measure line buys a fraction of a package (a `measure_value` out of the
+     * `measure_unit: "measure"` product's package), priced by
+     * `computeMeasurePriceKobo`, which rounds once on the line total rather
+     * than per unit - see its doc comment.
+     *
+     * `unit_price_kobo` on the returned line is therefore an *average*,
+     * back-derived for storage and receipt display, not the figure actually
+     * charged. `line_total_kobo` is the real one, and itemsTotalKobo below
+     * sums that directly so the amount charged never carries the per-unit
+     * rounding this package deliberately avoids. A receipt that later
+     * recomputes `quantity * unit_price_kobo` for a measure line can be off
+     * by a kobo or two from `line_total_kobo` - cosmetic, not a charging bug.
+     *
+     * Measure lines do not count toward packageCount: a fraction of a bag is
+     * not a delivery slot, so it is excluded from delivery-fee tiering and
+     * the minimum-order check entirely.
+     */
 
     const priced = lines.map((line) => {
+      const isMeasure = (line.unit_mode ?? "package") === "measure";
       const product = byId.get(line.product_id)!;
       const measure =
         product.measure_value && product.measure_unit
           ? `${product.measure_value}${product.measure_unit}`
           : null;
       const unitLabel = measure ? `${measure} ${product.unit}` : product.unit;
+
+      if (isMeasure) {
+        if (product.measure_unit !== "measure" || !product.measure_value) {
+          throw new BadRequestException(
+            `"${product.name}" is not sold by measure.`,
+          );
+        }
+        const violation = measureQuantityViolation(
+          product.measure_value,
+          line.qty,
+        );
+        if (violation) {
+          throw new BadRequestException(`"${product.name}": ${violation}`);
+        }
+        const lineTotalKobo = computeMeasurePriceKobo({
+          packagePriceKobo: product.price_kobo,
+          measuresPerPackage: product.measure_value,
+          measureQty: line.qty,
+        });
+        return {
+          product_id: line.product_id,
+          name: product.name,
+          unit: product.unit,
+          unitLabel,
+          quantity: line.qty,
+          unit_mode: "measure" as const,
+          unit_price_kobo: Math.round(lineTotalKobo / line.qty),
+          line_total_kobo: lineTotalKobo,
+        };
+      }
+
       return {
         product_id: line.product_id,
         name: product.name,
         unit: product.unit,
         unitLabel,
+        unit_mode: "package" as const,
         quantity: line.qty,
+        line_total_kobo: product.price_kobo * line.qty,
         unit_price_kobo: product.price_kobo,
       };
     });
 
     const itemsTotalKobo = priced.reduce(
-      (sum, line) => sum + line.unit_price_kobo * line.quantity,
+      (sum, line) => sum + line.line_total_kobo,
       0,
     );
-    /* One package per unit ordered - two bags of rice is two slots. */
-    const packageCount = priced.reduce((sum, line) => sum + line.quantity, 0);
+    /* One package per unit ordered - two bags of rice is two slots. Measure lines are not packages, see comment above. */
+    const packageCount = priced
+      .filter((line) => line.unit_mode === "package")
+      .reduce((sum, line) => sum + line.quantity, 0);
 
     const [zone] = await this.db
       .select({
@@ -1085,6 +1173,7 @@ export class BuyerService {
           order_id: created.id,
           product_id: line.product_id,
           quantity: line.quantity,
+          unit_mode: line.unit_mode,
           unit_price_kobo: line.unit_price_kobo,
         })),
       );

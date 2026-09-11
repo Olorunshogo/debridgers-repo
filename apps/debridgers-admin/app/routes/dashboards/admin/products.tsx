@@ -46,7 +46,7 @@ export function meta() {
   });
 }
 
-type MeasureUnit = "kg" | "litre" | "piece";
+type MeasureUnit = "kg" | "litre" | "piece" | "measure";
 
 /* `category_name` is the leaf name from the taxonomy join, for the list row. */
 interface Product {
@@ -106,6 +106,7 @@ const measureUnitOptions: { value: MeasureUnit; label: string }[] = [
   { value: "kg", label: "Kilogram (kg)" },
   { value: "litre", label: "Litre" },
   { value: "piece", label: "Piece" },
+  { value: "measure", label: "Retail measure (measure_value = per package)" },
 ];
 
 /*

@@ -8,8 +8,6 @@ type AppRole =
   | "agent"
   | "buyer"
   | "company"
-  | "hr"
-  | "hiring_manager"
   | "applicant"
   | "employee";
 
@@ -24,12 +22,7 @@ function isAgentOrAdmin(role: AppRole): boolean {
 }
 
 function isPeopleRole(role: AppRole): boolean {
-  return (
-    role === "hr" ||
-    role === "hiring_manager" ||
-    role === "applicant" ||
-    role === "employee"
-  );
+  return role === "applicant" || role === "employee";
 }
 
 /*
@@ -233,9 +226,7 @@ export class EmailService {
       role === "admin"
         ? "Admin"
         : isPeopleRole(role)
-          ? role === "hiring_manager"
-            ? "Hiring manager"
-            : role.charAt(0).toUpperCase() + role.slice(1)
+          ? role.charAt(0).toUpperCase() + role.slice(1)
           : "Agent";
     const html = layout({
       title: "Welcome to Debridgers",
@@ -1267,7 +1258,7 @@ export class EmailService {
 
   // === HR recruitment
 
-  async sendHrJobPosted(opts: {
+  async sendCareersJobPosted(opts: {
     to: string;
     title: string;
     department: string;
@@ -1296,7 +1287,7 @@ export class EmailService {
     });
   }
 
-  async sendHrApplicationReceived(opts: {
+  async sendCareersApplicationReceived(opts: {
     to: string;
     name: string;
     jobTitle: string;
@@ -1326,7 +1317,7 @@ export class EmailService {
     });
   }
 
-  async sendHrApplicationRejected(opts: {
+  async sendCareersApplicationRejected(opts: {
     to: string;
     name: string;
     jobTitle: string;
@@ -1364,7 +1355,7 @@ export class EmailService {
     });
   }
 
-  async sendHrInterviewScheduled(opts: {
+  async sendCareersInterviewScheduled(opts: {
     to: string;
     name: string;
     jobTitle: string;
@@ -1405,7 +1396,7 @@ export class EmailService {
     });
   }
 
-  async sendHrInterviewScheduledAdminNotice(opts: {
+  async sendCareersInterviewScheduledAdminNotice(opts: {
     to: string;
     applicantName: string;
     applicantEmail: string;
@@ -1439,7 +1430,7 @@ export class EmailService {
     });
   }
 
-  async sendHrOfferLetter(opts: {
+  async sendCareersOfferLetter(opts: {
     to: string;
     name: string;
     position: string;
@@ -1483,7 +1474,7 @@ export class EmailService {
     });
   }
 
-  async sendHrWelcomeEmployee(opts: {
+  async sendCareersWelcomeEmployee(opts: {
     to: string;
     name: string;
     position: string;
@@ -1520,7 +1511,7 @@ export class EmailService {
 
   // === HR people ops
 
-  async sendHrLeaveSubmitted(opts: {
+  async sendCareersLeaveSubmitted(opts: {
     to: string;
     managerName: string;
     employeeName: string;
@@ -1554,7 +1545,7 @@ export class EmailService {
     });
   }
 
-  async sendHrLeaveDecision(opts: {
+  async sendCareersLeaveDecision(opts: {
     to: string;
     name: string;
     leaveType: string;
@@ -1590,7 +1581,7 @@ export class EmailService {
     });
   }
 
-  async sendHrWorkReportSubmitted(opts: {
+  async sendCareersWorkReportSubmitted(opts: {
     to: string;
     managerName: string;
     employeeName: string;
@@ -1619,7 +1610,7 @@ export class EmailService {
     });
   }
 
-  async sendHrWorkReportDecision(opts: {
+  async sendCareersWorkReportDecision(opts: {
     to: string;
     name: string;
     status: "approved" | "rejected" | "revision_requested";
@@ -1656,7 +1647,7 @@ export class EmailService {
     });
   }
 
-  async sendHrCriticalIncident(opts: {
+  async sendCareersCriticalIncident(opts: {
     to: string;
     reporterName: string;
     category: string;
