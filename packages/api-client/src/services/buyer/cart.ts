@@ -31,6 +31,10 @@ export function syncServerCart(items: CartSyncLine[]): Promise<unknown> {
   });
 }
 
+export function clearServerCart(): Promise<unknown> {
+  return apiFetch("/buyer/cart", { method: "DELETE" });
+}
+
 /*
  * Merge on login.
  * Takes the higher quantity per product rather than summing, so adding the same item on two devices does not double the order.

@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, ShoppingCart, Minus, Plus, Trash2, Package } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
 import { useCart } from "../../../features/cart";
-import { useFavorites, useBuyAgain } from "../../../features/favorites";
+import { useFavorites } from "../../../features/favorites";
+// import { useBuyAgain } from "../../../features/favorites"; // Buy again disabled
 import {
   Pagination,
   ProductCard,
@@ -13,7 +14,7 @@ import {
   formatCurrency,
   categoryFilterChips,
   ALL_CATEGORIES,
-  formatFromKobo,
+  // formatFromKobo, // only used by the disabled Buy again block
   SearchInputField,
   SortMenu,
   sortProducts,
@@ -67,7 +68,7 @@ export default function BuyerShop() {
   }
 
   const { isFavorite, toggleFavorite, canFavorite } = useFavorites();
-  const { products: buyAgain, hasHistory } = useBuyAgain();
+  // const { products: buyAgain, hasHistory } = useBuyAgain(); // Buy again disabled
 
   const {
     data: productsData,
@@ -131,14 +132,13 @@ export default function BuyerShop() {
     <div className="relative h-full">
       {/* Scrollable content */}
       <div className="flex h-full flex-col gap-4 overflow-y-auto pb-28">
-        {/* === Buy again */}
-        {/* Shown only once there is order history to rank. */}
+        {/*
+        === Buy again (disabled)
         {hasHistory && (
           <section className="flex flex-col gap-3">
             <h2 className="font-syne text-heading text-base font-bold">
               Buy again
             </h2>
-            {/* Horizontal rail on mobile, wraps into the grid from lg up */}
             <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
               {buyAgain.map((product) => (
                 <button
@@ -183,6 +183,7 @@ export default function BuyerShop() {
             </div>
           </section>
         )}
+        */}
 
         {/* Search bar */}
         <SearchInputField

@@ -9,7 +9,11 @@ import {
   type ReactNode,
 } from "react";
 import { toMinorUnits, useAuth } from "@debridgers/ui-web";
-import { syncServerCart, mergeServerCart } from "@debridgers/api-client";
+import {
+  syncServerCart,
+  mergeServerCart,
+  clearServerCart,
+} from "@debridgers/api-client";
 
 /*
  * One cart, shared by every page that touches it.
@@ -177,9 +181,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (!isHydrated || !isAuthenticated || !hasMergedRef.current) return;
 
     const timer = window.setTimeout(() => {
-      void syncServerCart(
-        items.map((i) => ({ product_id: Number(i.id), quantity: i.qty })),
-      ).catch(() => {
+      const request =
+        items.length === 0
+          ? clearServerCart()
+          : syncServerCart(
+              items.map((i) => ({ product_id: Number(i.id), quantity: i.qty })),
+            );
+      void request.catch(() => {
         /*
          * A failed sync is not user-facing: localStorage still holds the cart and the next edit retries.
          * The endpoint is idempotent.
