@@ -6,7 +6,7 @@ import { dashboardAppUrl } from "../../utils/app-urls";
  * The public entry points marketing advertises.
  * Admin deliberately isn't here - its login/register URLs are unadvertised on purpose, matching the old routes.ts comment this replaces.
  */
-export type PublicRole = "buyer" | "agent" | "hr";
+export type PublicRole = "buyer" | "agent" | "careers";
 
 export interface PublicRoleOption {
   value: PublicRole;
@@ -29,8 +29,8 @@ export const PUBLIC_ROLES: readonly PublicRoleOption[] = [
     icon: Bike,
   },
   {
-    value: "hr",
-    label: "HR",
+    value: "careers",
+    label: "Careers",
     description: "Apply for a role, or manage people and recruitment.",
     icon: Users,
   },

@@ -12,6 +12,7 @@ export const quoteCartSchema = z.object({
       z.object({
         product_id: z.number().int().positive(),
         qty: z.number().int().min(1).max(999),
+        unit_mode: z.enum(["package", "measure"]).optional(),
       }),
     )
     .min(1, "Cart is empty"),

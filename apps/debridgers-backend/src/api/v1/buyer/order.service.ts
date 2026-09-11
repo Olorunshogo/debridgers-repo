@@ -416,6 +416,7 @@ export class OrderService {
         product_id: schema.order_items.product_id,
         quantity: schema.order_items.quantity,
         unit_price_kobo: schema.order_items.unit_price_kobo,
+        unit_mode: schema.order_items.unit_mode,
         name: schema.productsTable.name,
         unit: schema.productsTable.unit,
         image_url: schema.productsTable.image_url,
@@ -438,12 +439,19 @@ export class OrderService {
       status: order.status,
       payment_method: order.order_mode || "unknown",
       payment_status: order.payment_status,
+      /*
+       * subtotal is quantity * unit_price_kobo for a whole-package line. For a
+       * measure line unit_price_kobo is an average back-derived at checkout
+       * (see priceBasket in buyer.service.ts), so this can be off by a kobo
+       * or two from what was actually charged - cosmetic, not a re-charge.
+       */
       items: items.map((item) => ({
         product_id: item.product_id,
         name: item.name,
         unit: item.unit,
         image_url: item.image_url,
         qty: item.quantity,
+        unit_mode: item.unit_mode,
         unit_price: item.unit_price_kobo,
         subtotal: item.quantity * item.unit_price_kobo,
       })),

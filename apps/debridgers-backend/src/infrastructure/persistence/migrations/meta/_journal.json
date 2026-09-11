@@ -78,6 +78,13 @@
       "when": 1789126119092,
       "tag": "0031_panoramic_forge",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1789126119093,
+      "tag": "0032_beans_price_correction",
+      "breakpoints": true
     }
   ]
 }

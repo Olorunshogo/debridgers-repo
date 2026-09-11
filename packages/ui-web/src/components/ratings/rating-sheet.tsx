@@ -77,7 +77,7 @@ export function RatingSheet({
   }
 
   return (
-    <div className="flex w-full max-w-md flex-col gap-5">
+    <div className="flex w-full flex-col gap-5">
       <DialogHeader
         title={context.title}
         description={subjectLabel ?? context.description}

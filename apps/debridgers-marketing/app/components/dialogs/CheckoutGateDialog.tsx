@@ -24,10 +24,18 @@ export default function CheckoutGateDialog({ items }: CheckoutGateDialogProps) {
 
     try {
       const { token } = await stageCart(items);
-      window.location.href = `${dashboardAppUrl("buyer")}/login?cartToken=${encodeURIComponent(token)}`;
+      window.open(
+        `${dashboardAppUrl("buyer")}/login?cartToken=${encodeURIComponent(token)}`,
+        "_blank",
+        "noopener,noreferrer",
+      );
     } catch {
       /* Staging failed - still let the buyer log in, just without the cart carried over, rather than blocking checkout entirely. */
-      window.location.href = `${dashboardAppUrl("buyer")}/login`;
+      window.open(
+        `${dashboardAppUrl("buyer")}/login`,
+        "_blank",
+        "noopener,noreferrer",
+      );
     }
   }
 

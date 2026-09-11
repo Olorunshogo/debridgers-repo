@@ -7,8 +7,8 @@
  * over 700 lines is invisible; a typo here is a compile error.
  *
  * Auth links (verify, reset, login) must land on the app that owns the role.
- * A single APP_URL cannot cover marketing + buyer + agent + admin + HR, so
- * role-specific *_APP_URL envs win when set; APP_URL is the fallback.
+ * A single APP_URL cannot cover marketing + buyer + agent + admin + careers,
+ * so role-specific *_APP_URL envs win when set; APP_URL is the fallback.
  */
 
 type LinkRole =
@@ -16,8 +16,6 @@ type LinkRole =
   | "agent"
   | "buyer"
   | "company"
-  | "hr"
-  | "hiring_manager"
   | "applicant"
   | "employee"
   | string;
@@ -36,10 +34,8 @@ function appUrlForRole(role?: LinkRole): string {
     company: process.env.BUYER_APP_URL,
     agent: process.env.AGENT_APP_URL,
     admin: process.env.ADMIN_APP_URL,
-    hr: process.env.HR_APP_URL,
-    hiring_manager: process.env.HR_APP_URL,
-    applicant: process.env.HR_APP_URL,
-    employee: process.env.HR_APP_URL,
+    applicant: process.env.CAREERS_APP_URL,
+    employee: process.env.CAREERS_APP_URL,
   };
   const specific = role ? envByRole[role] : undefined;
   if (specific) return trimBase(specific);
