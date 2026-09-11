@@ -4,6 +4,7 @@ import { BuyerController } from "./buyer.controller";
 import { BuyerService } from "./buyer.service";
 import { OrderController } from "./order.controller";
 import { OrderService } from "./order.service";
+import { OrderSchedulerService } from "./order-scheduler.service";
 import { NotificationsService } from "./notifications.service";
 import { NotificationsController } from "./notifications.controller";
 import { BuyerRateLimitService } from "./buyer-rate-limit.service";
@@ -27,6 +28,7 @@ import { CloudinaryService } from "../../../infrastructure/cloudinary/cloudinary
   providers: [
     BuyerService,
     OrderService,
+    OrderSchedulerService,
     NotificationsService,
     BuyerRateLimitService,
     CloudinaryService,

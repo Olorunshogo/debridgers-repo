@@ -340,7 +340,14 @@ export class BuyerService {
       .where(eq(schema.orders.buyer_id, user.sub))
       .orderBy(desc(schema.orders.created_at));
 
-    return { message: "Orders retrieved", data: orders };
+    // Unpaid orders must show payment_status, not delivery status
+    return {
+      message: "Orders retrieved",
+      data: orders.map((order) => ({
+        ...order,
+        status: order.payment_status === "unpaid" ? "pending" : order.status,
+      })),
+    };
   }
 
   async getDashboard(user: JwtPayload) {
@@ -404,6 +411,7 @@ export class BuyerService {
       .where(
         and(
           eq(schema.orders.buyer_id, user.sub),
+          eq(schema.orders.payment_status, "paid"),
           inArray(schema.orders.status, ["confirmed", "out_for_delivery"]),
         ),
       )

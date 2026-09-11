@@ -70,19 +70,20 @@ interface ApiOrder {
 
 function mapApiOrder(o: ApiOrder): Order {
   const dbToUi = (orderStatus: string, paymentStatus: string): OrderStatus => {
-    // Terminal fulfilment states win over payment: an order that was delivered or cancelled reads that way even if its payment record was never reconciled to "paid" (cash on handover, or a data gap).
+    // Delivered/cancelled win even if payment never reconciled.
     if (orderStatus === "cancelled") return "cancelled";
     if (orderStatus === "delivered") return "delivered";
-    if (orderStatus === "out_for_delivery") return "active";
-    /* No real total yet - see zones.requires_quote. Not payable until an admin quotes it and it becomes a normal "pending" order. */
+    /*
+     * A distinct unpaid sub-state - must be checked before the generic
+     * payment gate below, or it collapses into plain "pending" and the
+     * buyer loses the "we're confirming your delivery fee" messaging.
+     * No real total yet - see zones.requires_quote.
+     */
     if (orderStatus === "awaiting_quote") return "awaiting_quote";
-
-    // Not yet in transit: payment decides between pending and confirmed.
-    if (paymentStatus === "unpaid" || paymentStatus === "awaiting")
-      return "pending";
-    if (paymentStatus === "paid" && orderStatus === "confirmed")
-      return "confirmed";
-
+    // Anything else not paid is Unpaid, never On the way.
+    if (paymentStatus !== "paid") return "pending";
+    if (orderStatus === "out_for_delivery") return "active";
+    if (orderStatus === "confirmed") return "confirmed";
     return "pending";
   };
   return {

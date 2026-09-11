@@ -208,7 +208,7 @@ describe.skipIf(!hasDb)("DeliveryPromotionService", () => {
       delivery_address: "12 Ahmadu Bello Way, Kaduna",
       zone_id: zoneId,
       delivery_time: "today",
-      cart: [{ product_id: riceId, qty: 1 }],
+      cart: [{ product_id: riceId, qty: 1, unit_mode: "package" }],
     };
   }
 
