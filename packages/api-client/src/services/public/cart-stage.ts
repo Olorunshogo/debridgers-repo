@@ -12,6 +12,9 @@ export interface StagedCartItem {
   unit: string;
   image_url: string | null;
   qty: number;
+  unit_mode: "package" | "measure";
+  measure_value?: number | null;
+  measure_unit?: string | null;
 }
 
 export function stageCart(items: StagedCartItem[]): Promise<{ token: string }> {

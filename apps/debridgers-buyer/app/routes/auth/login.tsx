@@ -68,7 +68,10 @@ export default function LoginPage({ variant = "public" }: LoginPageProps) {
         /* Union with any cart already on this device, higher quantity wins per line, matching the server-side merge the buyer hits after login. */
         const merged: CartItem[] = items.map((existing) => ({ ...existing }));
         for (const line of staged) {
-          const match = merged.find((existing) => existing.id === line.id);
+          const match = merged.find(
+            (existing) =>
+              existing.id === line.id && existing.unit_mode === line.unit_mode,
+          );
           if (match) {
             match.qty = Math.max(match.qty, line.qty);
           } else {
@@ -79,6 +82,9 @@ export default function LoginPage({ variant = "public" }: LoginPageProps) {
               unit: line.unit,
               image_url: line.image_url,
               qty: line.qty,
+              unit_mode: line.unit_mode,
+              measure_value: line.measure_value,
+              measure_unit: line.measure_unit,
             });
           }
         }

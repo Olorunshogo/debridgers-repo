@@ -85,6 +85,13 @@
       "when": 1789126119093,
       "tag": "0032_beans_price_correction",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1789142816064,
+      "tag": "0033_chunky_johnny_storm",
+      "breakpoints": true
     }
   ]
 }
