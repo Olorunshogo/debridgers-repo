@@ -217,17 +217,16 @@ function mapApiToDashboard(
   api: ApiDashboard,
   spendingRows: ApiSpendingWeek[],
 ): DashboardData {
-  // Match Orders page: unpaid must never read as "on the way".
+  // Unpaid/awaiting always wins over fulfilment labels.
   const dbStatusToUi = (
     orderStatus: string,
     paymentStatus: string,
   ): RecentOrder["status"] => {
     if (orderStatus === "cancelled") return "cancelled";
     if (orderStatus === "delivered") return "delivered";
+    if (paymentStatus !== "paid") return "unpaid";
     if (orderStatus === "out_for_delivery") return "on-the-way";
-    if (paymentStatus === "unpaid" || paymentStatus === "awaiting")
-      return "unpaid";
-    if (paymentStatus === "paid" && orderStatus === "confirmed") return "paid";
+    if (orderStatus === "confirmed") return "paid";
     return "unpaid";
   };
 
