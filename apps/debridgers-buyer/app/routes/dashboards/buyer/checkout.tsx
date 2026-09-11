@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router";
 import { motion } from "framer-motion";
 import { CheckCircle2, ArrowRight, Loader2 } from "lucide-react";
 import { apiFetch, publicRequest } from "@debridgers/api-client";
-import { useCart, LAST_ORDER_STORAGE_KEY } from "../../../features/cart";
+import { useCart } from "../../../features/cart";
 import { usePlatformConfig } from "../../../contexts/PlatformConfigContext";
 import {
   formatCurrency,
@@ -115,11 +115,6 @@ export default function BuyerCheckout() {
   const [wallet, setWallet] = useState<WalletInfo | null>(null);
   const [walletLoading, setWalletLoading] = useState<boolean>(true);
 
-  /* Read inside the confirmation effect, which must not re-run as the cart
-     changes or it would fire a second confirmation mid-flight. */
-  const cartItemsRef = useRef(cartItems);
-  cartItemsRef.current = cartItems;
-
   /* setLoading does not take effect until the next render, so two fast clicks
      can both get past the loading check and create two orders. A ref flips
      synchronously. */
@@ -195,6 +190,7 @@ export default function BuyerCheckout() {
           cart: cartItems.map((i) => ({
             product_id: Number(i.id),
             qty: i.qty,
+            unit_mode: i.unit_mode,
           })),
         }),
       })
@@ -235,16 +231,6 @@ export default function BuyerCheckout() {
     )
       .then(() => {
         if (cancelled) return;
-        /*
-         * Snapshot before clearing so "repeat last order" has something to restore.
-         * Taken from the shared cart rather than re-reading storage.
-         */
-        if (cartItemsRef.current.length > 0) {
-          localStorage.setItem(
-            LAST_ORDER_STORAGE_KEY,
-            JSON.stringify(cartItemsRef.current),
-          );
-        }
         clear();
         setStep("confirmed");
       })
@@ -332,6 +318,7 @@ export default function BuyerCheckout() {
               price_kobo: Math.round(i.price * 100),
               unit: i.unit,
               qty: i.qty,
+              unit_mode: i.unit_mode,
             })),
           }),
         });
@@ -375,13 +362,6 @@ export default function BuyerCheckout() {
           body: JSON.stringify(paymentPayload),
         });
 
-        // Success - clear cart and show confirmation
-        if (cartItems.length > 0) {
-          localStorage.setItem(
-            LAST_ORDER_STORAGE_KEY,
-            JSON.stringify(cartItems),
-          );
-        }
         clear();
         setStep("confirmed");
       } else {
@@ -405,6 +385,7 @@ export default function BuyerCheckout() {
               price_kobo: Math.round(i.price * 100),
               unit: i.unit,
               qty: i.qty,
+              unit_mode: i.unit_mode,
             })),
           }),
         });
@@ -698,11 +679,14 @@ export default function BuyerCheckout() {
             ) : (
               cartItems.map((item) => (
                 <div
-                  key={item.id}
+                  key={`${item.id}:${item.unit_mode}`}
                   className="flex items-center justify-between text-sm"
                 >
                   <span className="text-body">
-                    {item.name} x{item.qty} {item.unit}
+                    {item.name} x{item.qty}{" "}
+                    {item.unit_mode === "measure"
+                      ? item.measure_unit
+                      : item.unit}
                   </span>
                   <span className="text-heading">
                     {formatCurrency(item.price * item.qty)}

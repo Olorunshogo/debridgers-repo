@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import {
@@ -14,7 +14,6 @@ import {
 import type { LucideIcon } from "lucide-react";
 import {
   ShoppingCart,
-  RefreshCcw,
   Wallet,
   Headphones,
   ArrowUpRight,
@@ -25,11 +24,6 @@ import {
 } from "lucide-react";
 import { HeroGreetingCard } from "@debridgers/ui-web";
 import { apiFetch } from "@debridgers/api-client";
-import {
-  useCart,
-  LAST_ORDER_STORAGE_KEY,
-  type CartItem,
-} from "../../../features/cart";
 import {
   formatFromKobo,
   formatCurrency,
@@ -146,16 +140,6 @@ interface ApiSpendingWeek {
   week: string;
   amount_kobo: number;
   amount_naira: number;
-}
-
-/* One line of GET /buyer/orders/:id, used to rebuild the cart on repeat. */
-interface LastOrderItem {
-  product_id: number;
-  name: string;
-  unit: string;
-  image_url: string | null;
-  qty: number;
-  unit_price: number;
 }
 
 function buildSpendingTrend(
@@ -439,58 +423,8 @@ function OrderRow({ order }: { order: RecentOrder }) {
 }
 
 export default function BuyerOverview() {
-  const navigate = useNavigate();
-  const { replaceItems } = useCart();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-
-  /*
-   * Server first, localStorage only as a fallback.
-   *
-   * This used to read the snapshot alone, which is written at checkout and so only exists in the browser the order was placed from.
-   * On a new device, or after clearing storage, the button silently navigated to an empty shop and looked broken.
-   * The buyer's real order history is on the server, so ask it.
-   */
-  async function repeatLastOrder(): Promise<void> {
-    try {
-      const orders = await apiFetch<{ id: number }[]>("/buyer/orders");
-
-      if (orders.length > 0) {
-        /* The list comes back newest first, so the head is the last order. */
-        const detail = await apiFetch<{ items: LastOrderItem[] }>(
-          `/buyer/orders/${orders[0].id}`,
-        );
-
-        const items: CartItem[] = detail.items.map((item) => ({
-          id: String(item.product_id),
-          name: item.name,
-          price: item.unit_price / 100,
-          unit: item.unit,
-          image_url: item.image_url,
-          qty: item.qty,
-        }));
-
-        if (items.length > 0) {
-          replaceItems(items);
-          navigate("/buyer-dashboard/shop");
-          return;
-        }
-      }
-    } catch {
-      /* Offline or the call failed - fall through to the local snapshot. */
-    }
-
-    const last = localStorage.getItem(LAST_ORDER_STORAGE_KEY);
-    if (last) {
-      try {
-        replaceItems(JSON.parse(last) as CartItem[]);
-      } catch {
-        /* corrupt snapshot - go to the shop with the cart untouched */
-      }
-    }
-
-    navigate("/buyer-dashboard/shop");
-  }
 
   useEffect(() => {
     Promise.all([
@@ -607,15 +541,7 @@ export default function BuyerOverview() {
 
         {/* Quick actions */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {[
-            ...staticQuickActions.slice(0, 1),
-            {
-              label: "Repeat Last",
-              icon: RefreshCcw,
-              onClick: repeatLastOrder,
-            },
-            ...staticQuickActions.slice(1),
-          ].map((action) => {
+          {staticQuickActions.map((action) => {
             const tileClass =
               "border-line hover:border-primary hover:bg-dash-quick-action-hover flex w-full flex-col items-center gap-2 rounded-2xl border bg-white p-4 text-center transition-all ease-in-out duration-300 cursor-pointer";
             const inner = (

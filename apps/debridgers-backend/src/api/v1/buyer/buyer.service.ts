@@ -848,7 +848,17 @@ export class BuyerService {
       const unitLabel = measure ? `${measure} ${product.unit}` : product.unit;
 
       if (isMeasure) {
-        if (product.measure_unit !== "measure" || !product.measure_value) {
+        /*
+         * "piece" is not divisible, and no measure_unit at all means the
+         * product was never configured for fractional sale. "kg", "litre"
+         * and the generic "measure" label are all fractional-eligible -
+         * measure_unit doubles as the label shown for the measure option.
+         */
+        if (
+          !product.measure_unit ||
+          product.measure_unit === "piece" ||
+          !product.measure_value
+        ) {
           throw new BadRequestException(
             `"${product.name}" is not sold by measure.`,
           );

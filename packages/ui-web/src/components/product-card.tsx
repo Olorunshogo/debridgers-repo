@@ -15,7 +15,18 @@ export interface ProductCardProduct {
   description: string | null;
   image_url: string | null;
   category?: string | null;
+  /*
+   * Fractional sale eligibility. Both must be set, and measure_unit must not
+   * be "piece" (not divisible), for the measure option to appear at all -
+   * see measureQuantityViolation on the backend for the same rule.
+   * measure_unit doubles as the label shown for the measure option
+   * ("kg", "litre", ...).
+   */
+  measure_value?: number | null;
+  measure_unit?: string | null;
 }
+
+export type ProductUnitMode = "package" | "measure";
 
 /*
  * `isFavorite` and `onToggleFavorite` are optional together, so this component
@@ -40,6 +51,15 @@ interface ProductCardProps {
   onDecrement: () => void;
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
+  /*
+   * Which unit the buyer is currently buying this product in. Only relevant,
+   * and only rendered as a dropdown beside the price, when the product is
+   * measure-eligible (see ProductCardProduct.measure_value/measure_unit).
+   * Defaults to "package" so cards for non-eligible products render exactly
+   * as before.
+   */
+  unitMode?: ProductUnitMode;
+  onUnitModeChange?: (mode: ProductUnitMode) => void;
 }
 
 /* Keeps the button and the stepper the same height so the grid does not reflow
@@ -56,8 +76,14 @@ export function ProductCard({
   onDecrement,
   isFavorite = false,
   onToggleFavorite,
+  unitMode = "package",
+  onUnitModeChange,
 }: ProductCardProps) {
   const inCart = quantityInCart > 0;
+  const canMeasure =
+    Boolean(product.measure_value) &&
+    Boolean(product.measure_unit) &&
+    product.measure_unit !== "piece";
 
   return (
     <motion.div
@@ -131,9 +157,24 @@ export function ProductCard({
           )}
         </div>
 
-        <p className="font-syne text-heading text-lg font-bold">
-          {formattedPrice}
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="font-syne text-heading text-lg font-bold">
+            {formattedPrice}
+          </p>
+          {canMeasure && (
+            <select
+              value={unitMode}
+              onChange={(e) =>
+                onUnitModeChange?.(e.target.value as ProductUnitMode)
+              }
+              aria-label={`Buy ${product.name} by`}
+              className="border-line text-heading cursor-pointer rounded-full border bg-white px-2.5 py-1 text-xs font-medium"
+            >
+              <option value="package">{product.unit}</option>
+              <option value="measure">{product.measure_unit}</option>
+            </select>
+          )}
+        </div>
 
         <div className={`relative ${CONTROL_SLOT_HEIGHT}`}>
           <AnimatePresence mode="wait" initial={false}>
@@ -169,7 +210,8 @@ export function ProductCard({
                   aria-live="polite"
                   className="text-heading text-sm font-semibold"
                 >
-                  {quantityInCart} in cart
+                  {quantityInCart}
+                  {unitMode === "measure" ? product.measure_unit : ""} in cart
                 </span>
 
                 <button
