@@ -3,7 +3,7 @@
 #
 # One VPS, two stacks (different Neon DATABASE_URL per Codeberg environment secret):
 #   develop  → /opt/debridgers/dev  :4001  api-test.debridgers.com
-#   main     → /opt/debridgers/prod :4002  api-test.debridgers.com (staging and production share this hostname)
+#   main     → /opt/debridgers/prod :4002  api.debridgers.com
 name: Backend
 
 on:
