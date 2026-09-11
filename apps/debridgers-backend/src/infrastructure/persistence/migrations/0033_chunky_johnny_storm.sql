@@ -77,4 +77,4 @@ DROP TYPE "public"."user_role";--> statement-breakpoint
 CREATE TYPE "public"."user_role" AS ENUM('admin', 'agent', 'buyer', 'company', 'applicant', 'employee');--> statement-breakpoint
 ALTER TABLE "users" ALTER COLUMN "role" SET DEFAULT 'buyer'::"public"."user_role";--> statement-breakpoint
 ALTER TABLE "users" ALTER COLUMN "role" SET DATA TYPE "public"."user_role" USING "role"::"public"."user_role";--> statement-breakpoint
-ALTER TABLE "users" ADD COLUMN "admin_desk" varchar(20);
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "admin_desk" varchar(20);
