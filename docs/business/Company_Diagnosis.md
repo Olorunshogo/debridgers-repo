@@ -151,6 +151,8 @@ A live code defect still blocks it: `product.service.ts:279` records an agent ta
 
 **NDPR.** Personal data, bank details, and KYC documents are already held. Obligations already apply.
 
+**SCUML.** **Closed, 2026-09-10.** Registered with the Special Control Unit Against Money Laundering (EFCC), RN SC192104252, issued 2026-08-28. This is the AML/CFT registration a Designated Non-Financial Business needs to hold a corporate bank account and be treated as compliant by a bank or an institutional partner - genuinely useful evidence in front of KADA or any financing partner, not paperwork for its own sake.
+
 ### 8. The "5% remittance rate" alarm, resolved
 
 Three company documents recorded an agent remittance rate of 5% and called it potentially catastrophic. **It was neither catastrophic nor a metric: no agents exist, so no stock was issued, nothing was due, and the rate was undefined.** The figure most likely leaked from the commission setting.

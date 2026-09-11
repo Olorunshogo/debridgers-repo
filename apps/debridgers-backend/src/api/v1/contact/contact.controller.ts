@@ -31,6 +31,7 @@ export class ContactController {
       properties: {
         full_name: { type: "string", example: "Chukwudi Obi" },
         email: { type: "string", example: "chukwudi@example.com" },
+        subject: { type: "string", example: "partnership" },
         message: {
           type: "string",
           example: "I'd like to order weekly for my restaurant.",

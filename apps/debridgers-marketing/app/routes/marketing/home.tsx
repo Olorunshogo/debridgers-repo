@@ -461,7 +461,7 @@ export default function Home() {
           <section
             id="hero-section"
             aria-label="Hero"
-            className="font-syne relative mx-auto flex h-full min-h-screen w-full flex-col overflow-hidden"
+            className="font-syne relative mx-auto flex h-full min-h-[80dvh] w-full flex-col overflow-hidden xl:min-h-[720px]"
           >
             {/* Background layer */}
             <div className="absolute inset-0 z-0 h-full w-full">
@@ -484,7 +484,7 @@ export default function Home() {
             </div>
 
             {/* Content Wrapper */}
-            <div className="px-section-px section-max-width sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex h-screen w-full flex-col justify-between gap-8 md:gap-6 xl:gap-10">
+            <div className="px-section-px section-max-width sm:px-section-px-sm lg:px-section-px-lg relative z-10 mx-auto flex h-full w-full flex-col justify-between gap-8 md:gap-6 xl:gap-10">
               <div className="relative flex flex-1 flex-col pt-20 sm:pt-24 lg:pt-32">
                 <div className="flex flex-1 flex-col justify-center gap-6 lg:gap-10">
                   {/* Location badge */}

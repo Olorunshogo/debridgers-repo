@@ -1,15 +1,26 @@
 # Business documents
 
-Five documents, roughly 2,900 lines, with deliberate overlap. This says which
-one answers which question and which wins when they disagree.
+Nine documents, with deliberate overlap. This says which one answers which
+question and which wins when they disagree.
 
 | Document                                                           | Answers                                                                                                            | Length |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ | ------ |
-| **`BusinessModel.md`**                                             | _Why_ every number is what it is. Unit economics, worked examples, the seven locked decisions, the glossary        | 1,479  |
-| **`COMPANY_PROFILE.md`**                                           | _What is true_ about the company. Team, products, pricing, capital, traction, open items, glossary, competitor set | 628    |
+| **`BusinessModel.md`**                                             | _Why_ every number is what it is. Unit economics, worked examples, the seven locked decisions, the glossary        | 1,522  |
+| **`COMPANY_PROFILE.md`**                                           | _What is true_ about the company. Team, products, pricing, capital, traction, open items, glossary, competitor set | 631    |
 | **`Company_Diagnosis.md`**                                         | _What is wrong and in what order_. The executive assessment                                                        | 286    |
 | **`debridgers_strategic_investor_partnership_growth_strategy.md`** | _Capital, partnerships and the 90-day plan_                                                                        | 353    |
 | **`ONBOARDING.md`**                                                | _What a new joiner needs on day one_                                                                               | 160    |
+| **`ConsultantFeedback.md`**                                        | _What the 2026-09-10 KADA meeting changed_. Meeting record, reconciled against the documents above                 | 124    |
+| **`ConceptNote.md`**                                               | _The working KADA pilot proposal_. Evidence-tagged, cross-referenced, tracks its own open items                    | 249    |
+| **`ConceptNote_KADA_Submission.md`**                               | _The polished version of the above_, written to print and hand to KADA directly - no internal markers              | 132    |
+| **`COMPANY_PROFILE_KADA_Submission.md`**                           | _The polished version of `COMPANY_PROFILE.md`_, written for the same submission - no internal markers              | 170    |
+
+Also in this folder: source documents copied from company records (brand
+guidelines, employee handbook, HR system documentation, customer terms, the
+logo, KPI and email-template files, and the Tax ID and SCUML registration
+certificates) - not business-model documents, kept here for reference and
+cited where relevant (the RC number came from three of the document files,
+the Tax ID and SCUML registration number from the two certificates).
 
 ## Which wins
 

@@ -20,6 +20,7 @@ export class ContactService {
       .values({
         full_name: dto.full_name,
         email: dto.email,
+        subject: dto.subject,
         message: dto.message,
       })
       .returning();

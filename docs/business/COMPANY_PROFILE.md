@@ -12,7 +12,8 @@ A single factual reference for what the company is, how it works, and where it i
 ## COMPANY
 
 - **Name:** Debridgers LTD
-- **Registration:** Registered with the Corporate Affairs Commission. **RC number:** `!todo()`
+- **Registration:** Registered with the Corporate Affairs Commission. **RC number:** 9573579. **Tax ID (Nigeria Revenue Service):** 2621843516171. **SCUML registration** (Special Control Unit Against Money Laundering, EFCC): **RN SC192104252**, issued 2026-08-28
+- **Bank details:** Account Name: DEBRIDGERS LTD. Bank: Moniepoint. Account Number: 8033296399
 - **Location:** Kaduna, Nigeria. Operating in Kaduna metropolis, currently focused on Kaduna South
 - **Stage:** Early revenue. Single city. 10+ orders to 2 B2B customers
 - **Funding stage:** Bootstrapped, pre-seed. No external capital raised, no priced or SAFE round closed, founders self-funding. Ruled out: seed (no round closed, unit economics still unmeasured), Series A (needs proven scaling revenue), Series B+ (needs market-leadership scale)
@@ -192,7 +193,9 @@ The strongest differentiator is **price certainty plus a guaranteed replacement.
 
 ## PRODUCTS
 
-### Hero products: rice, beans, oil
+### Hero products: two tracks, by segment
+
+**B2B food businesses (rice, beans, oil):**
 
 | Category  | SKU                     | Unit         | Price   |
 | --------- | ----------------------- | ------------ | ------- |
@@ -204,7 +207,9 @@ The strongest differentiator is **price certainty plus a guaranteed replacement.
 | **Oil**   | Palm Oil                | 25 litre keg | ₦28,000 |
 |           | Groundnut Oil           | 25 litre keg | ₦35,000 |
 
-Listed but unpromoted: White Garri ₦12,000, Yellow Garri ₦14,000, Irish Potato ₦18,000, all per 100kg bag, and Yam ₦30,000 per 100 tubers. Millet is listed at ₦40,000 per 100kg bag.
+**Station/central-market segment (rice, maize, beans, groundnut, soya beans), added 2026-09-10:** rice and beans are the same SKUs above. Maize, groundnut, and soya beans are **CLAIMED, not BUILT** - the catalogue carries taxonomy nodes for Maize (White Maize, Yellow Maize) and for `Beans > Soya Beans`, neither with a priced product entry, and raw groundnut has no taxonomy node at all, only Groundnut Oil. None of the three can be ordered today. Full reasoning and open items in `BusinessModel.md` Decision 2 and `ConsultantFeedback.md`.
+
+Listed but unpromoted: White Garri ₦12,000, Yellow Garri ₦14,000, Irish Potato ₦18,000, all per 100kg bag, and Yam ₦30,000 per 100 tubers. Millet is listed at ₦40,000 per 100kg bag, and stays unpromoted - settled 2026-09-10, not a candidate for either hero track.
 
 Median package: **₦35,000.**
 
@@ -461,6 +466,7 @@ A single measurement moved every number in the model once. **Nine cost lines rem
 | Wallet regulatory position                   | Parked pending legal opinion                                                |
 | NAFDAC obligations on becoming a packager    | Scheduled workstream                                                        |
 | NDPR obligations on personal and KYC data    | Already applicable                                                          |
+| AML/CFT registration (SCUML)                 | **Closed.** Registered, RN SC192104252, issued 2026-08-28                   |
 | Agent default                                | Mitigated by order-first and exposure caps                                  |
 | Webhook replay, double payout                | Tested against                                                              |
 | No verified-restorable backup                | Open                                                                        |
@@ -473,7 +479,7 @@ A single measurement moved every number in the model once. **Nine cost lines rem
 Full reasoning in `BusinessModel.md`.
 
 1. **Segment and margin architecture.** B2B food businesses first, institutions next. Margin from the procurement spread, goods sold at market reference price
-2. **Hero products.** Rice, beans, oil. Everything else listed but unpromoted
+2. **Hero products.** Rice, beans, oil for B2B food businesses. Rice, maize, beans, groundnut, and soya beans for the station/central-market segment, added 2026-09-10, not yet buildable. Everything else listed but unpromoted
 3. **Pricing.** Cost-to-serve fee 3%, floor ₦500, cap ₦5,000. Delivery at the measured trip cost with a taper and per-drop caps. ₦25,000 minimum order. Individual quoting above 20 packages
 4. **Agent commission and exposure.** Flat naira per package. Order-first for new agents. Exposure capped at 30% of cash
 5. **Channel focus.** Founder-run B2B outreach with named account ownership. No agent recruitment for 90 days. No feature work beyond the pricing change
@@ -535,21 +541,21 @@ The third row matters most. Everything else can be gamed. A city that pays its o
 
 ## OPEN ITEMS
 
-| #   | Item                                          | Type                  |
-| --- | --------------------------------------------- | --------------------- |
-| 1   | **Landed cost of goods** for rice, beans, oil | Measurement           |
-| 2   | Inbound haulage per bag                       | Measurement           |
-| 3   | Monthly burn, and therefore runway            | Measurement           |
-| 4   | Order admin minutes per order                 | Measurement           |
-| 5   | GMV and AOV on existing orders                | A query               |
-| 6   | RC number                                     | `!todo()`             |
-| 7   | What "founded 2025" dates from                | `!todo()`             |
-| 8   | Supplier count                                | `!todo()`             |
-| 9   | Competitor set in Kaduna                      | Research, table below |
+| #   | Item                                                              | Type                  |
+| --- | ----------------------------------------------------------------- | --------------------- |
+| 1   | **Landed cost of goods** for rice, beans, oil                     | Measurement           |
+| 2   | Inbound haulage per bag                                           | Measurement           |
+| 3   | Monthly burn, and therefore runway                                | Measurement           |
+| 4   | Order admin minutes per order                                     | Measurement           |
+| 5   | GMV and AOV on existing orders                                    | A query               |
+| 6   | What "founded 2025" dates from                                    | `!todo()`             |
+| 7   | Supplier count                                                    | `!todo()`             |
+| 8   | Competitor set in Kaduna                                          | Research, table below |
+| 9   | Maize, groundnut, and soya beans: real unit and price, catalogued | `!todo()`             |
 
 Items 1 through 5 are the ones that change decisions. All five are counting exercises.
 
-Closed since the last revision: `order_source` now exists on orders and is backfilled, the equity split is agreed and documented, and warehouse capacity is measured at one tonne.
+Closed since the last revision: `order_source` now exists on orders and is backfilled, the equity split is agreed and documented, warehouse capacity is measured at one tonne, the RC number (9573579) is confirmed from company documents, and the Tax ID (2621843516171) and SCUML registration (RN SC192104252, issued 2026-08-28) are confirmed from certificates supplied 2026-09-10.
 
 ---
 

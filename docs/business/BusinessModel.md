@@ -1,6 +1,6 @@
 # Debridgers Business Model Canvas
 
-Compiled from `docs/jottings/COMPANY_PROFILE.md`, `docs/jottings/Company_Diagnosis.md`, and `docs/jottings/debridgers_strategic_investor_partnership_growth_strategy.md`, corrected against founder input on 2026-08-29 and cross-checked against the live catalogue, zone, and fee code in `apps/debridgers-backend`.
+Compiled from `docs/jottings/COMPANY_PROFILE.md`, `docs/jottings/Company_Diagnosis.md`, and `docs/jottings/debridgers_strategic_investor_partnership_growth_strategy.md`, corrected against founder input on 2026-08-29 and cross-checked against th e live catalogue, zone, and fee code in `apps/debridgers-backend`.
 
 **Prepared:** 2026-08-29
 **Company:** Debridgers LTD, Kaduna, Nigeria
@@ -225,9 +225,9 @@ Application, admin approval, KYC, bank details, stock requests, sales reports, c
 
 The founder asked how to measure whether a buyer is loyal to Debridgers or to their agent. It does not need a feature. It needs **four fields and one weekly query**:
 
-1. **`order_source` on every order.** One of: `agent`, `app_direct`, `whatsapp`, `phone`, `admin_outreach`. Set it manually today, since founders are placing the orders anyway. Without this field, none of the rest can be computed, and it is the single cheapest thing on this list.
-2. **`attributed_agent_id` on the buyer**, already stored permanently. Keep it.
-3. **`agent_active` state and a churn date.** When an agent leaves, the date is the start of the experiment.
+1. `order_source` **on every order.** One of: `agent`, `app_direct`, `whatsapp`, `phone`, `admin_outreach`. Set it manually today, since founders are placing the orders anyway. Without this field, none of the rest can be computed, and it is the single cheapest thing on this list.
+2. `attributed_agent_id` **on the buyer**, already stored permanently. Keep it.
+3. `agent_active` **state and a churn date.** When an agent leaves, the date is the start of the experiment.
 
 Then the three numbers that answer the question:
 
@@ -907,6 +907,18 @@ The float is **permanent working capital, not spend.** It recycles: it is tied u
 2. **Provision for bad debt.** Prepayment has no credit risk. Terms do. Budget a percentage of terms GMV as a provision from the first account, before the first default rather than after it.
 3. **Earn terms, do not grant them.** Recommended policy: **prepayment for the first three orders, terms available afterwards on request, subject to a credit limit set per account.** The order history is the credit file. This is ordinary trade practice and it converts the platform's transaction record into an underwriting asset, which is the same asset NIRSAL and BOA will eventually want to see.
 
+### 2026-09-10 addition: pay-on-delivery as a new-buyer acquisition tactic, flagged against Rule 3
+
+**Founder position, recorded 2026-09-10:** for some new buyers, particularly ones being convinced to switch away from an existing supplier, Debridgers may want to buy and deliver first and let the buyer pay on delivery, rather than requiring prepayment from order one.
+
+**This is the direct opposite of Rule 3 above**, which exists specifically to keep terms something a buyer earns through a proven order history rather than something granted up front to a stranger. It is not being rejected here - closing a buyer who would otherwise stay with an incumbent is a real reason to bend the rule - but it needs to be adopted with its cost stated, not adopted quietly:
+
+- **It spends the negative-working-capital advantage on exactly the orders that most need capital.** A first-time buyer with no order history is the buyer Debridgers knows least about, and pay-on-delivery to that buyer is the highest-risk use of the credit float formula above, not the lowest.
+- **It is a customer-acquisition cost, not free growth.** If a pay-on-delivery order is never collected, that loss should be counted against CAC for that channel, the same way a bad debt provision is already recommended under Rule 2, not written off as a one-time surprise.
+- **It should be bounded the same way agent consignment exposure was designed out**, in Decision 4: a cap per new buyer, a cap on total pay-on-delivery exposure as a share of the ₦300,000 buffer, or a probationary volume limit, rather than an open-ended policy. None of these caps are set yet. `!todo()`
+
+**Until a cap is set, this stays a CLAIMED tactic under consideration, not a locked policy** - unlike Rule 3, which is the standing default. `COMPANY_PROFILE.md`'s claim that "customers pay before delivery" remains accurate as a description of the 10+ orders to date, all of which were prepaid; it is not yet accurate as a forward-looking claim about every future order, and should not be presented to a partner or investor as an absolute without this caveat attached.
+
 **The resulting story is stronger than the usual one.** Not "we need money to buy stock", which every distribution business says and which invites the question of why the model consumes cash. Instead: **"our model runs on negative working capital and does not need financing to grow. We want a revolving facility to serve the buyers who require terms, sized at a formula we can show you, secured against an order history we can prove."** That is a fundable sentence.
 
 ### Intellectual and technical **BUILT**
@@ -1121,23 +1133,40 @@ The SKUs inside each category:
 
 **Two loose ends this creates:**
 
-1. **Millet has been purchased but is not in the catalogue and is not a hero product.** Either list it properly with a unit and price, or stop buying it. An unlisted product cannot be ordered, priced, costed, or reported on, and it will quietly corrupt every margin figure it touches.
+1. **Millet has been purchased but is not in the catalogue and is not a hero product.** Either list it properly with a unit and price, or stop buying it. An unlisted product cannot be ordered, priced, costed, or reported on, and it will quietly corrupt every margin figure it touches. **2026-09-10: settled.** Millet stays unpromoted, unmarketed - not a hero product, not a candidate for the second track below.
 2. **Garri, yam, and Irish Potato are the natural first candidates if you ever break bulk**, because smaller units are exactly what would make them viable. That is a decision to make after the NAFDAC opinion, not before.
+
+### 2026-09-10 addition: a second hero track, for the station/central-market channel
+
+`ConsultantFeedback.md` records a commercial lead distinct from the B2B food-business segment this decision was originally locked for: a "station" or central market buyer, sourced through the 2026-09-10 KADA meeting, wanting feed-grade raw materials, plus the outgrower scheme feeding the same crops back in at harvest.
+
+This does not reopen the original three. **Rice, beans, and oil stay the hero products for the existing B2B food-business segment**, for the reasons Decision 2 already gives. What's new is a **second track, for the station/central-market segment**:
+
+> **Rice, maize, beans, groundnut, and soya beans.**
+
+Rice and beans overlap with the existing hero list and carry the same reasoning. Maize, groundnut, and soya beans are new, and are hero products _for this segment specifically_ because they are what the station/central-market buyer and the outgrower scheme both run on - not because they clear the vehicle-slot value-density bar the original three were chosen against. That bar has not been checked for any of the three.
+
+**What this is not yet, and shouldn't be treated as:**
+
+- **Not BUILT.** `apps/debridgers-backend/src/infrastructure/seeders/catalog.ts` carries a Maize taxonomy node (White Maize, Yellow Maize) and a `Beans > Soya Beans` node, neither with a product entry - "nothing is listed for sale until real prices and units are set," in the catalogue's own comment. Raw groundnut has no taxonomy node at all; only Groundnut Oil exists. None of the three can be ordered, priced, or costed today.
+- **Per-package economics unmeasured.** Value density, vehicle-slot fit, and non-perishability all need checking against real unit prices for maize, groundnut, and soya beans before this track can be priced the way rice, beans, and oil are.
+
+**Before this track can ship:** real unit and price for maize (both varieties, or pick one), for raw groundnut, and for soya beans, plus a taxonomy node for groundnut, and a supplier register entry for each, same as the supplier-depth requirement Decision 7's expansion trigger already sets for every hero product.
 
 ### Decision 3: pricing **LOCKED, pending shipping**
 
 Lock all four together, because each one alone leaves a hole:
 
-| Element                                              | Current                           | Locked                                                                                                                                                                                                                                                                  |
-| ---------------------------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Goods**                                            | Market reference price            | Unchanged. Target procurement spread 6% to 10%                                                                                                                                                                                                                          |
-| **Cost-to-serve fee**, currently misnamed "handling" | ₦100 flat                         | **3% of items subtotal, floor ₦500, cap ₦5,000**                                                                                                                                                                                                                        |
+| Element                                              | Current                           | Locked                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ---------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Goods**                                            | Market reference price            | Unchanged. Target procurement spread 6% to 10%                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| **Cost-to-serve fee**, currently misnamed "handling" | ₦100 flat                         | **3% of items subtotal, floor ₦500, cap ₦5,000**                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | **Delivery**                                         | ₦500 base, ₦500 per extra package | **Zone base covering 2 packages, set to the measured trip cost, then a taper.** Kaduna South ₦4,000 / ₦700 / ₦400, capped ₦10,000. North ₦4,500 / ₦800 / ₦450, capped ₦11,000. Chikun ₦6,000 / ₦1,000 / ₦600, capped ₦14,000, and the Chikun zone areas need correcting. These are the locked figures; the live taper currently runs a shallower operating band, `TAPER_BAND_MIN_KOBO` and `TAPER_BAND_MAX_KOBO` in `packages/pricing/src/delivery-fee.ts`, pending a second delivery cost measurement |
-| **Minimum order**                                    | None                              | **₦25,000 or 2 packages** for delivery. Below that, pickup or same-zone add-on                                                                                                                                                                                          |
+| **Minimum order**                                    | None                              | **₦25,000 or 2 packages** for delivery. Below that, pickup or same-zone add-on                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 Rationale in one line each: the 3% cost-to-serve fee sits deliberately above the 2.10% rate at which the cheapest hero order merely pays for its own card processing, and the surplus funds the order admin nobody is currently costing; the delivery base is set to the **measured** ₦4,000 trip cost rather than an estimate, and the taper prices the trip rather than the bag, which is what the cost actually is; both caps protect the large accounts the segment decision depends on; the minimum stops the company selling below cost.
 
-**Rename `handling_fee` to `service_fee` or `cost_to_serve_fee` in the schema, the DTOs, and the buyer-facing copy.** The name "handling" is why it was set at ₦100. Fixing the number without fixing the name invites the same mistake again the next time someone asks what it is for.
+**Rename** `handling_fee` **to** `service_fee` **or** `cost_to_serve_fee` **in the schema, the DTOs, and the buyer-facing copy.** The name "handling" is why it was set at ₦100. Fixing the number without fixing the name invites the same mistake again the next time someone asks what it is for.
 
 **Above 20 packages or ₦750,000 of goods, quote individually:** delivery at actual cost plus 20%, cost-to-serve negotiated as a contract rate. The standard table breaks at that size, as Worked Example F shows.
 
@@ -1348,7 +1377,7 @@ The business model is settled when all seven of these are true, written down, an
 
 - [x] **Primary segment named, others deferred.** B2B food businesses, institutions next, households and traders deferred
 - [x] **Margin architecture chosen.** Procurement spread, goods at market reference price, fees at cost recovery
-- [x] **Hero products locked.** Rice, beans, and oil. Everything else listed but unpromoted
+- [x] **Hero products locked.** Rice, beans, and oil for the B2B food-business segment. Rice, maize, beans, groundnut, and soya beans for the station/central-market segment, added 2026-09-10, not yet buildable - none of maize, groundnut, or soya beans have a priced catalogue entry. Everything else listed but unpromoted
 - [x] **Pricing locked.** Cost-to-serve fee 3%, floor ₦500, cap ₦5,000; delivery base at the measured ₦4,000 with a taper and per-drop caps; ₦25,000 minimum order; individual quoting above 20 packages. **Shipped**, including the per-zone taper and ceiling, which live on the zone table rather than as one shared constant
 - [x] **Agent commission and exposure locked.** Flat per package: ₦1,200 beans, ₦1,000 rice, ₦700 oil, ₦400 other. Order-first for new agents, consignment earned, exposure capped at 30% of cash
 - [x] **Channel focus decided.** Founder-run B2B outreach, named account ownership, no agent recruitment for 90 days
@@ -1375,7 +1404,7 @@ What remains is not decision-making, it is measurement and execution:
 | 1   | **Write the supplier register.** Ten rows, including the last three prices paid per hero product              | One morning             | Cost of goods, and therefore every number in this document         |
 | 2   | **Say whether the ₦4,000 trip was inbound or outbound.** Inbound belongs in landed cost, outbound in delivery | One sentence            | Whether the 6% procurement spread is thinner than assumed          |
 | 3   | **Correct the catalogue units.** 100kg bags labelled 50kg, plus add millet                                    | An hour                 | Stops a customer dispute, and makes every report truthful          |
-| 4   | **Add `order_source` and backfill the 10 orders**                                                             | One hour                | Channel mix. The data is unrecoverable later                       |
+| 4   | **Add** `order_source` **and backfill the 10 orders**                                                         | One hour                | Channel mix. The data is unrecoverable later                       |
 | 5   | **Pull real AOV and GMV** from the existing orders                                                            | A query                 | Your first honest traction slide                                   |
 | 6   | **Ship the pricing change**, including the rename from `handling_fee`                                         | Half a day              | Stops the company selling below cost                               |
 | 7   | **Fix the ₦1,300 and ₦1,400 hardcodes**                                                                       | An hour                 | Agent recruitment, which is blocked until this is right            |
@@ -1459,7 +1488,7 @@ Terms as Debridgers uses them. Several of these were confused with each other at
 
 **Packager.** Opens the supplier's package and re-portions the contents into units of its own. **What Debridgers intends to become.** Adds sacks, scale, fill labour, labels, and grain shrinkage as costs, moves the NAFDAC obligation, and transfers quality risk from the supplier to Debridgers.
 
-**Hero product.** A deliberately short list carrying the commercial focus: **rice, beans, and oil.** Everything else stays listed and orderable but unstocked ahead of demand and absent from the sales sheet.
+**Hero product.** A deliberately short list carrying the commercial focus, now two tracks by segment: **rice, beans, and oil** for B2B food businesses, **rice, maize, beans, groundnut, and soya beans** for the station/central-market segment (2026-09-10, not yet buildable). Everything else stays listed and orderable but unstocked ahead of demand and absent from the sales sheet.
 
 ### Demand
 

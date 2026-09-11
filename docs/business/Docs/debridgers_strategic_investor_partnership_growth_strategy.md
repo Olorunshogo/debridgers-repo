@@ -1,7 +1,7 @@
 # Debridgers LTD: Investor, Partnership and Growth Strategy
 
 **Prepared:** 2026-08-29
-**Company:** Debridgers LTD, Kaduna, Nigeria. CAC registered, RC `!todo()`
+**Company:** Debridgers LTD, Kaduna, Nigeria. CAC registered, RC 9573579
 **Market:** Kaduna metropolis, focused on Kaduna South
 **Stage:** Early revenue. 10+ orders, 2 B2B customers, ₦300,000 capital
 

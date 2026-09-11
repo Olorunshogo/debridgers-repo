@@ -15,6 +15,7 @@ export interface SupportChannels {
   partnerEmail?: string;
   /* Plain-language availability, shown next to the phone and chat channels. */
   hours: string;
+  linkedin: string;
 }
 
 // === Contacts
@@ -25,6 +26,7 @@ export const SUPPORT: SupportChannels = {
   supportEmail: "support@debridgers.com",
   // partnerEmail: "partner@debridgers.com",
   hours: "Mon - Fri, 9am - 5pm",
+  linkedin: "https://www.linkedin.com/company/debridgers",
 };
 
 // === Link builders

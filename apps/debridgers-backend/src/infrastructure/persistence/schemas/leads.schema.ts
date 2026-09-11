@@ -6,6 +6,7 @@ export const leads = pgTable("leads", {
   id: serial().primaryKey().notNull(),
   full_name: varchar("full_name", { length: 200 }).notNull(),
   email: varchar("email", { length: 255 }).notNull(),
+  subject: varchar("subject", { length: 100 }),
   message: text().notNull(),
   ...timestamps,
 });
