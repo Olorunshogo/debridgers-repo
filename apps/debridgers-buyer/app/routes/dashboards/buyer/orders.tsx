@@ -96,7 +96,7 @@ function mapApiOrder(o: ApiOrder): Order {
 const tabs: { key: Tab; label: string }[] = [
   { key: "all", label: "All" },
   { key: "active", label: "Active" },
-  { key: "pending", label: "Pending" },
+  { key: "pending", label: "Unpaid" },
   { key: "confirmed", label: "Confirmed" },
   { key: "cancelled", label: "Cancelled" },
 ];
@@ -110,7 +110,7 @@ const STATUS_PRESENTATION: Record<
   { tone: StatusTone; label: string }
 > = {
   active: { tone: "info", label: "On the way" },
-  pending: { tone: "warning", label: "Pending" },
+  pending: { tone: "warning", label: "Unpaid" },
   confirmed: { tone: "success", label: "Paid" },
   delivered: { tone: "success", label: "Delivered" },
   cancelled: { tone: "danger", label: "Cancelled" },

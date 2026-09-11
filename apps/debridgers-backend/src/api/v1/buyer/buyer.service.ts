@@ -336,17 +336,15 @@ export class BuyerService {
       .from(schema.orders)
       .where(eq(schema.orders.buyer_id, user.sub));
 
-    const activeStatuses = [
-      "pending",
-      "confirmed",
-      "out_for_delivery",
-    ] as const;
+    // Unpaid checkouts stay status=pending; they are not in fulfilment.
+    const activeStatuses = ["confirmed", "out_for_delivery"] as const;
     const [activeOrdersRow] = await this.db
       .select({ total: count() })
       .from(schema.orders)
       .where(
         and(
           eq(schema.orders.buyer_id, user.sub),
+          eq(schema.orders.payment_status, "paid"),
           inArray(schema.orders.status, activeStatuses),
         ),
       );

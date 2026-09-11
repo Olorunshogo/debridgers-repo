@@ -60,7 +60,7 @@ interface RecentOrder {
   orderId: string;
   time: string;
   amount: string;
-  status: "on-the-way" | "delivered" | "cancelled";
+  status: "unpaid" | "paid" | "on-the-way" | "delivered" | "cancelled";
 }
 
 interface QuickAction {
@@ -127,6 +127,7 @@ interface ApiDashboard {
   recent_orders: Array<{
     id: number;
     status: string;
+    payment_status: string;
     total_amount: number;
     quantity: number;
     delivery_address: string;
@@ -216,11 +217,18 @@ function mapApiToDashboard(
   api: ApiDashboard,
   spendingRows: ApiSpendingWeek[],
 ): DashboardData {
-  const dbStatusToUi = (s: string): RecentOrder["status"] => {
-    if (s === "out_for_delivery" || s === "confirmed") return "on-the-way";
-    if (s === "delivered") return "delivered";
-    if (s === "cancelled") return "cancelled";
-    return "on-the-way";
+  // Match Orders page: unpaid must never read as "on the way".
+  const dbStatusToUi = (
+    orderStatus: string,
+    paymentStatus: string,
+  ): RecentOrder["status"] => {
+    if (orderStatus === "cancelled") return "cancelled";
+    if (orderStatus === "delivered") return "delivered";
+    if (orderStatus === "out_for_delivery") return "on-the-way";
+    if (paymentStatus === "unpaid" || paymentStatus === "awaiting")
+      return "unpaid";
+    if (paymentStatus === "paid" && orderStatus === "confirmed") return "paid";
+    return "unpaid";
   };
 
   const recentOrders: RecentOrder[] = api.recent_orders.map((o) => ({
@@ -234,7 +242,7 @@ function mapApiToDashboard(
       minute: "2-digit",
     }),
     amount: formatFromKobo(o.total_amount),
-    status: dbStatusToUi(o.status),
+    status: dbStatusToUi(o.status, o.payment_status),
   }));
 
   const nd = api.next_delivery;
@@ -363,6 +371,16 @@ const statusStyles: Record<
   RecentOrder["status"],
   { bgClass: string; textClass: string; label: string }
 > = {
+  unpaid: {
+    bgClass: "bg-status-pending",
+    textClass: "text-status-pending-fg",
+    label: "Unpaid",
+  },
+  paid: {
+    bgClass: "bg-status-delivered",
+    textClass: "text-status-delivered-fg",
+    label: "Paid",
+  },
   "on-the-way": {
     bgClass: "bg-status-on-the-way",
     textClass: "text-status-on-the-way-fg",
