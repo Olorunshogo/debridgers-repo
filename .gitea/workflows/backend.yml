@@ -120,8 +120,13 @@ jobs:
 
           tar --exclude=node_modules --exclude=.git --exclude=dist --exclude=.nx -czf /tmp/code.tar.gz .
           scp /tmp/code.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/code.tar.gz
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "cd /opt/debridgers && tar -xzf /tmp/code.tar.gz && rm -f /tmp/code.tar.gz"
+          # tar -x does not remove deleted paths; wipe workspace sources first so
+          # renamed files (e.g. hr-jobs-seeder) cannot break nest build.
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "set -eu
+            cd /opt/debridgers
+            rm -rf apps packages libs docker
+            tar -xzf /tmp/code.tar.gz
+            rm -f /tmp/code.tar.gz"
 
           scp deploy/docker-compose.prod.yml \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${STACK_DIR}/docker-compose.yml
@@ -204,8 +209,13 @@ jobs:
 
           tar --exclude=node_modules --exclude=.git --exclude=dist --exclude=.nx -czf /tmp/code.tar.gz .
           scp /tmp/code.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/code.tar.gz
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "cd /opt/debridgers && tar -xzf /tmp/code.tar.gz && rm -f /tmp/code.tar.gz"
+          # tar -x does not remove deleted paths; wipe workspace sources first so
+          # renamed files (e.g. hr-jobs-seeder) cannot break nest build.
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "set -eu
+            cd /opt/debridgers
+            rm -rf apps packages libs docker
+            tar -xzf /tmp/code.tar.gz
+            rm -f /tmp/code.tar.gz"
 
           scp deploy/docker-compose.prod.yml \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${STACK_DIR}/docker-compose.yml

@@ -115,7 +115,11 @@ jobs:
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /opt/debridgers/dev /opt/debridgers/cloudflared"
           tar --exclude=node_modules --exclude=.git --exclude=dist -czf /tmp/code.tar.gz .
           scp /tmp/code.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/code.tar.gz
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /opt/debridgers && tar -xzf /tmp/code.tar.gz && rm -f /tmp/code.tar.gz"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "set -eu
+            cd /opt/debridgers
+            rm -rf apps packages libs docker
+            tar -xzf /tmp/code.tar.gz
+            rm -f /tmp/code.tar.gz"
 
           scp deploy/docker-compose.prod.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/dev/docker-compose.yml
           scp deploy/docker-compose.tunnel.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/docker-compose.tunnel.yml
@@ -189,7 +193,11 @@ jobs:
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p /opt/debridgers/prod /opt/debridgers/cloudflared"
           tar --exclude=node_modules --exclude=.git --exclude=dist -czf /tmp/code.tar.gz .
           scp /tmp/code.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/code.tar.gz
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /opt/debridgers && tar -xzf /tmp/code.tar.gz && rm -f /tmp/code.tar.gz"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "set -eu
+            cd /opt/debridgers
+            rm -rf apps packages libs docker
+            tar -xzf /tmp/code.tar.gz
+            rm -f /tmp/code.tar.gz"
 
           scp deploy/docker-compose.prod.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/prod/docker-compose.yml
           scp deploy/docker-compose.tunnel.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/debridgers/docker-compose.tunnel.yml

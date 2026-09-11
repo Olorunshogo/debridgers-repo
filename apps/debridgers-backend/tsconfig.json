@@ -19,12 +19,23 @@
   },
   "include": ["src/**/*"],
   /*
-   * Tests are excluded from the build, not merely from the error list.
+   * Tests and one-shot seeders are excluded from the build, not merely from the error list.
    *
    * `nest build` compiles everything under src, so specs and the test harness
    * were being emitted into dist and shipped. The harness opens an admin
    * connection and issues DROP DATABASE; that has no business in a deployed
    * artifact. They are still type-checked - see tsconfig.spec.json.
+   *
+   * Seeders run via `tsx` scripts (`pnpm db:seed:*`), not from the Nest image.
+   * Excluding them also stops a leftover file on the VPS (tar extract does not
+   * delete renamed paths) from failing `nest build` after a rename such as
+   * hr-jobs-seeder → careers-jobs-seeder.
    */
-  "exclude": ["node_modules", "dist", "src/**/*.spec.ts", "src/test/**"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/**/*.spec.ts",
+    "src/test/**",
+    "src/infrastructure/seeders/**"
+  ]
 }
