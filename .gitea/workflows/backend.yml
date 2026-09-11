@@ -9,7 +9,7 @@ name: Backend
 on:
   push:
     branches:
-      - develop
+      - develop 
       - main
     paths:
       - "apps/debridgers-backend/**"
@@ -169,7 +169,7 @@ jobs:
             /opt/debridgers/deploy.sh ${SHORT_SHA} ${STACK_ENV}
             docker push \"\$IMAGE_SHA\"
             docker push \"\$IMAGE_BRANCH\""
- 
+
   deploy-production:
     needs: [build]
     if: github.ref == 'refs/heads/main'
