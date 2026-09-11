@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, index } from "drizzle-orm/pg-core";
 import { timestamps } from "../../helper/column.helper";
 import { orders } from "./orders.schema";
 import { productsTable } from "./product.schema";
@@ -30,12 +30,6 @@ export const order_items = pgTable(
       .references(() => productsTable.id, { onDelete: "restrict" }),
     quantity: integer().notNull(),
     unit_price_kobo: integer().notNull(),
-    /*
-     * "package" or "measure", carried onto the line so the order history
-     * can still show what was actually bought after a cart line is gone.
-     * Defaults to "package" so every existing row still means what it did.
-     */
-    unit_mode: text().notNull().default("package"),
     ...timestamps,
   },
   (table) => [

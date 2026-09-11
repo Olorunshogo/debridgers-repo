@@ -92,6 +92,20 @@
       "when": 1789142816064,
       "tag": "0033_chunky_johnny_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1789147186780,
+      "tag": "0034_lush_tinkerer",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1789147186781,
+      "tag": "0035_other_kaduna_lgas_zone",
+      "breakpoints": true
     }
   ]
 }

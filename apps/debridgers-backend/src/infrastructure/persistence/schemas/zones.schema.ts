@@ -9,6 +9,10 @@ import { createInsertSchema } from "drizzle-zod";
  * Defaults are the Kaduna South figures, which is what every zone was effectively priced at before these columns existed.
  * `free_delivery` is a standing policy for this zone specifically, separate from the global `free_delivery_until` promo in system_settings, which is a time-boxed campaign across everywhere.
  * Either being true makes delivery free; the full price is still computed so the UI can show it struck through.
+ * `requires_quote` marks a zone with no measured rates - checkout accepts the
+ * order (delivery_fee/tier columns here are an unused 0 placeholder) but
+ * cannot price delivery, so it goes to awaiting_quote instead of pending
+ * until an admin sets a real delivery_fee on the order by hand.
  */
 export const zones = pgTable("zones", {
   id: serial().primaryKey().notNull(),
@@ -20,6 +24,7 @@ export const zones = pgTable("zones", {
   tier_two_per_package_kobo: integer().notNull().default(40000),
   delivery_cap_kobo: integer().notNull().default(1000000),
   free_delivery: boolean().notNull().default(false),
+  requires_quote: boolean().notNull().default(false),
   is_active: boolean().notNull().default(true),
   ...timestamps,
 });

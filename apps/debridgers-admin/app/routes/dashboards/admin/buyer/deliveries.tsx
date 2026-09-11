@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Check, Clock, Truck, XCircle } from "lucide-react";
+import { Banknote, Check, Clock, Truck, XCircle } from "lucide-react";
 import { apiFetchPaged, apiMutate, ApiError } from "@debridgers/api-client";
 import {
   DataTable,
@@ -8,6 +8,7 @@ import {
   TableDateCell,
   TableStatusBadge,
   TableEmptyState,
+  useDialog,
   type RowAction,
   type StatusTone,
   type TableColumn,
@@ -26,6 +27,7 @@ export function meta() {
 }
 
 type OrderStatus =
+  | "awaiting_quote"
   | "pending"
   | "confirmed"
   | "out_for_delivery"
@@ -52,6 +54,11 @@ interface StatusPresentation {
 }
 
 const STATUS_PRESENTATION: Record<OrderStatus, StatusPresentation> = {
+  awaiting_quote: {
+    tone: "warning",
+    icon: Banknote,
+    label: "Awaiting quote",
+  },
   pending: { tone: "warning", icon: Clock, label: "Pending" },
   confirmed: { tone: "info", icon: Clock, label: "Confirmed" },
   out_for_delivery: { tone: "info", icon: Truck, label: "Out for delivery" },
@@ -61,6 +68,7 @@ const STATUS_PRESENTATION: Record<OrderStatus, StatusPresentation> = {
 
 const FILTERS: { value: string; label: string }[] = [
   { value: "", label: "All" },
+  { value: "awaiting_quote", label: "Awaiting quote" },
   { value: "confirmed", label: "Confirmed" },
   { value: "out_for_delivery", label: "Out for delivery" },
   { value: "delivered", label: "Delivered" },
@@ -79,6 +87,7 @@ function canMarkDelivered(order: Order): boolean {
 }
 
 export default function BuyerAdminDeliveries() {
+  const { triggerDialog } = useDialog();
   const [orders, setOrders] = useState<Order[]>([]);
   const [pageCount, setPageCount] = useState<number>(1);
   const [total, setTotal] = useState<number>(0);
@@ -175,6 +184,29 @@ export default function BuyerAdminDeliveries() {
     [snapshot, statusFilter, loadOrders, loadOnTheRoadCount],
   );
 
+  const handleSetDeliveryQuote = useCallback(
+    async (orderId: number, deliveryFeeKobo: number): Promise<void> => {
+      setActioningId(orderId);
+      try {
+        await apiMutate(`/admin/orders/${orderId}/delivery-quote`, {
+          method: "PATCH",
+          body: JSON.stringify({ delivery_fee_kobo: deliveryFeeKobo }),
+        });
+        if (snapshot) await loadOrders(snapshot, statusFilter);
+      } catch (error) {
+        /* Throws so the dialog reports it and stays open, rather than closing over a fee that was never set. */
+        throw new Error(
+          error instanceof ApiError
+            ? error.message
+            : "Could not set that delivery fee. Please try again.",
+        );
+      } finally {
+        setActioningId(null);
+      }
+    },
+    [snapshot, statusFilter, loadOrders],
+  );
+
   const columns = useMemo<TableColumn<Order>[]>(
     () => [
       {
@@ -268,8 +300,28 @@ export default function BuyerAdminDeliveries() {
           }),
         },
       },
+      {
+        id: "set-delivery-quote",
+        label: "Set delivery fee",
+        icon: Banknote,
+        tone: "primary",
+        hidden: (order) => order.status !== "awaiting_quote",
+        isBusy: (order) => actioningId === order.id,
+        /*
+         * Opened directly rather than through `confirm`, because the fee
+         * amount has to travel back and the engine's confirm contract
+         * passes no arguments - same reason payouts.tsx opens REJECT_PAYOUT
+         * this way.
+         */
+        onSelect: (order) =>
+          triggerDialog("SET_DELIVERY_QUOTE", {
+            orderReference: `#${order.id}`,
+            onSubmit: (deliveryFeeKobo: number) =>
+              handleSetDeliveryQuote(order.id, deliveryFeeKobo),
+          }),
+      },
     ],
-    [actioningId, handleMarkDelivered],
+    [actioningId, handleMarkDelivered, handleSetDeliveryQuote, triggerDialog],
   );
 
   return (

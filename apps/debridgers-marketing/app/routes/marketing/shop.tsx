@@ -13,7 +13,6 @@ import { buildPageMeta } from "../../lib/seo";
 import { Header } from "../../components/marketing/Header";
 import { useAuth } from "@debridgers/ui-web";
 import { BASE_BACKEND_URL } from "@debridgers/api-client";
-import { computeMeasurePriceKobo } from "@debridgers/pricing";
 import { useCart } from "../../features/cart";
 import {
   Pagination,
@@ -26,7 +25,6 @@ import {
   SortMenu,
   sortProducts,
   type ProductSortKey,
-  type ProductUnitMode,
 } from "@debridgers/ui-web";
 
 import { marketingNavLinks } from "@/components/marketing/data/data";
@@ -55,22 +53,6 @@ interface ApiProduct {
   description: string | null;
   image_url: string | null;
   category: string | null;
-  measure_value?: number | null;
-  measure_unit?: string | null;
-}
-
-/*
- * Price of one measure, for display only. The real, server-priced total
- * (rounded once, not per unit - see priceBasket on the backend) is what
- * checkout actually charges; this is just what the card shows up front.
- */
-function measureUnitPriceKobo(product: ApiProduct): number {
-  if (!product.measure_value) return product.price_kobo;
-  return computeMeasurePriceKobo({
-    packagePriceKobo: product.price_kobo,
-    measuresPerPackage: product.measure_value,
-    measureQty: 1,
-  });
 }
 
 const ITEMS_PER_PAGE = 12;
@@ -87,26 +69,15 @@ export default function PublicShop() {
   } = useCart();
   const { triggerDialog } = useDialog();
 
-  function addToCart(product: ApiProduct, unitMode: ProductUnitMode) {
-    const priceKobo =
-      unitMode === "measure"
-        ? measureUnitPriceKobo(product)
-        : product.price_kobo;
+  function addToCart(product: ApiProduct) {
     addItem({
       id: String(product.id),
       name: product.name,
-      price: priceKobo / 100,
+      price: product.price_kobo / 100,
       unit: product.unit,
       image_url: product.image_url,
-      unit_mode: unitMode,
-      measure_value: product.measure_value,
-      measure_unit: product.measure_unit,
     });
   }
-
-  const [unitModeByProduct, setUnitModeByProduct] = useState<
-    Record<number, ProductUnitMode>
-  >({});
 
   const { isAuthenticated, dashboardPath } = useAuth();
 
@@ -304,36 +275,17 @@ export default function PublicShop() {
                     className="grid w-full grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6"
                   >
                     {paginatedProducts.map((product, i) => {
-                      const unitMode =
-                        unitModeByProduct[product.id] ?? "package";
-                      const priceKobo =
-                        unitMode === "measure"
-                          ? measureUnitPriceKobo(product)
-                          : product.price_kobo;
+                      const priceNaira = product.price_kobo / 100;
                       return (
                         <ProductCard
                           key={product.id}
                           product={product}
-                          quantityInCart={quantityOf(
-                            String(product.id),
-                            unitMode,
-                          )}
-                          formattedPrice={formatCurrency(priceKobo / 100)}
+                          quantityInCart={quantityOf(String(product.id))}
+                          formattedPrice={formatCurrency(priceNaira)}
                           animationIndex={i}
-                          unitMode={unitMode}
-                          onUnitModeChange={(mode) =>
-                            setUnitModeByProduct((prev) => ({
-                              ...prev,
-                              [product.id]: mode,
-                            }))
-                          }
-                          onAddToCart={() => addToCart(product, unitMode)}
-                          onIncrement={() =>
-                            updateQty(String(product.id), 1, unitMode)
-                          }
-                          onDecrement={() =>
-                            updateQty(String(product.id), -1, unitMode)
-                          }
+                          onAddToCart={() => addToCart(product)}
+                          onIncrement={() => updateQty(String(product.id), 1)}
+                          onDecrement={() => updateQty(String(product.id), -1)}
                         />
                       );
                     })}
@@ -428,7 +380,7 @@ export default function PublicShop() {
                     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-5">
                       {cart.map((item) => (
                         <div
-                          key={`${item.id}:${item.unit_mode}`}
+                          key={item.id}
                           className="border-line flex items-center gap-3 rounded-xl border p-3"
                         >
                           <div className="bg-light-bg h-12 w-12 shrink-0 overflow-hidden rounded-lg">
@@ -452,17 +404,12 @@ export default function PublicShop() {
                               {item.name}
                             </p>
                             <p className="text-body text-xs">
-                              {item.unit_mode === "measure"
-                                ? item.measure_unit
-                                : item.unit}{" "}
-                              · {formatCurrency(item.price)} each
+                              {item.unit} · {formatCurrency(item.price)} each
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() =>
-                                updateQty(item.id, -1, item.unit_mode)
-                              }
+                              onClick={() => updateQty(item.id, -1)}
                               className="border-line flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border text-xs"
                             >
                               <Minus size={10} />
@@ -471,17 +418,13 @@ export default function PublicShop() {
                               {item.qty}
                             </span>
                             <button
-                              onClick={() =>
-                                updateQty(item.id, 1, item.unit_mode)
-                              }
+                              onClick={() => updateQty(item.id, 1)}
                               className="border-line flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border text-xs"
                             >
                               <Plus size={10} />
                             </button>
                             <button
-                              onClick={() =>
-                                removeItem(item.id, item.unit_mode)
-                              }
+                              onClick={() => removeItem(item.id)}
                               className="ml-1 cursor-pointer rounded-full p-1 hover:bg-red-50"
                             >
                               <Trash2 size={13} className="text-red-400" />

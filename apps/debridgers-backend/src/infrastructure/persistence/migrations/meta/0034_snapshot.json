@@ -1,6 +1,6 @@
 {
-  "id": "4b7c04f9-8fb0-4006-b9c8-721969d39385",
-  "prevId": "1f63fdf2-8e62-4266-a1cc-5a0879084d66",
+  "id": "558f69b9-80d2-4051-96e7-de11ed3a09d3",
+  "prevId": "4b7c04f9-8fb0-4006-b9c8-721969d39385",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -6896,6 +6896,13 @@
           "notNull": true,
           "default": false
         },
+        "requires_quote": {
+          "name": "requires_quote",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
         "is_active": {
           "name": "is_active",
           "type": "boolean",
@@ -7142,6 +7149,7 @@
       "name": "order_status",
       "schema": "public",
       "values": [
+        "awaiting_quote",
         "pending",
         "confirmed",
         "out_for_delivery",

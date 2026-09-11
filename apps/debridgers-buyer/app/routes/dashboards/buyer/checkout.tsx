@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Link, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { motion } from "framer-motion";
-import { CheckCircle2, ArrowRight, Loader2 } from "lucide-react";
+import { Check, X, ArrowRight, Loader2 } from "lucide-react";
 import { apiFetch, publicRequest } from "@debridgers/api-client";
 import { useCart } from "../../../features/cart";
 import { usePlatformConfig } from "../../../contexts/PlatformConfigContext";
@@ -28,7 +28,7 @@ export function meta() {
   });
 }
 
-type Step = "delivery" | "confirmed";
+type Step = "delivery" | "payment" | "confirmed" | "failed" | "awaiting-quote";
 
 interface DeliveryZone {
   id: number;
@@ -36,6 +36,7 @@ interface DeliveryZone {
   delivery_fee: number;
   free_delivery: boolean;
   areas: string[];
+  requires_quote: boolean;
 }
 
 /*
@@ -59,15 +60,119 @@ interface OrderQuote {
   extraPackages: number;
   package_count: number;
   requiresIndividualQuote: boolean;
+  /* True when deliveryFeeKobo/totalKobo above are unpriced placeholders - see priceBasket on the backend. */
+  requires_zone_quote: boolean;
 }
 
 /* Long enough that changing zone or quantity a few times is one request. */
 const QUOTE_DEBOUNCE_MS = 400;
 
-const steps: { key: Step; label: string }[] = [
-  { key: "delivery", label: "Delivery" },
-  { key: "confirmed", label: "Confirmed" },
+/* How long the failed screen shows before it sends the buyer back to the shop. */
+const FAILED_REDIRECT_SECONDS = 4;
+
+const PROGRESS_STEPS: { label: string }[] = [
+  { label: "Cart" },
+  { label: "Delivery" },
+  { label: "Payment" },
+  { label: "Confirmed" },
 ];
+
+/*
+ * Cart is always done the moment this page mounts - a buyer only ever
+ * reaches checkout with a cart already built, so it has no real "current"
+ * state of its own. "failed" keeps Payment as the active dot rather than
+ * adding a fifth one, since retrying re-attempts the same payment.
+ */
+function progressIndex(step: Step): number {
+  if (step === "delivery") return 1;
+  if (step === "payment" || step === "failed" || step === "awaiting-quote")
+    return 2;
+  return 3;
+}
+
+function CheckoutProgress({ current }: { current: Step }) {
+  const activeIndex = progressIndex(current);
+  return (
+    <div className="flex items-center gap-2">
+      {PROGRESS_STEPS.map((s, i) => {
+        const done = i < activeIndex || current === "confirmed";
+        const active = i === activeIndex && current !== "confirmed";
+        return (
+          <div key={s.label} className="flex items-center gap-2">
+            <div
+              className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold transition-all duration-300 ${
+                done
+                  ? "bg-primary text-white"
+                  : active
+                    ? "border-primary text-primary border-2"
+                    : "bg-light-bg text-body"
+              }`}
+            >
+              {done ? <Check size={14} /> : i + 1}
+            </div>
+            <span
+              className={`text-sm ${
+                done || active ? "text-heading font-medium" : "text-body"
+              }`}
+            >
+              {s.label}
+            </span>
+            {i < PROGRESS_STEPS.length - 1 && (
+              <div className="bg-line h-px w-8" />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/*
+ * Carton.png already has a badge baked into its artwork (a red circle + X),
+ * so this badge is sized and positioned to fully cover it rather than try
+ * to mask/crop the source image - both variants paint a fresh, opaque
+ * circle over the same spot.
+ */
+const CARTON_BADGE_POSITION = { left: "50.45%", top: "35.78%" };
+
+function OrderResultIllustration({
+  variant,
+}: {
+  variant: "success" | "failed";
+}) {
+  const Icon = variant === "success" ? Check : X;
+  return (
+    <div className="relative h-44 w-44">
+      <img
+        src="/images/Carton.png"
+        alt=""
+        className="h-full w-full object-contain"
+      />
+      <motion.div
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{
+          type: "spring",
+          stiffness: 260,
+          damping: 18,
+          delay: 0.15,
+        }}
+        className={`absolute flex items-center justify-center rounded-full ${
+          variant === "success" ? "bg-primary" : "bg-error-red"
+        }`}
+        style={{
+          left: CARTON_BADGE_POSITION.left,
+          top: CARTON_BADGE_POSITION.top,
+          width: "22%",
+          height: "22%",
+          transform: "translate(-50%, -50%)",
+        }}
+      >
+        <Icon className="h-[65%] w-[65%] text-white" strokeWidth={3} />
+      </motion.div>
+    </div>
+  );
+}
 
 interface WalletInfo {
   wallet: {
@@ -82,7 +187,13 @@ interface WalletInfo {
 export default function BuyerCheckout() {
   const { items: cartItems, subtotal, clear } = useCart();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>("delivery");
+  /* Shown on the failed screen; distinct from `error`, which stays on the form for pre-flight validation (insufficient balance, etc). */
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [failedCountdown, setFailedCountdown] = useState<number>(
+    FAILED_REDIRECT_SECONDS,
+  );
   /* Confirming the Paystack return, distinct from submitting a new order. */
   const [confirming, setConfirming] = useState<boolean>(false);
   const [deliveryAddress, setDeliveryAddress] = useState<string>("");
@@ -98,7 +209,8 @@ export default function BuyerCheckout() {
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   /* State is fixed to the launch state by default; LGA narrows the zone list. */
   const [stateName, setStateName] = useState<string>(defaultStateName);
-  const [lga, setLga] = useState<string>("");
+  /* Chikun is a real priced zone and the closest thing to a "just checkout" default. */
+  const [lga, setLga] = useState<string>("Chikun");
   const [zoneId, setZoneId] = useState<string>("");
   /* The running campaign and the minimum order, from the one place that knows them - both were already fetched by this provider and rendered nowhere. */
   const { deliveryPromotion } = usePlatformConfig();
@@ -150,15 +262,39 @@ export default function BuyerCheckout() {
    * Zones that serve the chosen LGA.
    * The seeded zones are named after LGAs ("Kaduna South") and also list their areas, so match on either - the same rule the backend uses to resolve a zone, kept in step deliberately.
    */
-  const zonesForLga = useMemo(() => {
+  const preciselyMatchedZones = useMemo(() => {
     if (!lga) return [];
     const target = lga.trim().toLowerCase();
     return zones.filter(
       (zone) =>
-        zone.name.trim().toLowerCase() === target ||
-        zone.areas.some((area) => area.trim().toLowerCase() === target),
+        !zone.requires_quote &&
+        (zone.name.trim().toLowerCase() === target ||
+          zone.areas.some((area) => area.trim().toLowerCase() === target)),
     );
   }, [zones, lga]);
+
+  const catchAllZone = useMemo(
+    () => zones.find((zone) => zone.requires_quote) ?? null,
+    [zones],
+  );
+
+  /*
+   * Every Kaduna LGA is deliverable now: one that misses a priced zone above
+   * falls back to the catch-all, which routes checkout to a manual delivery
+   * quote (see zones.requires_quote) instead of blocking the order. The old
+   * "LGA must match a priced zone" restriction is still preciselyMatchedZones
+   * above - revert this to `return preciselyMatchedZones;` to restore it.
+   */
+  const zonesForLga = useMemo(() => {
+    if (preciselyMatchedZones.length > 0) return preciselyMatchedZones;
+    if (lga && stateName === defaultStateName && catchAllZone) {
+      return [catchAllZone];
+    }
+    return preciselyMatchedZones;
+  }, [preciselyMatchedZones, lga, stateName, catchAllZone]);
+
+  const zoneRequiresQuote =
+    zones.find((zone) => String(zone.id) === zoneId)?.requires_quote ?? false;
 
   /* Auto-select the only serving zone, and drop a stale one when LGA changes. */
   useEffect(() => {
@@ -190,7 +326,6 @@ export default function BuyerCheckout() {
           cart: cartItems.map((i) => ({
             product_id: Number(i.id),
             qty: i.qty,
-            unit_mode: i.unit_mode,
           })),
         }),
       })
@@ -236,11 +371,12 @@ export default function BuyerCheckout() {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setError(
+        setPaymentError(
           err instanceof Error
             ? err.message
             : "We could not confirm that payment. Your cart has been kept.",
         );
+        setStep("failed");
       })
       .finally(() => {
         if (cancelled) return;
@@ -261,6 +397,24 @@ export default function BuyerCheckout() {
     };
   }, [searchParams, setSearchParams, clear]);
 
+  /* Resets the countdown fresh each time a new failure is shown, then ticks down to the shop. */
+  useEffect(() => {
+    if (step !== "failed") return;
+    setFailedCountdown(FAILED_REDIRECT_SECONDS);
+
+    const interval = window.setInterval(() => {
+      setFailedCountdown((n) => n - 1);
+    }, 1000);
+    const timeout = window.setTimeout(() => {
+      navigate("/buyer-dashboard/shop");
+    }, FAILED_REDIRECT_SECONDS * 1000);
+
+    return () => {
+      window.clearInterval(interval);
+      window.clearTimeout(timeout);
+    };
+  }, [step, navigate]);
+
   async function handleContinue(e: React.SyntheticEvent) {
     e.preventDefault();
     if (cartItems.length === 0 || !deliveryAddress.trim() || !zoneId) return;
@@ -271,6 +425,36 @@ export default function BuyerCheckout() {
     setLoading(true);
 
     try {
+      if (zoneRequiresQuote) {
+        /*
+         * No payment attempted - the order is created and left pending a
+         * manual delivery fee (see BuyerService.createOrder's
+         * requiresZoneQuote branch). The buyer pays later, from their
+         * orders list, once /buyer/orders/:id/pay is unblocked.
+         */
+        await apiFetch("/buyer/orders", {
+          method: "POST",
+          body: JSON.stringify({
+            delivery_address: deliveryAddress.trim(),
+            zone_id: zoneId ? Number(zoneId) : undefined,
+            delivery_time: deliveryTime,
+            notes: note.trim() || undefined,
+            cart: cartItems.map((i) => ({
+              product_id: Number(i.id),
+              name: i.name,
+              price_kobo: Math.round(i.price * 100),
+              unit: i.unit,
+              qty: i.qty,
+            })),
+          }),
+        });
+
+        clear();
+        setStep("awaiting-quote");
+        stopSubmitting();
+        return;
+      }
+
       if (paymentMethod === "wallet") {
         /*
          * Balance is checked before the order exists, not after.
@@ -318,7 +502,6 @@ export default function BuyerCheckout() {
               price_kobo: Math.round(i.price * 100),
               unit: i.unit,
               qty: i.qty,
-              unit_mode: i.unit_mode,
             })),
           }),
         });
@@ -353,19 +536,37 @@ export default function BuyerCheckout() {
         }
 
         // Deduct from wallet
+        setStep("payment");
         const paymentPayload = {
           payment_method: "wallet",
           amount_kobo: amount,
         };
-        await apiFetch(`/buyer/orders/${orderId}/pay`, {
-          method: "POST",
-          body: JSON.stringify(paymentPayload),
-        });
+        /*
+         * Its own try/catch: by this point the order exists and this is a
+         * genuine payment attempt, not a validation step, so a failure here
+         * goes to the animated failed screen rather than back to the form.
+         */
+        try {
+          await apiFetch(`/buyer/orders/${orderId}/pay`, {
+            method: "POST",
+            body: JSON.stringify(paymentPayload),
+          });
+        } catch (payErr) {
+          setPaymentError(
+            payErr instanceof Error
+              ? payErr.message
+              : "Wallet payment failed. Your cart has been kept.",
+          );
+          setStep("failed");
+          stopSubmitting();
+          return;
+        }
 
         clear();
         setStep("confirmed");
       } else {
         // Card payment: initialize Paystack
+        setStep("payment");
         /* `totals` carries the same figures as the quote, minus package_count. */
         const res = await apiFetch<{
           authorization_url: string;
@@ -385,13 +586,18 @@ export default function BuyerCheckout() {
               price_kobo: Math.round(i.price * 100),
               unit: i.unit,
               qty: i.qty,
-              unit_mode: i.unit_mode,
             })),
           }),
         });
         window.location.href = res.authorization_url;
       }
     } catch (err) {
+      /*
+       * Reached only from order creation / payment initialization, before
+       * any real payment was attempted - a fixable form problem, not a
+       * declined payment, so back to the form rather than the failed screen.
+       */
+      setStep("delivery");
       setError(
         err instanceof Error
           ? err.message
@@ -405,67 +611,105 @@ export default function BuyerCheckout() {
   /* Hides the form while the return leg settles, so the buyer cannot pay twice. */
   if (confirming) {
     return (
-      <div className="flex flex-col items-center gap-4 py-16 text-center">
-        <Loader2 size={40} className="text-primary animate-spin" />
-        <h2 className="font-syne text-heading text-xl font-bold">
-          Confirming your payment
-        </h2>
-        <p className="text-body max-w-87.5 text-sm">
-          This only takes a moment. Please do not close this page.
-        </p>
+      <div className="flex max-w-250 flex-col gap-6">
+        <CheckoutProgress current="payment" />
+        <div className="flex flex-col items-center gap-4 py-16 text-center">
+          <Loader2 size={40} className="text-primary animate-spin" />
+          <h2 className="font-syne text-heading text-xl font-bold">
+            Confirming your payment
+          </h2>
+          <p className="text-body max-w-87.5 text-sm">
+            This only takes a moment. Please do not close this page.
+          </p>
+        </div>
       </div>
     );
   }
 
   if (step === "confirmed") {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col items-center gap-6 py-16 text-center"
-      >
-        <CheckCircle2 size={64} className="text-primary" />
-        <h2 className="font-syne text-heading text-2xl font-bold">
-          Order Confirmed!
-        </h2>
-        <p className="text-body max-w-87.5 text-sm">
-          Your payment was received. We&apos;ll notify you when your order is
-          picked up.
-        </p>
-        <p className="text-body max-w-87.5 text-sm">
-          After delivery, you can rate your experience with a star score and an
-          optional comment.
-        </p>
-        <Link
-          to="/buyer-dashboard/orders"
-          className="bg-primary rounded-full px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+      <div className="flex max-w-250 flex-col gap-6">
+        <CheckoutProgress current="confirmed" />
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center gap-6 py-16 text-center"
         >
-          View My Orders
-        </Link>
-      </motion.div>
+          <OrderResultIllustration variant="success" />
+          <h2 className="font-syne text-heading text-2xl font-bold">
+            Yay! Your order is in!
+          </h2>
+          <p className="text-body max-w-87.5 text-sm">
+            We&apos;ve received your order and we&apos;re getting your goodies
+            ready.
+          </p>
+          <Link
+            to="/buyer-dashboard/orders"
+            className="bg-primary flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          >
+            Track your order <ArrowRight size={16} />
+          </Link>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (step === "awaiting-quote") {
+    return (
+      <div className="flex max-w-250 flex-col gap-6">
+        <CheckoutProgress current="awaiting-quote" />
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center gap-6 py-16 text-center"
+        >
+          <OrderResultIllustration variant="success" />
+          <h2 className="font-syne text-heading text-2xl font-bold">
+            Order received!
+          </h2>
+          <p className="text-body max-w-87.5 text-sm">
+            Your delivery area is outside our priced zones, so we&apos;re
+            confirming a delivery fee by hand. We&apos;ll notify you here as
+            soon as it&apos;s ready so you can pay.
+          </p>
+          <Link
+            to="/buyer-dashboard/orders"
+            className="bg-primary flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          >
+            View my orders <ArrowRight size={16} />
+          </Link>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (step === "failed") {
+    return (
+      <div className="flex max-w-250 flex-col gap-6">
+        <CheckoutProgress current="failed" />
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center gap-6 py-16 text-center"
+        >
+          <OrderResultIllustration variant="failed" />
+          <h2 className="font-syne text-heading text-2xl font-bold">
+            Payment failed
+          </h2>
+          <p className="text-body max-w-87.5 text-sm">
+            {paymentError ?? "Something went wrong. Your cart has been kept."}
+          </p>
+          <p className="text-body text-xs">
+            Taking you back to the shop in {failedCountdown}s...
+          </p>
+        </motion.div>
+      </div>
     );
   }
 
   return (
     <div className="flex max-w-250 flex-col gap-6">
-      {/* Progress */}
-      <div className="flex items-center gap-2">
-        {steps.map((s, i) => (
-          <div key={s.key} className="flex items-center gap-2">
-            <div
-              className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold transition-all duration-300 ${
-                step === s.key
-                  ? "bg-primary text-white"
-                  : "bg-light-bg text-body"
-              }`}
-            >
-              {i + 1}
-            </div>
-            <span className="text-body text-sm">{s.label}</span>
-            {i < steps.length - 1 && <div className="bg-line h-px w-8" />}
-          </div>
-        ))}
-      </div>
+      <CheckoutProgress current={step} />
 
       <form
         onSubmit={handleContinue}
@@ -522,8 +766,9 @@ export default function BuyerCheckout() {
                */
               options={zonesForLga.map((zone) => ({
                 value: String(zone.id),
-                label:
-                  zone.free_delivery || promotionCoversZone(zone.id)
+                label: zone.requires_quote
+                  ? `${zone.name} - fee confirmed after ordering`
+                  : zone.free_delivery || promotionCoversZone(zone.id)
                     ? `${zone.name} - free delivery`
                     : `${zone.name} - ${formatFromKobo(zone.delivery_fee)}`,
               }))}
@@ -534,6 +779,14 @@ export default function BuyerCheckout() {
               <p className="text-status-cancelled-fg text-xs">
                 We do not deliver to {lga} yet. Pick another LGA or contact
                 support.
+              </p>
+            )}
+
+            {zonesForLga.length === 1 && zonesForLga[0].requires_quote && (
+              <p className="text-body text-xs">
+                {lga} is outside our priced delivery areas. We&apos;ll confirm a
+                delivery fee after you place this order and notify you here to
+                complete payment.
               </p>
             )}
             <TextareaField
@@ -548,54 +801,61 @@ export default function BuyerCheckout() {
             />
           </div>
 
-          <div className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5">
-            <h3 className="font-syne text-heading font-semibold">
-              Payment Method
-            </h3>
-            <div className="flex gap-3">
-              {[
-                {
-                  key: "card" as const,
-                  label: "Pay with Card",
-                  sub: "Paystack",
-                },
-                {
-                  key: "wallet" as const,
-                  label: "Pay with Wallet",
-                  sub: wallet
-                    ? `Balance: ${formatFromKobo(wallet.wallet.available_balance)}`
-                    : "Loading...",
-                },
-              ].map((opt) => (
-                <label
-                  key={opt.key}
-                  className={`flex flex-1 cursor-pointer items-center gap-2 rounded-xl border px-4 py-3 transition-colors ${
-                    paymentMethod === opt.key
-                      ? "border-primary bg-dash-quick-action-hover"
-                      : "border-line bg-transparent"
-                  } ${
-                    opt.key === "wallet" && walletLoading ? "opacity-50" : ""
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value={opt.key}
-                    checked={paymentMethod === opt.key}
-                    onChange={() => setPaymentMethod(opt.key)}
-                    disabled={opt.key === "wallet" && walletLoading}
-                    className="accent-primary"
-                  />
-                  <div>
-                    <p className="text-heading text-sm font-medium">
-                      {opt.label}
-                    </p>
-                    <p className="text-body text-xs">{opt.sub}</p>
-                  </div>
-                </label>
-              ))}
+          {/*
+            No payment method to choose when delivery is unpriced - nothing
+            can be charged yet, so this order is placed, not paid, and the
+            buyer picks a method later once /pay is unblocked by a quote.
+          */}
+          {!zoneRequiresQuote && (
+            <div className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5">
+              <h3 className="font-syne text-heading font-semibold">
+                Payment Method
+              </h3>
+              <div className="flex gap-3">
+                {[
+                  {
+                    key: "card" as const,
+                    label: "Pay with Card",
+                    sub: "Paystack",
+                  },
+                  {
+                    key: "wallet" as const,
+                    label: "Pay with Wallet",
+                    sub: wallet
+                      ? `Balance: ${formatFromKobo(wallet.wallet.available_balance)}`
+                      : "Loading...",
+                  },
+                ].map((opt) => (
+                  <label
+                    key={opt.key}
+                    className={`flex flex-1 cursor-pointer items-center gap-2 rounded-xl border px-4 py-3 transition-colors ${
+                      paymentMethod === opt.key
+                        ? "border-primary bg-dash-quick-action-hover"
+                        : "border-line bg-transparent"
+                    } ${
+                      opt.key === "wallet" && walletLoading ? "opacity-50" : ""
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value={opt.key}
+                      checked={paymentMethod === opt.key}
+                      onChange={() => setPaymentMethod(opt.key)}
+                      disabled={opt.key === "wallet" && walletLoading}
+                      className="accent-primary"
+                    />
+                    <div>
+                      <p className="text-heading text-sm font-medium">
+                        {opt.label}
+                      </p>
+                      <p className="text-body text-xs">{opt.sub}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5">
             <h3 className="font-syne text-heading font-semibold">
@@ -679,14 +939,11 @@ export default function BuyerCheckout() {
             ) : (
               cartItems.map((item) => (
                 <div
-                  key={`${item.id}:${item.unit_mode}`}
+                  key={item.id}
                   className="flex items-center justify-between text-sm"
                 >
                   <span className="text-body">
-                    {item.name} x{item.qty}{" "}
-                    {item.unit_mode === "measure"
-                      ? item.measure_unit
-                      : item.unit}
+                    {item.name} x{item.qty} {item.unit}
                   </span>
                   <span className="text-heading">
                     {formatCurrency(item.price * item.qty)}
@@ -731,6 +988,10 @@ export default function BuyerCheckout() {
                   <span className="text-status-cancelled-fg">Unavailable</span>
                 ) : quoting || !quote ? (
                   <span className="text-placeholder-text">Calculating…</span>
+                ) : quote.requires_zone_quote ? (
+                  <span className="text-status-pending-fg font-medium">
+                    To be confirmed
+                  </span>
                 ) : quote.freeDelivery ? (
                   <span className="flex items-center gap-1.5">
                     <s className="text-placeholder-text">
@@ -757,7 +1018,14 @@ export default function BuyerCheckout() {
               )}
 
               <div className="font-syne text-heading flex justify-between text-lg font-bold">
-                <span>Total</span>
+                <span>
+                  Total
+                  {quote?.requires_zone_quote && (
+                    <span className="text-body block text-xs font-normal">
+                      excl. delivery, confirmed after ordering
+                    </span>
+                  )}
+                </span>
                 {/*
                   No subtotal fallback.
                   Falling back to the items total showed a figure that excluded delivery and the service fee, so a buyer whose quote had failed was shown less than they would be charged.
@@ -778,20 +1046,32 @@ export default function BuyerCheckout() {
                 <p className="text-status-cancelled-fg text-xs">{quoteError}</p>
               )}
 
+              {quote?.requires_zone_quote && (
+                <div className="border-status-pending-fg/25 bg-status-pending text-status-pending-fg mt-1 rounded-xl border px-3 py-2.5 text-xs">
+                  <strong className="font-semibold">
+                    Delivery fee confirmed after ordering.
+                  </strong>{" "}
+                  {lga} is outside our priced delivery zones. Place this order
+                  and we&apos;ll confirm a delivery fee by hand, then notify you
+                  here to complete payment - no charge happens now.
+                </div>
+              )}
+
               {/*
                 Past the tapered table the delivery fee stops covering the vehicle, so the order is quoted by hand instead of being sold below cost.
                 The flag was computed and returned all along.
               */}
-              {quote?.requiresIndividualQuote && (
-                <div className="border-status-pending-fg/25 bg-status-pending text-status-pending-fg mt-1 rounded-xl border px-3 py-2.5 text-xs">
-                  <strong className="font-semibold">
-                    This order needs a quote from us.
-                  </strong>{" "}
-                  It is large enough that our standard delivery rate no longer
-                  covers the trip. Place it and we will confirm the delivery
-                  cost with you, or message us and we will price it now.
-                </div>
-              )}
+              {quote?.requiresIndividualQuote &&
+                !quote?.requires_zone_quote && (
+                  <div className="border-status-pending-fg/25 bg-status-pending text-status-pending-fg mt-1 rounded-xl border px-3 py-2.5 text-xs">
+                    <strong className="font-semibold">
+                      This order needs a quote from us.
+                    </strong>{" "}
+                    It is large enough that our standard delivery rate no longer
+                    covers the trip. Place it and we will confirm the delivery
+                    cost with you, or message us and we will price it now.
+                  </div>
+                )}
             </div>
           )}
 
@@ -804,22 +1084,34 @@ export default function BuyerCheckout() {
           <SubmitButton
             variant="primary"
             loading={loading}
-            loadingText={`Processing ${paymentMethod === "wallet" ? "wallet" : "card"} payment...`}
+            loadingText={
+              zoneRequiresQuote
+                ? "Placing order..."
+                : `Processing ${paymentMethod === "wallet" ? "wallet" : "card"} payment...`
+            }
             disabled={
               cartItems.length === 0 ||
               !deliveryAddress.trim() ||
               !zoneId ||
-              (paymentMethod === "wallet" && walletLoading)
+              (!zoneRequiresQuote &&
+                paymentMethod === "wallet" &&
+                walletLoading)
             }
             className="flex"
           >
-            {paymentMethod === "wallet" ? "Pay with Wallet" : "Pay with Card"}
+            {zoneRequiresQuote
+              ? "Place order"
+              : paymentMethod === "wallet"
+                ? "Pay with Wallet"
+                : "Pay with Card"}
             <ArrowRight size={16} />
           </SubmitButton>
           <p className="text-body text-center text-xs">
-            {paymentMethod === "wallet"
-              ? "Payment will be deducted from your wallet."
-              : "You'll be redirected to Paystack to complete payment securely."}
+            {zoneRequiresQuote
+              ? "No charge yet - we'll confirm your delivery fee first."
+              : paymentMethod === "wallet"
+                ? "Payment will be deducted from your wallet."
+                : "You'll be redirected to Paystack to complete payment securely."}
           </p>
         </div>
       </form>
