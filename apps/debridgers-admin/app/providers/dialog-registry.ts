@@ -21,4 +21,6 @@ export const DIALOG_REGISTRY: DialogRegistry = {
   SUPPORT_TICKET: () => import("../components/dialogs/SupportTicketDialog"),
   CHANGE_PASSWORD: () => import("../components/dialogs/ChangePasswordDialog"),
   VERIFY_INVITE: () => import("../components/dialogs/InviteVerificationDialog"),
+  SET_DELIVERY_QUOTE: () =>
+    import("../components/dialogs/SetDeliveryQuoteDialog"),
 };

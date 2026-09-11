@@ -77,8 +77,4 @@ DROP TYPE "public"."user_role";--> statement-breakpoint
 CREATE TYPE "public"."user_role" AS ENUM('admin', 'agent', 'buyer', 'company', 'applicant', 'employee');--> statement-breakpoint
 ALTER TABLE "users" ALTER COLUMN "role" SET DEFAULT 'buyer'::"public"."user_role";--> statement-breakpoint
 ALTER TABLE "users" ALTER COLUMN "role" SET DATA TYPE "public"."user_role" USING "role"::"public"."user_role";--> statement-breakpoint
-DROP INDEX "cart_items_user_product_idx";--> statement-breakpoint
-ALTER TABLE "cart_items" ADD COLUMN "unit_mode" text DEFAULT 'package' NOT NULL;--> statement-breakpoint
-ALTER TABLE "order_items" ADD COLUMN "unit_mode" text DEFAULT 'package' NOT NULL;--> statement-breakpoint
-ALTER TABLE "users" ADD COLUMN "admin_desk" varchar(20);--> statement-breakpoint
-CREATE UNIQUE INDEX "cart_items_user_product_mode_idx" ON "cart_items" USING btree ("user_id","product_id","unit_mode");
+ALTER TABLE "users" ADD COLUMN "admin_desk" varchar(20);

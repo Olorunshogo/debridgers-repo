@@ -815,6 +815,68 @@ export class AdminService {
     return { message: "Order status updated", data: updated };
   }
 
+  /*
+   * The only way out of awaiting_quote (see order-status.ts's transition
+   * table). itemsTotal is re-summed from order_items rather than trusted
+   * from the order row's legacy averaged unit_price, for the same reason
+   * order_items exists at all - it is the real per-line record.
+   */
+  async setDeliveryQuote(
+    orderId: number,
+    deliveryFeeKobo: number,
+    adminId: number,
+  ) {
+    const [order] = await this.db
+      .select()
+      .from(schema.orders)
+      .where(eq(schema.orders.id, orderId))
+      .limit(1);
+
+    if (!order) throw new NotFoundException("Order not found");
+
+    if (order.status !== "awaiting_quote") {
+      throw new BadRequestException(
+        `Order is ${order.status}, not awaiting a delivery quote`,
+      );
+    }
+
+    const [itemsTotalRow] = await this.db
+      .select({
+        total: sum(
+          sql`${schema.order_items.quantity} * ${schema.order_items.unit_price_kobo}`,
+        ),
+      })
+      .from(schema.order_items)
+      .where(eq(schema.order_items.order_id, orderId));
+
+    const itemsTotalKobo = Number(itemsTotalRow?.total ?? 0);
+    const totalAmount = itemsTotalKobo + deliveryFeeKobo + order.handling_fee;
+
+    const [updated] = await this.db
+      .update(schema.orders)
+      .set({
+        delivery_fee: deliveryFeeKobo,
+        delivery_fee_before_promo: deliveryFeeKobo,
+        total_amount: totalAmount,
+        status: "pending",
+      })
+      .where(eq(schema.orders.id, orderId))
+      .returning();
+
+    await this.db.insert(schema.notifications).values({
+      user_id: order.buyer_id,
+      title: `Order #${orderId} is ready to pay`,
+      description: `Your delivery fee has been confirmed. Open the order to complete payment.`,
+      read: false,
+    });
+
+    this.logger.log(
+      `Admin ${adminId} set delivery fee ${deliveryFeeKobo} kobo on order ${orderId}, moved to pending`,
+    );
+
+    return { message: "Delivery quote set", data: updated };
+  }
+
   async getBuyers(zoneId?: number, isSuspended?: boolean, isBlocked?: boolean) {
     const whereConditions = [eq(schema.users.role, "buyer")];
 

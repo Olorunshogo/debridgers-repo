@@ -73,6 +73,25 @@ const ZONES = [
     areas: ["Kujama", "Sabon Sarki", "Nasarawa", "Ungwan Yero"],
     is_active: true,
   },
+  /*
+   * Catch-all for every other Kaduna LGA - real distances run 70 to 140km,
+   * the same range the comment above already flagged as unprofitable at a
+   * flat per-package rate. No delivery_fee/tier rates are set (they read as
+   * an unpriced 0) because none apply: an order here goes to awaiting_quote
+   * instead of pending, and an admin sets a real delivery_fee by hand.
+   */
+  {
+    name: "Other Kaduna LGAs",
+    description:
+      "Any Kaduna State LGA outside the three priced metro zones above",
+    delivery_fee: 0,
+    tier_one_per_package_kobo: 0,
+    tier_two_per_package_kobo: 0,
+    delivery_cap_kobo: 0,
+    requires_quote: true,
+    areas: [],
+    is_active: true,
+  },
 ];
 
 type Db = ReturnType<typeof drizzle<typeof schema>>;

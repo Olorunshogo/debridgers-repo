@@ -19,12 +19,7 @@ import { CreateOrderDto } from "./dto/create-order.dto";
 import { SyncCartDto } from "./dto/sync-cart.dto";
 import { InitializeOrderPaymentDto } from "./dto/initialize-order-payment.dto";
 import { QuoteCartDto } from "./dto/quote-cart.dto";
-import {
-  computeDeliveryFee,
-  computeOrderTotals,
-  computeMeasurePriceKobo,
-  measureQuantityViolation,
-} from "@debridgers/pricing";
+import { computeDeliveryFee, computeOrderTotals } from "@debridgers/pricing";
 import { PaymentService } from "../payment/payment.service";
 import { PaystackInvoiceService } from "../payment/paystack-invoice.service";
 import { ConfigService } from "@nestjs/config";
@@ -154,11 +149,8 @@ export class BuyerService {
     }
 
     const zoneId = await this.resolveDeliveryZone(user, dto.zone_id);
-    const { lines, totals, promotion } = await this.priceBasket(
-      dto.cart,
-      zoneId,
-      user.sub,
-    );
+    const { lines, totals, promotion, requiresZoneQuote } =
+      await this.priceBasket(dto.cart, zoneId, user.sub);
     const totalQuantity = lines.reduce((sum, l) => sum + l.quantity, 0);
 
     const order = await this.db.transaction(async (tx) => {
@@ -181,7 +173,13 @@ export class BuyerService {
           delivery_promotion_id: promotion?.id ?? null,
           total_amount: totals.totalKobo,
           order_mode: "referral",
-          status: "pending",
+          /*
+           * requiresZoneQuote means totals.deliveryFeeKobo/totalKobo above are
+           * placeholders, not a real price - awaiting_quote blocks payment
+           * (see payWithWallet/initiatePaystackPayment) until an admin sets a
+           * real delivery_fee and moves the order to "pending" themselves.
+           */
+          status: requiresZoneQuote ? "awaiting_quote" : "pending",
           payment_status: "unpaid",
           delivery_address: dto.delivery_address,
           notes: dto.notes ?? null,
@@ -194,7 +192,6 @@ export class BuyerService {
           product_id: line.product_id,
           quantity: line.quantity,
           unit_price_kobo: line.unit_price_kobo,
-          unit_mode: line.unit_mode,
         })),
       );
 
@@ -223,78 +220,98 @@ export class BuyerService {
       });
     }
 
-    // Create Paystack invoice (fire-and-forget - Paystack outage won't fail order)
-    this.invoice
-      .createInvoice(
-        order.id,
-        user.sub,
-        totals.totalKobo,
-        order.order_reference,
-        user.email,
-        `${user.first_name} ${user.last_name}`,
-      )
-      .then(async (invoiceData) => {
-        // Store invoice code in order
-        await this.db
-          .update(schema.orders)
-          .set({ paystack_invoice_code: invoiceData.invoice_code })
-          .where(eq(schema.orders.id, order.id));
-        this.logger.log(
-          `Created Paystack invoice ${invoiceData.invoice_code} for order ${order.order_reference}`,
-        );
-      })
-      .catch((err) => {
-        this.logger.error(
-          `Failed to create Paystack invoice for order ${order.id}: ${
-            err instanceof Error ? err.message : String(err)
-          }`,
-        );
+    if (requiresZoneQuote) {
+      /*
+       * Nothing here has a real delivery fee yet, so an invoice or a receipt
+       * naming ₦0 delivery would be a false promise. The admin notification
+       * is the only outbound message; the buyer's in-app notification below
+       * covers them until the quote lands.
+       */
+      void this.notifications.notifyBuyerAdmins({
+        type: "order",
+        title: `Delivery quote needed - order ${order.order_reference}`,
+        description:
+          `${formatKobo(totals.itemsTotalKobo)} of goods to ${dto.delivery_address}, ` +
+          `outside our priced delivery zones. Set a delivery fee for order #${order.id} ` +
+          `so the buyer can pay.`,
       });
+    } else {
+      // Create Paystack invoice (fire-and-forget - Paystack outage won't fail order)
+      this.invoice
+        .createInvoice(
+          order.id,
+          user.sub,
+          totals.totalKobo,
+          order.order_reference,
+          user.email,
+          `${user.first_name} ${user.last_name}`,
+        )
+        .then(async (invoiceData) => {
+          // Store invoice code in order
+          await this.db
+            .update(schema.orders)
+            .set({ paystack_invoice_code: invoiceData.invoice_code })
+            .where(eq(schema.orders.id, order.id));
+          this.logger.log(
+            `Created Paystack invoice ${invoiceData.invoice_code} for order ${order.order_reference}`,
+          );
+        })
+        .catch((err) => {
+          this.logger.error(
+            `Failed to create Paystack invoice for order ${order.id}: ${
+              err instanceof Error ? err.message : String(err)
+            }`,
+          );
+        });
 
-    /*
-     * OrderController also declares POST /buyer/orders and sent this email, but
-     * BuyerController registers first and wins the path, so that copy never ran.
-     * Fire-and-forget: a mail outage must not fail an order that is already
-     * committed. Account manager is the buyer-desk sub-admin when one exists.
-     */
-    const accountManager = await this.resolveBuyerAccountManager();
-    this.emailService
-      .sendOrderConfirmation({
-        to: user.email,
-        buyerFirstName: user.first_name || "Buyer",
-        buyerFullName:
-          `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Buyer",
-        orderReference:
-          order.order_reference || `#DBR-${String(order.id).padStart(4, "0")}`,
-        deliveryAddress: dto.delivery_address,
-        placedAt: order.created_at ?? new Date(),
-        items: lines.map((line) => ({
-          name: line.name,
-          unitLabel: line.unitLabel,
-          unit: line.unit,
-          quantity: line.quantity,
-          unitPriceKobo: line.unit_price_kobo,
-          lineTotalKobo: line.unit_price_kobo * line.quantity,
-        })),
-        itemsTotalKobo: totals.itemsTotalKobo,
-        deliveryFeeKobo: totals.deliveryFeeKobo,
-        serviceFeeKobo: totals.handlingFeeKobo,
-        totalKobo: totals.totalKobo,
-        accountManager,
-      })
-      .catch((err) => {
-        this.logger.error(
-          `Failed to send order confirmation email for order ${order.id}: ${
-            err instanceof Error ? err.message : String(err)
-          }`,
-        );
-      });
+      /*
+       * OrderController also declares POST /buyer/orders and sent this email, but
+       * BuyerController registers first and wins the path, so that copy never ran.
+       * Fire-and-forget: a mail outage must not fail an order that is already
+       * committed. Account manager is the buyer-desk sub-admin when one exists.
+       */
+      const accountManager = await this.resolveBuyerAccountManager();
+      this.emailService
+        .sendOrderConfirmation({
+          to: user.email,
+          buyerFirstName: user.first_name || "Buyer",
+          buyerFullName:
+            `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+            "Buyer",
+          orderReference:
+            order.order_reference ||
+            `#DBR-${String(order.id).padStart(4, "0")}`,
+          deliveryAddress: dto.delivery_address,
+          placedAt: order.created_at ?? new Date(),
+          items: lines.map((line) => ({
+            name: line.name,
+            unitLabel: line.unitLabel,
+            unit: line.unit,
+            quantity: line.quantity,
+            unitPriceKobo: line.unit_price_kobo,
+            lineTotalKobo: line.unit_price_kobo * line.quantity,
+          })),
+          itemsTotalKobo: totals.itemsTotalKobo,
+          deliveryFeeKobo: totals.deliveryFeeKobo,
+          serviceFeeKobo: totals.handlingFeeKobo,
+          totalKobo: totals.totalKobo,
+          accountManager,
+        })
+        .catch((err) => {
+          this.logger.error(
+            `Failed to send order confirmation email for order ${order.id}: ${
+              err instanceof Error ? err.message : String(err)
+            }`,
+          );
+        });
+    }
 
     await this.db.insert(schema.notifications).values({
       user_id: user.sub,
       title: `Order #${order.id} received`,
-      description:
-        "We have received your order. You will be notified once payment is confirmed.",
+      description: requiresZoneQuote
+        ? "We have received your order. Your delivery area needs a manual quote - we'll notify you here once it's ready so you can pay."
+        : "We have received your order. You will be notified once payment is confirmed.",
       read: false,
     });
 
@@ -311,6 +328,7 @@ export class BuyerService {
         zone_id: zoneId,
         delivery_address: order.delivery_address,
         created_at: order.created_at,
+        requires_zone_quote: requiresZoneQuote,
       },
     };
   }
@@ -541,12 +559,9 @@ export class BuyerService {
       .select({
         product_id: schema.cart_items.product_id,
         quantity: schema.cart_items.quantity,
-        unit_mode: schema.cart_items.unit_mode,
         name: schema.productsTable.name,
         unit: schema.productsTable.unit,
         price_kobo: schema.productsTable.price_kobo,
-        measure_value: schema.productsTable.measure_value,
-        measure_unit: schema.productsTable.measure_unit,
         image_url: schema.productsTable.image_url,
       })
       .from(schema.cart_items)
@@ -580,7 +595,6 @@ export class BuyerService {
             user_id: user.sub,
             product_id: item.product_id,
             quantity: item.quantity,
-            unit_mode: item.unit_mode,
           })),
         );
       }
@@ -599,43 +613,23 @@ export class BuyerService {
       .select({
         product_id: schema.cart_items.product_id,
         quantity: schema.cart_items.quantity,
-        unit_mode: schema.cart_items.unit_mode,
       })
       .from(schema.cart_items)
       .where(eq(schema.cart_items.user_id, user.sub));
 
-    /*
-     * Keyed on product_id + unit_mode, matching cart_items_user_product_mode_idx -
-     * a package line and a measure line of the same product are different rows,
-     * not the same one taking the higher quantity.
-     */
-    const key = (productId: number, unitMode: string) =>
-      `${productId}:${unitMode}`;
-    const merged = new Map<
-      string,
-      { product_id: number; quantity: number; unit_mode: "package" | "measure" }
-    >();
-    for (const row of existing) {
-      const unitMode = (row.unit_mode as "package" | "measure") ?? "package";
-      merged.set(key(row.product_id, unitMode), {
-        product_id: row.product_id,
-        quantity: row.quantity,
-        unit_mode: unitMode,
-      });
-    }
+    const merged = new Map<number, number>();
+    for (const row of existing) merged.set(row.product_id, row.quantity);
     for (const item of dto.items) {
-      const k = key(item.product_id, item.unit_mode);
-      const current = merged.get(k)?.quantity ?? 0;
-      merged.set(k, {
-        product_id: item.product_id,
-        quantity: Math.max(current, item.quantity),
-        unit_mode: item.unit_mode,
-      });
+      const current = merged.get(item.product_id) ?? 0;
+      merged.set(item.product_id, Math.max(current, item.quantity));
     }
 
     await this.replaceCart(
       {
-        items: Array.from(merged.values()),
+        items: Array.from(merged, ([product_id, quantity]) => ({
+          product_id,
+          quantity,
+        })),
       },
       user,
     );
@@ -786,11 +780,7 @@ export class BuyerService {
    * and what they are charged cannot drift apart.
    */
   private async priceBasket(
-    lines: readonly {
-      product_id: number;
-      qty: number;
-      unit_mode?: "package" | "measure";
-    }[],
+    lines: readonly { product_id: number; qty: number }[],
     zoneId: number,
     buyerId: number,
   ) {
@@ -819,94 +809,30 @@ export class BuyerService {
         `These products are no longer available: ${missing.join(", ")}`,
       );
     }
-    /*
-     * A measure line buys a fraction of a package (a `measure_value` out of the
-     * `measure_unit: "measure"` product's package), priced by
-     * `computeMeasurePriceKobo`, which rounds once on the line total rather
-     * than per unit - see its doc comment.
-     *
-     * `unit_price_kobo` on the returned line is therefore an *average*,
-     * back-derived for storage and receipt display, not the figure actually
-     * charged. `line_total_kobo` is the real one, and itemsTotalKobo below
-     * sums that directly so the amount charged never carries the per-unit
-     * rounding this package deliberately avoids. A receipt that later
-     * recomputes `quantity * unit_price_kobo` for a measure line can be off
-     * by a kobo or two from `line_total_kobo` - cosmetic, not a charging bug.
-     *
-     * Measure lines do not count toward packageCount: a fraction of a bag is
-     * not a delivery slot, so it is excluded from delivery-fee tiering and
-     * the minimum-order check entirely.
-     */
 
     const priced = lines.map((line) => {
-      const isMeasure = (line.unit_mode ?? "package") === "measure";
       const product = byId.get(line.product_id)!;
       const measure =
         product.measure_value && product.measure_unit
           ? `${product.measure_value}${product.measure_unit}`
           : null;
       const unitLabel = measure ? `${measure} ${product.unit}` : product.unit;
-
-      if (isMeasure) {
-        /*
-         * "piece" is not divisible, and no measure_unit at all means the
-         * product was never configured for fractional sale. "kg", "litre"
-         * and the generic "measure" label are all fractional-eligible -
-         * measure_unit doubles as the label shown for the measure option.
-         */
-        if (
-          !product.measure_unit ||
-          product.measure_unit === "piece" ||
-          !product.measure_value
-        ) {
-          throw new BadRequestException(
-            `"${product.name}" is not sold by measure.`,
-          );
-        }
-        const violation = measureQuantityViolation(
-          product.measure_value,
-          line.qty,
-        );
-        if (violation) {
-          throw new BadRequestException(`"${product.name}": ${violation}`);
-        }
-        const lineTotalKobo = computeMeasurePriceKobo({
-          packagePriceKobo: product.price_kobo,
-          measuresPerPackage: product.measure_value,
-          measureQty: line.qty,
-        });
-        return {
-          product_id: line.product_id,
-          name: product.name,
-          unit: product.unit,
-          unitLabel,
-          quantity: line.qty,
-          unit_mode: "measure" as const,
-          unit_price_kobo: Math.round(lineTotalKobo / line.qty),
-          line_total_kobo: lineTotalKobo,
-        };
-      }
-
       return {
         product_id: line.product_id,
         name: product.name,
         unit: product.unit,
         unitLabel,
-        unit_mode: "package" as const,
         quantity: line.qty,
-        line_total_kobo: product.price_kobo * line.qty,
         unit_price_kobo: product.price_kobo,
       };
     });
 
     const itemsTotalKobo = priced.reduce(
-      (sum, line) => sum + line.line_total_kobo,
+      (sum, line) => sum + line.unit_price_kobo * line.quantity,
       0,
     );
-    /* One package per unit ordered - two bags of rice is two slots. Measure lines are not packages, see comment above. */
-    const packageCount = priced
-      .filter((line) => line.unit_mode === "package")
-      .reduce((sum, line) => sum + line.quantity, 0);
+    /* One package per unit ordered - two bags of rice is two slots. */
+    const packageCount = priced.reduce((sum, line) => sum + line.quantity, 0);
 
     const [zone] = await this.db
       .select({
@@ -915,6 +841,7 @@ export class BuyerService {
         tier_one_per_package_kobo: schema.zones.tier_one_per_package_kobo,
         tier_two_per_package_kobo: schema.zones.tier_two_per_package_kobo,
         delivery_cap_kobo: schema.zones.delivery_cap_kobo,
+        requires_quote: schema.zones.requires_quote,
       })
       .from(schema.zones)
       .where(eq(schema.zones.id, zoneId))
@@ -962,6 +889,13 @@ export class BuyerService {
        * Crediting a campaign for an order in a permanently-free area would overstate what the campaign actually gave away.
        */
       promotion: zoneIsStandingFree ? null : promotion,
+      /*
+       * A zone with no priced rates (an LGA outside the 3 measured metro
+       * zones). The delivery figure above is a meaningless 0, not a real
+       * quote - the caller must not let this basket be paid for until an
+       * admin sets a real delivery_fee and the order leaves awaiting_quote.
+       */
+      requiresZoneQuote: Boolean(zone?.requires_quote),
     };
   }
 
@@ -1105,11 +1039,8 @@ export class BuyerService {
   /** Live pricing for the cart summary, so the buyer sees fees before paying. */
   async quoteCart(dto: QuoteCartDto, user: JwtPayload) {
     const zoneId = await this.resolveDeliveryZone(user, dto.zone_id);
-    const { totals, packageCount, promotion } = await this.priceBasket(
-      dto.cart,
-      zoneId,
-      user.sub,
-    );
+    const { totals, packageCount, promotion, requiresZoneQuote } =
+      await this.priceBasket(dto.cart, zoneId, user.sub);
 
     return {
       message: "Quote generated",
@@ -1119,6 +1050,8 @@ export class BuyerService {
         package_count: packageCount,
         // Named so the delivery line can say which campaign struck the fee through, rather than only that it is free.
         delivery_promotion: promotion,
+        // True when deliveryFeeKobo/totalKobo above are unpriced placeholders - see priceBasket.
+        requires_zone_quote: requiresZoneQuote,
       },
     };
   }
@@ -1144,11 +1077,8 @@ export class BuyerService {
 
     const zoneId = await this.resolveDeliveryZone(user, dto.zone_id);
     /* Same pricing path as the quote, so what was shown is what is charged. */
-    const { lines, totals, promotion } = await this.priceBasket(
-      dto.cart,
-      zoneId,
-      user.sub,
-    );
+    const { lines, totals, promotion, requiresZoneQuote } =
+      await this.priceBasket(dto.cart, zoneId, user.sub);
     const totalQuantity = lines.reduce((sum, l) => sum + l.quantity, 0);
 
     const order = await this.db.transaction(async (tx) => {
@@ -1171,7 +1101,7 @@ export class BuyerService {
           delivery_promotion_id: promotion?.id ?? null,
           total_amount: totals.totalKobo,
           order_mode: "referral",
-          status: "pending",
+          status: requiresZoneQuote ? "awaiting_quote" : "pending",
           payment_status: "unpaid",
           delivery_address: dto.delivery_address,
           notes: dto.notes ?? null,
@@ -1183,13 +1113,45 @@ export class BuyerService {
           order_id: created.id,
           product_id: line.product_id,
           quantity: line.quantity,
-          unit_mode: line.unit_mode,
           unit_price_kobo: line.unit_price_kobo,
         })),
       );
 
       return created;
     });
+
+    /*
+     * No card charge to attempt: delivery is unpriced, so there is nothing
+     * to send to Paystack. The buyer pays via the normal /pay endpoint once
+     * an admin sets a real delivery_fee and the order leaves awaiting_quote.
+     */
+    if (requiresZoneQuote) {
+      void this.notifications.notifyBuyerAdmins({
+        type: "order",
+        title: `Delivery quote needed - order ${order.order_reference}`,
+        description:
+          `${formatKobo(totals.itemsTotalKobo)} of goods to ${dto.delivery_address}, ` +
+          `outside our priced delivery zones. Set a delivery fee for order #${order.id} ` +
+          `so the buyer can pay.`,
+      });
+
+      await this.db.insert(schema.notifications).values({
+        user_id: user.sub,
+        title: `Order #${order.id} received`,
+        description:
+          "We have received your order. Your delivery area needs a manual quote - we'll notify you here once it's ready so you can pay.",
+        read: false,
+      });
+
+      return {
+        message: "Order placed, awaiting delivery quote",
+        data: {
+          order_id: order.id,
+          requires_zone_quote: true,
+          totals,
+        },
+      };
+    }
 
     /*
      * TODO(payments): remove this branch once real Paystack credentials exist.

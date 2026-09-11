@@ -20,7 +20,6 @@ export const cartLineSchema = z
     product_id: z.number().int().positive(),
     quantity: z.number().int().min(1).max(999).optional(),
     qty: z.number().int().min(1).max(999).optional(),
-    unit_mode: z.enum(["package", "measure"]).optional(),
   })
   .refine((line) => line.quantity !== undefined || line.qty !== undefined, {
     message: "quantity is required",
@@ -29,7 +28,6 @@ export const cartLineSchema = z
   .transform((line) => ({
     product_id: line.product_id,
     quantity: (line.quantity ?? line.qty) as number,
-    unit_mode: line.unit_mode ?? "package",
   }));
 
 export const syncCartSchema = z.object({

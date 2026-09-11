@@ -33,6 +33,7 @@ export function meta() {
 }
 
 type OrderStatus =
+  | "awaiting_quote"
   | "active"
   | "pending"
   | "confirmed"
@@ -73,6 +74,8 @@ function mapApiOrder(o: ApiOrder): Order {
     if (orderStatus === "cancelled") return "cancelled";
     if (orderStatus === "delivered") return "delivered";
     if (orderStatus === "out_for_delivery") return "active";
+    /* No real total yet - see zones.requires_quote. Not payable until an admin quotes it and it becomes a normal "pending" order. */
+    if (orderStatus === "awaiting_quote") return "awaiting_quote";
 
     // Not yet in transit: payment decides between pending and confirmed.
     if (paymentStatus === "unpaid" || paymentStatus === "awaiting")
@@ -95,6 +98,7 @@ function mapApiOrder(o: ApiOrder): Order {
 
 const tabs: { key: Tab; label: string }[] = [
   { key: "all", label: "All" },
+  { key: "awaiting_quote", label: "Awaiting quote" },
   { key: "active", label: "Active" },
   { key: "pending", label: "Unpaid" },
   { key: "confirmed", label: "Confirmed" },
@@ -109,6 +113,7 @@ const STATUS_PRESENTATION: Record<
   OrderStatus,
   { tone: StatusTone; label: string }
 > = {
+  awaiting_quote: { tone: "warning", label: "Awaiting delivery quote" },
   active: { tone: "info", label: "On the way" },
   pending: { tone: "warning", label: "Unpaid" },
   confirmed: { tone: "success", label: "Paid" },
@@ -203,16 +208,19 @@ export default function BuyerOrders() {
   const [cancelling, setCancelling] = useState<boolean>(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [paying, setPaying] = useState<boolean>(false);
+  const [payError, setPayError] = useState<string | null>(null);
 
   function closeDetail(): void {
     setSelected(null);
     setConfirmingCancel(false);
     setCancelReason("");
     setCancelError(null);
+    setPayError(null);
   }
 
   /*
-   * The backend only lets an order be cancelled while it is still unpaid, which maps to the Pending status here.
+   * The backend only lets an order be cancelled while it is still unpaid, which maps to Pending or Awaiting quote here.
    * Anything already paid has to go through a refund request instead, so the button is not offered for those.
    */
   async function handleCancel(): Promise<void> {
@@ -241,6 +249,53 @@ export default function BuyerOrders() {
       );
     } finally {
       setCancelling(false);
+    }
+  }
+
+  /*
+   * A pending order here was either resumed after an abandoned checkout, or
+   * just left awaiting_quote once an admin set a real delivery_fee - either
+   * way /pay is the same endpoint checkout itself uses, verified server-side
+   * against the order's own total_amount, never a client-supplied figure.
+   */
+  async function handlePayNow(method: "wallet" | "paystack"): Promise<void> {
+    if (!selected) return;
+
+    setPaying(true);
+    setPayError(null);
+
+    try {
+      const result = await apiFetch<{ authorization_url?: string }>(
+        `/buyer/orders/${selected.id}/pay`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            payment_method: method,
+            amount_kobo: selected.amountKobo,
+          }),
+        },
+      );
+
+      if (method === "paystack" && result.authorization_url) {
+        window.location.href = result.authorization_url;
+        return;
+      }
+
+      // Wallet pay settles immediately - refresh this order's row in place.
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === selected.id ? { ...o, status: "confirmed" } : o,
+        ),
+      );
+      closeDetail();
+    } catch (err) {
+      setPayError(
+        err instanceof Error
+          ? err.message
+          : "Could not process that payment. Please try again.",
+      );
+    } finally {
+      setPaying(false);
     }
   }
 
@@ -441,8 +496,55 @@ export default function BuyerOrders() {
                 </div>
               )}
 
-              {selected.status === "pending" && (
+              {selected.status === "awaiting_quote" && (
+                <div className="border-status-pending-fg/25 bg-status-pending text-status-pending-fg mt-5 rounded-xl border px-3 py-2.5 text-xs">
+                  <strong className="font-semibold">
+                    We&apos;re confirming your delivery fee.
+                  </strong>{" "}
+                  This order is outside our priced delivery areas. You&apos;ll
+                  get a notification here the moment it&apos;s ready to pay - or
+                  cancel it below if you&apos;d rather not wait.
+                </div>
+              )}
+
+              {(selected.status === "pending" ||
+                selected.status === "awaiting_quote") && (
                 <div className="border-line mt-5 flex flex-col gap-3 border-t pt-5">
+                  {selected.status === "pending" && (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-heading text-sm font-semibold">
+                        Pay {formatFromKobo(selected.amountKobo)}
+                      </p>
+                      {payError && (
+                        <p className="text-status-cancelled-fg text-xs">
+                          {payError}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap gap-2">
+                        <SubmitButton
+                          variant="primary"
+                          type="button"
+                          loading={paying}
+                          loadingText="Processing..."
+                          onClick={() => void handlePayNow("wallet")}
+                          className="px-4 py-2 text-xs"
+                        >
+                          Pay with Wallet
+                        </SubmitButton>
+                        <SubmitButton
+                          variant="secondary"
+                          type="button"
+                          loading={paying}
+                          loadingText="Redirecting..."
+                          onClick={() => void handlePayNow("paystack")}
+                          className="px-4 py-2 text-xs"
+                        >
+                          Pay with Card
+                        </SubmitButton>
+                      </div>
+                    </div>
+                  )}
+
                   {confirmingCancel ? (
                     <>
                       <TextareaField

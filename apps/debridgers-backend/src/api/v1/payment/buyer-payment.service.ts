@@ -65,6 +65,18 @@ export class BuyerPaymentService {
       throw new BadRequestException("Order already paid");
     }
 
+    /*
+     * total_amount here is a placeholder missing a real delivery_fee (see
+     * BuyerService.priceBasket's requiresZoneQuote) - nothing may be charged
+     * against it until an admin sets a real fee and moves the order out of
+     * this status.
+     */
+    if (order.status === "awaiting_quote") {
+      throw new BadRequestException(
+        "This order is waiting on a delivery quote and cannot be paid yet.",
+      );
+    }
+
     // Verify amount matches order total
     if (amount !== order.total_amount) {
       throw new BadRequestException("Amount does not match order total");
@@ -171,6 +183,12 @@ export class BuyerPaymentService {
 
     if (order.payment_status !== "unpaid") {
       throw new BadRequestException("Order already paid");
+    }
+
+    if (order.status === "awaiting_quote") {
+      throw new BadRequestException(
+        "This order is waiting on a delivery quote and cannot be paid yet.",
+      );
     }
 
     // Verify amount matches order total

@@ -29,14 +29,6 @@ export const CART_STORAGE_KEY = "debridgers_cart";
  */
 const SYNC_DEBOUNCE_MS = 2000;
 
-export type UnitMode = "package" | "measure";
-
-/*
- * A product can carry two independent cart lines - a whole-package line and
- * a measure line - so `id` alone is not a unique key. Every lookup below
- * keys on `id` + `unit_mode` together, matching the server's
- * cart_items_user_product_mode_idx.
- */
 export interface CartItem {
   id: string;
   name: string;
@@ -44,9 +36,6 @@ export interface CartItem {
   unit: string;
   image_url: string | null;
   qty: number;
-  unit_mode: UnitMode;
-  measure_value?: number | null;
-  measure_unit?: string | null;
 }
 
 /*
@@ -61,11 +50,11 @@ export interface CartContextValue {
   subtotal: number;
   isHydrated: boolean;
   addItem: (item: Omit<CartItem, "qty">, qty?: number) => void;
-  updateQuantity: (id: string, delta: number, unitMode?: UnitMode) => void;
-  removeItem: (id: string, unitMode?: UnitMode) => void;
+  updateQuantity: (id: string, delta: number) => void;
+  removeItem: (id: string) => void;
   replaceItems: (items: CartItem[]) => void;
   clear: () => void;
-  quantityOf: (id: string, unitMode?: UnitMode) => number;
+  quantityOf: (id: string) => number;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -118,43 +107,29 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addItem = useCallback((item: Omit<CartItem, "qty">, qty = 1): void => {
     setItems((prev) => {
-      const existing = prev.find(
-        (i) => i.id === item.id && i.unit_mode === item.unit_mode,
-      );
+      const existing = prev.find((i) => i.id === item.id);
       if (existing) {
         return prev.map((i) =>
-          i.id === item.id && i.unit_mode === item.unit_mode
-            ? { ...i, qty: i.qty + qty }
-            : i,
+          i.id === item.id ? { ...i, qty: i.qty + qty } : i,
         );
       }
       return [...prev, { ...item, qty }];
     });
   }, []);
 
-  const updateQuantity = useCallback(
-    (id: string, delta: number, unitMode: UnitMode = "package"): void => {
-      setItems((prev) =>
-        prev
-          .map((i) =>
-            i.id === id && i.unit_mode === unitMode
-              ? { ...i, qty: Math.max(0, i.qty + delta) }
-              : i,
-          )
-          .filter((i) => i.qty > 0),
-      );
-    },
-    [],
-  );
+  const updateQuantity = useCallback((id: string, delta: number): void => {
+    setItems((prev) =>
+      prev
+        .map((i) =>
+          i.id === id ? { ...i, qty: Math.max(0, i.qty + delta) } : i,
+        )
+        .filter((i) => i.qty > 0),
+    );
+  }, []);
 
-  const removeItem = useCallback(
-    (id: string, unitMode: UnitMode = "package"): void => {
-      setItems((prev) =>
-        prev.filter((i) => !(i.id === id && i.unit_mode === unitMode)),
-      );
-    },
-    [],
-  );
+  const removeItem = useCallback((id: string): void => {
+    setItems((prev) => prev.filter((i) => i.id !== id));
+  }, []);
 
   const replaceItems = useCallback((next: CartItem[]): void => {
     setItems(next);
@@ -173,11 +148,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     hasMergedRef.current = true;
 
     mergeServerCart(
-      items.map((i) => ({
-        product_id: Number(i.id),
-        quantity: i.qty,
-        unit_mode: i.unit_mode,
-      })),
+      items.map((i) => ({ product_id: Number(i.id), quantity: i.qty })),
     )
       .then((merged) => {
         setItems(
@@ -188,9 +159,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
             unit: line.unit,
             image_url: line.image_url,
             qty: line.quantity,
-            unit_mode: line.unit_mode,
-            measure_value: line.measure_value,
-            measure_unit: line.measure_unit,
           })),
         );
       })
@@ -210,11 +178,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     const timer = window.setTimeout(() => {
       void syncServerCart(
-        items.map((i) => ({
-          product_id: Number(i.id),
-          quantity: i.qty,
-          unit_mode: i.unit_mode,
-        })),
+        items.map((i) => ({ product_id: Number(i.id), quantity: i.qty })),
       ).catch(() => {
         /*
          * A failed sync is not user-facing: localStorage still holds the cart and the next edit retries.
@@ -227,8 +191,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items, isHydrated, isAuthenticated]);
 
   const quantityOf = useCallback(
-    (id: string, unitMode: UnitMode = "package"): number =>
-      items.find((i) => i.id === id && i.unit_mode === unitMode)?.qty ?? 0,
+    (id: string): number => items.find((i) => i.id === id)?.qty ?? 0,
     [items],
   );
 

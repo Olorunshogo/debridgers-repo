@@ -8,19 +8,15 @@ import { apiFetch } from "../../apiFetch";
 export interface ServerCartLine {
   product_id: number;
   quantity: number;
-  unit_mode: "package" | "measure";
   name: string;
   unit: string;
   price_kobo: number;
-  measure_value: number | null;
-  measure_unit: string | null;
   image_url: string | null;
 }
 
 export interface CartSyncLine {
   product_id: number;
   quantity: number;
-  unit_mode?: "package" | "measure";
 }
 
 export function getServerCart(): Promise<ServerCartLine[]> {

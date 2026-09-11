@@ -29,7 +29,6 @@ export const createOrderSchema = z.object({
           name: z.string().optional(),
           unit: z.string().optional(),
           price_kobo: z.number().optional(),
-          unit_mode: z.enum(["package", "measure"]).optional(),
         })
         .refine(
           (line) => line.qty !== undefined || line.quantity !== undefined,
@@ -41,7 +40,6 @@ export const createOrderSchema = z.object({
         .transform((line) => ({
           ...line,
           qty: (line.qty ?? line.quantity) as number,
-          unit_mode: line.unit_mode ?? "package",
         })),
     )
     .min(1, "Cart is empty"),

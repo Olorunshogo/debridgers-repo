@@ -71,9 +71,6 @@ const stagedCartItemSchema = z.object({
   unit: z.string().min(1),
   image_url: z.string().nullable(),
   qty: z.number().int().min(1).max(999),
-  unit_mode: z.enum(["package", "measure"]).default("package"),
-  measure_value: z.number().nullable().optional(),
-  measure_unit: z.string().nullable().optional(),
 });
 
 const stageCartSchema = z.object({
@@ -110,8 +107,6 @@ export class PublicController {
         image_url: schema.productsTable.image_url,
         category: schema.productsTable.category,
         category_id: schema.productsTable.category_id,
-        measure_value: schema.productsTable.measure_value,
-        measure_unit: schema.productsTable.measure_unit,
       })
       .from(schema.productsTable)
       .where(eq(schema.productsTable.is_active, true))
