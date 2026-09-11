@@ -3,7 +3,7 @@
 # Usage: deploy.sh <image-tag> <dev|prod>
 #
 # One VPS, two stacks:
-#   prod → /opt/debridgers/prod  host port 4002  (api.debridgers.com)
+#   prod → /opt/debridgers/prod  host port 4002  (api-test.debridgers.com - staging and production share this hostname)
 #   dev  → /opt/debridgers/dev   host port 4001  (api-test.debridgers.com)
 # Each stack has its own .env (and therefore its own DATABASE_URL).
 set -euo pipefail

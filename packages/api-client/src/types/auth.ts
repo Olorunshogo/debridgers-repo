@@ -2,8 +2,7 @@
  * investor, farmer and logistics are reserved, not active roles: no schema, signup config or dashboard exists for them yet.
  * Uncomment as each gets real backend support, matching apps/debridgers-backend's roles.type.ts.
  *
- * hr / hiring_manager remain for a future dedicated HR product surface; staffing gates on admin + admin_desk.
- * applicant / employee power careers and hired-staff paths.
+ * hr / applicant / employee power the HR product. Offer accept flips applicant → employee.
  */
 export type UserRole =
   | "admin"

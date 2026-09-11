@@ -1,10 +1,20 @@
 # Cloudflare Tunnel ingress for a single VPS running both stacks.
 # cloudflared uses host networking, so it reaches the published host ports:
-#   prod  → 127.0.0.1:4002  (api.debridgers.com)
 #   dev   → 127.0.0.1:4001  (api-test.debridgers.com)
+#   prod  → 127.0.0.1:4002  (no hostname routed to it below - see note)
 #
 # If the tunnel is token-managed in the Cloudflare dashboard, mirror these
 # hostname → service mappings there instead of (or as well as) this file.
+#
+# 2026-09-11: api.debridgers.com is retired. Staging and production are both
+# meant to be reachable through api-test.debridgers.com, but a single
+# Cloudflare Tunnel hostname can only route to one origin - it cannot ingress
+# to both 4001 and 4002. The api.debridgers.com rule that used to route to
+# the prod stack (4002) has been removed rather than left pointing at a dead
+# hostname, which leaves 4002 with no public ingress here. Decide and wire up
+# deliberately: retire the prod stack and just use dev/4001 for everything,
+# or add a real routing rule (a path prefix, a second hostname) for prod -
+# don't leave this unresolved in production.
 
 tunnel: __TUNNEL_ID__
 credentials-file: /etc/cloudflared/creds.json
@@ -12,6 +22,4 @@ credentials-file: /etc/cloudflared/creds.json
 ingress:
   - hostname: api-test.debridgers.com
     service: http://127.0.0.1:4001
-  - hostname: api.debridgers.com
-    service: http://127.0.0.1:4002
   - service: http_status:404

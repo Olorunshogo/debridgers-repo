@@ -1,0 +1,270 @@
+@import "tailwindcss";
+@import "@debridgers/shared-theme/tokens.css";
+
+@source "../../../packages/ui-web/src/**/*.{ts,tsx}";
+
+/* Landing-page-specific layout tokens */
+:root {
+  --navbar-h: 4.75rem;
+
+  --section-px: 1rem;
+  --section-px-sm: 2.5rem;
+  --section-px-lg: 6.25rem;
+
+  --section-py: 2rem;
+  --section-py-sm: 4rem;
+  --section-py-lg: 6.25rem;
+}
+
+/* @theme: bridges CSS vars → Tailwind utility classes */
+@theme inline {
+  /* Fonts */
+  --font-syne: "Syne", sans-serif;
+  --font-open-sans: "Open Sans", sans-serif;
+
+  /* Brand colours → bg-primary, text-primary, border-primary … */
+  --color-primary: var(--primary-color);
+  --color-primary-light: var(--primary-color-light);
+  --color-secondary: var(--secondary-color);
+  --color-secondary-light: var(--secondary-color-light);
+
+  /* Base */
+  --color-white: var(--white);
+  --color-black: var(--black);
+
+  /* Headings */
+  --color-heading: var(--heading-colour);
+  --color-heading2: var(--heading-colour2);
+
+  /* Text */
+  --color-body: var(--text-colour);
+  --color-text2: var(--text-colour2);
+  --color-placeholder-text: var(--text-placeholder);
+
+  /* Inputs */
+  --color-input-bg: var(--input-bg);
+  --color-input-border: var(--input-border);
+  --color-input-border-focus: var(--input-border-focus);
+  --color-input-error-red: var(--input-error-red);
+
+  /* Status */
+  --color-good-green: var(--good-green);
+  --color-error-red: var(--error-red);
+  --color-warning-yellow: var(--warning-yellow);
+
+  /* Backgrounds */
+  --color-gray-bg: var(--bg-gray);
+  --color-light-bg: var(--bg-light);
+
+  /* Borders */
+  /* One name for one value; this was two aliases for the same border. */
+  --color-line: var(--border-gray);
+
+  /* Icons */
+  --color-icon-primary: var(--icon-primary);
+  --color-icon-secondary: var(--icon-secondary);
+  --color-icon-tertiary: var(--icon-tertiary);
+
+  /* Shadows */
+  --shadow-yellow: var(--shadow-yellow);
+
+  /* Dashboard status badges */
+  --color-status-on-the-way: var(--status-on-the-way-bg);
+  --color-status-on-the-way-fg: var(--status-on-the-way-text);
+  --color-status-delivered: var(--status-delivered-bg);
+  --color-status-delivered-fg: var(--status-delivered-text);
+  --color-status-cancelled: var(--status-cancelled-bg);
+  --color-status-cancelled-fg: var(--status-cancelled-text);
+  --color-status-active: var(--status-active-bg);
+  --color-status-active-fg: var(--status-active-text);
+  --color-status-pending: var(--status-pending-bg);
+  --color-status-pending-fg: var(--status-pending-text);
+
+  /* Non-status emphasis - see the note in tokens.css */
+  --color-accent-soft: var(--accent-soft-bg);
+  --color-accent-soft-fg: var(--accent-soft-text);
+
+  /* Dashboard UI */
+  --color-dash-quick-action-hover: var(--dash-quick-action-hover);
+  --color-dash-sidebar-bg: var(--dash-sidebar-bg);
+  --color-dash-topbar-bg: var(--dash-topbar-bg);
+  --color-dash-page-bg: var(--dash-page-bg);
+
+  /* Typography scale (fluid, clamp-based) */
+  /* Usage: text-hero, text-h1 … text-h6, text-body-lg, text-body-sm */
+  --text-hero: clamp(3rem, 8vw + 1rem, 4.5rem); /* 32px → 72px */
+  --text-h1: clamp(1.75rem, 4vw + 0.5rem, 3.75rem); /* 28px → 60px */
+  --text-h2: clamp(1.5rem, 3vw + 0.5rem, 3rem); /* 24px → 48px */
+  --text-h3: clamp(1.25rem, 2vw + 0.5rem, 2rem); /* 20px → 32px */
+  --text-h4: clamp(1.125rem, 1.5vw + 0.25rem, 1.5rem); /* 18px → 24px */
+  --text-h5: clamp(1rem, 1vw + 0.25rem, 1.25rem); /* 16px → 20px */
+  --text-h6: clamp(0.875rem, 0.5vw + 0.25rem, 1rem); /* 14px → 16px */
+  --text-body-lg: clamp(1rem, 1vw + 0.125rem, 1.25rem); /* 16px → 20px */
+  --text-body-sm: 0.875rem; /* 14px fixed  */
+
+  /*
+   * Spacing scale → gap-xs, p-sm, mt-base, gap-4xl …
+   *
+   * Careful: these names also shadow Tailwind's container scale, because
+   * max-w-* resolves against the spacing namespace too. max-w-md therefore
+   * means 0.75rem here, not 28rem. Use numeric widths (max-w-112) for
+   * max-width; the named scale is for spacing only.
+   */
+  --spacing-xs: 0.25rem; /* 4px  */
+  --spacing-sm: 0.5rem; /* 8px  */
+  --spacing-md: 0.75rem; /* 12px */
+  --spacing-base: 1rem; /* 16px */
+  --spacing-lg: 1.25rem; /* 20px */
+  --spacing-xl: 1.5rem; /* 24px */
+  --spacing-2xl: 2rem; /* 32px */
+  --spacing-3xl: 2.5rem; /* 40px */
+  --spacing-4xl: 3rem; /* 48px */
+  --spacing-5xl: 4rem; /* 64px */
+
+  /* Layout tokens → mt-navbar-h, px-section-px-lg, py-section-py … */
+  --spacing-navbar-h: var(--navbar-h);
+  --spacing-section-px: var(--section-px);
+  --spacing-section-px-sm: var(--section-px-sm);
+  --spacing-section-px-lg: var(--section-px-lg);
+  --spacing-section-py: var(--section-py);
+  --spacing-section-py-sm: var(--section-py-sm);
+  --spacing-section-py-lg: var(--section-py-lg);
+}
+
+@layer utilities {
+  .font-openSans {
+    font-family: "Open Sans", sans-serif !important;
+    font-optical-sizing: auto;
+    font-variation-settings: "wdth" 100;
+  }
+
+  .font-syne {
+    font-family: "Syne", sans-serif !important;
+    font-optical-sizing: auto;
+  }
+}
+
+@layer components {
+  /*
+   * Two container measures, one job each. They share a value deliberately -
+   * a shell and a section should line up, not sit 120px apart - so change
+   * both together or the surfaces drift.
+   */
+
+  /* App shells: the auth pages and the dashboard, which bound everything once
+     and then divide the space internally. */
+  .layout-max-width {
+    @apply mx-auto w-full max-w-450;
+  }
+
+  /* Landing sections: a full-bleed band whose content is pulled back to the
+     page's measure. */
+  .section-max-width {
+    @apply mx-auto w-full max-w-450;
+  }
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    border-color: var(--border-gray);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--white);
+    color: var(--text-colour);
+
+    @media (prefers-color-scheme: dark) {
+      @apply bg-gray-950;
+      color-scheme: dark;
+    }
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Syne", sans-serif;
+  }
+}
+
+@keyframes loading {
+  0% {
+    transform: scaleX(0);
+  }
+  50% {
+    transform: scaleX(0.5);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+/* Interactive elements get a pointer. Browsers default <button> to an arrow,
+   unlike <a href>, so without this every button needs the class by hand and
+   some inevitably miss it. Base layer, so a cursor-* utility still wins. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  label:has(> input[type="radio"]),
+  label:has(> input[type="checkbox"]) {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+/* Autofill override */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px var(--white) inset !important;
+  -webkit-text-fill-color: var(--text-colour) !important;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+/* Hide number input arrows: Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Hide number input arrows: Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

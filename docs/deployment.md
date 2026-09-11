@@ -8,8 +8,7 @@ Production-grade deployment of Debridgers backend to Hetzner using Docker, Codeb
 Internet
     ↓
 Cloudflare Tunnel (one tunnel on the VPS)
-    ├── api-test.debridgers.com → 127.0.0.1:4001  (dev stack)
-    └── api.debridgers.com      → 127.0.0.1:4002  (prod stack)
+    └── api-test.debridgers.com → 127.0.0.1:4001  (dev stack)
     ↓
 Hetzner VPS (single host)
     ├── /opt/debridgers/dev   → debridgers-backend-dev  (Neon test DB)
@@ -18,6 +17,8 @@ Hetzner VPS (single host)
 
 Database: two Neon databases (or branches), one per stack. Never share DATABASE_URL.
 ```
+
+**2026-09-11: `api.debridgers.com` is retired.** Staging and production both resolve through `api-test.debridgers.com` now. The dev/prod dual-stack split above (ports 4001/4002, separate Neon databases) is otherwise unchanged by this - only the public hostname changed. The Cloudflare Tunnel config in `deploy/cloudflared/config.template.yml` still needs a human to confirm how the prod stack's ingress rule should read now that it no longer has its own hostname to route on; this doc doesn't invent that mapping for you.
 
 ## Prerequisites
 
@@ -295,16 +296,16 @@ Use Hetzner's built-in backup/snapshots:
 
 ## Troubleshooting
 
-| Issue                        | Check                                                      |
-| ---------------------------- | ---------------------------------------------------------- |
-| "Connection refused on 4001/4002" | `docker compose ps` in `/opt/debridgers/dev` or `prod` |
-| "docker: permission denied"  | `sudo usermod -aG docker $USER`                            |
-| "Tunnel not connected"       | `docker compose logs cloudflared` — check creds.json       |
-| "Image pull failed"          | `docker login code.codeberg.org`                           |
-| "Migration failed"           | `docker compose logs debridgers-backend`                   |
-| "Health check timeout"       | Wait 30s; `curl http://127.0.0.1:4001/api/v1/health` (dev) or `:4002` (prod) |
-| "port is already allocated"  | Wrong HOST_PORT for the stack, or old container still bound |
-| ".env not found"             | Verify `/opt/debridgers/.env` exists and readable          |
+| Issue                             | Check                                                                        |
+| --------------------------------- | ---------------------------------------------------------------------------- |
+| "Connection refused on 4001/4002" | `docker compose ps` in `/opt/debridgers/dev` or `prod`                       |
+| "docker: permission denied"       | `sudo usermod -aG docker $USER`                                              |
+| "Tunnel not connected"            | `docker compose logs cloudflared` — check creds.json                         |
+| "Image pull failed"               | `docker login code.codeberg.org`                                             |
+| "Migration failed"                | `docker compose logs debridgers-backend`                                     |
+| "Health check timeout"            | Wait 30s; `curl http://127.0.0.1:4001/api/v1/health` (dev) or `:4002` (prod) |
+| "port is already allocated"       | Wrong HOST_PORT for the stack, or old container still bound                  |
+| ".env not found"                  | Verify `/opt/debridgers/.env` exists and readable                            |
 
 ### Common Commands on VPS
 

@@ -451,6 +451,7 @@ export class AuthService {
         name: `${user.first_name} ${user.last_name}`,
         email: user.email,
         token,
+        role: user.role,
       });
     }
 
@@ -586,6 +587,7 @@ export class AuthService {
         first_name: schema.users.first_name,
         last_name: schema.users.last_name,
         email: schema.users.email,
+        role: schema.users.role,
       })
       .from(schema.users)
       .where(eq(schema.users.id, reset.user_id))
@@ -620,6 +622,7 @@ export class AuthService {
       this.eventEmitter.emit(USER_EVENTS.PASSWORD_RESET_COMPLETED, {
         name: `${user.first_name} ${user.last_name}`,
         email: user.email,
+        role: user.role,
       });
     }
 

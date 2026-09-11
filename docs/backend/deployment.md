@@ -29,7 +29,9 @@ cd /opt/debridgers/deploy
 IMAGE_TAG=develop CLOUDFLARE_TUNNEL_CREDENTIALS=... bash deploy.sh
 ```
 
-## Production Deployment (api.debridgers.com)
+## Production Deployment (api-test.debridgers.com)
+
+`api.debridgers.com` is retired as of 2026-09-11 - staging and production both resolve through `api-test.debridgers.com`. See the note in `docs/deployment.md` for what's still open on the Cloudflare Tunnel side.
 
 ### Prerequisites:
 

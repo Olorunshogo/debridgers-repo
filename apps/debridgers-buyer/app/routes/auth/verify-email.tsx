@@ -96,7 +96,6 @@ export default function VerifyEmailPage() {
               <AuthOtpInput
                 value={code}
                 onChange={setCode}
-                onComplete={() => void submit()}
                 disabled={isSubmitting}
               />
 

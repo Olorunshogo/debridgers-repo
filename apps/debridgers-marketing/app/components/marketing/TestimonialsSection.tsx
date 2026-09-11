@@ -152,7 +152,7 @@ export function TestimonialsSection() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-6">
           {items.map((item, index) => (
             <motion.blockquote
               key={`${item.authorLabel}-${item.createdAt}-${index}`}

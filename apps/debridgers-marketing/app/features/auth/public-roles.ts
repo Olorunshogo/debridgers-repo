@@ -1,4 +1,4 @@
-import { ShoppingBag, Bike } from "lucide-react";
+import { ShoppingBag, Bike, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { dashboardAppUrl } from "../../utils/app-urls";
 
@@ -6,7 +6,7 @@ import { dashboardAppUrl } from "../../utils/app-urls";
  * The public entry points marketing advertises.
  * Admin deliberately isn't here - its login/register URLs are unadvertised on purpose, matching the old routes.ts comment this replaces.
  */
-export type PublicRole = "buyer" | "agent";
+export type PublicRole = "buyer" | "agent" | "hr";
 
 export interface PublicRoleOption {
   value: PublicRole;
@@ -27,6 +27,12 @@ export const PUBLIC_ROLES: readonly PublicRoleOption[] = [
     label: "Agent",
     description: "Sell in the field and earn commission.",
     icon: Bike,
+  },
+  {
+    value: "hr",
+    label: "HR",
+    description: "Apply for a role, or manage people and recruitment.",
+    icon: Users,
   },
 ];
 

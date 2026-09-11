@@ -35,3 +35,6 @@ export * from "./services/newsletter";
 
 // === Admin buyer account actions
 export * from "./services/admin/buyers";
+
+// === HR recruitment
+export * from "./services/hr";

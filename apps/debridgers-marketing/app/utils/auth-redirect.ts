@@ -1,6 +1,6 @@
 import { dashboardAppUrl } from "./app-urls";
 
-type DashboardRole = "admin" | "agent" | "buyer";
+type DashboardRole = "admin" | "agent" | "buyer" | "hr";
 
 /*
  * debridgers-marketing has no dashboards of its own - every role's dashboard
@@ -11,7 +11,7 @@ type DashboardRole = "admin" | "agent" | "buyer";
  */
 export function redirectAfterAuth(role: string): void {
   const base = dashboardAppUrl(
-    (["admin", "agent", "buyer"] as const).includes(role as DashboardRole)
+    (["admin", "agent", "buyer", "hr"] as const).includes(role as DashboardRole)
       ? (role as DashboardRole)
       : "buyer",
   );
