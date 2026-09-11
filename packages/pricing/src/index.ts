@@ -6,3 +6,6 @@ export * from "./assumptions";
 
 // === Procurement arithmetic for the buying desk
 export * from "./procurement-math";
+
+// === Retail sub-package measure pricing
+export * from "./measure-price";

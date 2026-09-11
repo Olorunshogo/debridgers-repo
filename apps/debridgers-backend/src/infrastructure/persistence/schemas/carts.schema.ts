@@ -1,4 +1,10 @@
-import { pgTable, serial, integer, uniqueIndex } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  serial,
+  integer,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 import { timestamps } from "../../helper/column.helper";
 import { users } from "./users.schema";
 import { productsTable } from "./product.schema";
@@ -24,17 +30,26 @@ export const cart_items = pgTable(
       .notNull()
       .references(() => productsTable.id, { onDelete: "cascade" }),
     quantity: integer().notNull().default(1),
+    /*
+     * "package" (a whole bag/keg, priced from product.price_kobo directly) or
+     * "measure" (a retail sub-package quantity, priced as a fraction of it).
+     * Defaults to "package" so every row written before this column existed
+     * still means exactly what it always meant.
+     */
+    unit_mode: text().notNull().default("package"),
     ...timestamps,
   },
   (table) => [
     /*
-     * One row per product per buyer. The sync does a full replace, and this
-     * makes a duplicated line a database error rather than a silent double
-     * charge.
+     * One row per product per buyer per unit mode, so a buyer can carry both
+     * a whole-bag line and a measure line of the same product at once. The
+     * sync does a full replace, and this makes a duplicated line a database
+     * error rather than a silent double charge.
      */
-    uniqueIndex("cart_items_user_product_idx").on(
+    uniqueIndex("cart_items_user_product_mode_idx").on(
       table.user_id,
       table.product_id,
+      table.unit_mode,
     ),
   ],
 );

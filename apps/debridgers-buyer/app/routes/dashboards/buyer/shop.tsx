@@ -330,6 +330,8 @@ export default function BuyerShop() {
                 </button>
                 <Link
                   to="/buyer-dashboard/checkout"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="bg-primary rounded-full px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
                 >
                   Checkout
@@ -439,6 +441,8 @@ export default function BuyerShop() {
                 <Link
                   to="/buyer-dashboard/checkout"
                   onClick={() => setCartOpen(false)}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="bg-primary w-full cursor-pointer rounded-full py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90"
                 >
                   Proceed to Checkout

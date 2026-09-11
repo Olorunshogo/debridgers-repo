@@ -19,7 +19,12 @@ import { CreateOrderDto } from "./dto/create-order.dto";
 import { SyncCartDto } from "./dto/sync-cart.dto";
 import { InitializeOrderPaymentDto } from "./dto/initialize-order-payment.dto";
 import { QuoteCartDto } from "./dto/quote-cart.dto";
-import { computeDeliveryFee, computeOrderTotals } from "@debridgers/pricing";
+import {
+  computeDeliveryFee,
+  computeOrderTotals,
+  computeMeasurePriceKobo,
+  measureQuantityViolation,
+} from "@debridgers/pricing";
 import { PaymentService } from "../payment/payment.service";
 import { PaystackInvoiceService } from "../payment/paystack-invoice.service";
 import { ConfigService } from "@nestjs/config";
@@ -573,6 +578,7 @@ export class BuyerService {
             user_id: user.sub,
             product_id: item.product_id,
             quantity: item.quantity,
+            unit_mode: item.unit_mode,
           })),
         );
       }
@@ -758,7 +764,11 @@ export class BuyerService {
    * and what they are charged cannot drift apart.
    */
   private async priceBasket(
-    lines: readonly { product_id: number; qty: number }[],
+    lines: readonly {
+      product_id: number;
+      qty: number;
+      unit_mode?: "package" | "measure";
+    }[],
     zoneId: number,
     buyerId: number,
   ) {

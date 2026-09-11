@@ -126,7 +126,7 @@ export const PRODUCTS: ProductSeed[] = [
   {
     name: "Wake Gida (Honey Beans)",
     unit: "100kg bag",
-    price_kobo: naira(55000),
+    price_kobo: naira(300),
     description:
       "Northern Nigerian honey beans, brown and sweet. Sold per 100kg bag.",
     image_url: "/images/products/sweet-beans.jpg",
