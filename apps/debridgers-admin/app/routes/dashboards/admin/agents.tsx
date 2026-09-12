@@ -11,6 +11,7 @@ import {
   type StatusTone,
 } from "@debridgers/ui-web";
 import { apiFetch, ApiError } from "@debridgers/api-client";
+import type { AgentStatus } from "@debridgers/domain-status";
 
 import { buildPageMeta } from "../../../lib/seo";
 export function meta() {
@@ -23,7 +24,8 @@ export function meta() {
   });
 }
 
-type AgentStatus = "active" | "pending" | "suspended" | "rejected";
+/* The badge label an admin sees, not the raw backend status - "approved" reads as "active" here. */
+type AgentDisplayStatus = "active" | "pending" | "suspended" | "rejected";
 
 interface AgentRow {
   id: number;
@@ -31,7 +33,7 @@ interface AgentRow {
   email: string;
   phone: string;
   location: string;
-  status: AgentStatus;
+  status: AgentDisplayStatus;
   joinedDate: string;
 }
 
@@ -41,13 +43,13 @@ interface ApiAgent {
   last_name: string;
   email: string;
   phone: string;
-  status: string;
+  status: AgentStatus;
   lga: string;
   applied_at: string;
 }
 
 function mapAgent(a: ApiAgent): AgentRow {
-  const statusMap: Record<string, AgentStatus> = {
+  const statusMap: Record<AgentStatus, AgentDisplayStatus> = {
     approved: "active",
     pending: "pending",
     suspended: "suspended",
@@ -68,7 +70,10 @@ function mapAgent(a: ApiAgent): AgentRow {
   };
 }
 
-const STATUS_BADGE: Record<AgentStatus, { tone: StatusTone; label: string }> = {
+const STATUS_BADGE: Record<
+  AgentDisplayStatus,
+  { tone: StatusTone; label: string }
+> = {
   active: { tone: "active", label: "Active" },
   pending: { tone: "warning", label: "Pending" },
   suspended: { tone: "danger", label: "Suspended" },
@@ -167,7 +172,7 @@ export default function AdminAgents() {
       id: number,
       request: RequestInit,
       path: string,
-      nextStatus: AgentStatus,
+      nextStatus: AgentDisplayStatus,
       failureMessage: string,
     ): Promise<void> => {
       setActioningId(id);

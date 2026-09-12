@@ -14,6 +14,7 @@ import { zones } from "./zones.schema";
 import { riders } from "./riders.schema";
 import { deliveryPromotions } from "./delivery_promotions.schema";
 import { createInsertSchema } from "drizzle-zod";
+import { ORDER_STATUSES, PAYMENT_STATUSES } from "@debridgers/domain-status";
 
 /*
  * "awaiting_quote" is a zone with no measured delivery rate (see
@@ -21,15 +22,7 @@ import { createInsertSchema } from "drizzle-zod";
  * delivery is not, so payment is blocked until an admin sets a real
  * delivery_fee and the order moves to "pending".
  */
-export const orderStatusEnum = pgEnum("order_status", [
-  "awaiting_quote",
-  "pending",
-  "confirmed",
-  "out_for_delivery",
-  "delivery_failed",
-  "delivered",
-  "cancelled",
-]);
+export const orderStatusEnum = pgEnum("order_status", ORDER_STATUSES);
 
 /*
  * Where the order came from. Recorded rather than derived from which columns
@@ -45,12 +38,7 @@ export const orderSourceEnum = pgEnum("order_source", [
 export const orderModeEnum = pgEnum("order_mode", ["field", "referral"]);
 
 /* awaiting means a virtual account was created and is waiting for the transfer. */
-export const paymentStatusEnum = pgEnum("payment_status", [
-  "unpaid",
-  "awaiting",
-  "paid",
-  "failed",
-]);
+export const paymentStatusEnum = pgEnum("payment_status", PAYMENT_STATUSES);
 
 /*
  * `order_reference` is the "ord_xxxxx" format.

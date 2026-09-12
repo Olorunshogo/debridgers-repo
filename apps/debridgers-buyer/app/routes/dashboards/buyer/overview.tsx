@@ -24,6 +24,10 @@ import {
 } from "lucide-react";
 import { HeroGreetingCard } from "@debridgers/ui-web";
 import { apiFetch } from "@debridgers/api-client";
+import type {
+  OrderStatus as ApiOrderStatus,
+  PaymentStatus as ApiPaymentStatus,
+} from "@debridgers/domain-status";
 import {
   formatFromKobo,
   formatCurrency,
@@ -120,8 +124,8 @@ interface ApiDashboard {
   };
   recent_orders: Array<{
     id: number;
-    status: string;
-    payment_status: string;
+    status: ApiOrderStatus;
+    payment_status: ApiPaymentStatus;
     total_amount: number;
     quantity: number;
     delivery_address: string;
@@ -129,7 +133,7 @@ interface ApiDashboard {
   }>;
   next_delivery: {
     id: number;
-    status: string;
+    status: ApiOrderStatus;
     quantity: number;
     created_at: string;
   } | null;
@@ -203,8 +207,8 @@ function mapApiToDashboard(
 ): DashboardData {
   // Unpaid/awaiting always wins over fulfilment labels.
   const dbStatusToUi = (
-    orderStatus: string,
-    paymentStatus: string,
+    orderStatus: ApiOrderStatus,
+    paymentStatus: ApiPaymentStatus,
   ): RecentOrder["status"] => {
     if (orderStatus === "cancelled") return "cancelled";
     if (orderStatus === "delivered") return "delivered";

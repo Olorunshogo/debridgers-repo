@@ -35,6 +35,12 @@ import { TaxonomyService } from "../catalog/taxonomy.service";
 import { AuditLogService } from "../../../infrastructure/audit/audit-log.service";
 import { RatingsService } from "../ratings/ratings.service";
 import { parseSort } from "../../../infrastructure/helper/query.helper";
+import type {
+  CommissionStatus,
+  AgentStatus,
+  KycStatus,
+  WithdrawalStatus,
+} from "@debridgers/domain-status";
 import {
   ORDER_STATUS_TRANSITIONS,
   ORDER_STATUS_NOTIFICATION,
@@ -137,11 +143,11 @@ export class AdminService {
 
   // === Agents
 
-  async getAgents(status?: "pending" | "approved" | "rejected" | "suspended") {
-    /*
-     * kyc_status, bank_code and bank_name are selected explicitly.
-     * Omitting them made KYC state and the bank-code backfill invisible through the API.
-     */
+  /*
+   * kyc_status, bank_code and bank_name are selected explicitly.
+   * Omitting them made KYC state and the bank-code backfill invisible through the API.
+   */
+  async getAgents(status?: AgentStatus) {
     const query = this.db
       .select({
         id: schema.users.id,
@@ -444,13 +450,7 @@ export class AdminService {
     return { message: "Agent promoted to State Manager", data: null };
   }
 
-  async getPendingKyc(
-    kycStatus:
-      | "not_submitted"
-      | "submitted"
-      | "approved"
-      | "rejected" = "submitted",
-  ) {
+  async getPendingKyc(kycStatus: KycStatus = "submitted") {
     const agents = await this.db
       .select({
         id: schema.users.id,
@@ -1229,7 +1229,7 @@ export class AdminService {
    * `meta` in the shape the interceptor carries through, matching orders.
    */
   async getCommissions(params: {
-    status?: "pending" | "confirmed" | "paid";
+    status?: CommissionStatus;
     type?:
       | "direct"
       | "buyer_referral"
@@ -1763,10 +1763,7 @@ export class AdminService {
     /* Shared with the count query below, which otherwise totals every row. */
     const whereClause = and(
       status
-        ? eq(
-            schema.withdrawals.status,
-            status as "pending" | "approved" | "rejected" | "paid",
-          )
+        ? eq(schema.withdrawals.status, status as WithdrawalStatus)
         : undefined,
       term
         ? sql`(lower(${agent.first_name}) || ' ' || lower(${agent.last_name}) like ${term} or lower(${agent.email}) like ${term} or lower(${schema.withdrawals.bank_account_name}) like ${term} or ${schema.withdrawals.bank_account_number} like ${term} or lower(${schema.withdrawals.payout_reference}) like ${term})`

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Banknote, Check, Clock, Truck, XCircle } from "lucide-react";
 import { apiFetchPaged, apiMutate, ApiError } from "@debridgers/api-client";
+import type { OrderStatus } from "@debridgers/domain-status";
 import {
   DataTable,
   TablePrimaryCell,
@@ -25,14 +26,6 @@ export function meta() {
     noIndex: true,
   });
 }
-
-type OrderStatus =
-  | "awaiting_quote"
-  | "pending"
-  | "confirmed"
-  | "out_for_delivery"
-  | "delivered"
-  | "cancelled";
 
 /* Mirrors the columns /admin/orders selects. The previous shape claimed a `buyer_name` the endpoint has never returned. */
 interface Order {
@@ -62,6 +55,11 @@ const STATUS_PRESENTATION: Record<OrderStatus, StatusPresentation> = {
   pending: { tone: "warning", icon: Clock, label: "Pending" },
   confirmed: { tone: "info", icon: Clock, label: "Confirmed" },
   out_for_delivery: { tone: "info", icon: Truck, label: "Out for delivery" },
+  delivery_failed: {
+    tone: "danger",
+    icon: XCircle,
+    label: "Delivery failed",
+  },
   delivered: { tone: "success", icon: Check, label: "Delivered" },
   cancelled: { tone: "danger", icon: XCircle, label: "Cancelled" },
 };
@@ -71,6 +69,7 @@ const FILTERS: { value: string; label: string }[] = [
   { value: "awaiting_quote", label: "Awaiting quote" },
   { value: "confirmed", label: "Confirmed" },
   { value: "out_for_delivery", label: "Out for delivery" },
+  { value: "delivery_failed", label: "Delivery failed" },
   { value: "delivered", label: "Delivered" },
 ];
 
@@ -176,6 +175,30 @@ export default function BuyerAdminDeliveries() {
           error instanceof ApiError
             ? error.message
             : "Could not mark that order as delivered. Please try again.",
+        );
+      } finally {
+        setActioningId(null);
+      }
+    },
+    [snapshot, statusFilter, loadOrders, loadOnTheRoadCount],
+  );
+
+  const handleMarkDeliveryFailed = useCallback(
+    async (orderId: number, reason: string): Promise<void> => {
+      setActioningId(orderId);
+      try {
+        await apiMutate(`/admin/orders/${orderId}/status`, {
+          method: "PATCH",
+          body: JSON.stringify({ status: "delivery_failed", reason }),
+        });
+        if (snapshot) await loadOrders(snapshot, statusFilter);
+        await loadOnTheRoadCount();
+      } catch (error) {
+        /* Throws so the dialog reports it and stays open, instead of closing over a status that was never set. */
+        throw new Error(
+          error instanceof ApiError
+            ? error.message
+            : "Could not mark that delivery as failed. Please try again.",
         );
       } finally {
         setActioningId(null);
@@ -299,6 +322,20 @@ export default function BuyerAdminDeliveries() {
             tone: "primary",
           }),
         },
+      },
+      {
+        id: "mark-delivery-failed",
+        label: "Mark delivery failed",
+        icon: XCircle,
+        tone: "danger",
+        hidden: (order) => order.status !== "out_for_delivery",
+        isBusy: (order) => actioningId === order.id,
+        onSelect: (order) =>
+          triggerDialog("MARK_DELIVERY_FAILED", {
+            orderReference: `Order #${order.id}`,
+            onSubmit: (reason: string) =>
+              handleMarkDeliveryFailed(order.id, reason),
+          }),
       },
       {
         id: "set-delivery-quote",

@@ -23,4 +23,6 @@ export const DIALOG_REGISTRY: DialogRegistry = {
   VERIFY_INVITE: () => import("../components/dialogs/InviteVerificationDialog"),
   SET_DELIVERY_QUOTE: () =>
     import("../components/dialogs/SetDeliveryQuoteDialog"),
+  MARK_DELIVERY_FAILED: () =>
+    import("../components/dialogs/MarkDeliveryFailedDialog"),
 };

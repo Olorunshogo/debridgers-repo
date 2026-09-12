@@ -3,17 +3,8 @@
  * lifecycle and send the buyer the same wording.
  */
 
-export const ORDER_STATUSES = [
-  "awaiting_quote",
-  "pending",
-  "confirmed",
-  "out_for_delivery",
-  "delivery_failed",
-  "delivered",
-  "cancelled",
-] as const;
-
-export type OrderStatus = (typeof ORDER_STATUSES)[number];
+import type { OrderStatus } from "@debridgers/domain-status";
+export type { OrderStatus };
 
 // === Transitions
 

@@ -9,11 +9,12 @@ import { timestamps } from "../../helper/column.helper";
 import { users } from "./users.schema";
 import { productsTable } from "./product.schema";
 import { createInsertSchema } from "drizzle-zod";
+import { STOCK_REQUEST_STATUSES } from "@debridgers/domain-status";
 
-export const stockRequestStatusEnum = pgEnum("stock_request_status", [
-  "pending",
-  "fulfilled",
-]);
+export const stockRequestStatusEnum = pgEnum(
+  "stock_request_status",
+  STOCK_REQUEST_STATUSES,
+);
 
 /* `amount_to_remit` and `amount_remitted` are kobo; the remit price comes from remitPerPackageKobo. */
 export const stock_requests = pgTable("stock_requests", {

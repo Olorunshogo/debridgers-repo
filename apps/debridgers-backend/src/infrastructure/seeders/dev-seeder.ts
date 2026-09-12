@@ -7,6 +7,15 @@ import * as bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import * as schema from "../persistence/index";
 import { TAXONOMY, PRODUCT_LEAF_PATHS, type TaxonomyNodeSeed } from "./catalog";
+import type {
+  AgentStatus,
+  KycStatus,
+  OrderStatus,
+  PaymentStatus,
+  CommissionStatus,
+  WithdrawalStatus,
+  StockRequestStatus,
+} from "@debridgers/domain-status";
 
 /*
  * Development-only dataset. `seeder.ts` stays the production baseline (admin,
@@ -30,21 +39,6 @@ const naira = (n: number): number => n * 100;
 
 const daysAgo = (n: number): Date =>
   new Date(Date.now() - n * 24 * 60 * 60 * 1000);
-
-// === Types
-
-type AgentStatus = "pending" | "approved" | "rejected" | "suspended";
-type KycStatus = "not_submitted" | "submitted" | "approved" | "rejected";
-type OrderStatus =
-  | "pending"
-  | "confirmed"
-  | "out_for_delivery"
-  | "delivered"
-  | "cancelled";
-type PaymentStatus = "unpaid" | "awaiting" | "paid" | "failed";
-type CommissionStatus = "pending" | "confirmed" | "paid";
-type WithdrawalStatus = "pending" | "approved" | "rejected" | "paid";
-type StockRequestStatus = "pending" | "fulfilled";
 
 // bank_code is left null on one agent so POST /admin/agents/backfill-bank-codes has a row to actually operate on.
 interface AgentSeed {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { apiFetch, apiMutate, ApiError } from "@debridgers/api-client";
-import { Copy, Check, Plus, MailPlus } from "lucide-react";
+import { Copy, Check, Plus, MailPlus, Ban } from "lucide-react";
 import {
   AlertBanner,
   DataTable,
@@ -10,7 +10,9 @@ import {
   TableDateCell,
   TableStatusBadge,
   TableEmptyState,
+  useDialog,
   type AlertTone,
+  type RowAction,
   type StatusTone,
   type TableColumn,
 } from "@debridgers/ui-web";
@@ -27,6 +29,7 @@ interface AdminInvite {
   invite_code: string;
   expires_at: string;
   used_at: string | null;
+  revoked_at: string | null;
   created_at: string;
 }
 
@@ -40,32 +43,37 @@ export function meta() {
   });
 }
 
-type InviteState = "used" | "expired" | "pending";
+type InviteState = "used" | "revoked" | "expired" | "pending";
 
 const INVITE_STATE_TONE: Record<InviteState, StatusTone> = {
   used: "success",
+  revoked: "danger",
   expired: "danger",
   pending: "info",
 };
 
 const INVITE_STATE_LABEL: Record<InviteState, string> = {
   used: "Used",
+  revoked: "Revoked",
   expired: "Expired",
   pending: "Pending",
 };
 
 function inviteState(invite: AdminInvite): InviteState {
+  if (invite.revoked_at !== null) return "revoked";
   if (invite.used_at !== null) return "used";
   if (new Date(invite.expires_at) < new Date()) return "expired";
   return "pending";
 }
 
 export default function AdminInvites() {
+  const { triggerDialog } = useDialog();
   const [invites, setInvites] = useState<AdminInvite[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [email, setEmail] = useState<string>("");
   const [desk, setDesk] = useState<"buyer" | "agent" | "hr">("buyer");
   const [sending, setSending] = useState<boolean>(false);
+  const [revokingId, setRevokingId] = useState<number | null>(null);
   /* Carries its own tone: the same slot reports both a sent invite and a failed one, and they must not look alike. */
   const [message, setMessage] = useState<InviteMessage | null>(null);
   /* The list's own failure, kept apart from the invite form's message so a failed load cannot read as "no invitations yet". */
@@ -120,6 +128,26 @@ export default function AdminInvites() {
       setSending(false);
     }
   }
+
+  const handleRevoke = useCallback(
+    async (id: number): Promise<void> => {
+      setRevokingId(id);
+      try {
+        await apiMutate(`/admin/invites/${id}/revoke`, { method: "PATCH" });
+        await loadInvites();
+      } catch (error) {
+        /* Throws so the confirm dialog reports it and stays open, instead of closing over an invite that was never revoked. */
+        throw new Error(
+          error instanceof ApiError
+            ? error.message
+            : "Could not revoke that invite. Please try again.",
+        );
+      } finally {
+        setRevokingId(null);
+      }
+    },
+    [loadInvites],
+  );
 
   function copyToClipboard(code: string) {
     navigator.clipboard.writeText(code);
@@ -199,6 +227,31 @@ export default function AdminInvites() {
     [copied],
   );
 
+  const rowActions = useMemo<RowAction<AdminInvite>[]>(
+    () => [
+      {
+        id: "revoke",
+        label: "Revoke",
+        icon: Ban,
+        tone: "danger",
+        hidden: (invite) => inviteState(invite) !== "pending",
+        isBusy: (invite) => revokingId === invite.id,
+        onSelect: (invite) => handleRevoke(invite.id),
+        confirm: {
+          dialogKey: "CONFIRM",
+          props: (invite) => ({
+            title: `Revoke the invite for ${invite.email}?`,
+            description:
+              "The invite code stops working immediately. This cannot be undone.",
+            confirmLabel: "Revoke invite",
+            tone: "danger",
+          }),
+        },
+      },
+    ],
+    [revokingId, handleRevoke],
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <div className="border-line rounded-2xl border bg-white p-6">
@@ -256,6 +309,7 @@ export default function AdminInvites() {
         <DataTable
           rows={invites}
           columns={columns}
+          actions={rowActions}
           caption="Admin invitations"
           showSearch
           searchPlaceholder="Search by email or invite code"

@@ -16,6 +16,10 @@ import {
   type PaginationMeta,
 } from "@debridgers/api-client";
 import {
+  WITHDRAWAL_STATUSES,
+  type WithdrawalStatus,
+} from "@debridgers/domain-status";
+import {
   formatFromKobo,
   fadeDownVariants,
   transitionBase,
@@ -49,8 +53,6 @@ export function meta() {
  * Agents request payouts and the Friday cron pays approved ones, but nothing could move a request from pending to approved: the endpoints existed with no interface behind them, so the queue had no exit and no agent could ever be paid.
  */
 
-type WithdrawalStatus = "pending" | "approved" | "rejected" | "paid";
-
 interface Withdrawal {
   id: number;
   agent_id: number;
@@ -63,6 +65,7 @@ interface Withdrawal {
   bank_account_name: string;
   status: WithdrawalStatus;
   rejection_reason: string | null;
+  error_message: string | null;
   payout_reference: string | null;
   processed_at: string | null;
   created_at: string;
@@ -86,15 +89,19 @@ const STATUS_BADGE: Record<
 > = {
   pending: { tone: "warning", label: "Pending review" },
   approved: { tone: "info", label: "Approved - awaiting payout" },
+  processing: { tone: "info", label: "Processing" },
   paid: { tone: "success", label: "Paid" },
   rejected: { tone: "danger", label: "Rejected" },
+  failed: { tone: "danger", label: "Transfer failed" },
 };
 
 const FILTERS: { value: string; label: string }[] = [
   { value: "pending", label: "Pending" },
   { value: "approved", label: "Approved" },
+  { value: "processing", label: "Processing" },
   { value: "paid", label: "Paid" },
   { value: "rejected", label: "Rejected" },
+  { value: "failed", label: "Failed" },
   { value: "", label: "All" },
 ];
 
@@ -319,6 +326,17 @@ export default function AdminPayoutsPage() {
         cell: (w) => (
           <TableTextCell
             value={w.rejection_reason}
+            className="text-status-cancelled-fg"
+          />
+        ),
+      },
+      {
+        id: "error_message",
+        header: "Transfer error",
+        priority: "detail",
+        cell: (w) => (
+          <TableTextCell
+            value={w.error_message}
             className="text-status-cancelled-fg"
           />
         ),

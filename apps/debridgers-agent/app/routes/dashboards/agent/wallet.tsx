@@ -2,6 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Wallet, ArrowUpRight, ArrowDownLeft, TrendingUp } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
+import type {
+  WithdrawalStatus,
+  CommissionStatus,
+} from "@debridgers/domain-status";
 import { formatFromKobo, useDialog } from "@debridgers/ui-web";
 import { BankDetailsCard } from "@/components/agent/BankDetailsCard";
 
@@ -40,7 +44,7 @@ interface ApiCommission {
   id: number;
   type: string;
   amount_kobo: number;
-  status: string;
+  status: CommissionStatus;
   created_at: string;
 }
 
@@ -48,7 +52,7 @@ interface CommissionRow {
   id: string;
   description: string;
   amount: number;
-  status: string;
+  status: CommissionStatus;
   date: string;
   isPaid: boolean;
 }
@@ -56,7 +60,7 @@ interface CommissionRow {
 interface ApiWithdrawal {
   id: number;
   amount: number;
-  status: "pending" | "approved" | "rejected" | "paid";
+  status: WithdrawalStatus;
   rejection_reason: string | null;
   payout_reference: string | null;
   created_at: string;
@@ -65,7 +69,7 @@ interface ApiWithdrawal {
 interface WithdrawalRow {
   id: string;
   amount: number;
-  status: "pending" | "approved" | "rejected" | "paid";
+  status: WithdrawalStatus;
   rejectionReason: string | null;
   reference: string | null;
   date: string;
@@ -100,6 +104,11 @@ const WITHDRAWAL_STATUS_BADGE: Record<
     textClass: "text-status-pending-text",
     label: "Approved",
   },
+  processing: {
+    bgClass: "bg-status-pending-bg",
+    textClass: "text-status-pending-text",
+    label: "Processing",
+  },
   paid: {
     bgClass: "bg-status-active-bg",
     textClass: "text-status-active-text",
@@ -109,6 +118,11 @@ const WITHDRAWAL_STATUS_BADGE: Record<
     bgClass: "bg-status-cancelled-bg",
     textClass: "text-status-cancelled-text",
     label: "Rejected",
+  },
+  failed: {
+    bgClass: "bg-status-cancelled-bg",
+    textClass: "text-status-cancelled-text",
+    label: "Transfer failed",
   },
 };
 
@@ -134,7 +148,7 @@ function mapCommission(c: ApiCommission): CommissionRow {
 }
 
 const STATUS_BADGE: Record<
-  string,
+  CommissionStatus,
   { bgClass: string; textClass: string; label: string }
 > = {
   pending: {
@@ -142,10 +156,20 @@ const STATUS_BADGE: Record<
     textClass: "text-amber-800",
     label: "Pending",
   },
+  confirmed: {
+    bgClass: "bg-amber-100",
+    textClass: "text-amber-800",
+    label: "Confirmed",
+  },
   paid: {
     bgClass: "bg-status-active",
     textClass: "text-status-active-fg",
     label: "Paid",
+  },
+  reversed: {
+    bgClass: "bg-status-cancelled-bg",
+    textClass: "text-status-cancelled-text",
+    label: "Reversed",
   },
 };
 

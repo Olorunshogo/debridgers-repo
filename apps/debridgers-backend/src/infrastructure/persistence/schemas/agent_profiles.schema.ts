@@ -11,20 +11,11 @@ import {
 import { timestamps } from "../../helper/column.helper";
 import { users } from "./users.schema";
 import { createInsertSchema } from "drizzle-zod";
+import { AGENT_STATUSES, KYC_STATUSES } from "@debridgers/domain-status";
 
-export const agentStatusEnum = pgEnum("agent_status", [
-  "pending",
-  "approved",
-  "rejected",
-  "suspended",
-]);
+export const agentStatusEnum = pgEnum("agent_status", AGENT_STATUSES);
 
-export const kycStatusEnum = pgEnum("kyc_status", [
-  "not_submitted",
-  "submitted",
-  "approved",
-  "rejected",
-]);
+export const kycStatusEnum = pgEnum("kyc_status", KYC_STATUSES);
 
 export const agentIdTypeEnum = pgEnum("agent_id_type", [
   "NIN",

@@ -20,6 +20,10 @@ import {
   type StatusTone,
   type TableColumn,
 } from "@debridgers/ui-web";
+import type {
+  OrderStatus as ApiOrderStatus,
+  PaymentStatus as ApiPaymentStatus,
+} from "@debridgers/domain-status";
 
 import { buildPageMeta } from "../../../lib/seo";
 export function meta() {
@@ -32,14 +36,15 @@ export function meta() {
   });
 }
 
-type OrderStatus =
+/* The buyer's simplified view, merging order_status + payment_status into one badge - not a 1:1 copy of either backend enum. */
+type OrderDisplayStatus =
   | "awaiting_quote"
   | "active"
   | "pending"
   | "confirmed"
   | "cancelled"
   | "delivered";
-type Tab = "all" | OrderStatus;
+type Tab = "all" | OrderDisplayStatus;
 
 /*
  * Raw values, not display strings.
@@ -54,14 +59,14 @@ interface Order {
   quantity: number;
   createdAt: string;
   amountKobo: number;
-  status: OrderStatus;
+  status: OrderDisplayStatus;
 }
 
 interface ApiOrder {
   id: number;
   order_reference: string;
-  status: string;
-  payment_status: string;
+  status: ApiOrderStatus;
+  payment_status: ApiPaymentStatus;
   total_amount: number;
   quantity: number;
   delivery_address: string;
@@ -69,7 +74,10 @@ interface ApiOrder {
 }
 
 function mapApiOrder(o: ApiOrder): Order {
-  const dbToUi = (orderStatus: string, paymentStatus: string): OrderStatus => {
+  const dbToUi = (
+    orderStatus: ApiOrderStatus,
+    paymentStatus: ApiPaymentStatus,
+  ): OrderDisplayStatus => {
     // Delivered/cancelled win even if payment never reconciled.
     if (orderStatus === "cancelled") return "cancelled";
     if (orderStatus === "delivered") return "delivered";
@@ -111,7 +119,7 @@ const tabs: { key: Tab; label: string }[] = [
  * TableStatusBadge already owns the token pairing, and "confirmed" was reaching for bg-green-100 / text-green-700 - palette literals that match nothing else in the system.
  */
 const STATUS_PRESENTATION: Record<
-  OrderStatus,
+  OrderDisplayStatus,
   { tone: StatusTone; label: string }
 > = {
   awaiting_quote: { tone: "warning", label: "Awaiting delivery quote" },
@@ -126,7 +134,7 @@ const STATUS_PRESENTATION: Record<
  * Trackable states.
  * Named once because the row action and the detail panel both ask the same question.
  */
-function isTrackable(status: OrderStatus): boolean {
+function isTrackable(status: OrderDisplayStatus): boolean {
   return status === "active" || status === "delivered";
 }
 

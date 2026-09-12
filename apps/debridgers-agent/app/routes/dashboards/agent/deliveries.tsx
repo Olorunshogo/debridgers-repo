@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router";
 import { motion } from "framer-motion";
 import { Truck, MapPin, Phone } from "lucide-react";
 import { apiFetch, ApiError } from "@debridgers/api-client";
+import type { OrderStatus, PaymentStatus } from "@debridgers/domain-status";
 import {
   useAsyncResource,
   AsyncBoundary,
@@ -25,17 +26,10 @@ export function meta() {
 }
 
 // === Types
-type AgentOrderStatus =
-  | "pending"
-  | "confirmed"
-  | "out_for_delivery"
-  | "delivered"
-  | "cancelled";
-
 interface AgentOrder {
   id: number;
-  status: AgentOrderStatus;
-  payment_status: string;
+  status: OrderStatus;
+  payment_status: PaymentStatus;
   quantity: number;
   total_amount: number;
   delivery_address: string;
@@ -46,18 +40,22 @@ interface AgentOrder {
 }
 
 // === Status presentation
-const STATUS_TONE: Record<AgentOrderStatus, StatusTone> = {
+const STATUS_TONE: Record<OrderStatus, StatusTone> = {
+  awaiting_quote: "warning",
   pending: "warning",
   confirmed: "info",
   out_for_delivery: "active",
+  delivery_failed: "danger",
   delivered: "success",
   cancelled: "danger",
 };
 
-const STATUS_LABEL: Record<AgentOrderStatus, string> = {
+const STATUS_LABEL: Record<OrderStatus, string> = {
+  awaiting_quote: "Awaiting quote",
   pending: "Pending",
   confirmed: "Confirmed",
   out_for_delivery: "Out for delivery",
+  delivery_failed: "Delivery failed",
   delivered: "Delivered",
   cancelled: "Cancelled",
 };

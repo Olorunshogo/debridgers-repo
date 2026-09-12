@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@debridgers/api-client": "workspace:*",
+    "@debridgers/domain-status": "workspace:*",
     "@debridgers/pricing": "workspace:*",
     "@debridgers/shared-theme": "workspace:*",
     "@debridgers/ui-web": "workspace:*",

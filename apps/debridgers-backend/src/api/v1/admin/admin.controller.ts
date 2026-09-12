@@ -73,7 +73,14 @@ import {
   parseOptionalEnum,
   parsePagination,
 } from "../../../infrastructure/helper/query.helper";
-import { ORDER_STATUSES } from "../../shared/order-status";
+import {
+  ORDER_STATUSES,
+  PAYMENT_STATUSES,
+  WITHDRAWAL_STATUSES,
+  AGENT_STATUSES,
+  KYC_STATUSES,
+  COMMISSION_STATUSES,
+} from "@debridgers/domain-status";
 
 const updateOrderStatusSchema = z.object({
   status: z.enum(ORDER_STATUSES),
@@ -82,26 +89,6 @@ const updateOrderStatusSchema = z.object({
 const setDeliveryQuoteSchema = z.object({
   delivery_fee_kobo: z.number().int().min(0),
 });
-const PAYMENT_STATUSES = ["unpaid", "awaiting", "paid", "failed"] as const;
-const WITHDRAWAL_STATUSES = [
-  "pending",
-  "approved",
-  "rejected",
-  "paid",
-] as const;
-const AGENT_STATUSES = [
-  "pending",
-  "approved",
-  "rejected",
-  "suspended",
-] as const;
-const KYC_STATUSES = [
-  "not_submitted",
-  "submitted",
-  "approved",
-  "rejected",
-] as const;
-const COMMISSION_STATUSES = ["pending", "confirmed", "paid"] as const;
 const COMMISSION_TYPES = [
   "direct",
   "buyer_referral",
