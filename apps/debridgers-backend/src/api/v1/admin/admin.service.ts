@@ -732,6 +732,7 @@ export class AdminService {
         paid_at: schema.orders.paid_at,
         delivered_at: schema.orders.delivered_at,
         cancellation_reason: schema.orders.cancellation_reason,
+        delivery_failure_reason: schema.orders.delivery_failure_reason,
         notes: schema.orders.notes,
         created_at: schema.orders.created_at,
         zone_name: schema.zones.name,
@@ -762,6 +763,7 @@ export class AdminService {
     orderId: number,
     status: OrderStatus,
     adminId: number,
+    reason?: string,
   ) {
     const [order] = await this.db
       .select()
@@ -793,6 +795,9 @@ export class AdminService {
       .set({
         status,
         ...(status === "delivered" ? { delivered_at: new Date() } : {}),
+        ...(status === "delivery_failed"
+          ? { delivery_failure_reason: reason ?? null }
+          : {}),
       })
       .where(eq(schema.orders.id, orderId))
       .returning();
@@ -1084,7 +1089,7 @@ export class AdminService {
 
   // === Stock & Inventory
 
-  async getStockRequests(status?: "pending" | "fulfilled" | "cancelled") {
+  async getStockRequests(status?: "pending" | "fulfilled") {
     const query = this.db
       .select({
         id: schema.stock_requests.id,
@@ -1344,6 +1349,7 @@ export class AdminService {
         updated.agent_id,
         updated.amount_kobo,
         tx,
+        { reference: `commission_confirm:${updated.id}` },
       );
 
       return updated;
@@ -1922,7 +1928,12 @@ export class AdminService {
      * be requested twice. A rejection means it was never sent, so it has to go
      * back or the agent quietly loses it.
      */
-    await this.wallet.refundAvailable(withdrawal.agent_id, withdrawal.amount);
+    await this.wallet.refundAvailable(
+      withdrawal.agent_id,
+      withdrawal.amount,
+      this.db,
+      { reference: `withdrawal_refund:${withdrawal.id}` },
+    );
 
     await this.audit.record({
       admin_id: adminId,

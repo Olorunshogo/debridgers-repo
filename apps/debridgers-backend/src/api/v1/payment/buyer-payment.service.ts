@@ -18,6 +18,7 @@ import { NotificationsService } from "../buyer/notifications.service";
 import { LedgerService } from "./ledger.service";
 import { AdminAccountService } from "./admin-account.service";
 import { PaystackInvoiceService } from "./paystack-invoice.service";
+import { resolveBuyerAppUrl } from "../../../infrastructure/config/app-url";
 
 @Injectable()
 export class BuyerPaymentService {
@@ -43,7 +44,7 @@ export class BuyerPaymentService {
     private readonly invoice: PaystackInvoiceService,
   ) {
     this.secretKey = this.config.get<string>("PAYSTACK_SECRET_KEY") ?? "";
-    this.appUrl = this.config.get<string>("APP_URL") ?? "";
+    this.appUrl = resolveBuyerAppUrl(this.config);
   }
 
   /**

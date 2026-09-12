@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { ConfigService } from "@nestjs/config";
 import { PaymentService } from "./payment.service";
 import { LedgerService } from "./ledger.service";
+import { AgentWalletService } from "../wallet/agent-wallet.service";
 import * as schema from "../../../infrastructure/persistence/index";
 import {
   createTestDatabase,
@@ -28,12 +29,14 @@ describe.skipIf(!hasDb)("PaymentService webhooks", () => {
   let t: TestDb;
   let payments: PaymentService;
   let ledger: LedgerService;
+  let wallet: AgentWalletService;
   let seenWebhookIds: Set<string>;
   let userId: number;
 
   beforeAll(async () => {
     t = await createTestDatabase("payment_webhook");
     ledger = new LedgerService(t.db);
+    wallet = new AgentWalletService(t.db);
 
     const config = {
       get: (key: string) =>
@@ -75,6 +78,7 @@ describe.skipIf(!hasDb)("PaymentService webhooks", () => {
       refundService,
       payoutTargets,
       ledger,
+      wallet,
     );
   }, 120000);
 

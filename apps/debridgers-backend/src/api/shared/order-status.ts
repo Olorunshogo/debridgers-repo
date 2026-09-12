@@ -8,6 +8,7 @@ export const ORDER_STATUSES = [
   "pending",
   "confirmed",
   "out_for_delivery",
+  "delivery_failed",
   "delivered",
   "cancelled",
 ] as const;
@@ -30,7 +31,9 @@ export const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
    * That is the audit gap recording dispatch exists to close.
    */
   confirmed: ["out_for_delivery", "cancelled"],
-  out_for_delivery: ["delivered", "cancelled"],
+  out_for_delivery: ["delivered", "delivery_failed", "cancelled"],
+  /* A failed delivery attempt is not final: it goes back out or gets cancelled. */
+  delivery_failed: ["out_for_delivery", "cancelled"],
   delivered: [],
   cancelled: [],
 };
@@ -59,6 +62,10 @@ export const ORDER_STATUS_NOTIFICATION: Record<
   out_for_delivery: {
     title: (id) => `Order #${id} is on the way`,
     body: "Your order has left our hub and is on its way to you.",
+  },
+  delivery_failed: {
+    title: (id) => `Order #${id} delivery attempt failed`,
+    body: "We could not complete delivery of your order. We will be in touch to reschedule.",
   },
   delivered: {
     title: (id) => `Order #${id} delivered`,

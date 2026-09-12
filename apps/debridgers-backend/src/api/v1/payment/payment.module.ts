@@ -24,6 +24,7 @@ import { RolesGuard } from "../../shared/guards/roles.guard";
 import { DatabaseModule } from "../../../infrastructure/database/database.module";
 import { WebhookModule } from "../../../infrastructure/webhook/webhook.module";
 import { WalletModule } from "../wallet/wallet.module";
+import { CommissionModule } from "../commission/commission.module";
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { WalletModule } from "../wallet/wallet.module";
     ScheduleModule.forRoot(),
     EmailModule,
     forwardRef(() => WalletModule),
+    CommissionModule,
   ],
   controllers: [PaymentController, PaystackWebhookController],
   providers: [

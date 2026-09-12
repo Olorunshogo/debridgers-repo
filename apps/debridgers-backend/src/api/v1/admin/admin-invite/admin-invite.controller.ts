@@ -2,6 +2,9 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
+  Param,
+  ParseIntPipe,
   Body,
   UseGuards,
   Req,
@@ -20,18 +23,20 @@ interface CreateInviteDto {
 }
 
 @Controller("admin/invites")
-@UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
-@Roles("admin")
 export class AdminInviteController {
   constructor(private adminInviteService: AdminInviteService) {}
 
   @Get()
+  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
+  @Roles("admin")
   async listInvites() {
     const invites = await this.adminInviteService.listInvites();
     return invites;
   }
 
   @Post()
+  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
+  @Roles("admin")
   async createInvite(
     @Body() dto: CreateInviteDto,
     @Req() req: { user: { id: number; admin_tier?: string } },
@@ -62,6 +67,25 @@ export class AdminInviteController {
       success: true,
       data: result,
       message,
+    };
+  }
+
+  @Patch(":id/revoke")
+  @UseGuards(AuthGuard, AdminKeyGuard, RolesGuard)
+  @Roles("admin")
+  async revokeInvite(
+    @Param("id", ParseIntPipe) id: number,
+    @Req() req: { user: { id: number; admin_tier?: string } },
+  ) {
+    if (req.user.admin_tier !== "super") {
+      throw new ForbiddenException("Only a super admin can revoke an invite.");
+    }
+
+    await this.adminInviteService.revokeInvite(id, req.user.id);
+
+    return {
+      success: true,
+      message: "Invite revoked.",
     };
   }
 

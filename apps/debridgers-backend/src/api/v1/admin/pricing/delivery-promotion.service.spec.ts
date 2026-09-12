@@ -32,9 +32,9 @@ import {
  * the code builds the query it builds and would have caught none of it.
  *
  * The kobo figures below are derived from fixtures this file inserts, not
- * restated from the pricing package: the zone is created with a ₦4,000 delivery
- * fee and a one-package basket sits inside the base allowance, so the
- * pre-promotion fee is the zone fee exactly.
+ * restated from the pricing package: the zone is created with a ₦4,000
+ * two-package base and every basket here places one package, so the
+ * pre-promotion fee is half the zone fee, not the zone fee itself.
  */
 
 const hasDb = await databaseAvailable();
@@ -42,6 +42,9 @@ const hasDb = await databaseAvailable();
 // === Fixture money, in kobo
 
 const ZONE_FEE_KOBO = 400_000;
+/* Every order here places one package, and the base is per package: half the
+   two-package zone base, not the flat ZONE_FEE_KOBO. */
+const ONE_PACKAGE_DELIVERY_KOBO = ZONE_FEE_KOBO / 2;
 const RICE_PRICE_KOBO = 4_200_000;
 /* 3% cost-to-serve on the goods, inside the floor and the ceiling. */
 const SERVICE_FEE_KOBO = 126_000;
@@ -208,7 +211,7 @@ describe.skipIf(!hasDb)("DeliveryPromotionService", () => {
       delivery_address: "12 Ahmadu Bello Way, Kaduna",
       zone_id: zoneId,
       delivery_time: "today",
-      cart: [{ product_id: riceId, qty: 1, unit_mode: "package" }],
+      cart: [{ product_id: riceId, qty: 1 }],
     };
   }
 
@@ -539,7 +542,7 @@ describe.skipIf(!hasDb)("DeliveryPromotionService", () => {
     const order = await placeOrder(freeZoneId);
 
     expect(order.delivery_fee).toBe(0);
-    expect(order.delivery_fee_before_promo).toBe(ZONE_FEE_KOBO);
+    expect(order.delivery_fee_before_promo).toBe(ONE_PACKAGE_DELIVERY_KOBO);
     expect(order.delivery_promotion_id).toBeNull();
     expect(order.total_amount).toBe(RICE_PRICE_KOBO + SERVICE_FEE_KOBO);
   });
@@ -556,7 +559,7 @@ describe.skipIf(!hasDb)("DeliveryPromotionService", () => {
     const order = await placeOrder(freeZoneId);
 
     expect(order.delivery_fee).toBe(0);
-    expect(order.delivery_fee_before_promo).toBe(ZONE_FEE_KOBO);
+    expect(order.delivery_fee_before_promo).toBe(ONE_PACKAGE_DELIVERY_KOBO);
     expect(order.delivery_promotion_id).toBeNull();
   });
 
@@ -586,8 +589,8 @@ describe.skipIf(!hasDb)("DeliveryPromotionService", () => {
 
     const order = await placeOrder(paidZoneId);
 
-    expect(order.delivery_fee).toBe(ZONE_FEE_KOBO);
-    expect(order.delivery_fee_before_promo).toBe(ZONE_FEE_KOBO);
+    expect(order.delivery_fee).toBe(ONE_PACKAGE_DELIVERY_KOBO);
+    expect(order.delivery_fee_before_promo).toBe(ONE_PACKAGE_DELIVERY_KOBO);
     expect(order.delivery_promotion_id).toBeNull();
   });
 
@@ -606,7 +609,7 @@ describe.skipIf(!hasDb)("DeliveryPromotionService", () => {
     expect(order.delivery_fee).toBe(0);
     /* The whole point: the fee that was not charged is still on the row, so
        the campaign's cost survives a later change to the zone's rates. */
-    expect(order.delivery_fee_before_promo).toBe(ZONE_FEE_KOBO);
+    expect(order.delivery_fee_before_promo).toBe(ONE_PACKAGE_DELIVERY_KOBO);
     expect(order.total_amount).toBe(RICE_PRICE_KOBO + SERVICE_FEE_KOBO);
   });
 
@@ -626,7 +629,7 @@ describe.skipIf(!hasDb)("DeliveryPromotionService", () => {
     expect(data[0].promotion_id).toBe(id);
     expect(data[0].name).toBe("Site wide");
     expect(data[0].orders).toBe(2);
-    expect(data[0].forgone_kobo).toBe(2 * ZONE_FEE_KOBO);
+    expect(data[0].forgone_kobo).toBe(2 * ONE_PACKAGE_DELIVERY_KOBO);
   });
 
   // === first_order fires once per buyer
@@ -712,14 +715,14 @@ describe.skipIf(!hasDb)("DeliveryPromotionService", () => {
     const second = await placeOrder(paidZoneId);
 
     expect(first.delivery_fee).toBe(0);
-    expect(first.delivery_fee_before_promo).toBe(ZONE_FEE_KOBO);
+    expect(first.delivery_fee_before_promo).toBe(ONE_PACKAGE_DELIVERY_KOBO);
     expect(first.delivery_promotion_id).toBe(id);
 
-    expect(second.delivery_fee).toBe(ZONE_FEE_KOBO);
-    expect(second.delivery_fee_before_promo).toBe(ZONE_FEE_KOBO);
+    expect(second.delivery_fee).toBe(ONE_PACKAGE_DELIVERY_KOBO);
+    expect(second.delivery_fee_before_promo).toBe(ONE_PACKAGE_DELIVERY_KOBO);
     expect(second.delivery_promotion_id).toBeNull();
     expect(second.total_amount).toBe(
-      RICE_PRICE_KOBO + ZONE_FEE_KOBO + SERVICE_FEE_KOBO,
+      RICE_PRICE_KOBO + ONE_PACKAGE_DELIVERY_KOBO + SERVICE_FEE_KOBO,
     );
   });
 

@@ -7,5 +7,6 @@ import { SystemSettingsModule } from "../settings/system-settings.module";
 @Module({
   imports: [DatabaseModule, SystemSettingsModule],
   providers: [CommissionService, AgentWalletService],
+  exports: [CommissionService],
 })
 export class CommissionModule {}

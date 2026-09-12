@@ -16,6 +16,17 @@ export type WalletExecutor =
   | Parameters<Parameters<Database["transaction"]>[0]>[0];
 
 /*
+ * `reference` ties a ledger row back to the row that justified it (e.g.
+ * "commission:91", "withdrawal:37") and is unique, so a caller that retries
+ * after a crash cannot double-log the same balance move. `description` is
+ * optional free text for the admin-facing ledger view.
+ */
+export interface LedgerEntry {
+  reference: string;
+  description?: string;
+}
+
+/*
  * Every balance change here is expressed relative to the stored value in SQL
  * rather than read into JS, adjusted and written back. A read-then-write loses
  * one of two concurrent updates: both read the same figure and the second
@@ -53,12 +64,40 @@ export class AgentWalletService {
     return { message: "Wallet retrieved", data: wallet };
   }
 
+  private async logEntry(
+    agentId: number,
+    type: (typeof schema.agentWalletTransactionTypeEnum.enumValues)[number],
+    amount: number,
+    entry: LedgerEntry,
+    exec: WalletExecutor,
+  ): Promise<void> {
+    const [wallet] = await exec
+      .select({ id: schema.wallets.id })
+      .from(schema.wallets)
+      .where(eq(schema.wallets.user_id, agentId))
+      .limit(1);
+
+    if (!wallet) return;
+
+    await exec
+      .insert(schema.agentWalletTransactions)
+      .values({
+        wallet_id: wallet.id,
+        type,
+        amount,
+        reference: entry.reference,
+        description: entry.description,
+      })
+      .onConflictDoNothing();
+  }
+
   // Internal - called by other services to credit the wallet. amount is in kobo.
   async credit(
     agentId: number,
     amount: number,
     opts: { pending?: boolean } = {},
     exec: WalletExecutor = this.db,
+    entry?: LedgerEntry,
   ): Promise<void> {
     // No row means the agent is not approved yet, so there is nothing to credit.
     await exec
@@ -77,6 +116,8 @@ export class AgentWalletService {
             },
       )
       .where(eq(schema.wallets.user_id, agentId));
+
+    if (entry) await this.logEntry(agentId, "credit", amount, entry, exec);
   }
 
   // Internal - move amount from pending to available (on delivery confirmation)
@@ -84,6 +125,7 @@ export class AgentWalletService {
     agentId: number,
     amount: number,
     exec: WalletExecutor = this.db,
+    entry?: LedgerEntry,
   ): Promise<void> {
     await exec
       .update(schema.wallets)
@@ -94,10 +136,12 @@ export class AgentWalletService {
         updated_at: new Date(),
       })
       .where(eq(schema.wallets.user_id, agentId));
+
+    if (entry) await this.logEntry(agentId, "confirm", amount, entry, exec);
   }
 
   /*
-   * Internal - return money to available balance after a rejected payout.
+   * Internal - return money to available balance after a rejected/failed payout.
    *
    * Deliberately not `credit`: that also increases `total_earned`, and handing
    * back money the agent already earned is not a new earning. Using credit here
@@ -107,6 +151,7 @@ export class AgentWalletService {
     agentId: number,
     amount: number,
     exec: WalletExecutor = this.db,
+    entry?: LedgerEntry,
   ): Promise<void> {
     await exec
       .update(schema.wallets)
@@ -115,6 +160,8 @@ export class AgentWalletService {
         updated_at: new Date(),
       })
       .where(eq(schema.wallets.user_id, agentId));
+
+    if (entry) await this.logEntry(agentId, "refund", amount, entry, exec);
   }
 
   /*
@@ -130,6 +177,7 @@ export class AgentWalletService {
     agentId: number,
     amount: number,
     exec: WalletExecutor = this.db,
+    entry?: LedgerEntry,
   ): Promise<boolean> {
     const updated = await exec
       .update(schema.wallets)
@@ -142,6 +190,48 @@ export class AgentWalletService {
       )
       .returning();
 
+    if (updated.length > 0 && entry) {
+      await this.logEntry(agentId, "debit", amount, entry, exec);
+    }
+
     return updated.length > 0;
+  }
+
+  /*
+   * Internal - claw back a commission that was reversed after a refund or
+   * dispute. `fromPending` mirrors where the money actually sits: a "direct"
+   * commission not yet marked paid is still in pending_balance and total_earned
+   * never should have counted it, so both get pulled back with the same
+   * GREATEST(...,0) clamp `confirmPending` uses. A commission already moved to
+   * available_balance (paid, or an override credited straight there) is
+   * deliberately NOT clamped at zero: the agent may already have withdrawn it,
+   * and clamping would erase the shortfall instead of carrying it as a debt
+   * against the agent's future earnings.
+   */
+  async reverseCredit(
+    agentId: number,
+    amount: number,
+    opts: { fromPending: boolean },
+    exec: WalletExecutor = this.db,
+    entry?: LedgerEntry,
+  ): Promise<void> {
+    await exec
+      .update(schema.wallets)
+      .set(
+        opts.fromPending
+          ? {
+              pending_balance: sql`GREATEST(${schema.wallets.pending_balance} - ${amount}, 0)`,
+              total_earned: sql`GREATEST(${schema.wallets.total_earned} - ${amount}, 0)`,
+              updated_at: new Date(),
+            }
+          : {
+              available_balance: sql`${schema.wallets.available_balance} - ${amount}`,
+              total_earned: sql`GREATEST(${schema.wallets.total_earned} - ${amount}, 0)`,
+              updated_at: new Date(),
+            },
+      )
+      .where(eq(schema.wallets.user_id, agentId));
+
+    if (entry) await this.logEntry(agentId, "reversal", amount, entry, exec);
   }
 }

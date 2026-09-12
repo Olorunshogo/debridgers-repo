@@ -10,6 +10,7 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq } from "drizzle-orm";
 import * as schema from "../../../infrastructure/persistence/index";
 import { DATABASE_CONNECTION } from "../../../infrastructure/database/database.provider";
+import { CommissionService } from "../commission/commission.service";
 
 export interface InitiateRefundDto {
   order_id: number;
@@ -26,6 +27,7 @@ export class RefundService {
     @Inject(DATABASE_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
     private readonly config: ConfigService,
+    private readonly commissionService: CommissionService,
   ) {
     this.secretKey = this.config.get<string>("PaystackConfig.secretKey") ?? "";
   }
@@ -145,5 +147,17 @@ export class RefundService {
       .where(eq(schema.refunds.id, refund.id));
 
     this.logger.log(`Refund ${refund.id} status updated to ${status}`);
+
+    /*
+     * Only on a confirmed refund, not on initiation: reversing on the
+     * "processing" status set by initiateRefund would claw back the agent's
+     * commission before Paystack has actually confirmed the money moved.
+     */
+    if (status === "completed") {
+      await this.commissionService.reverseCommissionsForOrder(
+        refund.order_id,
+        `Order refunded (refund #${refund.id})`,
+      );
+    }
   }
 }

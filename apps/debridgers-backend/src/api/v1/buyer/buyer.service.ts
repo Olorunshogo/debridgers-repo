@@ -26,6 +26,7 @@ import { ConfigService } from "@nestjs/config";
 import { SystemSettingsService } from "../settings/system-settings.service";
 import { DeliveryPromotionService } from "../admin/pricing/delivery-promotion.service";
 import { NotificationsService } from "./notifications.service";
+import { resolveBuyerAppUrl } from "../../../infrastructure/config/app-url";
 
 /* Alerts are read by people, so they are the one place naira appears. */
 const formatKobo = (kobo: number): string =>
@@ -1196,8 +1197,7 @@ export class BuyerService {
         .delete(schema.cart_items)
         .where(eq(schema.cart_items.user_id, user.sub));
 
-      const appUrl =
-        this.config.get<string>("FRONTEND_URL") ?? "http://localhost:3000";
+      const appUrl = resolveBuyerAppUrl(this.config);
 
       return {
         message: "Payment simulated",

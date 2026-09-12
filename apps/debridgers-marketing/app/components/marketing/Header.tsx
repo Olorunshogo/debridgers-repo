@@ -10,6 +10,7 @@ import {
   supportWhatsAppHref,
 } from "@debridgers/ui-web";
 import { Menu, ShoppingCart, X } from "lucide-react";
+import { dashboardAppUrl } from "../../utils/app-urls";
 
 interface NavLinkItem {
   label: string;
@@ -363,6 +364,16 @@ export function Header({
                           </NavLink>
                         );
                       })}
+                      {/* Careers only: a separate app on its own subdomain,
+                          not a route this app can NavLink to, and sidebar-only
+                          for now rather than in the desktop nav above. */}
+                      <a
+                        href={dashboardAppUrl("careers")}
+                        className="text-primary font-syne text-base font-semibold transition-all duration-300 ease-in-out hover:opacity-70"
+                        onClick={closeMenu}
+                      >
+                        Careers
+                      </a>
                     </div>
 
                     <WhatsAppLink

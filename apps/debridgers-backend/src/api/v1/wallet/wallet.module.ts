@@ -3,7 +3,6 @@ import { JwtModule } from "@nestjs/jwt";
 import { WalletController } from "./wallet.controller";
 import { WalletService } from "./wallet.service";
 import { AgentWalletService } from "./agent-wallet.service";
-import { AgentLedgerService } from "./agent-ledger.service";
 import { DatabaseModule } from "../../../infrastructure/database/database.module";
 import { PaymentModule } from "../payment/payment.module";
 import { EmailModule } from "../../../notification/features/email/email.module";
@@ -21,10 +20,9 @@ import { BuyerRateLimitService } from "../buyer/buyer-rate-limit.service";
   providers: [
     WalletService,
     AgentWalletService,
-    AgentLedgerService,
     NotificationsService,
     BuyerRateLimitService,
   ],
-  exports: [WalletService, AgentWalletService, AgentLedgerService],
+  exports: [WalletService, AgentWalletService],
 })
 export class WalletModule {}

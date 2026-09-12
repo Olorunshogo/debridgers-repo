@@ -44,7 +44,7 @@ type OrderStatus =
 type PaymentStatus = "unpaid" | "awaiting" | "paid" | "failed";
 type CommissionStatus = "pending" | "confirmed" | "paid";
 type WithdrawalStatus = "pending" | "approved" | "rejected" | "paid";
-type StockRequestStatus = "pending" | "fulfilled" | "cancelled";
+type StockRequestStatus = "pending" | "fulfilled";
 
 // bank_code is left null on one agent so POST /admin/agents/backfill-bank-codes has a row to actually operate on.
 interface AgentSeed {
@@ -737,7 +737,7 @@ async function seedDev(): Promise<void> {
       "pending",
       "pending",
       "fulfilled",
-      "cancelled",
+      "fulfilled",
     ];
 
     await db.insert(schema.stock_requests).values(
@@ -755,9 +755,7 @@ async function seedDev(): Promise<void> {
       }),
     );
 
-    console.warn(
-      "✓ Stock requests seeded: 4 (2 pending, 1 fulfilled, 1 cancelled)",
-    );
+    console.warn("✓ Stock requests seeded: 4 (2 pending, 2 fulfilled)");
 
     // === Inventory
     await db.insert(schema.inventory_records).values([

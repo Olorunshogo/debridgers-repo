@@ -380,18 +380,22 @@ export class AgentService {
         .returning();
 
       if (commissionKobo > 0) {
-        await tx.insert(schema.commissions).values({
-          agent_id: user.sub,
-          type: "direct",
-          amount_kobo: commissionKobo,
-          status: "pending",
-        });
+        const [commission] = await tx
+          .insert(schema.commissions)
+          .values({
+            agent_id: user.sub,
+            type: "direct",
+            amount_kobo: commissionKobo,
+            status: "pending",
+          })
+          .returning();
 
         await this.walletService.credit(
           user.sub,
           commissionKobo,
           { pending: true },
           tx,
+          { reference: `commission:${commission.id}`, description: "direct" },
         );
       }
 
@@ -632,6 +636,7 @@ export class AgentService {
         user.sub,
         dto.amount_kobo,
         tx,
+        { reference: `withdrawal:${created.id}` },
       );
 
       if (!debited) {

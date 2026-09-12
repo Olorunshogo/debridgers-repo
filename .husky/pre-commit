@@ -16,6 +16,19 @@ if [ -n "$blocked_env" ]; then
   exit 1
 fi
 
+echo "🔒 Scanning staged files for secrets..."
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact -v || {
+    echo "✋ Possible secret detected in staged changes. Commit aborted."
+    echo "   A real secret: rotate it, then remove it from the staged diff."
+    echo "   A false positive: rerun with --no-verify only if you are certain."
+    exit 1
+  }
+else
+  echo "⚠️  gitleaks not installed - skipping local secret scan (CI still runs it)."
+  echo "   Install: https://github.com/gitleaks/gitleaks#installing"
+fi
+
 echo "💅 Fixing lint & formatting staged files..."
 pnpm lint-staged
 
