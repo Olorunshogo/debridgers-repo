@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin,
@@ -24,12 +26,16 @@ import {
   TableTextCell,
   TableStatusBadge,
   TableEmptyState,
+  SubmitButton,
   type TableColumn,
   type RowAction,
   kadunaLgas,
   kadunaAreas,
   kadunaAreasByLga,
+  applyServerFieldErrors,
   extractServerFieldErrors,
+  createOutreachRecordSchema,
+  type CreateOutreachRecordValues,
 } from "@debridgers/ui-web";
 
 import { buildPageMeta } from "../../../lib/seo";
@@ -59,32 +65,18 @@ interface OutreachRecord {
   created_at: string;
 }
 
-interface FormState {
-  shop_name: string;
-  owner_name: string;
-  phone: string;
-  lga: string;
-  area: string;
-  address: string;
-  product_interest: string;
-  quantity: string;
-  notes: string;
-  collected_by: string;
-  visit_date: string;
-}
-
-const emptyForm: FormState = {
-  shop_name: "",
-  owner_name: "",
+const emptyForm: CreateOutreachRecordValues = {
+  shopName: "",
+  ownerName: "",
   phone: "",
   lga: "",
   area: "",
   address: "",
-  product_interest: "",
+  productInterest: "",
   quantity: "",
   notes: "",
-  collected_by: "",
-  visit_date: new Date().toISOString().slice(0, 10),
+  collectedBy: "",
+  visitDate: new Date().toISOString().slice(0, 10),
 };
 
 function todayString() {
@@ -231,15 +223,18 @@ export default function AdminOutreachPage() {
   const [records, setRecords] = useState<OutreachRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<FormState>({
-    ...emptyForm,
-    visit_date: todayString(),
-  });
-  const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<
-    Partial<Record<keyof FormState, string>>
-  >({});
+  const outreachForm = useForm<CreateOutreachRecordValues>({
+    resolver: zodResolver(createOutreachRecordSchema),
+    mode: "onChange",
+    defaultValues: { ...emptyForm, visitDate: todayString() },
+  });
+  const {
+    register,
+    control,
+    formState: { errors, isSubmitting: saving },
+  } = outreachForm;
+  const lga = outreachForm.watch("lga");
   const [filterLga, setFilterLga] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
   /* A failed load must not render as "no outreach yet", which is a different story, so the table gets its own error and retry. */
@@ -285,60 +280,47 @@ export default function AdminOutreachPage() {
     return { total: records.length, areas: uniqueAreas, totalQty };
   }, [records]);
 
-  function handleChange(field: keyof FormState) {
-    return (
-      e: React.ChangeEvent<
-        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-      >,
-    ) => setForm((p) => ({ ...p, [field]: e.target.value }));
-  }
-
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.shop_name.trim()) {
-      setFormError("Shop/customer name is required.");
-      return;
-    }
+  const handleSave = outreachForm.handleSubmit(async (values) => {
     setFormError(null);
-    setFieldErrors({});
-    setSaving(true);
     try {
       await apiFetch("/admin/outreach", {
         method: "POST",
         body: JSON.stringify({
-          full_name: form.owner_name.trim() || form.shop_name.trim(),
-          phone: form.phone.trim() || undefined,
-          shop_name: form.shop_name.trim(),
-          lga: form.lga || undefined,
-          area: form.area || undefined,
-          product_interest: form.product_interest.trim() || undefined,
-          estimated_quantity: form.quantity
-            ? parseInt(form.quantity, 10)
+          full_name: values.ownerName.trim() || values.shopName.trim(),
+          phone: values.phone.trim(),
+          shop_name: values.shopName.trim(),
+          lga: values.lga || undefined,
+          area: values.area || undefined,
+          address: values.address.trim() || undefined,
+          product_interest: values.productInterest.trim() || undefined,
+          estimated_quantity: values.quantity
+            ? parseInt(values.quantity, 10)
             : undefined,
-          how_heard: form.collected_by.trim() || undefined,
-          notes: form.notes.trim() || undefined,
-          visit_date: form.visit_date,
+          how_heard: values.collectedBy.trim() || undefined,
+          notes: values.notes.trim() || undefined,
+          visit_date: values.visitDate,
         }),
       });
       setShowForm(false);
-      setForm({ ...emptyForm, visit_date: todayString() });
+      outreachForm.reset({ ...emptyForm, visitDate: todayString() });
       await load();
     } catch (err) {
-      /* full_name is derived from owner_name (or shop_name), so a backend
-         complaint about it is shown under owner_name, the field an operator
+      applyServerFieldErrors(err, outreachForm);
+      /* full_name is derived from ownerName (or shopName), so a backend
+         complaint about it is shown under ownerName, the field an operator
          actually typed into. */
-      const server = extractServerFieldErrors(err);
-      setFieldErrors({
-        phone: server.phone,
-        owner_name: server.fullName,
-      });
+      const fullNameError = extractServerFieldErrors(err).fullName;
+      if (fullNameError) {
+        outreachForm.setError("ownerName", {
+          type: "server",
+          message: fullNameError,
+        });
+      }
       setFormError(
         err instanceof ApiError ? err.message : "Failed to save. Try again.",
       );
-    } finally {
-      setSaving(false);
     }
-  }
+  });
 
   async function handleDelete(id: number) {
     setDeletingId(id);
@@ -396,16 +378,17 @@ export default function AdminOutreachPage() {
             </p>
           </div>
         </div>
-        <button
+        <SubmitButton
+          type="button"
+          icon={Plus}
           onClick={() => {
-            setForm({ ...emptyForm, visit_date: todayString() });
+            outreachForm.reset({ ...emptyForm, visitDate: todayString() });
             setFormError(null);
             setShowForm(true);
           }}
-          className="bg-primary flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
         >
-          <Plus size={16} /> Record Visit
-        </button>
+          Record Visit
+        </SubmitButton>
       </div>
 
       {/* Page-level failures: load, delete */}
@@ -491,16 +474,15 @@ export default function AdminOutreachPage() {
                 <TextInputField
                   label="Shop / Customer Name"
                   placeholder="e.g. Mama Ngozi's Store"
-                  value={form.shop_name}
-                  onChange={handleChange("shop_name")}
+                  error={errors.shopName?.message}
                   required
+                  {...register("shopName")}
                 />
                 <TextInputField
                   label="Owner / Contact Name"
                   placeholder="e.g. Ngozi Eze"
-                  value={form.owner_name}
-                  error={fieldErrors.owner_name}
-                  onChange={handleChange("owner_name")}
+                  error={errors.ownerName?.message}
+                  {...register("ownerName")}
                 />
               </div>
 
@@ -511,30 +493,43 @@ export default function AdminOutreachPage() {
                   type="tel"
                   inputMode="tel"
                   placeholder="08012345678"
-                  value={form.phone}
-                  error={fieldErrors.phone}
-                  onChange={handleChange("phone")}
+                  error={errors.phone?.message}
+                  required
+                  {...register("phone")}
                 />
-                <SelectInputField
-                  label="LGA"
-                  placeholder="Select LGA"
-                  options={kadunaLgas}
-                  value={form.lga}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, lga: e.target.value, area: "" }))
-                  }
+                <Controller
+                  control={control}
+                  name="lga"
+                  render={({ field }) => (
+                    <SelectInputField
+                      label="LGA"
+                      placeholder="Select LGA"
+                      options={kadunaLgas}
+                      value={field.value}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        outreachForm.setValue("area", "");
+                      }}
+                    />
+                  )}
                 />
-                <SelectInputField
-                  label="Area"
-                  placeholder={
-                    form.lga && kadunaAreasByLga[form.lga]
-                      ? "Select area"
-                      : "Select LGA first"
-                  }
-                  options={kadunaAreasByLga[form.lga] ?? []}
-                  value={form.area}
-                  onChange={handleChange("area")}
-                  disabled={!form.lga || !kadunaAreasByLga[form.lga]}
+                <Controller
+                  control={control}
+                  name="area"
+                  render={({ field }) => (
+                    <SelectInputField
+                      label="Area"
+                      placeholder={
+                        lga && kadunaAreasByLga[lga]
+                          ? "Select area"
+                          : "Select LGA first"
+                      }
+                      options={kadunaAreasByLga[lga] ?? []}
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={!lga || !kadunaAreasByLga[lga]}
+                    />
+                  )}
                 />
               </div>
 
@@ -542,8 +537,7 @@ export default function AdminOutreachPage() {
               <TextInputField
                 label="Address / Landmark"
                 placeholder="e.g. No. 5 Kaura Market, near GTBank"
-                value={form.address}
-                onChange={handleChange("address")}
+                {...register("address")}
               />
 
               {/* Row 4 */}
@@ -552,15 +546,13 @@ export default function AdminOutreachPage() {
                   label="Products Interested In"
                   className="sm:col-span-2"
                   placeholder="e.g. Rice, Palm Oil, Beans"
-                  value={form.product_interest}
-                  onChange={handleChange("product_interest")}
+                  {...register("productInterest")}
                 />
                 <NumberInputField
                   label="Quantity (bags)"
                   min={1}
                   placeholder="0"
-                  value={form.quantity}
-                  onChange={handleChange("quantity")}
+                  {...register("quantity")}
                 />
               </div>
 
@@ -569,14 +561,9 @@ export default function AdminOutreachPage() {
                 <TextInputField
                   label="Collected By"
                   placeholder="Staff or agent name"
-                  value={form.collected_by}
-                  onChange={handleChange("collected_by")}
+                  {...register("collectedBy")}
                 />
-                <DateInputField
-                  label="Visit Date"
-                  value={form.visit_date}
-                  onChange={handleChange("visit_date")}
-                />
+                <DateInputField label="Visit Date" {...register("visitDate")} />
               </div>
 
               {/* Notes */}
@@ -584,26 +571,21 @@ export default function AdminOutreachPage() {
                 label="Notes / Feedback"
                 rows={3}
                 placeholder="Any additional observations, customer feedback, follow-up needed..."
-                value={form.notes}
-                onChange={handleChange("notes")}
+                {...register("notes")}
               />
 
               {/* Actions */}
               <div className="flex gap-3 pt-1">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="bg-primary flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                >
-                  {saving ? "Saving..." : "Save Record"}
-                </button>
-                <button
+                <SubmitButton loading={saving} loadingText="Saving...">
+                  Save Record
+                </SubmitButton>
+                <SubmitButton
                   type="button"
+                  variant="secondary"
                   onClick={() => setShowForm(false)}
-                  className="border-line text-body rounded-full border px-6 py-2.5 text-sm font-medium transition-colors hover:bg-black/5"
                 >
                   Cancel
-                </button>
+                </SubmitButton>
               </div>
             </form>
           </motion.div>

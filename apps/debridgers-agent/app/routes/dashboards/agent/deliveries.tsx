@@ -1,18 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router";
-import { motion } from "framer-motion";
-import { Truck, MapPin, Phone } from "lucide-react";
+import { Truck } from "lucide-react";
 import { apiFetch, ApiError } from "@debridgers/api-client";
-import type { OrderStatus, PaymentStatus } from "@debridgers/domain-status";
 import {
   useAsyncResource,
-  AsyncBoundary,
-  TableStatusBadge,
-  formatFromKobo,
   useDialog,
   usePendingRatings,
-  type StatusTone,
 } from "@debridgers/ui-web";
+import { OrdersTable, type AgentOrder } from "@/components/agent/deliveries";
 
 import { buildPageMeta } from "../../../lib/seo";
 export function meta() {
@@ -25,42 +20,6 @@ export function meta() {
   });
 }
 
-// === Types
-interface AgentOrder {
-  id: number;
-  status: OrderStatus;
-  payment_status: PaymentStatus;
-  quantity: number;
-  total_amount: number;
-  delivery_address: string;
-  created_at: string;
-  buyer_first_name: string;
-  buyer_last_name: string;
-  buyer_phone: string | null;
-}
-
-// === Status presentation
-const STATUS_TONE: Record<OrderStatus, StatusTone> = {
-  awaiting_quote: "warning",
-  pending: "warning",
-  confirmed: "info",
-  out_for_delivery: "active",
-  delivery_failed: "danger",
-  delivered: "success",
-  cancelled: "danger",
-};
-
-const STATUS_LABEL: Record<OrderStatus, string> = {
-  awaiting_quote: "Awaiting quote",
-  pending: "Pending",
-  confirmed: "Confirmed",
-  out_for_delivery: "Out for delivery",
-  delivery_failed: "Delivery failed",
-  delivered: "Delivered",
-  cancelled: "Cancelled",
-};
-
-// === Page
 export default function AgentDeliveriesPage() {
   const { triggerDialog } = useDialog();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -70,9 +29,7 @@ export default function AgentDeliveriesPage() {
     reload: reloadPendingRatings,
   } = usePendingRatings();
   const ratingPromptOpened = useRef(false);
-  const { data, error, loading, refetch, refetching } = useAsyncResource<
-    AgentOrder[]
-  >(
+  const { data, error, loading, refetch } = useAsyncResource<AgentOrder[]>(
     (signal: AbortSignal): Promise<AgentOrder[]> =>
       apiFetch<AgentOrder[]>("/agent/orders", { signal }),
     [],
@@ -159,103 +116,16 @@ export default function AgentDeliveriesPage() {
         </p>
       )}
 
-      <AsyncBoundary
+      <OrdersTable
+        rows={orders}
         loading={loading}
-        error={error}
+        error={error?.message ?? null}
         onRetry={refetch}
-        isEmpty={orders.length === 0}
-        skeleton={
-          <div className="flex flex-col gap-3">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="bg-line h-24 animate-pulse rounded-2xl" />
-            ))}
-          </div>
-        }
-        empty={
-          <div className="border-line flex flex-col items-center gap-2 rounded-2xl border bg-white py-16 text-center">
-            <Truck size={28} className="text-icon-secondary" />
-            <p className="font-syne text-heading font-semibold">
-              No referred orders yet
-            </p>
-            <p className="text-body text-sm">
-              Orders from buyers you referred will show here.
-            </p>
-          </div>
-        }
-      >
-        <div
-          className={`flex flex-col gap-3 ${refetching ? "opacity-60" : ""}`}
-        >
-          {orders.map((order, i) => (
-            <motion.div
-              key={order.id}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04 }}
-              className="border-line flex flex-col gap-3 rounded-2xl border bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <p className="text-heading text-sm font-semibold">
-                    Order #{order.id}
-                  </p>
-                  <TableStatusBadge
-                    label={STATUS_LABEL[order.status]}
-                    tone={STATUS_TONE[order.status]}
-                  />
-                </div>
-                <p className="text-body text-xs">
-                  {order.buyer_first_name} {order.buyer_last_name}
-                  {" · "}
-                  {order.quantity} item{order.quantity === 1 ? "" : "s"}
-                  {" · "}
-                  {formatFromKobo(order.total_amount)}
-                </p>
-                <p className="text-body flex items-center gap-1.5 text-xs">
-                  <MapPin size={12} /> {order.delivery_address}
-                </p>
-                {order.buyer_phone && (
-                  <p className="text-body flex items-center gap-1.5 text-xs">
-                    <Phone size={12} /> {order.buyer_phone}
-                  </p>
-                )}
-              </div>
-
-              {order.status === "confirmed" && (
-                <button
-                  type="button"
-                  disabled={movingId === order.id}
-                  onClick={() => void markOutForDelivery(order.id)}
-                  className="border-primary text-primary w-fit shrink-0 cursor-pointer rounded-full border px-5 py-2 text-sm font-semibold transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {movingId === order.id ? "Updating..." : "Out for delivery"}
-                </button>
-              )}
-
-              {order.status === "delivered" &&
-                pendingRatings
-                  .filter((r) => r.orderId === order.id)
-                  .map((r) => (
-                    <button
-                      key={r.contextKey}
-                      type="button"
-                      onClick={() =>
-                        triggerDialog("RATE_ORDER", {
-                          contextKey: r.contextKey,
-                          orderId: order.id,
-                          subjectLabel: r.description,
-                          onRated: reloadPendingRatings,
-                        })
-                      }
-                      className="border-primary text-primary w-fit shrink-0 cursor-pointer rounded-full border px-5 py-2 text-sm font-semibold transition-opacity hover:opacity-80"
-                    >
-                      {r.title}
-                    </button>
-                  ))}
-            </motion.div>
-          ))}
-        </div>
-      </AsyncBoundary>
+        movingOrderId={movingId}
+        onMarkOutForDelivery={markOutForDelivery}
+        pendingRatings={pendingRatings}
+        onReloadRatings={reloadPendingRatings}
+      />
     </div>
   );
 }

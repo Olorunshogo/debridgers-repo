@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ComingSoon } from "@debridgers/ui-web";
+import { ComingSoon, NumberInputField, SelectField } from "@debridgers/ui-web";
 import { Calculator, Landmark } from "lucide-react";
 import { apiFetch, publicRequest } from "@debridgers/api-client";
 import {
@@ -103,6 +103,7 @@ function Row({
   );
 }
 
+/* Thin adapter over the shared NumberInputField: this page's fields carry a suffix in the label and a note underneath, neither of which the shared component renders itself. */
 function NumberField({
   label,
   value,
@@ -119,49 +120,16 @@ function NumberField({
   note?: string;
 }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-body text-xs font-medium">
-        {label}
-        {suffix ? <span className="text-body/60"> ({suffix})</span> : null}
-      </span>
-      <input
-        type="number"
+    <div className="flex flex-col gap-1">
+      <NumberInputField
+        label={suffix ? `${label} (${suffix})` : label}
         value={value}
         step={step}
         min={0}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="border-line text-heading rounded-xl border bg-white px-3 py-2 text-sm tabular-nums"
       />
       {note ? <span className="text-body/60 text-xs">{note}</span> : null}
-    </label>
-  );
-}
-
-function SelectField({
-  label,
-  value,
-  onChange,
-  note,
-  children,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  note?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="flex flex-col gap-1">
-      <span className="text-body text-xs font-medium">{label}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="border-line text-heading cursor-pointer rounded-xl border bg-white px-3 py-2 text-sm"
-      >
-        {children}
-      </select>
-      {note ? <span className="text-body/60 text-xs">{note}</span> : null}
-    </label>
+    </div>
   );
 }
 
@@ -463,31 +431,38 @@ export default function ProcurementTargets() {
             onChange={setDropsPerTrip}
             note="The trip cost splits across these"
           />
-          <SelectField
-            label="Delivery zone"
-            value={String(zoneId ?? "")}
-            onChange={(v) => setZoneId(Number(v))}
-            note={`Base ${naira(zone.delivery_fee)}, taper ${naira(
-              zone.tier_one_per_package_kobo,
-            )} then ${naira(zone.tier_two_per_package_kobo)}, cap ${naira(
-              zone.delivery_cap_kobo,
-            )}`}
-          >
-            {zones.map((z) => (
-              <option key={z.id} value={z.id}>
-                {z.name}
-              </option>
-            ))}
-          </SelectField>
-          <SelectField
-            label="Package size"
-            value={packageSize}
-            onChange={(v) => setPackageSize(v as PackageSize)}
-            note={`Loading ${naira(LOADING_PER_PACKAGE_KOBO[packageSize])} per package`}
-          >
-            <option value="50kg">50kg, a one-person lift</option>
-            <option value="100kg">100kg, a two-person lift</option>
-          </SelectField>
+          <div className="flex flex-col gap-1">
+            <SelectField
+              label="Delivery zone"
+              value={String(zoneId ?? "")}
+              onChange={(v) => setZoneId(Number(v))}
+              options={zones.map((z) => ({
+                value: String(z.id),
+                label: z.name,
+              }))}
+            />
+            <span className="text-body/60 text-xs">
+              {`Base ${naira(zone.delivery_fee)}, taper ${naira(
+                zone.tier_one_per_package_kobo,
+              )} then ${naira(zone.tier_two_per_package_kobo)}, cap ${naira(
+                zone.delivery_cap_kobo,
+              )}`}
+            </span>
+          </div>
+          <div className="flex flex-col gap-1">
+            <SelectField
+              label="Package size"
+              value={packageSize}
+              onChange={(v) => setPackageSize(v as PackageSize)}
+              options={[
+                { value: "50kg", label: "50kg, a one-person lift" },
+                { value: "100kg", label: "100kg, a two-person lift" },
+              ]}
+            />
+            <span className="text-body/60 text-xs">
+              {`Loading ${naira(LOADING_PER_PACKAGE_KOBO[packageSize])} per package`}
+            </span>
+          </div>
           <NumberField
             label="Inbound haulage, per package"
             suffix="₦"

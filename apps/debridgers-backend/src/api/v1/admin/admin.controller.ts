@@ -102,6 +102,7 @@ const createOutreachSchema = z.object({
   shop_name: z.string().optional(),
   lga: z.string().optional(),
   area: z.string().optional(),
+  address: z.string().optional(),
   product_interest: z.string().optional(),
   estimated_quantity: z.coerce.number().optional(),
   how_heard: z.string().optional(),
@@ -870,6 +871,7 @@ export class AdminController {
         shop_name: { type: "string", example: "Ibrahim Grains" },
         lga: { type: "string", example: "Chikun" },
         area: { type: "string", example: "Barnawa" },
+        address: { type: "string", example: "No. 5 Kaura Market" },
         product_interest: { type: "string", example: "Maize" },
         estimated_quantity: { type: "number", example: 5 },
         how_heard: { type: "string", example: "Word of mouth" },
@@ -890,6 +892,7 @@ export class AdminController {
       phone: dto.phone,
       lga: dto.lga,
       area: dto.area,
+      address: dto.address,
       product_interest: dto.product_interest,
       quantity: dto.estimated_quantity,
       notes:

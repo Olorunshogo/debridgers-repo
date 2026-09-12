@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import {
   DialogHeader,
@@ -6,6 +7,8 @@ import {
   NumberInputField,
   useDialog,
   useDialogSubmission,
+  setDeliveryQuoteSchema,
+  type SetDeliveryQuoteValues,
 } from "@debridgers/ui-web";
 
 /*
@@ -25,20 +28,22 @@ export default function SetDeliveryQuoteDialog({
 }: SetDeliveryQuoteDialogProps) {
   const { closeDialog } = useDialog();
   const { error, run, isSubmitting } = useDialogSubmission<boolean>();
-  const [naira, setNaira] = useState<string>("");
+  const {
+    register,
+    handleSubmit: handleFormSubmit,
+    formState: { errors, isValid },
+  } = useForm<SetDeliveryQuoteValues>({
+    resolver: zodResolver(setDeliveryQuoteSchema),
+    mode: "onChange",
+  });
 
-  const parsedNaira = Number(naira);
-  const isValid =
-    naira.trim() !== "" && Number.isFinite(parsedNaira) && parsedNaira >= 0;
-
-  async function handleSubmit(): Promise<void> {
-    if (!isValid) return;
+  const handleSubmit = handleFormSubmit(async (values) => {
     const succeeded = await run(async () => {
-      await onSubmit?.(Math.round(parsedNaira * 100));
+      await onSubmit?.(Math.round(values.deliveryFeeNaira * 100));
       return true;
     });
     if (succeeded) closeDialog();
-  }
+  });
 
   return (
     <div className="flex flex-col gap-5">
@@ -53,12 +58,11 @@ export default function SetDeliveryQuoteDialog({
 
       <NumberInputField
         label="Delivery fee (₦)"
-        id="delivery-quote-naira"
         min={0}
         step={1}
-        value={naira}
-        onChange={(event) => setNaira(event.target.value)}
         placeholder="e.g. 12000"
+        error={errors.deliveryFeeNaira?.message}
+        {...register("deliveryFeeNaira", { valueAsNumber: true })}
       />
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

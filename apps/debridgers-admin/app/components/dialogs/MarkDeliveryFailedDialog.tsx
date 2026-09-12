@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import {
   DialogHeader,
@@ -6,6 +7,8 @@ import {
   TextInputField,
   useDialog,
   useDialogSubmission,
+  reasonFormSchema,
+  type ReasonFormValues,
 } from "@debridgers/ui-web";
 
 /* Marking a delivery attempt failed, registered as MARK_DELIVERY_FAILED. Mirrors RejectPayoutDialog's shape. */
@@ -21,15 +24,20 @@ export default function MarkDeliveryFailedDialog({
 }: MarkDeliveryFailedDialogProps) {
   const { closeDialog } = useDialog();
   const { error, run, isSubmitting } = useDialogSubmission<boolean>();
-  const [reason, setReason] = useState<string>("");
+  const { register, handleSubmit: handleFormSubmit } =
+    useForm<ReasonFormValues>({
+      resolver: zodResolver(reasonFormSchema),
+      mode: "onChange",
+      defaultValues: { reason: "" },
+    });
 
-  async function handleSubmit(): Promise<void> {
+  const handleSubmit = handleFormSubmit(async (values) => {
     const succeeded = await run(async () => {
-      await onSubmit?.(reason.trim());
+      await onSubmit?.(values.reason.trim());
       return true;
     });
     if (succeeded) closeDialog();
-  }
+  });
 
   return (
     <div className="flex flex-col gap-5">
@@ -44,10 +52,8 @@ export default function MarkDeliveryFailedDialog({
 
       <TextInputField
         label="Reason"
-        id="delivery-failed-reason"
-        value={reason}
-        onChange={(event) => setReason(event.target.value)}
         placeholder="e.g. Buyer not reachable at address"
+        {...register("reason")}
       />
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
