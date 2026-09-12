@@ -6,6 +6,7 @@ import { count, eq, inArray, sql } from "drizzle-orm";
 import * as bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import * as schema from "../persistence/index";
+import { computeDeliveryFee } from "@debridgers/pricing";
 import { TAXONOMY, PRODUCT_LEAF_PATHS, type TaxonomyNodeSeed } from "./catalog";
 import type {
   AgentStatus,
@@ -435,7 +436,7 @@ async function seedDev(): Promise<void> {
 
     // === Prerequisites from the base seeder
     const zones = await db
-      .select({ id: schema.zones.id, delivery_fee: schema.zones.delivery_fee })
+      .select({ id: schema.zones.id, distance_km: schema.zones.distance_km })
       .from(schema.zones);
 
     if (zones.length === 0) {
@@ -617,6 +618,9 @@ async function seedDev(): Promise<void> {
 
     for (let i = 0; i < 25; i++) {
       const zone = zones[i % zones.length];
+      const zoneDeliveryFee = computeDeliveryFee({
+        distanceKm: zone.distance_km,
+      }).deliveryFeeKobo;
       const quantity = 1 + (i % 5);
       const unitPrice = naira(1400);
       const handlingFee = naira(100);
@@ -633,8 +637,8 @@ async function seedDev(): Promise<void> {
           quantity,
           unit_price: unitPrice,
           handling_fee: handlingFee,
-          delivery_fee: zone.delivery_fee,
-          total_amount: quantity * unitPrice + handlingFee + zone.delivery_fee,
+          delivery_fee: zoneDeliveryFee,
+          total_amount: quantity * unitPrice + handlingFee + zoneDeliveryFee,
           order_mode: i % 2 === 0 ? "field" : "referral",
           status,
           payment_status: paymentStatus,

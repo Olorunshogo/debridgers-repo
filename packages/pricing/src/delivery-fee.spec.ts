@@ -1,86 +1,61 @@
 import { describe, expect, it } from "vitest";
 import {
-  intoTaperBand,
-  LOCKED_TAPER_MAX_KOBO,
-  LOCKED_TAPER_MIN_KOBO,
-  LOCKED_TIER_ONE_PER_PACKAGE_KOBO,
-  LOCKED_TIER_TWO_PER_PACKAGE_KOBO,
+  DISTANCE_BASE_FEE_KOBO,
+  DISTANCE_RATE_PER_KM_KOBO,
+  DISTANCE_ROUNDING_KOBO,
   MINIMUM_ORDER_KOBO,
-  TIER_ONE_PER_PACKAGE_KOBO,
-  TIER_TWO_PER_PACKAGE_KOBO,
+  computeDeliveryFee,
   minimumOrderViolation,
 } from "./delivery-fee";
 
 const naira = (n: number): number => n * 100;
 
-// === The taper
+// === Distance-based delivery fee
 
-/*
- * The taper's whole point is that the marginal package gets cheaper, because the cost is the trip and not the bag.
- * A schedule where the two rates are equal is flat, and one where tier two is higher is inverted.
- * Both have shipped before, so both are asserted against here rather than assumed.
- */
-describe("the delivery taper", () => {
-  const lockedZoneRates: ReadonlyArray<readonly [string, number, number]> = [
-    ["Kaduna South", 70_000, 40_000],
-    ["Kaduna North", 80_000, 45_000],
-    ["Chikun", 100_000, 60_000],
-  ];
-
-  it("descends at every zone once mapped into the band", () => {
-    for (const [zone, lockedOne, lockedTwo] of lockedZoneRates) {
-      const tierOne: number = intoTaperBand(lockedOne);
-      const tierTwo: number = intoTaperBand(lockedTwo);
-
-      expect(tierTwo, `${zone} tier two must be below tier one`).toBeLessThan(
-        tierOne,
-      );
-    }
+describe("computeDeliveryFee", () => {
+  it("charges the base fee at zero distance", () => {
+    const fee = computeDeliveryFee({ distanceKm: 0 });
+    expect(fee.deliveryFeeKobo).toBe(DISTANCE_BASE_FEE_KOBO);
   });
 
-  it("keeps the far zones dearer than the near ones", () => {
-    const [south, north, chikun] = lockedZoneRates.map(([, one]) =>
-      intoTaperBand(one),
+  it("adds the per-kilometre rate as distance grows", () => {
+    const near = computeDeliveryFee({ distanceKm: 5 });
+    const far = computeDeliveryFee({ distanceKm: 50 });
+    expect(far.deliveryFeeKobo).toBeGreaterThan(near.deliveryFeeKobo);
+  });
+
+  it("floors the result to the nearest rounding unit", () => {
+    const fee = computeDeliveryFee({ distanceKm: 5 });
+    expect(fee.deliveryFeeKobo % DISTANCE_ROUNDING_KOBO).toBe(0);
+  });
+
+  it("matches the locked reference points", () => {
+    // Narayi/High Cost - effectively zero distance from the warehouse.
+    expect(computeDeliveryFee({ distanceKm: 2 }).deliveryFeeKobo).toBe(80_000);
+    // Zaria, sourced at ~78km.
+    expect(computeDeliveryFee({ distanceKm: 78 }).deliveryFeeKobo).toBe(
+      460_000,
     );
-
-    expect(south).toBeLessThanOrEqual(north);
-    expect(north).toBeLessThanOrEqual(chikun);
-  });
-
-  it("holds every rate inside the operating band", () => {
-    for (const [, lockedOne, lockedTwo] of lockedZoneRates) {
-      for (const rate of [intoTaperBand(lockedOne), intoTaperBand(lockedTwo)]) {
-        expect(rate).toBeGreaterThanOrEqual(50_000);
-        expect(rate).toBeLessThanOrEqual(60_000);
-      }
-    }
-  });
-
-  /*
-   * The revert contract.
-   * Widening the band back to the locked range must be the only edit needed, so the mapping has to be the identity there.
-   */
-  it("is the identity when the band is the locked range", () => {
-    const identity = (kobo: number): number => {
-      const span = LOCKED_TAPER_MAX_KOBO - LOCKED_TAPER_MIN_KOBO;
-      const position = (kobo - LOCKED_TAPER_MIN_KOBO) / span;
-      const mapped = LOCKED_TAPER_MIN_KOBO + position * span;
-      return Math.round(mapped / 500) * 500;
-    };
-
-    for (const [, lockedOne, lockedTwo] of lockedZoneRates) {
-      expect(identity(lockedOne)).toBe(lockedOne);
-      expect(identity(lockedTwo)).toBe(lockedTwo);
-    }
-  });
-
-  it("derives the exported fallbacks from the locked Kaduna South rates", () => {
-    expect(TIER_ONE_PER_PACKAGE_KOBO).toBe(
-      intoTaperBand(LOCKED_TIER_ONE_PER_PACKAGE_KOBO),
+    // Kachia, sourced at ~134km.
+    expect(computeDeliveryFee({ distanceKm: 134 }).deliveryFeeKobo).toBe(
+      740_000,
     );
-    expect(TIER_TWO_PER_PACKAGE_KOBO).toBe(
-      intoTaperBand(LOCKED_TIER_TWO_PER_PACKAGE_KOBO),
-    );
+  });
+
+  it("zeroes the charge during a free-delivery promotion but keeps the pre-promo figure", () => {
+    const fee = computeDeliveryFee({ distanceKm: 20, freeDelivery: true });
+    expect(fee.deliveryFeeKobo).toBe(0);
+    expect(fee.deliveryFeeBeforePromoKobo).toBeGreaterThan(0);
+  });
+
+  it("computes the rate from the exported constants, not a restated number", () => {
+    const distanceKm = 33;
+    const expected =
+      Math.floor(
+        (DISTANCE_BASE_FEE_KOBO + DISTANCE_RATE_PER_KM_KOBO * distanceKm) /
+          DISTANCE_ROUNDING_KOBO,
+      ) * DISTANCE_ROUNDING_KOBO;
+    expect(computeDeliveryFee({ distanceKm }).deliveryFeeKobo).toBe(expected);
   });
 });
 

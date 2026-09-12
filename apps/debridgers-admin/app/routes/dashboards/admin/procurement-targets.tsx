@@ -38,16 +38,13 @@ type Direction = "fromMarket" | "fromFarmer";
 
 type PackageSize = "50kg" | "100kg";
 
-/* What GET /zones serves; the taper and the ceiling are the zone's own. */
+/* What GET /zones serves; distance_km is the zone's own. */
 interface DeliveryZone {
   id: number;
   name: string;
-  delivery_fee: number;
+  distance_km: number;
   free_delivery: boolean;
   areas: string[];
-  tier_one_per_package_kobo: number;
-  tier_two_per_package_kobo: number;
-  delivery_cap_kobo: number;
 }
 
 // === Helpers
@@ -241,13 +238,10 @@ export default function ProcurementTargets() {
 
     const context = {
       packages,
-      zoneBaseKobo: zone.delivery_fee,
+      distanceKm: zone.distance_km,
       dropsPerTrip,
       loadingPerPackageKobo: LOADING_PER_PACKAGE_KOBO[packageSize],
       inboundHaulageKobo: toKobo(inboundHaulageNaira),
-      tierOnePerPackageKobo: zone.tier_one_per_package_kobo,
-      tierTwoPerPackageKobo: zone.tier_two_per_package_kobo,
-      deliveryCapKobo: zone.delivery_cap_kobo,
       targetMarginPercent,
     };
 
@@ -442,11 +436,7 @@ export default function ProcurementTargets() {
               }))}
             />
             <span className="text-body/60 text-xs">
-              {`Base ${naira(zone.delivery_fee)}, taper ${naira(
-                zone.tier_one_per_package_kobo,
-              )} then ${naira(zone.tier_two_per_package_kobo)}, cap ${naira(
-                zone.delivery_cap_kobo,
-              )}`}
+              {`${zone.distance_km}km from the warehouse, ${naira(targets.deliveryFeeKobo)} delivery fee`}
             </span>
           </div>
           <div className="flex flex-col gap-1">
@@ -576,7 +566,7 @@ export default function ProcurementTargets() {
               label="Delivery vehicle"
               note={
                 dropsPerTrip > 1
-                  ? `${naira(zone.delivery_fee)} split across ${dropsPerTrip} drops`
+                  ? `${naira(targets.deliveryFeeKobo)} split across ${dropsPerTrip} drops`
                   : "Dedicated trip"
               }
               value={`(${naira(targets.vehicleKobo)})`}
@@ -627,10 +617,10 @@ export default function ProcurementTargets() {
               several products stop clearing on fees alone.
             </li>
             <li>
-              <strong>The zone sets its own delivery rates.</strong> The base,
-              the taper and the ceiling all come from the zone row the checkout
-              charges against, so a far zone is never quoted at a near
-              zone&rsquo;s schedule.
+              <strong>Delivery is priced purely on distance.</strong> The
+              zone&rsquo;s distance from the Narayi warehouse is the only input
+              to the fee, the same formula checkout charges against, so a far
+              LGA is never quoted at a near one&rsquo;s rate.
             </li>
             <li>
               <strong>

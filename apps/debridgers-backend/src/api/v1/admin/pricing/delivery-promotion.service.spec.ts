@@ -32,19 +32,21 @@ import {
  * the code builds the query it builds and would have caught none of it.
  *
  * The kobo figures below are derived from fixtures this file inserts, not
- * restated from the pricing package: the zone is created with a ₦4,000
- * two-package base and every basket here places one package, so the
- * pre-promotion fee is half the zone fee, not the zone fee itself.
+ * restated from the pricing package: the zone is created at a distance that
+ * computes to a ₦4,000 delivery fee, and that fee is flat regardless of
+ * package count, so every basket here (however many packages it places) is
+ * charged the same pre-promotion fee.
  */
 
 const hasDb = await databaseAvailable();
 
 // === Fixture money, in kobo
 
+/* 66km computes to exactly ₦4,000 via computeDeliveryFee: 700 + 50*66 = 4000. */
+const ZONE_DISTANCE_KM = 66;
 const ZONE_FEE_KOBO = 400_000;
-/* Every order here places one package, and the base is per package: half the
-   two-package zone base, not the flat ZONE_FEE_KOBO. */
-const ONE_PACKAGE_DELIVERY_KOBO = ZONE_FEE_KOBO / 2;
+/* Delivery is flat per LGA now, not per package - one package pays the same as any other count. */
+const ONE_PACKAGE_DELIVERY_KOBO = ZONE_FEE_KOBO;
 const RICE_PRICE_KOBO = 4_200_000;
 /* 3% cost-to-serve on the goods, inside the floor and the ceiling. */
 const SERVICE_FEE_KOBO = 126_000;
@@ -130,7 +132,11 @@ describe.skipIf(!hasDb)("DeliveryPromotionService", () => {
 
     const [paidZone] = await t.db
       .insert(schema.zones)
-      .values({ name: "Kaduna South", delivery_fee: ZONE_FEE_KOBO, areas: [] })
+      .values({
+        name: "Kaduna South",
+        distance_km: ZONE_DISTANCE_KM,
+        areas: [],
+      })
       .returning();
     paidZoneId = paidZone.id;
 
@@ -138,7 +144,7 @@ describe.skipIf(!hasDb)("DeliveryPromotionService", () => {
       .insert(schema.zones)
       .values({
         name: "Depot Ward",
-        delivery_fee: ZONE_FEE_KOBO,
+        distance_km: ZONE_DISTANCE_KM,
         areas: [],
         free_delivery: true,
       })
@@ -147,7 +153,7 @@ describe.skipIf(!hasDb)("DeliveryPromotionService", () => {
 
     const [otherZone] = await t.db
       .insert(schema.zones)
-      .values({ name: "Rigasa", delivery_fee: ZONE_FEE_KOBO, areas: [] })
+      .values({ name: "Rigasa", distance_km: ZONE_DISTANCE_KM, areas: [] })
       .returning();
     otherZoneId = otherZone.id;
 

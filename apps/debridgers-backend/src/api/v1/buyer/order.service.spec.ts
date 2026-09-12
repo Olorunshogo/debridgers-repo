@@ -53,7 +53,7 @@ describe.skipIf(!hasDb)("OrderService order creation", () => {
 
     const [zone] = await t.db
       .insert(schema.zones)
-      .values({ name: "Kaduna South", delivery_fee: 400_000, areas: [] })
+      .values({ name: "Kaduna South", distance_km: 66, areas: [] })
       .returning();
     zoneId = zone.id;
 
@@ -260,11 +260,12 @@ describe.skipIf(!hasDb)("OrderService order creation", () => {
       }),
     );
 
-    /* 4_200_000 item + 200_000 delivery (one package, half the two-package
-       base) + 126_000 cost-to-serve, being 3% of the goods rather than the
-       ₦100 flat fee this once asserted. */
+    /*
+     * 4_200_000 item + 400_000 delivery (flat per LGA regardless of package count, at the fixture zone's 66km distance) + 126_000 cost-to-serve.
+     * The cost-to-serve is 3% of the goods rather than the ₦100 flat fee this once asserted.
+     */
     expect(result.order.subtotal_kobo).toBe(4_200_000);
-    expect(result.order.total_kobo).toBe(4_526_000);
+    expect(result.order.total_kobo).toBe(4_726_000);
   });
 
   it("rejects an empty cart", async () => {

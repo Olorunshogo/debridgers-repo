@@ -16,12 +16,6 @@ import { deliveryPromotions } from "./delivery_promotions.schema";
 import { createInsertSchema } from "drizzle-zod";
 import { ORDER_STATUSES, PAYMENT_STATUSES } from "@debridgers/domain-status";
 
-/*
- * "awaiting_quote" is a zone with no measured delivery rate (see
- * zones.requires_quote) - the order exists and its items are priced, but
- * delivery is not, so payment is blocked until an admin sets a real
- * delivery_fee and the order moves to "pending".
- */
 export const orderStatusEnum = pgEnum("order_status", ORDER_STATUSES);
 
 /*

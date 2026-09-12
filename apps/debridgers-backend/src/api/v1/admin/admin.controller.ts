@@ -86,9 +86,6 @@ const updateOrderStatusSchema = z.object({
   status: z.enum(ORDER_STATUSES),
   reason: z.string().min(1).optional(),
 });
-const setDeliveryQuoteSchema = z.object({
-  delivery_fee_kobo: z.number().int().min(0),
-});
 const COMMISSION_TYPES = [
   "direct",
   "buyer_referral",
@@ -484,27 +481,6 @@ export class AdminController {
       dto.status,
       adminId,
       dto.reason,
-    );
-  }
-
-  @Patch("orders/:id/delivery-quote")
-  @AdminDesks("buyer")
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: "Set a manual delivery fee for an awaiting_quote order",
-    description:
-      "Only legal from awaiting_quote (a zone with no priced delivery rate). Recomputes total_amount and moves the order to pending so the buyer can pay.",
-  })
-  setDeliveryQuote(
-    @Param("id", ParseIntPipe) id: number,
-    @Body(new ZodValidationPipe(setDeliveryQuoteSchema))
-    dto: z.infer<typeof setDeliveryQuoteSchema>,
-    @AdminId() adminId: number,
-  ) {
-    return this.adminService.setDeliveryQuote(
-      id,
-      dto.delivery_fee_kobo,
-      adminId,
     );
   }
 

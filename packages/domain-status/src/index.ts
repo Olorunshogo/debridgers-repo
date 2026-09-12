@@ -21,7 +21,6 @@
 // === Orders
 
 export const ORDER_STATUSES = [
-  "awaiting_quote",
   "pending",
   "confirmed",
   "out_for_delivery",

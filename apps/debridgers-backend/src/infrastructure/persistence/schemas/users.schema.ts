@@ -60,6 +60,11 @@ export const users = pgTable(
     mailtrap_contact_id: text(),
     refresh_token: text(),
     email_notifications: boolean().notNull().default(true),
+    sms_notifications: boolean().notNull().default(false),
+    /* Stored preference only; does not itself enforce a second factor at login. */
+    two_factor_enabled: boolean().notNull().default(false),
+    currency: varchar("currency", { length: 8 }).notNull().default("NGN"),
+    country: varchar("country", { length: 2 }).notNull().default("NG"),
     admin_tier: varchar("admin_tier", { length: 20 }),
     admin_desk: varchar("admin_desk", { length: 20 }),
     must_change_password: boolean().notNull().default(false),

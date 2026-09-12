@@ -18,7 +18,6 @@ export const STATUS_PRESENTATION: Record<
   OrderStatus,
   { tone: StatusTone; label: string }
 > = {
-  awaiting_quote: { tone: "warning", label: "Awaiting quote" },
   pending: { tone: "warning", label: "Pending" },
   confirmed: { tone: "info", label: "Confirmed" },
   out_for_delivery: { tone: "active", label: "Out for delivery" },

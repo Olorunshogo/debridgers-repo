@@ -12,6 +12,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { apiFetch, apiMutate, ApiError } from "@debridgers/api-client";
+import { computeDeliveryFee } from "@debridgers/pricing";
 import {
   AlertBanner,
   TextInputField,
@@ -48,16 +49,13 @@ export function meta() {
 
 // === Types
 
-/* `delivery_fee` is the base fee covering the first two packages, in kobo. */
+/* `distance_km` is the zone's road distance from the Narayi warehouse; the delivery fee is computed live from it, never stored. */
 interface Zone {
   id: number;
   name: string;
   description: string | null;
-  delivery_fee: number;
+  distance_km: number;
   areas: string[];
-  tier_one_per_package_kobo: number;
-  tier_two_per_package_kobo: number;
-  delivery_cap_kobo: number;
   free_delivery: boolean;
   is_active: boolean;
 }
@@ -90,11 +88,9 @@ interface FeeRules {
   service_fee_rate: number;
   service_fee_min_kobo: number;
   service_fee_max_kobo: number;
-  packages_included_in_base: number;
-  tier_one_package_count: number;
-  default_tier_one_per_package_kobo: number;
-  default_tier_two_per_package_kobo: number;
-  default_delivery_cap_over_base_kobo: number;
+  distance_base_fee_kobo: number;
+  distance_rate_per_km_kobo: number;
+  distance_rounding_kobo: number;
   minimum_order_kobo: number;
   minimum_order_packages: number;
   individual_quote_package_threshold: number;
@@ -102,16 +98,13 @@ interface FeeRules {
 }
 
 /*
- * Money is typed in naira and held as strings, because that is what an input yields and what an operator thinks in. The conversion to kobo happens once, on submit.
+ * distance_km is a plain integer, held as a string because that is what an input yields; the rest is money, in naira, converted to kobo once on submit.
  */
 interface ZoneForm {
   name: string;
   description: string;
   areas: string;
-  delivery_fee: string;
-  tier_one: string;
-  tier_two: string;
-  delivery_cap: string;
+  distance_km: string;
   free_delivery: boolean;
   is_active: boolean;
 }
@@ -130,10 +123,7 @@ const emptyZoneForm: ZoneForm = {
   name: "",
   description: "",
   areas: "",
-  delivery_fee: "",
-  tier_one: "",
-  tier_two: "",
-  delivery_cap: "",
+  distance_km: "",
   free_delivery: false,
   is_active: true,
 };
@@ -158,20 +148,7 @@ const scopeLabels: Record<PromotionScope, string> = {
   first_order: "First order",
 };
 
-const TAPER_EXPLANATION =
-  "Tier two must be strictly below tier one. The cost of a delivery is the trip, not the bag, so the marginal package has to get cheaper. A flat or inverted taper over-charges exactly the large order the business depends on.";
-
-// === Money and date helpers
-
-function koboToNaira(kobo: number): string {
-  return String(kobo / 100);
-}
-
-/** NaN for a blank or unparseable field, so the caller can reject it. */
-function nairaToKobo(naira: string): number {
-  const parsed = parseFloat(naira);
-  return Number.isNaN(parsed) ? NaN : Math.round(parsed * 100);
-}
+// === Date helpers
 
 function formatPercent(rate: number): string {
   return `${(rate * 100).toFixed(2).replace(/\.00$/, "")}%`;
@@ -261,16 +238,6 @@ export default function AdminPricingPage() {
     void load();
   }, []);
 
-  // === Taper
-
-  const tierOneKobo: number = nairaToKobo(zoneForm.tier_one);
-  const tierTwoKobo: number = nairaToKobo(zoneForm.tier_two);
-  /* Only a pair of real numbers can be judged. A half-typed form is incomplete, not inverted, and must not be scolded for it. */
-  const taperInverted: boolean =
-    !Number.isNaN(tierOneKobo) &&
-    !Number.isNaN(tierTwoKobo) &&
-    tierTwoKobo >= tierOneKobo;
-
   const costByPromotion = useMemo<Map<number, PromotionCost>>(
     () => new Map(costs.map((row) => [row.promotion_id, row])),
     [costs],
@@ -296,10 +263,7 @@ export default function AdminPricingPage() {
       name: zone.name,
       description: zone.description ?? "",
       areas: zone.areas.join(", "),
-      delivery_fee: koboToNaira(zone.delivery_fee),
-      tier_one: koboToNaira(zone.tier_one_per_package_kobo),
-      tier_two: koboToNaira(zone.tier_two_per_package_kobo),
-      delivery_cap: koboToNaira(zone.delivery_cap_kobo),
+      distance_km: String(zone.distance_km),
       free_delivery: zone.free_delivery,
       is_active: zone.is_active,
     });
@@ -308,27 +272,14 @@ export default function AdminPricingPage() {
   }
 
   async function handleSaveZone(): Promise<void> {
-    const delivery_fee = nairaToKobo(zoneForm.delivery_fee);
-    const delivery_cap_kobo = nairaToKobo(zoneForm.delivery_cap);
+    const distance_km = parseInt(zoneForm.distance_km, 10);
 
     if (!zoneForm.name.trim() || zoneForm.name.trim().length < 2) {
       setZoneError("A zone needs a name of at least two characters.");
       return;
     }
-    if (Number.isNaN(delivery_fee) || delivery_fee < 0) {
-      setZoneError("The base fee must be a valid amount.");
-      return;
-    }
-    if (Number.isNaN(tierOneKobo) || Number.isNaN(tierTwoKobo)) {
-      setZoneError("Both taper rates are required.");
-      return;
-    }
-    if (Number.isNaN(delivery_cap_kobo) || delivery_cap_kobo <= 0) {
-      setZoneError("The delivery cap must be above zero.");
-      return;
-    }
-    if (tierTwoKobo >= tierOneKobo) {
-      setZoneError(TAPER_EXPLANATION);
+    if (Number.isNaN(distance_km) || distance_km < 0) {
+      setZoneError("The distance must be a valid number of kilometres.");
       return;
     }
 
@@ -339,10 +290,7 @@ export default function AdminPricingPage() {
         .split(",")
         .map((area) => area.trim())
         .filter(Boolean),
-      delivery_fee,
-      tier_one_per_package_kobo: tierOneKobo,
-      tier_two_per_package_kobo: tierTwoKobo,
-      delivery_cap_kobo,
+      distance_km,
       free_delivery: zoneForm.free_delivery,
       is_active: zoneForm.is_active,
     };
@@ -513,44 +461,29 @@ export default function AdminPricingPage() {
         ),
       },
       {
+        id: "distance_km",
+        header: "Distance",
+        align: "right",
+        priority: "secondary",
+        sortable: true,
+        sortValue: (zone) => zone.distance_km,
+        cell: (zone) => <TableTextCell value={`${zone.distance_km}km`} />,
+      },
+      {
         id: "delivery_fee",
-        header: "Base fee",
+        header: "Delivery fee",
         align: "right",
         priority: "secondary",
         sortable: true,
-        sortValue: (zone) => zone.delivery_fee,
-        cell: (zone) => <TableAmountCell kobo={zone.delivery_fee} />,
-      },
-      {
-        id: "tier_one",
-        header: "Tier one / pkg",
-        align: "right",
-        priority: "secondary",
-        sortable: true,
-        sortValue: (zone) => zone.tier_one_per_package_kobo,
+        sortValue: (zone) => zone.distance_km,
         cell: (zone) => (
-          <TableAmountCell kobo={zone.tier_one_per_package_kobo} />
+          <TableAmountCell
+            kobo={
+              computeDeliveryFee({ distanceKm: zone.distance_km })
+                .deliveryFeeKobo
+            }
+          />
         ),
-      },
-      {
-        id: "tier_two",
-        header: "Tier two / pkg",
-        align: "right",
-        priority: "secondary",
-        sortable: true,
-        sortValue: (zone) => zone.tier_two_per_package_kobo,
-        cell: (zone) => (
-          <TableAmountCell kobo={zone.tier_two_per_package_kobo} />
-        ),
-      },
-      {
-        id: "delivery_cap",
-        header: "Cap",
-        align: "right",
-        priority: "detail",
-        sortable: true,
-        sortValue: (zone) => zone.delivery_cap_kobo,
-        cell: (zone) => <TableAmountCell kobo={zone.delivery_cap_kobo} />,
       },
       {
         id: "free_delivery",
@@ -790,29 +723,19 @@ export default function AdminPricingPage() {
             note: "At or above this, the basket goes to a quote.",
           },
           {
-            label: "Packages in the base fee",
-            value: String(feeRules.packages_included_in_base),
-            note: "Covered by a zone's base fee before the taper starts.",
+            label: "Distance base fee",
+            value: formatFromKobo(feeRules.distance_base_fee_kobo),
+            note: "Flat floor covering the warehouse's own neighbourhood.",
           },
           {
-            label: "Tier one package count",
-            value: String(feeRules.tier_one_package_count),
-            note: "How many packages the tier one rate covers.",
+            label: "Distance rate",
+            value: `${formatFromKobo(feeRules.distance_rate_per_km_kobo)}/km`,
+            note: "Charged per kilometre of a zone's distance.",
           },
           {
-            label: "Default tier one rate",
-            value: formatFromKobo(feeRules.default_tier_one_per_package_kobo),
-            note: "What a new zone starts at, per package.",
-          },
-          {
-            label: "Default tier two rate",
-            value: formatFromKobo(feeRules.default_tier_two_per_package_kobo),
-            note: "What a new zone starts at, per package.",
-          },
-          {
-            label: "Default cap over base",
-            value: formatFromKobo(feeRules.default_delivery_cap_over_base_kobo),
-            note: "What a new zone's ceiling starts at, above its base fee.",
+            label: "Rounding",
+            value: formatFromKobo(feeRules.distance_rounding_kobo),
+            note: "The computed fee is floored to the nearest multiple of this.",
           },
         ];
 
@@ -859,8 +782,7 @@ export default function AdminPricingPage() {
                 Delivery zones
               </h3>
               <p className="text-body text-sm">
-                Base fee, both taper rates, the ceiling and standing free
-                delivery
+                Distance from the warehouse and standing free delivery
               </p>
             </div>
           </div>
@@ -928,55 +850,15 @@ export default function AdminPricingPage() {
                   }
                 />
                 <NumberInputField
-                  label="Base Fee (₦)"
-                  id="zone-base-fee"
+                  label="Distance from warehouse (km)"
+                  id="zone-distance-km"
                   required
                   min={0}
-                  step={50}
-                  placeholder="e.g. 2500"
-                  value={zoneForm.delivery_fee}
+                  step={1}
+                  placeholder="e.g. 66"
+                  value={zoneForm.distance_km}
                   onChange={(e) =>
-                    setZoneForm((p) => ({ ...p, delivery_fee: e.target.value }))
-                  }
-                />
-                <NumberInputField
-                  label="Tier One Per Package (₦)"
-                  id="zone-tier-one"
-                  required
-                  min={0}
-                  step={50}
-                  placeholder="e.g. 700"
-                  value={zoneForm.tier_one}
-                  onChange={(e) =>
-                    setZoneForm((p) => ({ ...p, tier_one: e.target.value }))
-                  }
-                />
-                <NumberInputField
-                  label="Tier Two Per Package (₦)"
-                  id="zone-tier-two"
-                  required
-                  min={0}
-                  step={50}
-                  placeholder="e.g. 400"
-                  value={zoneForm.tier_two}
-                  onChange={(e) =>
-                    setZoneForm((p) => ({ ...p, tier_two: e.target.value }))
-                  }
-                  error={taperInverted ? TAPER_EXPLANATION : undefined}
-                />
-                <NumberInputField
-                  label="Delivery Cap (₦)"
-                  id="zone-cap"
-                  required
-                  min={1}
-                  step={50}
-                  placeholder="e.g. 6000"
-                  value={zoneForm.delivery_cap}
-                  onChange={(e) =>
-                    setZoneForm((p) => ({
-                      ...p,
-                      delivery_cap: e.target.value,
-                    }))
+                    setZoneForm((p) => ({ ...p, distance_km: e.target.value }))
                   }
                 />
               </div>
@@ -1008,8 +890,6 @@ export default function AdminPricingPage() {
                   icon={Check}
                   loading={savingZone}
                   loadingText="Saving..."
-                  /* The server refuses an inverted taper too, but a disabled button with a reason beats relaying a 400. */
-                  disabled={taperInverted}
                   onClick={() => void handleSaveZone()}
                 >
                   {editingZoneId !== null ? "Save rates" : "Create zone"}

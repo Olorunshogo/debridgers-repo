@@ -22,16 +22,14 @@ import { SystemSettingsService } from "../settings/system-settings.service";
 import { TaxonomyService } from "../catalog/taxonomy.service";
 import { RedisService } from "../../../infrastructure/redis/features/redis.service";
 import {
-  DELIVERY_CAP_OVER_BASE_KOBO,
+  DISTANCE_BASE_FEE_KOBO,
+  DISTANCE_RATE_PER_KM_KOBO,
+  DISTANCE_ROUNDING_KOBO,
   MINIMUM_ORDER_KOBO,
   MINIMUM_ORDER_PACKAGES,
-  PACKAGES_INCLUDED_IN_BASE,
   SERVICE_FEE_MAX_KOBO,
   SERVICE_FEE_MIN_KOBO,
   SERVICE_FEE_RATE,
-  TIER_ONE_PACKAGE_COUNT,
-  TIER_ONE_PER_PACKAGE_KOBO,
-  TIER_TWO_PER_PACKAGE_KOBO,
 } from "@debridgers/pricing";
 import { DeliveryPromotionService } from "../admin/pricing/delivery-promotion.service";
 import { RatingsService } from "../ratings/ratings.service";
@@ -147,20 +145,14 @@ export class PublicController {
   })
   @ApiResponse({ status: 200, description: "Zones retrieved" })
   async getZones() {
-    /*
-     * tier_one/tier_two/delivery_cap belong to the zone, not to the defaults in /config/public.
-     * A client that quoted from those defaults was pricing a far zone at the near zone's rates, computing walk-away prices against a schedule checkout does not charge.
-     */
+    /* distance_km belongs to the zone, not to the defaults in /config/public - a client must read it off the zone the buyer actually picked, never assume the near zone's distance for a far one. */
     const rows = await this.db
       .select({
         id: schema.zones.id,
         name: schema.zones.name,
-        delivery_fee: schema.zones.delivery_fee,
+        distance_km: schema.zones.distance_km,
         free_delivery: schema.zones.free_delivery,
         areas: schema.zones.areas,
-        tier_one_per_package_kobo: schema.zones.tier_one_per_package_kobo,
-        tier_two_per_package_kobo: schema.zones.tier_two_per_package_kobo,
-        delivery_cap_kobo: schema.zones.delivery_cap_kobo,
       })
       .from(schema.zones)
       .where(eq(schema.zones.is_active, true))
@@ -232,15 +224,9 @@ export class PublicController {
           service_fee_rate: SERVICE_FEE_RATE,
           service_fee_min_kobo: SERVICE_FEE_MIN_KOBO,
           service_fee_max_kobo: SERVICE_FEE_MAX_KOBO,
-          packages_included_in_base: PACKAGES_INCLUDED_IN_BASE,
-          tier_one_package_count: TIER_ONE_PACKAGE_COUNT,
-          /*
-           * default_tier_one/default_tier_two/default_delivery_cap are defaults only.
-           * The taper and the ceiling are per zone, so a client quoting a specific delivery must read them off that zone rather than from here, or it will under-quote the far ones.
-           */
-          default_tier_one_per_package_kobo: TIER_ONE_PER_PACKAGE_KOBO,
-          default_tier_two_per_package_kobo: TIER_TWO_PER_PACKAGE_KOBO,
-          default_delivery_cap_over_base_kobo: DELIVERY_CAP_OVER_BASE_KOBO,
+          distance_base_fee_kobo: DISTANCE_BASE_FEE_KOBO,
+          distance_rate_per_km_kobo: DISTANCE_RATE_PER_KM_KOBO,
+          distance_rounding_kobo: DISTANCE_ROUNDING_KOBO,
           minimum_order_kobo: MINIMUM_ORDER_KOBO,
           minimum_order_packages: MINIMUM_ORDER_PACKAGES,
         },

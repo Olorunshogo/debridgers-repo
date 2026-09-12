@@ -8,6 +8,7 @@ import {
   fadeDownVariants,
   transitionBase,
   useDialog,
+  SubmitButton,
 } from "@debridgers/ui-web";
 import {
   StockTaxonomyPicker,
@@ -337,8 +338,9 @@ export default function AgentRequestStockPage() {
                     </div>
 
                     {canRemit && (
-                      <button
+                      <SubmitButton
                         type="button"
+                        variant="secondary"
                         onClick={() =>
                           triggerDialog("REMIT_STOCK", {
                             stockRequestId: Number(req.id),
@@ -348,10 +350,10 @@ export default function AgentRequestStockPage() {
                             onRemitted: () => void loadRequests(),
                           })
                         }
-                        className="border-primary text-primary w-fit cursor-pointer rounded-full border px-4 py-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
+                        className="w-fit"
                       >
                         Remit {fmt(outstanding)}
-                      </button>
+                      </SubmitButton>
                     )}
                   </motion.div>
                 );
@@ -417,13 +419,14 @@ export default function AgentRequestStockPage() {
                       Total to remit: {fmt(totalRemit)}
                     </p>
                   </div>
-                  <button
+                  <SubmitButton
+                    type="button"
                     onClick={handleSubmit}
-                    disabled={submitting}
-                    className="bg-primary cursor-pointer rounded-full px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                    loading={submitting}
+                    loadingText="Submitting..."
                   >
-                    {submitting ? "Submitting..." : "Submit Request"}
-                  </button>
+                    Submit Request
+                  </SubmitButton>
                 </div>
               </div>
             </div>
