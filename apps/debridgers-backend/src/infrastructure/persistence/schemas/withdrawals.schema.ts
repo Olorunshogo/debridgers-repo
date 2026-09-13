@@ -10,15 +10,12 @@ import {
 import { timestamps } from "../../helper/column.helper";
 import { users } from "./users.schema";
 import { createInsertSchema } from "drizzle-zod";
+import { WITHDRAWAL_STATUSES } from "@debridgers/domain-status";
 
-export const withdrawalStatusEnum = pgEnum("withdrawal_status", [
-  "pending",
-  "approved",
-  "processing",
-  "rejected",
-  "failed",
-  "paid",
-]);
+export const withdrawalStatusEnum = pgEnum(
+  "withdrawal_status",
+  WITHDRAWAL_STATUSES,
+);
 
 /* `amount` is kobo. `processed_by` is the admin user's id. */
 export const withdrawals = pgTable("withdrawals", {

@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams, useNavigate } from "react-router";
 import {
@@ -6,6 +8,7 @@ import {
   ArrowDownLeft,
   Plus,
   Landmark,
+  Pencil,
   Copy,
   Check,
   Loader2,
@@ -25,7 +28,13 @@ import {
   TableDateCell,
   TableStatusBadge,
   TableEmptyState,
-  extractServerFieldErrors,
+  applyServerFieldErrors,
+  createFundWalletSchema,
+  type FundWalletValues,
+  payoutAccountSchema,
+  type PayoutAccountValues,
+  createWithdrawWalletSchema,
+  type WithdrawWalletValues,
   type StatusTone,
   type TableColumn,
   type SelectOption,
@@ -309,13 +318,10 @@ function buildWalletData(api: ApiWalletResponse): WalletData {
   };
 }
 
-/*
- * Shows the last 4 digits only, matching how the bank itself would mask it.
- * Commented out with the payout-account card it belongs to, below.
- */
-/* function maskAccountNumber(accountNumber: string): string {
+/* Shows the last 4 digits only, matching how the bank itself would mask it. */
+function maskAccountNumber(accountNumber: string): string {
   return `****${accountNumber.slice(-4)}`;
-} */
+}
 
 function fmt(n: number) {
   return formatCurrency(n);
@@ -327,8 +333,11 @@ export default function BuyerWallet() {
   const [data, setData] = useState<WalletData | null>(null);
   const [loading, setLoading] = useState(true);
   const [showFundModal, setShowFundModal] = useState<boolean>(false);
-  const [fundAmount, setFundAmount] = useState("");
-  const [funding, setFunding] = useState<boolean>(false);
+  const fundForm = useForm<FundWalletValues>({
+    resolver: zodResolver(createFundWalletSchema(MIN_DEPOSIT_NAIRA)),
+    mode: "onChange",
+    defaultValues: { amount: MIN_DEPOSIT_NAIRA },
+  });
   const [depositSuccess, setDepositSuccess] = useState<boolean>(false);
   const [confirmingDeposit, setConfirmingDeposit] = useState<boolean>(false);
   const [depositError, setDepositError] = useState<string | null>(null);
@@ -358,25 +367,27 @@ export default function BuyerWallet() {
   const [banks, setBanks] = useState<Bank[]>([]);
   const [banksLoading, setBanksLoading] = useState<boolean>(false);
   const [banksLoaded, setBanksLoaded] = useState<boolean>(false);
-  const [selectedBankCode, setSelectedBankCode] = useState<string>("");
-  const [accountNumber, setAccountNumber] = useState<string>("");
-  const [savingPayoutAccount, setSavingPayoutAccount] =
-    useState<boolean>(false);
+  const payoutForm = useForm<PayoutAccountValues>({
+    resolver: zodResolver(payoutAccountSchema),
+    mode: "onChange",
+    defaultValues: { bankCode: "", accountNumber: "" },
+  });
   const [payoutAccountError, setPayoutAccountError] = useState<string | null>(
     null,
   );
-  const [payoutFieldErrors, setPayoutFieldErrors] = useState<
-    Record<string, string>
-  >({});
   const [confirmedAccountName, setConfirmedAccountName] = useState<
     string | null
   >(null);
 
   // === Withdraw state
   const [showWithdrawModal, setShowWithdrawModal] = useState<boolean>(false);
-  const [withdrawAmount, setWithdrawAmount] = useState<string>("");
-  const [withdrawReason, setWithdrawReason] = useState<string>("");
-  const [withdrawing, setWithdrawing] = useState<boolean>(false);
+  const withdrawForm = useForm<WithdrawWalletValues>({
+    resolver: zodResolver(
+      createWithdrawWalletSchema(data?.availableBalance ?? 0),
+    ),
+    mode: "onChange",
+    defaultValues: { amount: 0, reason: "" },
+  });
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
   const [withdrawResult, setWithdrawResult] = useState<WithdrawResponse | null>(
     null,
@@ -535,43 +546,27 @@ export default function BuyerWallet() {
       .finally(() => setBanksLoading(false));
   }
 
-  /* Commented out with the payout-account card that calls it, below. */
-  /* function openPayoutModal(): void {
+  function openPayoutModal(): void {
     setPayoutAccountError(null);
     setConfirmedAccountName(null);
-    setSelectedBankCode(payoutAccount?.bank_code ?? "");
-    setAccountNumber("");
+    payoutForm.reset({
+      bankCode: payoutAccount?.bank_code ?? "",
+      accountNumber: "",
+    });
     setShowPayoutModal(true);
     loadBanksIfNeeded();
-  } */
+  }
 
-  async function handleSavePayoutAccount(
-    e: React.SyntheticEvent<HTMLFormElement>,
-  ) {
-    e.preventDefault();
+  const handleSavePayoutAccount = payoutForm.handleSubmit(async (values) => {
     setPayoutAccountError(null);
-    setPayoutFieldErrors({});
-
-    if (!selectedBankCode) {
-      setPayoutFieldErrors({ bankCode: "Select a bank." });
-      return;
-    }
-    if (!/^\d{10}$/.test(accountNumber)) {
-      setPayoutFieldErrors({
-        accountNumber: "Account number must be 10 digits.",
-      });
-      return;
-    }
-
-    setSavingPayoutAccount(true);
     try {
       const account = await apiFetch<PayoutAccount>(
         "/buyer/wallet/payout-account",
         {
           method: "POST",
           body: JSON.stringify({
-            bank_code: selectedBankCode,
-            account_number: accountNumber,
+            bank_code: values.bankCode,
+            account_number: values.accountNumber,
           }),
         },
       );
@@ -583,45 +578,27 @@ export default function BuyerWallet() {
           ? err.message
           : "Could not verify this account. Please check the details and try again.",
       );
-      setPayoutFieldErrors(extractServerFieldErrors(err));
-    } finally {
-      setSavingPayoutAccount(false);
+      applyServerFieldErrors(err, payoutForm);
     }
-  }
+  });
 
-  /* Commented out with the Withdraw button that calls it, below. */
-  /* function openWithdrawModal(): void {
+  function openWithdrawModal(): void {
     setWithdrawError(null);
     setWithdrawResult(null);
-    setWithdrawAmount("");
-    setWithdrawReason("");
+    withdrawForm.reset({ amount: 0, reason: "" });
     setShowWithdrawModal(true);
-  } */
+  }
 
-  async function handleWithdraw(e: React.SyntheticEvent<HTMLFormElement>) {
-    e.preventDefault();
+  const handleWithdraw = withdrawForm.handleSubmit(async (values) => {
     setWithdrawError(null);
-
-    const amountNaira = parseInt(withdrawAmount, 10);
-    if (isNaN(amountNaira) || amountNaira <= 0) {
-      setWithdrawError("Enter a valid amount.");
-      return;
-    }
-    if (data && amountNaira > data.availableBalance) {
-      setWithdrawError("Amount exceeds your available balance.");
-      return;
-    }
-
-    setWithdrawing(true);
     try {
-      const amountKobo = amountNaira * 100;
       const result = await apiFetch<WithdrawResponse>(
         "/buyer/wallet/withdraw",
         {
           method: "POST",
           body: JSON.stringify({
-            amount_kobo: amountKobo,
-            ...(withdrawReason.trim() ? { reason: withdrawReason.trim() } : {}),
+            amount_kobo: values.amount * 100,
+            ...(values.reason.trim() ? { reason: values.reason.trim() } : {}),
           }),
         },
       );
@@ -633,10 +610,8 @@ export default function BuyerWallet() {
           ? err.message
           : "Could not process this withdrawal. Please try again.",
       );
-    } finally {
-      setWithdrawing(false);
     }
-  }
+  });
 
   /*
    * Returning from Paystack.
@@ -651,7 +626,7 @@ export default function BuyerWallet() {
     }
 
     setShowFundModal(false);
-    setFundAmount("");
+    fundForm.reset({ amount: MIN_DEPOSIT_NAIRA });
     setDepositError(null);
     setConfirmingDeposit(true);
 
@@ -677,26 +652,15 @@ export default function BuyerWallet() {
       });
   }, [searchParams, setSearchParams]);
 
-  async function handleFund(e: React.SyntheticEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setFunding(true);
+  const handleFund = fundForm.handleSubmit(async (values) => {
     setDepositError(null);
-
     try {
-      const amountNaira = parseInt(fundAmount, 10);
-      if (isNaN(amountNaira) || amountNaira < MIN_DEPOSIT_NAIRA) {
-        setDepositError(`Minimum amount is ₦${MIN_DEPOSIT_NAIRA}.`);
-        setFunding(false);
-        return;
-      }
-
-      const amountKobo = amountNaira * 100;
       const response = await apiFetch<{
         authorization_url: string;
         reference: string;
       }>("/buyer/wallet/deposit", {
         method: "POST",
-        body: JSON.stringify({ amount_kobo: amountKobo }),
+        body: JSON.stringify({ amount_kobo: values.amount * 100 }),
       });
 
       if (response?.authorization_url) {
@@ -705,16 +669,14 @@ export default function BuyerWallet() {
         setDepositError(
           "We could not start this payment. Try again in a moment.",
         );
-        setFunding(false);
       }
     } catch (err) {
       console.error("Deposit error:", err);
       setDepositError(
         "We could not start this payment. Check your connection and try again.",
       );
-      setFunding(false);
     }
-  }
+  });
 
   if (loading || !data) {
     return (
@@ -797,7 +759,7 @@ export default function BuyerWallet() {
           >
             Add Funds
           </SubmitButton>
-          {/* <SubmitButton
+          <SubmitButton
             variant="tertiary"
             type="button"
             icon={ArrowUpRight}
@@ -805,7 +767,7 @@ export default function BuyerWallet() {
             onClick={openWithdrawModal}
           >
             Withdraw
-          </SubmitButton> */}
+          </SubmitButton>
         </div>
         {!payoutAccountLoading && !payoutAccount && (
           <p className="mt-3 text-xs text-white/70">
@@ -817,7 +779,7 @@ export default function BuyerWallet() {
       </motion.div>
 
       {/* === Payout account */}
-      {/* <div className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5">
+      <div className="border-line flex flex-col gap-4 rounded-2xl border bg-white p-5">
         <h3 className="font-syne text-heading font-semibold">Payout Account</h3>
         {payoutAccountLoading ? (
           <div className="bg-line h-16 animate-pulse rounded-xl" />
@@ -860,7 +822,7 @@ export default function BuyerWallet() {
             </SubmitButton>
           </div>
         )}
-      </div> */}
+      </div>
 
       <DataTable
         rows={data.transactions}
@@ -1014,10 +976,10 @@ export default function BuyerWallet() {
                   <NumberInputField
                     label="Amount"
                     min={MIN_DEPOSIT_NAIRA}
-                    value={fundAmount}
-                    onChange={(e) => setFundAmount(e.target.value)}
+                    error={fundForm.formState.errors.amount?.message}
                     placeholder="e.g. 5000"
                     required
+                    {...fundForm.register("amount", { valueAsNumber: true })}
                   />
                   <div className="flex gap-3">
                     <SubmitButton
@@ -1030,7 +992,7 @@ export default function BuyerWallet() {
                     </SubmitButton>
                     <SubmitButton
                       variant="primary"
-                      loading={funding}
+                      loading={fundForm.formState.isSubmitting}
                       loadingText="Processing..."
                       className="flex-1"
                     >
@@ -1096,35 +1058,49 @@ export default function BuyerWallet() {
                       {payoutAccountError}
                     </p>
                   )}
-                  <SelectInputField
-                    label="Bank"
-                    isBank
-                    placeholder={
-                      banksLoading ? "Loading banks..." : "Select your bank"
-                    }
-                    disabled={banksLoading}
-                    options={banks.map<SelectOption>((bank) => ({
-                      value: bank.code,
-                      label: bank.name,
-                    }))}
-                    value={selectedBankCode}
-                    onSelectOption={(option) =>
-                      setSelectedBankCode(option.value)
-                    }
-                    error={payoutFieldErrors.bankCode}
-                    required
+                  <Controller
+                    control={payoutForm.control}
+                    name="bankCode"
+                    render={({ field }) => (
+                      <SelectInputField
+                        label="Bank"
+                        isBank
+                        placeholder={
+                          banksLoading ? "Loading banks..." : "Select your bank"
+                        }
+                        disabled={banksLoading}
+                        options={banks.map<SelectOption>((bank) => ({
+                          value: bank.code,
+                          label: bank.name,
+                        }))}
+                        value={field.value}
+                        onSelectOption={(option) =>
+                          field.onChange(option.value)
+                        }
+                        error={payoutForm.formState.errors.bankCode?.message}
+                        required
+                      />
+                    )}
                   />
-                  <TextInputField
-                    label="Account Number"
-                    inputMode="numeric"
-                    maxLength={10}
-                    value={accountNumber}
-                    error={payoutFieldErrors.accountNumber}
-                    onChange={(e) =>
-                      setAccountNumber(e.target.value.replace(/\D/g, ""))
-                    }
-                    placeholder="10 digit NUBAN"
-                    required
+                  <Controller
+                    control={payoutForm.control}
+                    name="accountNumber"
+                    render={({ field }) => (
+                      <TextInputField
+                        label="Account Number"
+                        inputMode="numeric"
+                        maxLength={10}
+                        value={field.value}
+                        error={
+                          payoutForm.formState.errors.accountNumber?.message
+                        }
+                        onChange={(e) =>
+                          field.onChange(e.target.value.replace(/\D/g, ""))
+                        }
+                        placeholder="10 digit NUBAN"
+                        required
+                      />
+                    )}
                   />
                   <div className="flex gap-3">
                     <SubmitButton
@@ -1137,7 +1113,7 @@ export default function BuyerWallet() {
                     </SubmitButton>
                     <SubmitButton
                       variant="primary"
-                      loading={savingPayoutAccount}
+                      loading={payoutForm.formState.isSubmitting}
                       loadingText="Verifying..."
                       className="flex-1"
                     >
@@ -1214,16 +1190,17 @@ export default function BuyerWallet() {
                     label="Amount"
                     min={1}
                     max={data.availableBalance}
-                    value={withdrawAmount}
-                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                    error={withdrawForm.formState.errors.amount?.message}
                     placeholder="e.g. 5000"
                     required
+                    {...withdrawForm.register("amount", {
+                      valueAsNumber: true,
+                    })}
                   />
                   <TextInputField
                     label="Reason (optional)"
-                    value={withdrawReason}
-                    onChange={(e) => setWithdrawReason(e.target.value)}
                     placeholder="e.g. Cashing out"
+                    {...withdrawForm.register("reason")}
                   />
                   <div className="flex gap-3">
                     <SubmitButton
@@ -1236,7 +1213,7 @@ export default function BuyerWallet() {
                     </SubmitButton>
                     <SubmitButton
                       variant="primary"
-                      loading={withdrawing}
+                      loading={withdrawForm.formState.isSubmitting}
                       loadingText="Processing..."
                       className="flex-1"
                     >

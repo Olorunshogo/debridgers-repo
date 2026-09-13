@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import {
   DialogHeader,
@@ -6,6 +7,8 @@ import {
   TextInputField,
   useDialog,
   useDialogSubmission,
+  reasonFormSchema,
+  type ReasonFormValues,
 } from "@debridgers/ui-web";
 
 /*
@@ -29,15 +32,19 @@ export default function RejectPayoutDialog({
 }: RejectPayoutDialogProps) {
   const { closeDialog } = useDialog();
   const { error, run, isSubmitting } = useDialogSubmission<boolean>();
-  const [reason, setReason] = useState<string>("");
+  const { register, handleSubmit } = useForm<ReasonFormValues>({
+    resolver: zodResolver(reasonFormSchema),
+    mode: "onChange",
+    defaultValues: { reason: "" },
+  });
 
-  async function handleReject(): Promise<void> {
+  const handleReject = handleSubmit(async (values) => {
     const succeeded = await run(async () => {
-      await onReject?.(reason.trim());
+      await onReject?.(values.reason.trim());
       return true;
     });
     if (succeeded) closeDialog();
-  }
+  });
 
   return (
     <div className="flex flex-col gap-5">
@@ -53,10 +60,8 @@ export default function RejectPayoutDialog({
       <div className="flex flex-col gap-2">
         <TextInputField
           label="Reason (shown to the agent)"
-          id="reject-payout-reason"
-          value={reason}
-          onChange={(event) => setReason(event.target.value)}
           placeholder="e.g. Bank details do not match KYC"
+          {...register("reason")}
         />
         {amountLabel && (
           <p className="text-body text-xs">

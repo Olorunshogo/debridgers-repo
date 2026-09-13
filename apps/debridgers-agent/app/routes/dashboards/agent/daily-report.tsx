@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, CheckCircle2 } from "lucide-react";
 import {
@@ -9,6 +11,8 @@ import {
   SubmitButton,
   formatCurrency,
   lgaSelectOptions,
+  dailyReportSchema,
+  type DailyReportValues,
 } from "@debridgers/ui-web";
 import { unsoldReasons } from "../../../data/unsold-reasons";
 import { apiFetch, ApiError } from "@debridgers/api-client";
@@ -92,15 +96,6 @@ function ReportHistoryCard({ entries }: { entries: ReportHistoryEntry[] }) {
   );
 }
 
-// === Form state
-interface ReportForm {
-  bagsSold: string;
-  cashCollected: string;
-  areaCovered: string;
-  feedback: string;
-  unsoldReason: string;
-}
-
 /*
  * Groups digits as the user types in the amount field.
  * This is input masking, not money display - use formatCurrency from @debridgers/ui-web for that.
@@ -113,19 +108,31 @@ function formatAmountInput(raw: string): string {
 
 // === Page
 
+const EMPTY_REPORT: DailyReportValues = {
+  bagsSold: 0,
+  cashCollected: "",
+  areaCovered: "",
+  feedback: "",
+  unsoldReason: "",
+};
+
 export default function AgentDailyReportPage() {
-  const [form, setForm] = useState<ReportForm>({
-    bagsSold: "",
-    cashCollected: "",
-    areaCovered: "",
-    feedback: "",
-    unsoldReason: "",
-  });
   const [submitted, setSubmitted] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [history, setHistory] = useState<ReportHistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+
+  const {
+    register,
+    control,
+    handleSubmit: handleFormSubmit,
+    reset,
+    formState: { errors, isSubmitting: loading },
+  } = useForm<DailyReportValues>({
+    resolver: zodResolver(dailyReportSchema),
+    mode: "onChange",
+    defaultValues: EMPTY_REPORT,
+  });
 
   useEffect(() => {
     apiFetch<ApiReport[]>("/agent/reports")
@@ -134,51 +141,24 @@ export default function AgentDailyReportPage() {
       .finally(() => setHistoryLoading(false));
   }, []);
 
-  function handleChange(field: keyof ReportForm) {
-    return (
-      e: React.ChangeEvent<
-        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-      >,
-    ) => {
-      setForm((p) => ({ ...p, [field]: e.target.value }));
-    };
-  }
-
-  function handleCashCollected(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm((p) => ({
-      ...p,
-      cashCollected: formatAmountInput(e.target.value),
-    }));
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  const handleSubmit = handleFormSubmit(async (values) => {
     setSubmitError(null);
-    setLoading(true);
     try {
-      const pages_sold = parseInt(form.bagsSold, 10);
-      const amount = parseFloat(form.cashCollected.replace(/,/g, ""));
-
-      if (!pages_sold || pages_sold < 1 || isNaN(amount) || amount <= 0) {
-        setSubmitError("Enter valid bags sold and cash collected.");
-        return;
-      }
-      if (!form.areaCovered) {
-        setSubmitError("Select the area you covered today.");
-        return;
-      }
-
       /* The report endpoint's schema is only { pages_sold, amount, notes }, so the required area is folded into notes rather than dropped. */
       const notesParts = [
-        `Area covered: ${form.areaCovered}.`,
-        form.feedback,
-        form.unsoldReason,
+        `Area covered: ${values.areaCovered}.`,
+        values.feedback,
+        values.unsoldReason,
       ].filter(Boolean);
       const notes = notesParts.join(" | ") || undefined;
 
       await apiFetch("/agent/report", {
         method: "POST",
-        body: JSON.stringify({ pages_sold, amount, notes }),
+        body: JSON.stringify({
+          pages_sold: values.bagsSold,
+          amount: Number(values.cashCollected.replace(/,/g, "")),
+          notes,
+        }),
       });
 
       const rows = await apiFetch<ApiReport[]>("/agent/reports");
@@ -186,23 +166,15 @@ export default function AgentDailyReportPage() {
 
       setSubmitted(true);
       setTimeout(() => setSubmitted(false), 3500);
-      setForm({
-        bagsSold: "",
-        cashCollected: "",
-        areaCovered: "",
-        feedback: "",
-        unsoldReason: "",
-      });
+      reset(EMPTY_REPORT);
     } catch (err) {
       setSubmitError(
         err instanceof ApiError
           ? err.message
           : "Failed to submit. Please try again.",
       );
-    } finally {
-      setLoading(false);
     }
-  }
+  });
 
   return (
     <div className="py-section-py grid gap-6 lg:grid-cols-[1fr_453px]">
@@ -243,25 +215,41 @@ export default function AgentDailyReportPage() {
                     required
                     min={0}
                     placeholder="0"
-                    value={form.bagsSold}
-                    onChange={handleChange("bagsSold")}
+                    error={errors.bagsSold?.message}
+                    {...register("bagsSold", { valueAsNumber: true })}
                   />
-                  <TextInputField
-                    label="Cash Collected"
-                    required
-                    placeholder="e.g. 15,000"
-                    value={form.cashCollected}
-                    onChange={handleCashCollected}
+                  <Controller
+                    control={control}
+                    name="cashCollected"
+                    render={({ field }) => (
+                      <TextInputField
+                        label="Cash Collected"
+                        required
+                        placeholder="e.g. 15,000"
+                        value={field.value}
+                        error={errors.cashCollected?.message}
+                        onChange={(e) =>
+                          field.onChange(formatAmountInput(e.target.value))
+                        }
+                      />
+                    )}
                   />
                 </div>
 
-                <SelectInputField
-                  label="Area Covered Today"
-                  required
-                  options={lgaSelectOptions("Kaduna")}
-                  placeholder="Select area"
-                  value={form.areaCovered}
-                  onChange={handleChange("areaCovered")}
+                <Controller
+                  control={control}
+                  name="areaCovered"
+                  render={({ field }) => (
+                    <SelectInputField
+                      label="Area Covered Today"
+                      required
+                      options={lgaSelectOptions("Kaduna")}
+                      placeholder="Select area"
+                      value={field.value}
+                      error={errors.areaCovered?.message}
+                      onChange={field.onChange}
+                    />
+                  )}
                 />
 
                 <TextareaField
@@ -269,16 +257,21 @@ export default function AgentDailyReportPage() {
                   placeholder="Any issues, customer feedback…"
                   maxWords={300}
                   resizable={false}
-                  value={form.feedback}
-                  onChange={handleChange("feedback")}
+                  {...register("feedback")}
                 />
 
-                <SelectInputField
-                  label="Unsold Reason"
-                  options={unsoldReasons}
-                  placeholder="Select if applicable"
-                  value={form.unsoldReason}
-                  onChange={handleChange("unsoldReason")}
+                <Controller
+                  control={control}
+                  name="unsoldReason"
+                  render={({ field }) => (
+                    <SelectInputField
+                      label="Unsold Reason"
+                      options={unsoldReasons}
+                      placeholder="Select if applicable"
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                  )}
                 />
               </div>
 

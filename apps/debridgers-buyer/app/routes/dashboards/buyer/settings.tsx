@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
-import { z } from "zod";
 import { CheckCircle2, Pencil } from "lucide-react";
 import {
   TextInputField,
@@ -9,7 +10,10 @@ import {
   SubmitButton,
   TextareaField,
   useDialog,
+  applyServerFieldErrors,
   extractServerFieldErrors,
+  buyerSettingsSchema,
+  type BuyerSettingsValues,
 } from "@debridgers/ui-web";
 import {
   apiFetch,
@@ -29,20 +33,6 @@ export function meta() {
   });
 }
 
-const schema = z.object({
-  userName: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email"),
-  currency: z.string().min(1, "Select a currency"),
-  country: z.string().min(1, "Select a country"),
-  deliveryAddress: z.string().optional().or(z.literal("")),
-  emailNotification: z.boolean(),
-  smsNotification: z.boolean(),
-  twoFactor: z.boolean(),
-});
-
-type SettingsForm = z.infer<typeof schema>;
-type FormErrors = Partial<Record<keyof SettingsForm, string>>;
-
 const currencyOptions = [
   { value: "NGN", label: "Nigerian Naira (₦)" },
   { value: "USD", label: "US Dollar ($)" },
@@ -55,9 +45,8 @@ const countryOptions = [
   { value: "GB", label: "United Kingdom" },
 ];
 
-const initialForm: SettingsForm = {
+const initialForm: BuyerSettingsValues = {
   userName: "",
-  email: "",
   currency: "NGN",
   country: "NG",
   deliveryAddress: "",
@@ -135,13 +124,28 @@ export default function BuyerSettings() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
-  const [form, setForm] = useState<SettingsForm>(initialForm);
-  const [original, setOriginal] = useState<SettingsForm>(initialForm);
+  const [email, setEmail] = useState<string>("");
   const [editing, setEditing] = useState<Set<string>>(new Set());
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [loading, setLoading] = useState<boolean>(false);
   const [saved, setSaved] = useState<boolean>(false);
   const [apiError, setApiError] = useState<string | null>(null);
+
+  const form = useForm<BuyerSettingsValues>({
+    resolver: zodResolver(buyerSettingsSchema),
+    mode: "onChange",
+    defaultValues: initialForm,
+  });
+  const {
+    register,
+    control,
+    formState: { errors, isDirty, isSubmitting: loading },
+  } = form;
+  const userName = form.watch("userName");
+  const currency = form.watch("currency");
+  const country = form.watch("country");
+  const deliveryAddress = form.watch("deliveryAddress");
+  const emailNotification = form.watch("emailNotification");
+  const smsNotification = form.watch("smsNotification");
+  const twoFactor = form.watch("twoFactor");
 
   function startEdit(field: string) {
     setEditing((prev) => new Set(prev).add(field));
@@ -155,18 +159,6 @@ export default function BuyerSettings() {
     });
   }
 
-  const isDirty = useMemo(() => {
-    return (
-      form.userName !== original.userName ||
-      form.currency !== original.currency ||
-      form.country !== original.country ||
-      (form.deliveryAddress ?? "") !== (original.deliveryAddress ?? "") ||
-      form.emailNotification !== original.emailNotification ||
-      form.smsNotification !== original.smsNotification ||
-      form.twoFactor !== original.twoFactor
-    );
-  }, [form, original]);
-
   const loadProfile = useCallback(async () => {
     try {
       const profile = await apiFetch<{
@@ -177,49 +169,36 @@ export default function BuyerSettings() {
         delivery_address?: string | null;
         avatar_url?: string | null;
         email_notifications?: boolean | null;
+        sms_notifications?: boolean | null;
+        two_factor_enabled?: boolean | null;
+        currency?: string | null;
+        country?: string | null;
       }>("/buyer/me");
-      const loaded: SettingsForm = {
-        ...initialForm,
+      form.reset({
         userName: `${profile.first_name} ${profile.last_name}`.trim(),
-        email: profile.email,
+        currency: profile.currency ?? initialForm.currency,
+        country: profile.country ?? initialForm.country,
         deliveryAddress: profile.delivery_address ?? "",
         emailNotification: profile.email_notifications ?? true,
-      };
-      setForm(loaded);
-      setOriginal(loaded);
+        smsNotification: profile.sms_notifications ?? false,
+        twoFactor: profile.two_factor_enabled ?? false,
+      });
+      setEmail(profile.email);
       if (profile.avatar_url) setAvatarUrl(profile.avatar_url);
       setApiError(null);
     } catch (err) {
-      /* Silence here was actively unsafe: the form stays blank, `original` stays blank with it, so `isDirty` reads false and a save would submit empty values over the real profile. */
+      /* Silence here was actively unsafe: the form stays blank, so a save would submit empty values over the real profile. */
       setApiError(
         err instanceof ApiError
           ? err.message
           : "Could not load your settings. Reload the page before saving changes.",
       );
     }
-  }, []);
+  }, [form]);
 
   useEffect(() => {
     void loadProfile();
   }, [loadProfile]);
-
-  function handleText(field: keyof SettingsForm) {
-    return (e: React.ChangeEvent<HTMLInputElement>) => {
-      setForm((p) => ({ ...p, [field]: e.target.value }));
-      if (errors[field]) setErrors((p) => ({ ...p, [field]: undefined }));
-    };
-  }
-
-  function handleSelect(field: keyof SettingsForm) {
-    return (e: React.ChangeEvent<HTMLSelectElement>) => {
-      setForm((p) => ({ ...p, [field]: e.target.value }));
-      if (errors[field]) setErrors((p) => ({ ...p, [field]: undefined }));
-    };
-  }
-
-  function handleSwitch(field: keyof SettingsForm) {
-    return (checked: boolean) => setForm((p) => ({ ...p, [field]: checked }));
-  }
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -250,45 +229,26 @@ export default function BuyerSettings() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  const handleSubmit = form.handleSubmit(async (values) => {
     setSaved(false);
     setApiError(null);
-
-    const result = schema.safeParse(form);
-    if (!result.success) {
-      const errs: FormErrors = {};
-      result.error.issues.forEach((i) => {
-        errs[i.path[0] as keyof FormErrors] = i.message;
-      });
-      setErrors(errs);
-      return;
-    }
-
-    setLoading(true);
     try {
-      const [firstName, ...rest] = result.data.userName.trim().split(" ");
+      const [firstName, ...rest] = values.userName.trim().split(" ");
       await apiFetch("/buyer/profile", {
         method: "PATCH",
         body: JSON.stringify({
           first_name: firstName,
           last_name: rest.join(" ") || undefined,
-          delivery_address: result.data.deliveryAddress?.trim() || undefined,
-          email_notifications: result.data.emailNotification,
+          delivery_address: values.deliveryAddress.trim() || undefined,
+          email_notifications: values.emailNotification,
+          sms_notifications: values.smsNotification,
+          two_factor_enabled: values.twoFactor,
+          currency: values.currency,
+          country: values.country,
         }),
       });
 
-      const saved = result.data;
-      setOriginal((p) => ({
-        ...p,
-        userName: saved.userName,
-        currency: saved.currency,
-        country: saved.country,
-        deliveryAddress: saved.deliveryAddress ?? "",
-        emailNotification: saved.emailNotification,
-        smsNotification: saved.smsNotification,
-        twoFactor: saved.twoFactor,
-      }));
+      form.reset(values);
       setEditing(new Set());
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -300,16 +260,16 @@ export default function BuyerSettings() {
       );
 
       /* firstName/lastName both come from the one userName field, so either backend field is shown there. */
+      applyServerFieldErrors(err, form);
       const server = extractServerFieldErrors(err);
-      setErrors((prev) => ({
-        ...prev,
-        deliveryAddress: server.deliveryAddress ?? prev.deliveryAddress,
-        userName: server.firstName ?? server.lastName ?? prev.userName,
-      }));
-    } finally {
-      setLoading(false);
+      if (server.firstName ?? server.lastName) {
+        form.setError("userName", {
+          type: "server",
+          message: server.firstName ?? server.lastName,
+        });
+      }
     }
-  }
+  });
 
   return (
     <form
@@ -353,8 +313,8 @@ export default function BuyerSettings() {
             />
           ) : (
             <div className="bg-primary flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white">
-              {form.userName
-                ? form.userName
+              {userName
+                ? userName
                     .trim()
                     .split(/\s+/)
                     .map((w) => w[0]?.toUpperCase() ?? "")
@@ -388,19 +348,18 @@ export default function BuyerSettings() {
             <TextInputField
               label="User Name"
               placeholder="Abdul-Malik"
-              value={form.userName}
-              onChange={handleText("userName")}
-              error={errors.userName}
+              error={errors.userName?.message}
               required
+              {...register("userName")}
             />
           ) : (
             <FieldRow
               label="User Name"
-              value={form.userName}
+              value={userName}
               onEdit={() => startEdit("userName")}
             />
           )}
-          <ReadOnlyRow label="Email" value={form.email} />
+          <ReadOnlyRow label="Email" value={email} />
         </div>
       </Section>
 
@@ -408,45 +367,57 @@ export default function BuyerSettings() {
       <Section title="Preference">
         <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
           {editing.has("currency") ? (
-            <SelectInputField
-              label="Currency"
-              options={currencyOptions}
-              placeholder="Select currency"
-              value={form.currency}
-              onChange={(e) => {
-                handleSelect("currency")(e);
-                stopEdit("currency");
-              }}
-              error={errors.currency}
+            <Controller
+              control={control}
+              name="currency"
+              render={({ field }) => (
+                <SelectInputField
+                  label="Currency"
+                  options={currencyOptions}
+                  placeholder="Select currency"
+                  value={field.value}
+                  onChange={(e) => {
+                    field.onChange(e);
+                    stopEdit("currency");
+                  }}
+                  error={errors.currency?.message}
+                />
+              )}
             />
           ) : (
             <FieldRow
               label="Currency"
               value={
-                currencyOptions.find((o) => o.value === form.currency)?.label ??
-                form.currency
+                currencyOptions.find((o) => o.value === currency)?.label ??
+                currency
               }
               onEdit={() => startEdit("currency")}
             />
           )}
           {editing.has("country") ? (
-            <SelectInputField
-              label="Country"
-              options={countryOptions}
-              placeholder="Select your country"
-              value={form.country}
-              onChange={(e) => {
-                handleSelect("country")(e);
-                stopEdit("country");
-              }}
-              error={errors.country}
+            <Controller
+              control={control}
+              name="country"
+              render={({ field }) => (
+                <SelectInputField
+                  label="Country"
+                  options={countryOptions}
+                  placeholder="Select your country"
+                  value={field.value}
+                  onChange={(e) => {
+                    field.onChange(e);
+                    stopEdit("country");
+                  }}
+                  error={errors.country?.message}
+                />
+              )}
             />
           ) : (
             <FieldRow
               label="Country"
               value={
-                countryOptions.find((o) => o.value === form.country)?.label ??
-                form.country
+                countryOptions.find((o) => o.value === country)?.label ??
+                country
               }
               onEdit={() => startEdit("country")}
             />
@@ -458,18 +429,13 @@ export default function BuyerSettings() {
                 required
                 rows={5}
                 placeholder="Enter your full delivery address"
-                value={form.deliveryAddress ?? ""}
-                error={errors.deliveryAddress}
-                onChange={(e) => {
-                  setForm((p) => ({ ...p, deliveryAddress: e.target.value }));
-                  if (errors.deliveryAddress)
-                    setErrors((p) => ({ ...p, deliveryAddress: undefined }));
-                }}
+                error={errors.deliveryAddress?.message}
+                {...register("deliveryAddress")}
               />
             ) : (
               <FieldRow
                 label="Delivery Address"
-                value={form.deliveryAddress ?? ""}
+                value={deliveryAddress}
                 onEdit={() => startEdit("deliveryAddress")}
               />
             )}
@@ -494,20 +460,28 @@ export default function BuyerSettings() {
           <ToggleField
             label="Email Notification"
             description="Receive sign-in alerts and message confirmations. Account and security emails are always sent."
-            checked={form.emailNotification}
-            onCheckedChange={handleSwitch("emailNotification")}
+            checked={emailNotification}
+            onCheckedChange={(checked) =>
+              form.setValue("emailNotification", checked, {
+                shouldDirty: true,
+              })
+            }
           />
           <ToggleField
             label="SMS Notification"
             description="Receive update via SMS"
-            checked={form.smsNotification}
-            onCheckedChange={handleSwitch("smsNotification")}
+            checked={smsNotification}
+            onCheckedChange={(checked) =>
+              form.setValue("smsNotification", checked, { shouldDirty: true })
+            }
           />
           <ToggleField
             label="Two-factor Authentication"
             description="Add an extra layer of security to your account"
-            checked={form.twoFactor}
-            onCheckedChange={handleSwitch("twoFactor")}
+            checked={twoFactor}
+            onCheckedChange={(checked) =>
+              form.setValue("twoFactor", checked, { shouldDirty: true })
+            }
           />
         </div>
       </Section>

@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { Landmark, CheckCircle2, Pencil, ShieldCheck, X } from "lucide-react";
 import { apiFetch, ApiError } from "@debridgers/api-client";
@@ -9,7 +11,9 @@ import {
   fadeUpVariants,
   fadeDownVariants,
   transitionBase,
-  extractServerFieldErrors,
+  applyServerFieldErrors,
+  bankDetailsSchema,
+  type BankDetailsValues,
 } from "@debridgers/ui-web";
 
 /*
@@ -54,15 +58,23 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
   const [loading, setLoading] = useState<boolean>(true);
   const [editing, setEditing] = useState<boolean>(false);
 
-  const [bankCode, setBankCode] = useState<string>("");
-  const [accountNumber, setAccountNumber] = useState<string>("");
+  const form = useForm<BankDetailsValues>({
+    resolver: zodResolver(bankDetailsSchema),
+    mode: "onChange",
+    defaultValues: { bankCode: "", accountNumber: "" },
+  });
+  const {
+    control,
+    formState: { errors },
+  } = form;
+  const bankCode = form.watch("bankCode");
+  const accountNumber = form.watch("accountNumber");
   const [resolved, setResolved] = useState<ResolvedAccount | null>(null);
 
   const [verifying, setVerifying] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<boolean>(false);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   /*
    * Held in a ref so `load` can stay dependency-free.
@@ -83,8 +95,10 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
       ]);
       setDetails(d);
       setBanks(b);
-      setBankCode(d.bank_code ?? "");
-      setAccountNumber(d.bank_account_number ?? "");
+      form.reset({
+        bankCode: d.bank_code ?? "",
+        accountNumber: d.bank_account_number ?? "",
+      });
       setError(null);
       onDetailsChangeRef.current?.(d);
     } catch (err) {
@@ -106,23 +120,22 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
 
   /* Any edit invalidates a previously resolved name, so it must be re-verified. */
   function handleBankChange(value: string): void {
-    setBankCode(value);
+    form.setValue("bankCode", value, { shouldValidate: true });
     setResolved(null);
     setError(null);
-    setFieldErrors({});
   }
 
   function handleAccountNumberChange(value: string): void {
-    setAccountNumber(value.replace(/\D/g, "").slice(0, 10));
+    form.setValue("accountNumber", value.replace(/\D/g, "").slice(0, 10), {
+      shouldValidate: true,
+    });
     setResolved(null);
     setError(null);
-    setFieldErrors({});
   }
 
   async function handleVerify(): Promise<void> {
     setVerifying(true);
     setError(null);
-    setFieldErrors({});
     try {
       const result = await apiFetch<ResolvedAccount>(
         "/agent/bank-details/resolve",
@@ -142,23 +155,21 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
           ? err.message
           : "Could not verify that account. Check the number and try again.",
       );
-      setFieldErrors(extractServerFieldErrors(err));
+      applyServerFieldErrors(err, form);
     } finally {
       setVerifying(false);
     }
   }
 
-  async function handleSave(e: React.FormEvent): Promise<void> {
-    e.preventDefault();
+  const handleSave = form.handleSubmit(async (values) => {
     setSaving(true);
     setError(null);
-    setFieldErrors({});
     try {
       const updated = await apiFetch<BankDetails>("/agent/bank-details", {
         method: "PATCH",
         body: JSON.stringify({
-          bank_code: bankCode,
-          account_number: accountNumber,
+          bank_code: values.bankCode,
+          account_number: values.accountNumber,
         }),
       });
       setDetails(updated);
@@ -173,26 +184,26 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
           ? err.message
           : "Could not save your bank details. Please try again.",
       );
-      setFieldErrors(extractServerFieldErrors(err));
+      applyServerFieldErrors(err, form);
     } finally {
       setSaving(false);
     }
-  }
+  });
 
   function startEdit(): void {
     setEditing(true);
     setResolved(null);
     setError(null);
-    setFieldErrors({});
-    setBankCode(details?.bank_code ?? "");
-    setAccountNumber(details?.bank_account_number ?? "");
+    form.reset({
+      bankCode: details?.bank_code ?? "",
+      accountNumber: details?.bank_account_number ?? "",
+    });
   }
 
   function cancelEdit(): void {
     setEditing(false);
     setResolved(null);
     setError(null);
-    setFieldErrors({});
   }
 
   // === Derived
@@ -200,11 +211,8 @@ export function BankDetailsCard({ onDetailsChange }: BankDetailsCardProps) {
   const bankOptions = banks.map((b) => ({ value: b.bankCode, label: b.name }));
   const canVerify =
     bankCode.length >= 3 && accountNumber.length === 10 && !verifying;
-  const accountNumberError =
-    accountNumber.length > 0 && accountNumber.length < 10
-      ? "Account number must be 10 digits"
-      : fieldErrors.accountNumber;
-  const bankCodeError = fieldErrors.bankCode;
+  const accountNumberError = errors.accountNumber?.message;
+  const bankCodeError = errors.bankCode?.message;
 
   if (loading) {
     return (

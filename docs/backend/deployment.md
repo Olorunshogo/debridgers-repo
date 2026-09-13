@@ -9,6 +9,13 @@ All services start automatically in `docker-compose.prod.yml`:
 
 Database migrations run **locally before deployment**, NOT during deployment.
 
+## Things Worth Knowing Before You Touch This
+
+- DB migrations are explicitly skipped in `deploy.sh` - the comment says to run them against that env's `DATABASE_URL` yourself before deploying. There's no automated migration step.
+- Staging and prod share a hostname per the comment in `deploy.sh` (`api-test.debridgers.com` for both dev and prod entries) - that looks like it might be a stale comment since `.gitea/workflows/backend.yml`'s header says prod is `api.debridgers.com`. Worth double-checking your Cloudflare tunnel config if you're unsure which hostname currently routes where.
+- Required Codeberg secrets: `SSH_PRIVATE_KEY`, `SSH_USER`, `SSH_HOST`, `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `ENV_FILE_DEV`/`ENV_FILE_PROD`, `CLOUDFLARE_TUNNEL_CREDENTIALS` - set per Codeberg "environment" (dev and production).
+- To trigger a deploy manually without a qualifying push, use `workflow_dispatch` from the Codeberg Actions UI.
+
 ## Development Deployment (api-test.debridgers.com)
 
 ### First-time VPS setup:

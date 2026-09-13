@@ -1,16 +1,23 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { apiFetch, apiMutate, ApiError } from "@debridgers/api-client";
-import { Copy, Check, Plus, MailPlus } from "lucide-react";
+import { Copy, Check, Plus, MailPlus, Ban } from "lucide-react";
 import {
   AlertBanner,
   DataTable,
   EmailInputField,
+  SelectField,
   SubmitButton,
   TableTextCell,
   TableDateCell,
   TableStatusBadge,
   TableEmptyState,
+  useDialog,
+  createAdminInviteSchema,
+  type CreateAdminInviteValues,
   type AlertTone,
+  type RowAction,
   type StatusTone,
   type TableColumn,
 } from "@debridgers/ui-web";
@@ -27,6 +34,7 @@ interface AdminInvite {
   invite_code: string;
   expires_at: string;
   used_at: string | null;
+  revoked_at: string | null;
   created_at: string;
 }
 
@@ -40,32 +48,45 @@ export function meta() {
   });
 }
 
-type InviteState = "used" | "expired" | "pending";
+type InviteState = "used" | "revoked" | "expired" | "pending";
 
 const INVITE_STATE_TONE: Record<InviteState, StatusTone> = {
   used: "success",
+  revoked: "danger",
   expired: "danger",
   pending: "info",
 };
 
 const INVITE_STATE_LABEL: Record<InviteState, string> = {
   used: "Used",
+  revoked: "Revoked",
   expired: "Expired",
   pending: "Pending",
 };
 
 function inviteState(invite: AdminInvite): InviteState {
+  if (invite.revoked_at !== null) return "revoked";
   if (invite.used_at !== null) return "used";
   if (new Date(invite.expires_at) < new Date()) return "expired";
   return "pending";
 }
 
 export default function AdminInvites() {
+  const { triggerDialog } = useDialog();
   const [invites, setInvites] = useState<AdminInvite[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [email, setEmail] = useState<string>("");
-  const [desk, setDesk] = useState<"buyer" | "agent" | "hr">("buyer");
-  const [sending, setSending] = useState<boolean>(false);
+  const {
+    register,
+    control,
+    handleSubmit: handleFormSubmit,
+    reset: resetForm,
+    formState: { isSubmitting: sending },
+  } = useForm<CreateAdminInviteValues>({
+    resolver: zodResolver(createAdminInviteSchema),
+    mode: "onChange",
+    defaultValues: { email: "", desk: "buyer" },
+  });
+  const [revokingId, setRevokingId] = useState<number | null>(null);
   /* Carries its own tone: the same slot reports both a sent invite and a failed one, and they must not look alike. */
   const [message, setMessage] = useState<InviteMessage | null>(null);
   /* The list's own failure, kept apart from the invite form's message so a failed load cannot read as "no invitations yet". */
@@ -95,31 +116,45 @@ export default function AdminInvites() {
     void loadInvites();
   }, [loadInvites]);
 
-  async function handleSendInvite(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email) return;
-
-    setSending(true);
+  const handleSendInvite = handleFormSubmit(async (values) => {
     try {
       await apiMutate("/admin/invites", {
         method: "POST",
-        body: JSON.stringify({ email, desk }),
+        body: JSON.stringify(values),
       });
       setMessage({
         tone: "success",
-        text: `Invitation sent to ${email} (${desk} desk).`,
+        text: `Invitation sent to ${values.email} (${values.desk} desk).`,
       });
-      setEmail("");
+      resetForm();
       await loadInvites();
     } catch (err) {
       setMessage({
         tone: "danger",
         text: err instanceof Error ? err.message : "Failed to send invitation.",
       });
-    } finally {
-      setSending(false);
     }
-  }
+  });
+
+  const handleRevoke = useCallback(
+    async (id: number): Promise<void> => {
+      setRevokingId(id);
+      try {
+        await apiMutate(`/admin/invites/${id}/revoke`, { method: "PATCH" });
+        await loadInvites();
+      } catch (error) {
+        /* Throws so the confirm dialog reports it and stays open, instead of closing over an invite that was never revoked. */
+        throw new Error(
+          error instanceof ApiError
+            ? error.message
+            : "Could not revoke that invite. Please try again.",
+        );
+      } finally {
+        setRevokingId(null);
+      }
+    },
+    [loadInvites],
+  );
 
   function copyToClipboard(code: string) {
     navigator.clipboard.writeText(code);
@@ -199,6 +234,31 @@ export default function AdminInvites() {
     [copied],
   );
 
+  const rowActions = useMemo<RowAction<AdminInvite>[]>(
+    () => [
+      {
+        id: "revoke",
+        label: "Revoke",
+        icon: Ban,
+        tone: "danger",
+        hidden: (invite) => inviteState(invite) !== "pending",
+        isBusy: (invite) => revokingId === invite.id,
+        onSelect: (invite) => handleRevoke(invite.id),
+        confirm: {
+          dialogKey: "CONFIRM",
+          props: (invite) => ({
+            title: `Revoke the invite for ${invite.email}?`,
+            description:
+              "The invite code stops working immediately. This cannot be undone.",
+            confirmLabel: "Revoke invite",
+            tone: "danger",
+          }),
+        },
+      },
+    ],
+    [revokingId, handleRevoke],
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <div className="border-line rounded-2xl border bg-white p-6">
@@ -212,25 +272,27 @@ export default function AdminInvites() {
           <EmailInputField
             label="Email address"
             placeholder="admin@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
             className="flex-1"
             required
+            {...register("email")}
           />
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-heading font-medium">Desk</span>
-            <select
-              value={desk}
-              onChange={(e) =>
-                setDesk(e.target.value as "buyer" | "agent" | "hr")
-              }
-              className="border-line text-heading rounded-xl border bg-white px-3 py-2"
-            >
-              <option value="buyer">Buyer desk</option>
-              <option value="agent">Agent desk</option>
-              <option value="hr">HR desk</option>
-            </select>
-          </label>
+          <Controller
+            control={control}
+            name="desk"
+            render={({ field }) => (
+              <SelectField
+                label="Desk"
+                required
+                value={field.value}
+                onChange={field.onChange}
+                options={[
+                  { value: "buyer", label: "Buyer desk" },
+                  { value: "agent", label: "Agent desk" },
+                  { value: "hr", label: "HR desk" },
+                ]}
+              />
+            )}
+          />
           <SubmitButton icon={Plus} loading={sending} loadingText="Sending...">
             Send Invite
           </SubmitButton>
@@ -256,6 +318,7 @@ export default function AdminInvites() {
         <DataTable
           rows={invites}
           columns={columns}
+          actions={rowActions}
           caption="Admin invitations"
           showSearch
           searchPlaceholder="Search by email or invite code"

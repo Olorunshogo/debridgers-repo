@@ -5,7 +5,6 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { count, eq, sql } from "drizzle-orm";
 import * as bcrypt from "bcryptjs";
 import * as schema from "../persistence/index";
-import { intoTaperBand } from "@debridgers/pricing";
 import {
   PRODUCTS,
   TAXONOMY,
@@ -13,85 +12,106 @@ import {
   type TaxonomyNodeSeed,
 } from "./catalog";
 
-// ₦ → kobo
-const naira = (n: number) => n * 100;
-
 /*
- * Taper rates are the locked schedule mapped through the pricing package, never
- * written out here. A fresh database seeds these rows while an existing one is
- * corrected by migration 0024, and both read the same mapping, so the two
- * cannot drift apart. Writing the banded figures literally is what would let
- * them.
+ * One zone per Kaduna LGA, priced purely on road distance from the Narayi warehouse.
+ * `distance_km` feeds `computeDeliveryFee` in @debridgers/pricing; the fee itself is never stored here.
+ * Distances are estimates pending real measurement, except Zaria, Birnin Gwari and Kachia, which are sourced road distances.
+ * See docs/business/BusinessModel.md for the full derivation.
  */
-const taper = (lockedNaira: number) => intoTaperBand(naira(lockedNaira));
-
 const ZONES = [
   {
-    name: "Kaduna South",
-    description: "Narayi, Kakuri, Barnawa, Tudun Wada, Makera",
-    /*
-     * Measured, not estimated: a two-package outbound leg from Central Market to Mai Gero, near Barnawa, wholly inside this zone.
-     * That route is what the base is priced against, so it is the one to re-time when fuel or haulage rates move.
-     * The other two zones are scaled from it by distance rather than separately measured, and should be measured in turn.
-     */
-    delivery_fee: naira(4000),
-    tier_one_per_package_kobo: taper(700),
-    tier_two_per_package_kobo: taper(400),
-    delivery_cap_kobo: naira(10000),
+    name: "Chikun",
+    description: "Includes Narayi and High Cost, where the warehouse sits",
+    distance_km: 2,
     areas: [
+      "Sabon Tasha",
+      "Sabo",
+      "Kamazou",
+      "Television",
+      "Gonin Gora",
+      "Kigo",
+      "Unguwan Dosa",
       "Narayi",
+      "Highcost",
+    ],
+    is_active: true,
+  },
+  {
+    name: "Kaduna South",
+    description: "Kakuri, Barnawa, Tudun Wada, Makera",
+    distance_km: 5,
+    areas: [
       "Kakuri",
       "Barnawa",
       "Tudun Wada",
+      "Katuru",
+      "Mando",
       "Makera",
+      "Unguwan Shanu",
+      "Romi",
       "Kabala Costain",
     ],
     is_active: true,
   },
   {
     name: "Kaduna North",
-    description: "Kawo, Tudun Wada North, Rigachikun, Rigasa",
-    delivery_fee: naira(4500),
-    tier_one_per_package_kobo: taper(800),
-    tier_two_per_package_kobo: taper(450),
-    delivery_cap_kobo: naira(11000),
-    areas: ["Kawo", "Rigachikun", "Rigasa", "Unguwan Mu'azu"],
+    description: "Kawo, Rigasa, Unguwan Rimi",
+    distance_km: 10,
+    areas: [
+      "Rigasa",
+      "Badiko",
+      "Kabala",
+      "Unguwan Sarki",
+      "Unguwan Rimi",
+      "Sabo",
+      "Kawo",
+      "Unguwan Mu'azu",
+    ],
     is_active: true,
   },
   {
-    name: "Chikun",
-    description: "Chikun LGA - Kujama, Sabon Sarki, Nasarawa, Ungwan Yero",
-    delivery_fee: naira(6000),
-    tier_one_per_package_kobo: taper(1000),
-    tier_two_per_package_kobo: taper(600),
-    delivery_cap_kobo: naira(14000),
-    /*
-     * Kachia, Kafanchan, Kagoro and Jema'a used to sit here at a ₦800 base.
-     * None of them are in Chikun LGA and all are 80 to 120km out, so a single drop lost more than the whole margin on the goods.
-     * They belong in an inter-city zone quoted per trip, not in a metro zone.
-     */
-    areas: ["Kujama", "Sabon Sarki", "Nasarawa", "Ungwan Yero"],
+    name: "Igabi",
+    distance_km: 20,
+    areas: ["Afaka", "Zaria Road", "Igabi Town", "Jagindi", "Rigachikun"],
     is_active: true,
   },
-  /*
-   * Catch-all for every other Kaduna LGA - real distances run 70 to 140km,
-   * the same range the comment above already flagged as unprofitable at a
-   * flat per-package rate. No delivery_fee/tier rates are set (they read as
-   * an unpriced 0) because none apply: an order here goes to awaiting_quote
-   * instead of pending, and an admin sets a real delivery_fee by hand.
-   */
+  { name: "Giwa", distance_km: 35, areas: [], is_active: true },
+  { name: "Kajuru", distance_km: 35, areas: [], is_active: true },
+  { name: "Kagarko", distance_km: 45, areas: [], is_active: true },
   {
-    name: "Other Kaduna LGAs",
-    description:
-      "Any Kaduna State LGA outside the three priced metro zones above",
-    delivery_fee: 0,
-    tier_one_per_package_kobo: 0,
-    tier_two_per_package_kobo: 0,
-    delivery_cap_kobo: 0,
-    requires_quote: true,
+    name: "Zaria",
+    description: "Sourced road distance",
+    distance_km: 78,
+    areas: ["Zaria City", "Sabon Gari", "Tudun Wada", "Kwarbai"],
+    is_active: true,
+  },
+  { name: "Sabon Gari", distance_km: 78, areas: [], is_active: true },
+  { name: "Kudan", distance_km: 85, areas: [], is_active: true },
+  { name: "Makarfi", distance_km: 85, areas: [], is_active: true },
+  { name: "Soba", distance_km: 90, areas: [], is_active: true },
+  { name: "Ikara", distance_km: 100, areas: [], is_active: true },
+  { name: "Kubau", distance_km: 100, areas: [], is_active: true },
+  { name: "Lere", distance_km: 105, areas: [], is_active: true },
+  { name: "Kauru", distance_km: 115, areas: [], is_active: true },
+  { name: "Zangon Kataf", distance_km: 120, areas: [], is_active: true },
+  {
+    name: "Birnin Gwari",
+    description: "Sourced road distance",
+    distance_km: 122,
     areas: [],
     is_active: true,
   },
+  {
+    name: "Kachia",
+    description: "Sourced road distance",
+    distance_km: 134,
+    areas: [],
+    is_active: true,
+  },
+  { name: "Jaba", distance_km: 140, areas: [], is_active: true },
+  { name: "Sanga", distance_km: 150, areas: [], is_active: true },
+  { name: "Jema'a", distance_km: 155, areas: [], is_active: true },
+  { name: "Kaura", distance_km: 165, areas: [], is_active: true },
 ];
 
 type Db = ReturnType<typeof drizzle<typeof schema>>;

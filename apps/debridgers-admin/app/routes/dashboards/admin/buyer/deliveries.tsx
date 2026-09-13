@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Banknote, Check, Clock, Truck, XCircle } from "lucide-react";
+import { Check, Clock, Truck, XCircle } from "lucide-react";
 import { apiFetchPaged, apiMutate, ApiError } from "@debridgers/api-client";
+import type { OrderStatus } from "@debridgers/domain-status";
 import {
   DataTable,
   TablePrimaryCell,
@@ -26,14 +27,6 @@ export function meta() {
   });
 }
 
-type OrderStatus =
-  | "awaiting_quote"
-  | "pending"
-  | "confirmed"
-  | "out_for_delivery"
-  | "delivered"
-  | "cancelled";
-
 /* Mirrors the columns /admin/orders selects. The previous shape claimed a `buyer_name` the endpoint has never returned. */
 interface Order {
   id: number;
@@ -54,23 +47,23 @@ interface StatusPresentation {
 }
 
 const STATUS_PRESENTATION: Record<OrderStatus, StatusPresentation> = {
-  awaiting_quote: {
-    tone: "warning",
-    icon: Banknote,
-    label: "Awaiting quote",
-  },
   pending: { tone: "warning", icon: Clock, label: "Pending" },
   confirmed: { tone: "info", icon: Clock, label: "Confirmed" },
   out_for_delivery: { tone: "info", icon: Truck, label: "Out for delivery" },
+  delivery_failed: {
+    tone: "danger",
+    icon: XCircle,
+    label: "Delivery failed",
+  },
   delivered: { tone: "success", icon: Check, label: "Delivered" },
   cancelled: { tone: "danger", icon: XCircle, label: "Cancelled" },
 };
 
 const FILTERS: { value: string; label: string }[] = [
   { value: "", label: "All" },
-  { value: "awaiting_quote", label: "Awaiting quote" },
   { value: "confirmed", label: "Confirmed" },
   { value: "out_for_delivery", label: "Out for delivery" },
+  { value: "delivery_failed", label: "Delivery failed" },
   { value: "delivered", label: "Delivered" },
 ];
 
@@ -184,27 +177,28 @@ export default function BuyerAdminDeliveries() {
     [snapshot, statusFilter, loadOrders, loadOnTheRoadCount],
   );
 
-  const handleSetDeliveryQuote = useCallback(
-    async (orderId: number, deliveryFeeKobo: number): Promise<void> => {
+  const handleMarkDeliveryFailed = useCallback(
+    async (orderId: number, reason: string): Promise<void> => {
       setActioningId(orderId);
       try {
-        await apiMutate(`/admin/orders/${orderId}/delivery-quote`, {
+        await apiMutate(`/admin/orders/${orderId}/status`, {
           method: "PATCH",
-          body: JSON.stringify({ delivery_fee_kobo: deliveryFeeKobo }),
+          body: JSON.stringify({ status: "delivery_failed", reason }),
         });
         if (snapshot) await loadOrders(snapshot, statusFilter);
+        await loadOnTheRoadCount();
       } catch (error) {
-        /* Throws so the dialog reports it and stays open, rather than closing over a fee that was never set. */
+        /* Throws so the dialog reports it and stays open, instead of closing over a status that was never set. */
         throw new Error(
           error instanceof ApiError
             ? error.message
-            : "Could not set that delivery fee. Please try again.",
+            : "Could not mark that delivery as failed. Please try again.",
         );
       } finally {
         setActioningId(null);
       }
     },
-    [snapshot, statusFilter, loadOrders],
+    [snapshot, statusFilter, loadOrders, loadOnTheRoadCount],
   );
 
   const columns = useMemo<TableColumn<Order>[]>(
@@ -301,27 +295,21 @@ export default function BuyerAdminDeliveries() {
         },
       },
       {
-        id: "set-delivery-quote",
-        label: "Set delivery fee",
-        icon: Banknote,
-        tone: "primary",
-        hidden: (order) => order.status !== "awaiting_quote",
+        id: "mark-delivery-failed",
+        label: "Mark delivery failed",
+        icon: XCircle,
+        tone: "danger",
+        hidden: (order) => order.status !== "out_for_delivery",
         isBusy: (order) => actioningId === order.id,
-        /*
-         * Opened directly rather than through `confirm`, because the fee
-         * amount has to travel back and the engine's confirm contract
-         * passes no arguments - same reason payouts.tsx opens REJECT_PAYOUT
-         * this way.
-         */
         onSelect: (order) =>
-          triggerDialog("SET_DELIVERY_QUOTE", {
-            orderReference: `#${order.id}`,
-            onSubmit: (deliveryFeeKobo: number) =>
-              handleSetDeliveryQuote(order.id, deliveryFeeKobo),
+          triggerDialog("MARK_DELIVERY_FAILED", {
+            orderReference: `Order #${order.id}`,
+            onSubmit: (reason: string) =>
+              handleMarkDeliveryFailed(order.id, reason),
           }),
       },
     ],
-    [actioningId, handleMarkDelivered, handleSetDeliveryQuote, triggerDialog],
+    [actioningId, handleMarkDelivered, triggerDialog],
   );
 
   return (

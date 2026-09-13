@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, Check, X, Landmark, FileImage } from "lucide-react";
 import { apiFetch, ApiError } from "@debridgers/api-client";
+import type { KycStatus } from "@debridgers/domain-status";
 import {
   fadeDownVariants,
   staggerItemVariants,
@@ -20,8 +21,6 @@ export function meta() {
     noIndex: true,
   });
 }
-
-type KycStatus = "not_submitted" | "submitted" | "approved" | "rejected";
 
 interface KycRow {
   id: number;

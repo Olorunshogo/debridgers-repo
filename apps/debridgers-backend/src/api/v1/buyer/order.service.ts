@@ -163,19 +163,9 @@ export class OrderService {
       };
     });
 
-    /* Same functions the quote endpoint calls, so this path cannot drift from
-       the price the buyer was shown. */
-    const packageCount = items.reduce(
-      (sum: number, item: { qty: number }) => sum + item.qty,
-      0,
-    );
-    /* Not enforced against the buyer: see priceBasket in buyer.service.ts. */
+    /* Same function the quote endpoint calls, so this path cannot drift from the price the buyer was shown. */
     const deliveryFee = computeDeliveryFee({
-      zoneFeeKobo: zone.delivery_fee || 0,
-      packageCount,
-      tierOnePerPackageKobo: zone.tier_one_per_package_kobo,
-      tierTwoPerPackageKobo: zone.tier_two_per_package_kobo,
-      deliveryCapKobo: zone.delivery_cap_kobo,
+      distanceKm: zone.distance_km,
     }).deliveryFeeKobo;
     const handlingFee = computeServiceFee(subtotal);
     const total = subtotal + deliveryFee + handlingFee;

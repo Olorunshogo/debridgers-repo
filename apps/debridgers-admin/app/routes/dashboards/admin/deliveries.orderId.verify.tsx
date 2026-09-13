@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useParams, useNavigate } from "react-router";
 import { apiFetch, apiMutate, ApiError } from "@debridgers/api-client";
 import { CheckCircle, MapPin, User, Phone, DollarSign } from "lucide-react";
@@ -9,9 +11,11 @@ import {
   TextareaField,
   SubmitButton,
   TableStatusBadge,
-  extractServerFieldErrors,
+  UploadField,
+  applyServerFieldErrors,
+  deliveryVerificationSchema,
+  type DeliveryVerificationValues,
 } from "@debridgers/ui-web";
-import { UploadField, type PhotoUpload } from "@debridgers/ui-web";
 
 import { buildPageMeta } from "../../../lib/seo";
 export function meta() {
@@ -55,19 +59,21 @@ export default function VerifyDelivery() {
 
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [photos, setPhotos] = useState<PhotoUpload[]>([]);
-  const [notes, setNotes] = useState<string>("");
-  /*
-   * Who actually took delivery. Left blank rather than prefilled with the buyer's name: this used to send the buyer regardless of who was standing at the gate, which is the one detail proof of delivery exists to record.
-   */
-  const [recipientName, setRecipientName] = useState<string>("");
-  const [submitting, setSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<boolean>(false);
-  const [fieldErrors, setFieldErrors] = useState<{
-    recipientName?: string;
-    notes?: string;
-  }>({});
+
+  /* recipientName starts blank rather than prefilled with the buyer's name: this used to send the buyer regardless of who was standing at the gate, which is the one detail proof of delivery exists to record. */
+  const form = useForm<DeliveryVerificationValues>({
+    resolver: zodResolver(deliveryVerificationSchema),
+    mode: "onChange",
+    defaultValues: { photos: [], recipientName: "", notes: "" },
+  });
+  const {
+    control,
+    register,
+    formState: { errors, isSubmitting: submitting },
+  } = form;
+  const photos = form.watch("photos");
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -89,24 +95,16 @@ export default function VerifyDelivery() {
     fetchOrder();
   }, [orderId]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (photos.length === 0) {
-      setError("Please upload at least one photo");
-      return;
-    }
-
-    setSubmitting(true);
+  const handleSubmit = form.handleSubmit(async (values) => {
     setError("");
-    setFieldErrors({});
 
     try {
       await apiMutate(`/admin/deliveries/${orderId}/verify`, {
         method: "POST",
         body: JSON.stringify({
-          photos: photos.map((p) => p.dataUrl),
-          notes: notes.trim() || undefined,
-          recipient_name: recipientName.trim() || undefined,
+          photos: values.photos.map((p) => p.dataUrl),
+          notes: values.notes.trim() || undefined,
+          recipient_name: values.recipientName.trim() || undefined,
         }),
       });
 
@@ -115,20 +113,14 @@ export default function VerifyDelivery() {
         navigate("/admin-dashboard/deliveries");
       }, 2000);
     } catch (err) {
-      const server = extractServerFieldErrors(err);
-      setFieldErrors({
-        recipientName: server.recipientName,
-        notes: server.notes,
-      });
+      applyServerFieldErrors(err, form);
       setError(
         err instanceof Error
           ? err.message
           : "Failed to verify delivery. Please try again.",
       );
-    } finally {
-      setSubmitting(false);
     }
-  };
+  });
 
   if (loading) {
     return (
@@ -261,13 +253,20 @@ export default function VerifyDelivery() {
       {/* Verification Form */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <div className="border-line rounded-2xl border bg-white p-6">
-          <UploadField
-            kind="photo"
-            label="Upload Proof of Delivery"
-            required
-            photos={photos}
-            onPhotosChange={setPhotos}
-            hint="Drag and drop, or click to browse. At least one photo is required."
+          <Controller
+            control={control}
+            name="photos"
+            render={({ field, fieldState }) => (
+              <UploadField
+                kind="photo"
+                label="Upload Proof of Delivery"
+                required
+                photos={field.value}
+                onPhotosChange={field.onChange}
+                error={fieldState.error?.message}
+                hint="Drag and drop, or click to browse. At least one photo is required."
+              />
+            )}
           />
         </div>
 
@@ -275,9 +274,8 @@ export default function VerifyDelivery() {
           <TextInputField
             label="Received by"
             placeholder="Name of the person who took delivery"
-            value={recipientName}
-            error={fieldErrors.recipientName}
-            onChange={(e) => setRecipientName(e.target.value)}
+            error={errors.recipientName?.message}
+            {...register("recipientName")}
           />
         </div>
 
@@ -286,9 +284,8 @@ export default function VerifyDelivery() {
             label="Delivery Notes"
             rows={4}
             placeholder="Add any notes about the delivery (e.g. 'Left with security guard', 'Partial delivery')."
-            value={notes}
-            error={fieldErrors.notes}
-            onChange={(e) => setNotes(e.target.value)}
+            error={errors.notes?.message}
+            {...register("notes")}
           />
         </div>
 

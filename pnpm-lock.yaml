@@ -117,6 +117,9 @@ importers:
       '@debridgers/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@debridgers/domain-status':
+        specifier: workspace:*
+        version: link:../../packages/domain-status
       '@debridgers/pricing':
         specifier: workspace:*
         version: link:../../packages/pricing
@@ -205,6 +208,9 @@ importers:
       '@debridgers/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@debridgers/domain-status':
+        specifier: workspace:*
+        version: link:../../packages/domain-status
       '@debridgers/pricing':
         specifier: workspace:*
         version: link:../../packages/pricing
@@ -293,6 +299,9 @@ importers:
 
   apps/debridgers-backend:
     dependencies:
+      '@debridgers/domain-status':
+        specifier: workspace:*
+        version: link:../../packages/domain-status
       '@debridgers/pricing':
         specifier: workspace:*
         version: link:../../packages/pricing
@@ -483,6 +492,9 @@ importers:
       '@debridgers/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@debridgers/domain-status':
+        specifier: workspace:*
+        version: link:../../packages/domain-status
       '@debridgers/pricing':
         specifier: workspace:*
         version: link:../../packages/pricing
@@ -755,6 +767,15 @@ importers:
 
   packages/api-client:
     devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
+  packages/domain-status:
+    devDependencies:
+      tsup:
+        specifier: ^8.0.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.8)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
       typescript:
         specifier: ^5.9.2
         version: 5.9.3

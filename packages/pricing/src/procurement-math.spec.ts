@@ -16,18 +16,16 @@ const RULES: PricingRules = {
   serviceFeeRate: 0.03,
   serviceFeeMin: 500,
   serviceFeeMax: 5000,
-  packagesInBase: 2,
-  tierOnePackages: 4,
-  tierOnePerPackage: 700,
-  tierTwoPerPackage: 400,
-  deliveryCapOverBase: 6000,
+  distanceBaseFee: 700,
+  distanceRatePerKm: 50,
+  distanceRounding: 100,
   minimumOrder: 25000,
   minimumOrderPackages: 2,
 };
 
 const base = {
   packages: 1,
-  zoneBase: 4000,
+  distanceKm: 66,
   dropsPerTrip: 1,
   loadingPerPackage: 300,
   inboundHaulage: 0,
@@ -94,19 +92,13 @@ describe("procurement math, ₦98,000 bag", () => {
 
 // === procurementTargets, in kobo
 
-/*
- * The same order as above, in kobo, with a zone whose taper is its own rather than the served default.
- * Kaduna South figures.
- */
+/* The same order as above, in kobo. distanceKm of 66 gives the same ₦4,000 delivery fee as base.distanceKm above. */
 const KOBO_CONTEXT = {
   packages: 1,
-  zoneBaseKobo: 400_000,
+  distanceKm: 66,
   dropsPerTrip: 1,
   loadingPerPackageKobo: LOADING_50KG_KOBO.value,
   inboundHaulageKobo: 0,
-  tierOnePerPackageKobo: 70_000,
-  tierTwoPerPackageKobo: 40_000,
-  deliveryCapKobo: 1_000_000,
   targetMarginPercent: 10,
 };
 
@@ -132,11 +124,12 @@ describe("procurementTargets", () => {
     expect(Math.round(t.buyPriceKobo / 100)).toBe(88472);
   });
 
-  it("prices a far zone at its own taper, not the near zone's", () => {
+  it("prices a farther distance higher", () => {
     const near = procurementTargets(
       {
         ...KOBO_CONTEXT,
         packages: 8,
+        distanceKm: 10,
         known: "farmerPrice",
         farmerPriceKobo: 9_000_000,
       },
@@ -146,28 +139,13 @@ describe("procurementTargets", () => {
       {
         ...KOBO_CONTEXT,
         packages: 8,
-        tierOnePerPackageKobo: 100_000,
-        tierTwoPerPackageKobo: 60_000,
+        distanceKm: 100,
         known: "farmerPrice",
         farmerPriceKobo: 9_000_000,
       },
       RULES,
     );
     expect(far.deliveryFeeKobo).toBeGreaterThan(near.deliveryFeeKobo);
-  });
-
-  it("respects the zone's own ceiling", () => {
-    const t = procurementTargets(
-      {
-        ...KOBO_CONTEXT,
-        packages: 30,
-        deliveryCapKobo: 500_000,
-        known: "farmerPrice",
-        farmerPriceKobo: 9_000_000,
-      },
-      RULES,
-    );
-    expect(t.deliveryFeeKobo).toBe(500_000);
   });
 
   it("carries the landed cost read path with its status", () => {

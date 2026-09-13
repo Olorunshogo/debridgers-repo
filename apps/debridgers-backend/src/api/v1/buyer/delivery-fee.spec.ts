@@ -3,27 +3,16 @@ import {
   computeDeliveryFee,
   computeOrderTotals,
   computeServiceFee,
-  DELIVERY_CAP_OVER_BASE_KOBO,
+  DISTANCE_BASE_FEE_KOBO,
+  DISTANCE_RATE_PER_KM_KOBO,
+  DISTANCE_ROUNDING_KOBO,
   MINIMUM_ORDER_KOBO,
   MINIMUM_ORDER_PACKAGES,
-  PACKAGES_INCLUDED_IN_BASE,
   SERVICE_FEE_MAX_KOBO,
   SERVICE_FEE_MIN_KOBO,
   SERVICE_FEE_RATE,
-  TIER_ONE_PACKAGE_COUNT,
-  TIER_ONE_PER_PACKAGE_KOBO,
-  TIER_TWO_PER_PACKAGE_KOBO,
-  intoTaperBand,
 } from "@debridgers/pricing";
 import { remitPerPackageKobo } from "../agent/agent-commission";
-
-/*
- * Taper expectations are written against the locked schedule and mapped through
- * the band, exactly as the seeder and migration 0024 do. Writing the banded
- * figures literally would mean a band change silently needs three separate
- * edits, and the derivation would stop being visible in the assertion.
- */
-const taper = (lockedNaira: number): number => intoTaperBand(lockedNaira * 100);
 
 /*
  * The worked examples from docs/business/BusinessModel.md, executable.
@@ -45,9 +34,10 @@ const taper = (lockedNaira: number): number => intoTaperBand(lockedNaira * 100);
 // ₦ → kobo
 const naira = (n: number): number => n * 100;
 
-const KADUNA_SOUTH = naira(4000);
-const KADUNA_NORTH = naira(4500);
-const CHIKUN = naira(6000);
+/* Distances chosen so the resulting fee lands exactly on the pre-existing worked-example figures, with no flooring in play. */
+const KADUNA_SOUTH_KM = 66; // -> ₦4,000
+const KADUNA_NORTH_KM = 76; // -> ₦4,500
+const CHIKUN_KM = 106; // -> ₦6,000
 
 // Catalogue prices, per package.
 // RICE is Local White Rice, 50kg bag.
@@ -58,85 +48,45 @@ const BEANS = naira(55000);
 const PALM_OIL = naira(28000);
 
 describe("delivery fee", () => {
-  it("charges the base per package: half for one, the full base for two", () => {
-    expect(
-      computeDeliveryFee({ zoneFeeKobo: KADUNA_SOUTH, packageCount: 1 })
-        .deliveryFeeKobo,
-    ).toBe(naira(2000));
+  it("charges the same fee no matter how many packages are in the order", () => {
+    const one = computeDeliveryFee({ distanceKm: KADUNA_SOUTH_KM });
+    const eight = computeDeliveryFee({ distanceKm: KADUNA_SOUTH_KM });
 
-    expect(
-      computeDeliveryFee({ zoneFeeKobo: KADUNA_SOUTH, packageCount: 2 })
-        .deliveryFeeKobo,
-    ).toBe(naira(4000));
+    expect(one.deliveryFeeKobo).toBe(naira(4000));
+    expect(eight.deliveryFeeKobo).toBe(naira(4000));
   });
 
-  it("tapers: packages 3 to 6 at tier one, then tier two beyond", () => {
-    // 3 packages: base + one at tier one.
-    expect(
-      computeDeliveryFee({ zoneFeeKobo: KADUNA_SOUTH, packageCount: 3 })
-        .deliveryFeeKobo,
-    ).toBe(KADUNA_SOUTH + taper(700));
-
-    // 8 packages: base + 4 at tier one + 2 at tier two. Worked example E.
-    expect(
-      computeDeliveryFee({ zoneFeeKobo: KADUNA_SOUTH, packageCount: 8 })
-        .deliveryFeeKobo,
-    ).toBe(KADUNA_SOUTH + 4 * taper(700) + 2 * taper(400));
-  });
-
-  it("prices the trip, not the bag: the sixth package costs less than the third", () => {
-    const at5 = computeDeliveryFee({
-      zoneFeeKobo: KADUNA_SOUTH,
-      packageCount: 5,
+  it("charges more for a farther LGA", () => {
+    const south = computeDeliveryFee({
+      distanceKm: KADUNA_SOUTH_KM,
     }).deliveryFeeKobo;
-    const at6 = computeDeliveryFee({
-      zoneFeeKobo: KADUNA_SOUTH,
-      packageCount: 6,
+    const north = computeDeliveryFee({
+      distanceKm: KADUNA_NORTH_KM,
     }).deliveryFeeKobo;
-    const at7 = computeDeliveryFee({
-      zoneFeeKobo: KADUNA_SOUTH,
-      packageCount: 7,
+    const chikun = computeDeliveryFee({
+      distanceKm: CHIKUN_KM,
     }).deliveryFeeKobo;
 
-    expect(at6 - at5).toBe(taper(700));
-    expect(at7 - at6).toBe(taper(400));
-
-    /* The taper's whole point: the marginal package gets cheaper. */
-    expect(at7 - at6).toBeLessThan(at6 - at5);
+    expect(south).toBe(naira(4000));
+    expect(north).toBe(naira(4500));
+    expect(chikun).toBe(naira(6000));
+    expect(chikun).toBeGreaterThan(north);
+    expect(north).toBeGreaterThan(south);
   });
 
-  it("caps the fee at ₦6,000 above the zone base", () => {
-    // 35 packages: uncapped taper would be ₦18,400. Worked example F.
-    const fee = computeDeliveryFee({
-      zoneFeeKobo: KADUNA_SOUTH,
-      packageCount: 35,
-    });
-
-    expect(fee.deliveryFeeKobo).toBe(naira(10000));
-    expect(fee.capped).toBe(true);
-  });
-
-  it("scales the cap with the zone, so distance is not given away", () => {
-    expect(
-      computeDeliveryFee({ zoneFeeKobo: CHIKUN, packageCount: 35 })
-        .deliveryFeeKobo,
-    ).toBe(naira(12000));
-
-    expect(
-      computeDeliveryFee({ zoneFeeKobo: KADUNA_NORTH, packageCount: 35 })
-        .deliveryFeeKobo,
-    ).toBe(naira(10500));
+  it("floors the fee to the nearest rounding unit", () => {
+    const fee = computeDeliveryFee({ distanceKm: 23 }).deliveryFeeKobo;
+    expect(fee % DISTANCE_ROUNDING_KOBO).toBe(0);
   });
 
   it("still computes the full price during a promo, for struck-through copy", () => {
     const fee = computeDeliveryFee({
-      zoneFeeKobo: KADUNA_SOUTH,
-      packageCount: 3,
+      distanceKm: KADUNA_SOUTH_KM,
       freeDelivery: true,
     });
 
     expect(fee.deliveryFeeKobo).toBe(0);
-    expect(fee.deliveryFeeBeforePromoKobo).toBe(KADUNA_SOUTH + taper(700));
+    expect(fee.deliveryFeeBeforePromoKobo).toBe(naira(4000));
   });
 });
 
@@ -188,15 +138,12 @@ describe("cost-to-serve fee", () => {
 
 describe("order totals", () => {
   it("prices worked example B: one 50kg bag of rice, Kaduna South", () => {
-    const fee = computeDeliveryFee({
-      zoneFeeKobo: KADUNA_SOUTH,
-      packageCount: 1,
-    });
+    const fee = computeDeliveryFee({ distanceKm: KADUNA_SOUTH_KM });
     const totals = computeOrderTotals(RICE, fee, 1);
 
-    expect(totals.deliveryFeeKobo).toBe(naira(2000));
+    expect(totals.deliveryFeeKobo).toBe(naira(4000));
     expect(totals.serviceFeeKobo).toBe(naira(1260));
-    expect(totals.totalKobo).toBe(naira(45260));
+    expect(totals.totalKobo).toBe(RICE + naira(4000) + naira(1260));
     expect(totals.requiresIndividualQuote).toBe(false);
   });
 
@@ -204,27 +151,17 @@ describe("order totals", () => {
     const items = 5 * RICE + 2 * PALM_OIL + BEANS;
     expect(items).toBe(naira(321000));
 
-    const fee = computeDeliveryFee({
-      zoneFeeKobo: KADUNA_SOUTH,
-      packageCount: 8,
-    });
+    const fee = computeDeliveryFee({ distanceKm: KADUNA_SOUTH_KM });
     const totals = computeOrderTotals(items, fee, 8);
 
-    const expectedDelivery: number =
-      KADUNA_SOUTH + 4 * taper(700) + 2 * taper(400);
-
-    expect(totals.deliveryFeeKobo).toBe(expectedDelivery);
+    expect(totals.deliveryFeeKobo).toBe(naira(4000));
     expect(totals.serviceFeeKobo).toBe(naira(5000));
-    expect(totals.totalKobo).toBe(items + expectedDelivery + naira(5000));
-    /* The cap gives up ₦4,630 here: 3% of ₦321,000 is ₦9,630. Deliberate. */
+    expect(totals.totalKobo).toBe(items + naira(4000) + naira(5000));
     expect(totals.requiresIndividualQuote).toBe(false);
   });
 
-  it("flags orders past the tapered table for an individual quote", () => {
-    const fee = computeDeliveryFee({
-      zoneFeeKobo: KADUNA_SOUTH,
-      packageCount: 35,
-    });
+  it("flags orders past the individual-quote threshold regardless of delivery fee", () => {
+    const fee = computeDeliveryFee({ distanceKm: KADUNA_SOUTH_KM });
 
     expect(
       computeOrderTotals(naira(1395000), fee, 35).requiresIndividualQuote,
@@ -237,10 +174,7 @@ describe("order totals", () => {
   });
 
   it("keeps handlingFeeKobo as an alias, so the orders table keeps working", () => {
-    const fee = computeDeliveryFee({
-      zoneFeeKobo: KADUNA_SOUTH,
-      packageCount: 1,
-    });
+    const fee = computeDeliveryFee({ distanceKm: KADUNA_SOUTH_KM });
     const totals = computeOrderTotals(RICE, fee, 1);
 
     expect(totals.handlingFeeKobo).toBe(totals.serviceFeeKobo);
@@ -257,7 +191,7 @@ describe("minimum order", () => {
      */
     const tooSmall = computeOrderTotals(
       naira(12000),
-      computeDeliveryFee({ zoneFeeKobo: KADUNA_SOUTH, packageCount: 1 }),
+      computeDeliveryFee({ distanceKm: KADUNA_SOUTH_KM }),
       1,
     );
     expect(tooSmall.belowMinimumOrder).toBe(true);
@@ -266,7 +200,7 @@ describe("minimum order", () => {
     /* Above the naira floor on one package: fine, and always was. */
     const oneKeg = computeOrderTotals(
       PALM_OIL,
-      computeDeliveryFee({ zoneFeeKobo: KADUNA_SOUTH, packageCount: 1 }),
+      computeDeliveryFee({ distanceKm: KADUNA_SOUTH_KM }),
       1,
     );
     expect(oneKeg.belowMinimumOrder).toBe(false);
@@ -275,7 +209,7 @@ describe("minimum order", () => {
     /* Two packages satisfies it even below the naira floor: the rule is OR. */
     const twoCheap = computeOrderTotals(
       naira(24000),
-      computeDeliveryFee({ zoneFeeKobo: KADUNA_SOUTH, packageCount: 2 }),
+      computeDeliveryFee({ distanceKm: KADUNA_SOUTH_KM }),
       2,
     );
     expect(twoCheap.belowMinimumOrder).toBe(false);
@@ -319,92 +253,21 @@ describe("config/public contract", () => {
    * and this asserts the values a published client is entitled to rely on, so
    * a change here is a visible contract change rather than a silent one.
    */
-  /*
-   * The zone tapers, asserted against the locked table rather than against the
-   * defaults. A single taper for every zone under-charged the far ones, and
-   * these are what catch that returning.
-   */
-  const NORTH_TAPER = {
-    tierOnePerPackageKobo: taper(800),
-    tierTwoPerPackageKobo: taper(450),
-    deliveryCapKobo: naira(11000),
-  };
-
-  const CHIKUN_TAPER = {
-    tierOnePerPackageKobo: taper(1000),
-    tierTwoPerPackageKobo: taper(600),
-    deliveryCapKobo: naira(14000),
-  };
-
-  it("charges the far zone more per package than the near one", () => {
-    const south = computeDeliveryFee({
-      zoneFeeKobo: KADUNA_SOUTH,
-      packageCount: 6,
-    }).deliveryFeeKobo;
-
-    const chikun = computeDeliveryFee({
-      zoneFeeKobo: CHIKUN,
-      packageCount: 6,
-      ...CHIKUN_TAPER,
-    }).deliveryFeeKobo;
-
-    /* Four tier-one packages on each zone's own rate, over its own base. */
-    expect(south).toBe(KADUNA_SOUTH + 4 * taper(700));
-    expect(chikun).toBe(CHIKUN + 4 * taper(1000));
-
-    /* The point of per-zone rates: the far zone costs more for the same load. */
-    expect(chikun).toBeGreaterThan(south);
-  });
-
-  it("applies each zone's own ceiling rather than one shared headroom", () => {
-    const north = computeDeliveryFee({
-      zoneFeeKobo: KADUNA_NORTH,
-      packageCount: 200,
-      ...NORTH_TAPER,
-    });
-
-    const chikun = computeDeliveryFee({
-      zoneFeeKobo: CHIKUN,
-      packageCount: 200,
-      ...CHIKUN_TAPER,
-    });
-
-    expect(north.deliveryFeeKobo).toBe(naira(11000));
-    expect(chikun.deliveryFeeKobo).toBe(naira(14000));
-    expect(north.capped).toBe(true);
-    expect(chikun.capped).toBe(true);
-  });
-
-  it("falls back to the near-zone taper when a zone carries none", () => {
-    const explicit = computeDeliveryFee({
-      zoneFeeKobo: KADUNA_SOUTH,
-      packageCount: 9,
-      tierOnePerPackageKobo: TIER_ONE_PER_PACKAGE_KOBO,
-      tierTwoPerPackageKobo: TIER_TWO_PER_PACKAGE_KOBO,
-    });
-
-    /* A zone row written before the taper columns existed must price exactly
-       as it did, which is what makes the migration's defaults safe. */
-    const implied = computeDeliveryFee({
-      zoneFeeKobo: KADUNA_SOUTH,
-      packageCount: 9,
-    });
-
-    expect(implied.deliveryFeeKobo).toBe(explicit.deliveryFeeKobo);
-  });
-
   it("serves the pricing rules the charge actually uses", () => {
     expect(SERVICE_FEE_RATE).toBe(0.03);
     expect(SERVICE_FEE_MIN_KOBO).toBe(naira(500));
     expect(SERVICE_FEE_MAX_KOBO).toBe(naira(5000));
-    expect(PACKAGES_INCLUDED_IN_BASE).toBe(2);
-    expect(TIER_ONE_PACKAGE_COUNT).toBe(4);
-    expect(TIER_ONE_PER_PACKAGE_KOBO).toBe(taper(700));
-    expect(TIER_TWO_PER_PACKAGE_KOBO).toBe(taper(400));
-    /* Flat or inverted has shipped before; the descent is the contract. */
-    expect(TIER_TWO_PER_PACKAGE_KOBO).toBeLessThan(TIER_ONE_PER_PACKAGE_KOBO);
-    expect(DELIVERY_CAP_OVER_BASE_KOBO).toBe(naira(6000));
+    expect(DISTANCE_BASE_FEE_KOBO).toBe(naira(700));
+    expect(DISTANCE_RATE_PER_KM_KOBO).toBe(naira(50));
+    expect(DISTANCE_ROUNDING_KOBO).toBe(naira(100));
     expect(MINIMUM_ORDER_KOBO).toBe(naira(25000));
     expect(MINIMUM_ORDER_PACKAGES).toBe(2);
+  });
+
+  it("charges every LGA from the same formula, just with a different distance", () => {
+    const near = computeDeliveryFee({ distanceKm: 5 }).deliveryFeeKobo;
+    const far = computeDeliveryFee({ distanceKm: 150 }).deliveryFeeKobo;
+
+    expect(far).toBeGreaterThan(near);
   });
 });

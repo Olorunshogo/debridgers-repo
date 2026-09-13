@@ -1,8 +1,16 @@
 import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Settings } from "lucide-react";
 import { apiFetch } from "@debridgers/api-client";
-import { formatFromKobo, NumberInputField } from "@debridgers/ui-web";
+import {
+  formatFromKobo,
+  NumberInputField,
+  SubmitButton,
+  platformSettingsSchema,
+  type PlatformSettingsValues,
+} from "@debridgers/ui-web";
 
 import { buildPageMeta } from "../../../lib/seo";
 export function meta() {
@@ -24,24 +32,31 @@ interface PlatformSettings {
 export default function AdminSettings() {
   const [settings, setSettings] = useState<PlatformSettings | null>(null);
   const [loading, setLoading] = useState(true);
-  const [commissionRate, setCommissionRate] = useState("");
-  const [discountKobo, setDiscountKobo] = useState("");
-  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting: saving },
+  } = useForm<PlatformSettingsValues>({
+    resolver: zodResolver(platformSettingsSchema),
+    mode: "onChange",
+  });
 
   useEffect(() => {
     apiFetch<PlatformSettings>("/admin/settings")
       .then((data) => {
         setSettings(data);
-        setCommissionRate(String(data.agent_commission_rate));
-        setDiscountKobo(
-          String(Math.round(data.buyer_referral_discount_kobo / 100)),
-        );
+        reset({
+          commissionRate: data.agent_commission_rate,
+          discountNaira: Math.round(data.buyer_referral_discount_kobo / 100),
+        });
       })
       .catch(() => setError("Failed to load settings."))
       .finally(() => setLoading(false));
-  }, []);
+  }, [reset]);
 
   async function saveSetting(key: string, value: string) {
     await apiFetch("/admin/settings", {
@@ -50,29 +65,18 @@ export default function AdminSettings() {
     });
   }
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
+  const handleSave = handleSubmit(async (values) => {
     setError(null);
     setSaved(false);
     try {
-      const rate = parseFloat(commissionRate);
-      if (isNaN(rate) || rate < 1 || rate > 100) {
-        setError("Commission rate must be between 1 and 100.");
-        return;
-      }
-      const kobo = Math.round(parseFloat(discountKobo) * 100);
-      if (isNaN(kobo) || kobo < 0) {
-        setError("Referral discount must be a valid amount.");
-        return;
-      }
-      await saveSetting("agent_commission_rate", String(rate));
+      const kobo = Math.round(values.discountNaira * 100);
+      await saveSetting("agent_commission_rate", String(values.commissionRate));
       await saveSetting("buyer_referral_discount_kobo", String(kobo));
       setSettings((prev) =>
         prev
           ? {
               ...prev,
-              agent_commission_rate: rate,
+              agent_commission_rate: values.commissionRate,
               buyer_referral_discount_kobo: kobo,
             }
           : prev,
@@ -81,10 +85,8 @@ export default function AdminSettings() {
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save settings.");
-    } finally {
-      setSaving(false);
     }
-  }
+  });
 
   if (loading) {
     return (
@@ -143,8 +145,8 @@ export default function AdminSettings() {
             min={1}
             max={100}
             step={0.5}
-            value={commissionRate}
-            onChange={(e) => setCommissionRate(e.target.value)}
+            error={errors.commissionRate?.message}
+            {...register("commissionRate", { valueAsNumber: true })}
           />
           <p className="text-body text-xs">
             Agents earn this % on every confirmed order. Range: 1–100.
@@ -177,8 +179,8 @@ export default function AdminSettings() {
             required
             min={0}
             step={50}
-            value={discountKobo}
-            onChange={(e) => setDiscountKobo(e.target.value)}
+            error={errors.discountNaira?.message}
+            {...register("discountNaira", { valueAsNumber: true })}
           />
           <p className="text-body text-xs">
             Applied as a flat discount at checkout. Expires 90 days after
@@ -188,13 +190,9 @@ export default function AdminSettings() {
       </div>
 
       <div className="flex justify-end">
-        <button
-          type="submit"
-          disabled={saving}
-          className="bg-primary rounded-full px-8 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-        >
-          {saving ? "Saving..." : "Save Settings"}
-        </button>
+        <SubmitButton loading={saving} loadingText="Saving...">
+          Save Settings
+        </SubmitButton>
       </div>
     </form>
   );

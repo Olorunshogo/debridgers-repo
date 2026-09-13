@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { buildPageMeta } from "../../lib/seo";
 import { useNavigate } from "react-router";
 import { apiMutate } from "@debridgers/api-client";
@@ -7,7 +9,9 @@ import {
   EmailInputField,
   PasswordInputField,
   SubmitButton,
-  extractServerFieldErrors,
+  applyServerFieldErrors,
+  adminRegisterSchema,
+  type AdminRegisterValues,
 } from "@debridgers/ui-web";
 
 export function meta() {
@@ -21,41 +25,30 @@ export function meta() {
 
 export default function AdminRegister() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    email: "",
-    first_name: "",
-    last_name: "",
-    password: "",
-    invite_code: "",
-  });
   const [error, setError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState<{
-    email?: string;
-    first_name?: string;
-    last_name?: string;
-    password?: string;
-    invite_code?: string;
-  }>({});
-  const [loading, setLoading] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
   const [apiKeyCopied, setApiKeyCopied] = useState<boolean>(false);
 
-  /*
-   * No schema library here (plain useState, not react-hook-form), so validity is the same required/minLength constraints already on the inputs below, computed once for the submit button rather than left to the browser's own validation on click.
-   */
-  const isFormValid =
-    formData.email.trim() !== "" &&
-    formData.first_name.trim() !== "" &&
-    formData.last_name.trim() !== "" &&
-    formData.password.length >= 8 &&
-    formData.invite_code.trim() !== "";
+  const form = useForm<AdminRegisterValues>({
+    resolver: zodResolver(adminRegisterSchema),
+    mode: "onChange",
+    defaultValues: {
+      email: "",
+      firstName: "",
+      lastName: "",
+      password: "",
+      inviteCode: "",
+    },
+  });
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  const {
+    register,
+    formState: { errors, isValid, isSubmitting },
+  } = form;
+
+  const handleSubmit = form.handleSubmit(async (values) => {
     setError("");
-    setFieldErrors({});
-    setLoading(true);
 
     try {
       const result = await apiMutate<{
@@ -66,34 +59,22 @@ export default function AdminRegister() {
       }>("/auth/admin/register", {
         method: "POST",
         body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          invite_code: formData.invite_code,
+          email: values.email,
+          password: values.password,
+          first_name: values.firstName,
+          last_name: values.lastName,
+          invite_code: values.inviteCode,
         }),
       });
 
       setApiKey(result.admin_api_key);
     } catch (err) {
-      /* email/first_name/last_name/password/invite_code are already the
-         form's own field names, so the camelCased keys the backend reports
-         need mapping back rather than a direct merge. */
-      const server = extractServerFieldErrors(err);
-      setFieldErrors({
-        email: server.email,
-        first_name: server.firstName,
-        last_name: server.lastName,
-        password: server.password,
-        invite_code: server.inviteCode,
-      });
+      applyServerFieldErrors(err, form);
       const message =
         err instanceof Error ? err.message : "Registration failed";
       setError(message);
-    } finally {
-      setLoading(false);
     }
-  }
+  });
 
   if (apiKey) {
     return (
@@ -185,31 +166,22 @@ export default function AdminRegister() {
           <EmailInputField
             label="Email Address"
             required
-            value={formData.email}
-            error={fieldErrors.email}
-            onChange={(e) =>
-              setFormData({ ...formData, email: e.target.value })
-            }
+            error={errors.email?.message}
+            {...register("email")}
           />
 
           <div className="grid grid-cols-2 gap-4">
             <TextInputField
               label="First Name"
               required
-              value={formData.first_name}
-              error={fieldErrors.first_name}
-              onChange={(e) =>
-                setFormData({ ...formData, first_name: e.target.value })
-              }
+              error={errors.firstName?.message}
+              {...register("firstName")}
             />
             <TextInputField
               label="Last Name"
               required
-              value={formData.last_name}
-              error={fieldErrors.last_name}
-              onChange={(e) =>
-                setFormData({ ...formData, last_name: e.target.value })
-              }
+              error={errors.lastName?.message}
+              {...register("lastName")}
             />
           </div>
 
@@ -218,11 +190,8 @@ export default function AdminRegister() {
               label="Password"
               required
               minLength={8}
-              value={formData.password}
-              error={fieldErrors.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
+              error={errors.password?.message}
+              {...register("password")}
             />
             <p className="mt-1 text-xs text-gray-500">
               Minimum 8 characters required
@@ -233,17 +202,14 @@ export default function AdminRegister() {
             label="Invitation Code"
             required
             className="font-mono"
-            value={formData.invite_code}
-            error={fieldErrors.invite_code}
-            onChange={(e) =>
-              setFormData({ ...formData, invite_code: e.target.value })
-            }
+            error={errors.inviteCode?.message}
+            {...register("inviteCode")}
           />
 
           <SubmitButton
             fullWidth
-            disabled={!isFormValid}
-            loading={loading}
+            disabled={!isValid}
+            loading={isSubmitting}
             loadingText="Creating Account..."
             className="mt-6"
           >

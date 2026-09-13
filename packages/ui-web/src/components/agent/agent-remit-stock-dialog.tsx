@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { PackageCheck } from "lucide-react";
 import { DialogHeader } from "../../lib/dialog/dialog-header";
 import { DialogErrorBanner } from "../../lib/dialog/dialog-error-banner";
@@ -6,6 +7,10 @@ import { DialogSuccessPanel } from "../../lib/dialog/dialog-success-panel";
 import { SubmitButton } from "../submit-button";
 import { NumberInputField } from "../number-input-field";
 import { formatFromKobo } from "../../utils/format-currency";
+import {
+  createRemitStockSchema,
+  type RemitStockValues,
+} from "../../schemas/agent/remit-stock";
 
 /*
  * Presentation only: no data fetching, no routing, no useDialog.
@@ -43,8 +48,16 @@ export function AgentRemitStockDialog({
   );
   const outstandingNaira: number = outstandingKobo / 100;
 
-  const [amount, setAmount] = useState<string>("");
-  const [localError, setLocalError] = useState<string | null>(null);
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<RemitStockValues>({
+    resolver: zodResolver(createRemitStockSchema(outstandingKobo)),
+    mode: "onChange",
+    defaultValues: { amount: 0 },
+  });
 
   if (success) {
     return (
@@ -58,22 +71,10 @@ export function AgentRemitStockDialog({
     );
   }
 
-  function submit(e: React.FormEvent): void {
-    e.preventDefault();
-    const naira: number = parseFloat(amount);
-    if (isNaN(naira) || naira <= 0) {
-      setLocalError("Enter an amount greater than zero.");
-      return;
-    }
-    if (Math.round(naira * 100) > outstandingKobo) {
-      setLocalError(
-        `That is more than the ${formatFromKobo(outstandingKobo)} still owed.`,
-      );
-      return;
-    }
-    setLocalError(null);
-    void onSubmitAmount(Math.round(naira * 100));
-  }
+  const submit = handleSubmit((values) =>
+    /* Round at the boundary so a fractional naira cannot reach the ledger. */
+    onSubmitAmount(Math.round(values.amount * 100)),
+  );
 
   return (
     <div className="flex flex-col gap-5">
@@ -101,20 +102,22 @@ export function AgentRemitStockDialog({
         </div>
       </div>
 
-      <DialogErrorBanner message={error ?? localError} />
+      <DialogErrorBanner message={error} />
 
       <form onSubmit={submit} noValidate className="flex flex-col gap-4">
         <NumberInputField
           label="Amount"
           placeholder="0"
+          error={errors.amount?.message}
           required
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          {...register("amount", { valueAsNumber: true })}
         />
 
         <button
           type="button"
-          onClick={() => setAmount(String(outstandingNaira))}
+          onClick={() =>
+            setValue("amount", outstandingNaira, { shouldValidate: true })
+          }
           className="text-primary w-fit cursor-pointer text-xs font-medium underline underline-offset-2"
         >
           Remit the full balance

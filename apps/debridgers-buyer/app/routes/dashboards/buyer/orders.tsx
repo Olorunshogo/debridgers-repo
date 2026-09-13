@@ -20,6 +20,10 @@ import {
   type StatusTone,
   type TableColumn,
 } from "@debridgers/ui-web";
+import type {
+  OrderStatus as ApiOrderStatus,
+  PaymentStatus as ApiPaymentStatus,
+} from "@debridgers/domain-status";
 
 import { buildPageMeta } from "../../../lib/seo";
 export function meta() {
@@ -32,14 +36,14 @@ export function meta() {
   });
 }
 
-type OrderStatus =
-  | "awaiting_quote"
+/* The buyer's simplified view, merging order_status + payment_status into one badge - not a 1:1 copy of either backend enum. */
+type OrderDisplayStatus =
   | "active"
   | "pending"
   | "confirmed"
   | "cancelled"
   | "delivered";
-type Tab = "all" | OrderStatus;
+type Tab = "all" | OrderDisplayStatus;
 
 /*
  * Raw values, not display strings.
@@ -54,14 +58,14 @@ interface Order {
   quantity: number;
   createdAt: string;
   amountKobo: number;
-  status: OrderStatus;
+  status: OrderDisplayStatus;
 }
 
 interface ApiOrder {
   id: number;
   order_reference: string;
-  status: string;
-  payment_status: string;
+  status: ApiOrderStatus;
+  payment_status: ApiPaymentStatus;
   total_amount: number;
   quantity: number;
   delivery_address: string;
@@ -69,17 +73,13 @@ interface ApiOrder {
 }
 
 function mapApiOrder(o: ApiOrder): Order {
-  const dbToUi = (orderStatus: string, paymentStatus: string): OrderStatus => {
+  const dbToUi = (
+    orderStatus: ApiOrderStatus,
+    paymentStatus: ApiPaymentStatus,
+  ): OrderDisplayStatus => {
     // Delivered/cancelled win even if payment never reconciled.
     if (orderStatus === "cancelled") return "cancelled";
     if (orderStatus === "delivered") return "delivered";
-    /*
-     * A distinct unpaid sub-state - must be checked before the generic
-     * payment gate below, or it collapses into plain "pending" and the
-     * buyer loses the "we're confirming your delivery fee" messaging.
-     * No real total yet - see zones.requires_quote.
-     */
-    if (orderStatus === "awaiting_quote") return "awaiting_quote";
     // Anything else not paid is Unpaid, never On the way.
     if (paymentStatus !== "paid") return "pending";
     if (orderStatus === "out_for_delivery") return "active";
@@ -99,7 +99,6 @@ function mapApiOrder(o: ApiOrder): Order {
 
 const tabs: { key: Tab; label: string }[] = [
   { key: "all", label: "All" },
-  { key: "awaiting_quote", label: "Awaiting quote" },
   { key: "active", label: "Active" },
   { key: "pending", label: "Unpaid" },
   { key: "confirmed", label: "Confirmed" },
@@ -111,10 +110,9 @@ const tabs: { key: Tab; label: string }[] = [
  * TableStatusBadge already owns the token pairing, and "confirmed" was reaching for bg-green-100 / text-green-700 - palette literals that match nothing else in the system.
  */
 const STATUS_PRESENTATION: Record<
-  OrderStatus,
+  OrderDisplayStatus,
   { tone: StatusTone; label: string }
 > = {
-  awaiting_quote: { tone: "warning", label: "Awaiting delivery quote" },
   active: { tone: "info", label: "On the way" },
   pending: { tone: "warning", label: "Unpaid" },
   confirmed: { tone: "success", label: "Paid" },
@@ -126,7 +124,7 @@ const STATUS_PRESENTATION: Record<
  * Trackable states.
  * Named once because the row action and the detail panel both ask the same question.
  */
-function isTrackable(status: OrderStatus): boolean {
+function isTrackable(status: OrderDisplayStatus): boolean {
   return status === "active" || status === "delivered";
 }
 
@@ -254,10 +252,8 @@ export default function BuyerOrders() {
   }
 
   /*
-   * A pending order here was either resumed after an abandoned checkout, or
-   * just left awaiting_quote once an admin set a real delivery_fee - either
-   * way /pay is the same endpoint checkout itself uses, verified server-side
-   * against the order's own total_amount, never a client-supplied figure.
+   * A pending order here was resumed after an abandoned checkout.
+   * /pay is the same endpoint checkout itself uses, verified server-side against the order's own total_amount, never a client-supplied figure.
    */
   async function handlePayNow(method: "wallet" | "paystack"): Promise<void> {
     if (!selected) return;
@@ -497,19 +493,7 @@ export default function BuyerOrders() {
                 </div>
               )}
 
-              {selected.status === "awaiting_quote" && (
-                <div className="border-status-pending-fg/25 bg-status-pending text-status-pending-fg mt-5 rounded-xl border px-3 py-2.5 text-xs">
-                  <strong className="font-semibold">
-                    We&apos;re confirming your delivery fee.
-                  </strong>{" "}
-                  This order is outside our priced delivery areas. You&apos;ll
-                  get a notification here the moment it&apos;s ready to pay - or
-                  cancel it below if you&apos;d rather not wait.
-                </div>
-              )}
-
-              {(selected.status === "pending" ||
-                selected.status === "awaiting_quote") && (
+              {selected.status === "pending" && (
                 <div className="border-line mt-5 flex flex-col gap-3 border-t pt-5">
                   {selected.status === "pending" && (
                     <div className="flex flex-col gap-2">

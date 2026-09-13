@@ -73,35 +73,19 @@ import {
   parseOptionalEnum,
   parsePagination,
 } from "../../../infrastructure/helper/query.helper";
-import { ORDER_STATUSES } from "../../shared/order-status";
+import {
+  ORDER_STATUSES,
+  PAYMENT_STATUSES,
+  WITHDRAWAL_STATUSES,
+  AGENT_STATUSES,
+  KYC_STATUSES,
+  COMMISSION_STATUSES,
+} from "@debridgers/domain-status";
 
 const updateOrderStatusSchema = z.object({
   status: z.enum(ORDER_STATUSES),
   reason: z.string().min(1).optional(),
 });
-const setDeliveryQuoteSchema = z.object({
-  delivery_fee_kobo: z.number().int().min(0),
-});
-const PAYMENT_STATUSES = ["unpaid", "awaiting", "paid", "failed"] as const;
-const WITHDRAWAL_STATUSES = [
-  "pending",
-  "approved",
-  "rejected",
-  "paid",
-] as const;
-const AGENT_STATUSES = [
-  "pending",
-  "approved",
-  "rejected",
-  "suspended",
-] as const;
-const KYC_STATUSES = [
-  "not_submitted",
-  "submitted",
-  "approved",
-  "rejected",
-] as const;
-const COMMISSION_STATUSES = ["pending", "confirmed", "paid"] as const;
 const COMMISSION_TYPES = [
   "direct",
   "buyer_referral",
@@ -115,6 +99,7 @@ const createOutreachSchema = z.object({
   shop_name: z.string().optional(),
   lga: z.string().optional(),
   area: z.string().optional(),
+  address: z.string().optional(),
   product_interest: z.string().optional(),
   estimated_quantity: z.coerce.number().optional(),
   how_heard: z.string().optional(),
@@ -499,27 +484,6 @@ export class AdminController {
     );
   }
 
-  @Patch("orders/:id/delivery-quote")
-  @AdminDesks("buyer")
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: "Set a manual delivery fee for an awaiting_quote order",
-    description:
-      "Only legal from awaiting_quote (a zone with no priced delivery rate). Recomputes total_amount and moves the order to pending so the buyer can pay.",
-  })
-  setDeliveryQuote(
-    @Param("id", ParseIntPipe) id: number,
-    @Body(new ZodValidationPipe(setDeliveryQuoteSchema))
-    dto: z.infer<typeof setDeliveryQuoteSchema>,
-    @AdminId() adminId: number,
-  ) {
-    return this.adminService.setDeliveryQuote(
-      id,
-      dto.delivery_fee_kobo,
-      adminId,
-    );
-  }
-
   // === Buyers
 
   @Get("buyers")
@@ -883,6 +847,7 @@ export class AdminController {
         shop_name: { type: "string", example: "Ibrahim Grains" },
         lga: { type: "string", example: "Chikun" },
         area: { type: "string", example: "Barnawa" },
+        address: { type: "string", example: "No. 5 Kaura Market" },
         product_interest: { type: "string", example: "Maize" },
         estimated_quantity: { type: "number", example: 5 },
         how_heard: { type: "string", example: "Word of mouth" },
@@ -903,6 +868,7 @@ export class AdminController {
       phone: dto.phone,
       lga: dto.lga,
       area: dto.area,
+      address: dto.address,
       product_interest: dto.product_interest,
       quantity: dto.estimated_quantity,
       notes:

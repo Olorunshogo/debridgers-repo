@@ -35,18 +35,16 @@ import {
 } from "./dto/zone.dto";
 import { createPromotionSchema, CreatePromotionDto } from "./dto/promotion.dto";
 import {
-  DELIVERY_CAP_OVER_BASE_KOBO,
+  DISTANCE_BASE_FEE_KOBO,
+  DISTANCE_RATE_PER_KM_KOBO,
+  DISTANCE_ROUNDING_KOBO,
   INDIVIDUAL_QUOTE_PACKAGE_THRESHOLD,
   INDIVIDUAL_QUOTE_SUBTOTAL_KOBO,
   MINIMUM_ORDER_KOBO,
   MINIMUM_ORDER_PACKAGES,
-  PACKAGES_INCLUDED_IN_BASE,
   SERVICE_FEE_MAX_KOBO,
   SERVICE_FEE_MIN_KOBO,
   SERVICE_FEE_RATE,
-  TIER_ONE_PACKAGE_COUNT,
-  TIER_ONE_PER_PACKAGE_KOBO,
-  TIER_TWO_PER_PACKAGE_KOBO,
 } from "@debridgers/pricing";
 
 /*
@@ -91,11 +89,9 @@ export class PricingAdminController {
         service_fee_rate: SERVICE_FEE_RATE,
         service_fee_min_kobo: SERVICE_FEE_MIN_KOBO,
         service_fee_max_kobo: SERVICE_FEE_MAX_KOBO,
-        packages_included_in_base: PACKAGES_INCLUDED_IN_BASE,
-        tier_one_package_count: TIER_ONE_PACKAGE_COUNT,
-        default_tier_one_per_package_kobo: TIER_ONE_PER_PACKAGE_KOBO,
-        default_tier_two_per_package_kobo: TIER_TWO_PER_PACKAGE_KOBO,
-        default_delivery_cap_over_base_kobo: DELIVERY_CAP_OVER_BASE_KOBO,
+        distance_base_fee_kobo: DISTANCE_BASE_FEE_KOBO,
+        distance_rate_per_km_kobo: DISTANCE_RATE_PER_KM_KOBO,
+        distance_rounding_kobo: DISTANCE_ROUNDING_KOBO,
         minimum_order_kobo: MINIMUM_ORDER_KOBO,
         minimum_order_packages: MINIMUM_ORDER_PACKAGES,
         individual_quote_package_threshold: INDIVIDUAL_QUOTE_PACKAGE_THRESHOLD,

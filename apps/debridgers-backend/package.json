@@ -27,6 +27,7 @@
     "docker:migrate": "pnpm docker:up && pnpm db:migrate"
   },
   "dependencies": {
+    "@debridgers/domain-status": "workspace:*",
     "@debridgers/pricing": "workspace:*",
     "@debridgers/ratings": "workspace:*",
     "@keyv/redis": "^5.1.6",

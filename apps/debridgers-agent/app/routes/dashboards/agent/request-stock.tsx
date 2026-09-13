@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Minus, Plus, CheckCircle2, Package, Trash2 } from "lucide-react";
 import { apiFetch, ApiError } from "@debridgers/api-client";
+import type { StockRequestStatus } from "@debridgers/domain-status";
 import {
   formatFromKobo,
   fadeDownVariants,
   transitionBase,
   useDialog,
+  SubmitButton,
 } from "@debridgers/ui-web";
 import {
   StockTaxonomyPicker,
@@ -24,8 +26,6 @@ export function meta() {
   });
 }
 
-type RequestStatus = "pending" | "fulfilled" | "cancelled";
-
 /* category_id is the leaf of the taxonomy tree, null for products not yet categorised. */
 interface Product {
   id: number;
@@ -41,7 +41,7 @@ interface ApiStockRequest {
   id: number;
   product_id: number | null;
   quantity: number;
-  status: string;
+  status: StockRequestStatus;
   amount_to_remit: number;
   amount_remitted: number;
   created_at: string;
@@ -51,7 +51,7 @@ interface StockRequest {
   id: string;
   product_name: string;
   quantity: number;
-  status: RequestStatus;
+  status: StockRequestStatus;
   amount_to_remit: number;
   amount_remitted: number;
   created_at: string;
@@ -63,7 +63,7 @@ interface RequestLineItem {
 }
 
 const statusStyles: Record<
-  RequestStatus,
+  StockRequestStatus,
   { bgClass: string; textClass: string; label: string }
 > = {
   fulfilled: {
@@ -75,11 +75,6 @@ const statusStyles: Record<
     bgClass: "bg-amber-100",
     textClass: "text-amber-800",
     label: "Pending",
-  },
-  cancelled: {
-    bgClass: "bg-status-cancelled",
-    textClass: "text-status-cancelled-fg",
-    label: "Cancelled",
   },
 };
 
@@ -139,7 +134,7 @@ export default function AgentRequestStockPage() {
               ? (productMap[r.product_id]?.name ?? "Item")
               : "Item",
             quantity: r.quantity,
-            status: r.status as RequestStatus,
+            status: r.status,
             amount_to_remit: r.amount_to_remit,
             amount_remitted: r.amount_remitted,
             created_at: r.created_at,
@@ -343,8 +338,9 @@ export default function AgentRequestStockPage() {
                     </div>
 
                     {canRemit && (
-                      <button
+                      <SubmitButton
                         type="button"
+                        variant="secondary"
                         onClick={() =>
                           triggerDialog("REMIT_STOCK", {
                             stockRequestId: Number(req.id),
@@ -354,10 +350,10 @@ export default function AgentRequestStockPage() {
                             onRemitted: () => void loadRequests(),
                           })
                         }
-                        className="border-primary text-primary w-fit cursor-pointer rounded-full border px-4 py-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
+                        className="w-fit"
                       >
                         Remit {fmt(outstanding)}
-                      </button>
+                      </SubmitButton>
                     )}
                   </motion.div>
                 );
@@ -423,13 +419,14 @@ export default function AgentRequestStockPage() {
                       Total to remit: {fmt(totalRemit)}
                     </p>
                   </div>
-                  <button
+                  <SubmitButton
+                    type="button"
                     onClick={handleSubmit}
-                    disabled={submitting}
-                    className="bg-primary cursor-pointer rounded-full px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                    loading={submitting}
+                    loadingText="Submitting..."
                   >
-                    {submitting ? "Submitting..." : "Submit Request"}
-                  </button>
+                    Submit Request
+                  </SubmitButton>
                 </div>
               </div>
             </div>

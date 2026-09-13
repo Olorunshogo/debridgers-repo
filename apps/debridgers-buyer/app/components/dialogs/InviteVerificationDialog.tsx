@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   DialogHeader,
   DialogErrorBanner,
@@ -8,6 +10,8 @@ import {
   useDialog,
   useDialogSubmission,
   DIALOG_SUCCESS_CLOSE_DELAY_MS,
+  inviteVerificationSchema,
+  type InviteVerificationValues,
 } from "@debridgers/ui-web";
 import { apiMutate } from "@debridgers/api-client";
 
@@ -28,7 +32,15 @@ export default function InviteVerificationDialog({
 }: InviteVerificationDialogProps) {
   const { closeDialog, setDialogLoading } = useDialog();
   const { status, error, run, isSubmitting } = useDialogSubmission<void>();
-  const [inviteCode, setInviteCode] = useState<string>("");
+  const {
+    register,
+    handleSubmit: handleFormSubmit,
+    formState: { errors, isValid },
+  } = useForm<InviteVerificationValues>({
+    resolver: zodResolver(inviteVerificationSchema),
+    mode: "onChange",
+    defaultValues: { inviteCode: "" },
+  });
 
   useEffect(() => {
     setDialogLoading(isSubmitting);
@@ -41,17 +53,14 @@ export default function InviteVerificationDialog({
     return () => window.clearTimeout(timer);
   }, [status, closeDialog, onVerified]);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
-    if (isSubmitting || !inviteCode.trim()) return;
-
-    void run(async () => {
+  const handleSubmit = handleFormSubmit((values) =>
+    run(async () => {
       await apiMutate("/admin/invites/verify", {
         method: "POST",
-        body: JSON.stringify({ invite_code: inviteCode.trim() }),
+        body: JSON.stringify({ invite_code: values.inviteCode.trim() }),
       });
-    });
-  }
+    }),
+  );
 
   if (status === "success") {
     return (
@@ -78,19 +87,18 @@ export default function InviteVerificationDialog({
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <TextInputField
           label="Invite code"
-          name="invite_code"
           required
           placeholder="Paste the code from your email"
-          value={inviteCode}
           disabled={isSubmitting}
-          onChange={(e) => setInviteCode(e.target.value)}
+          error={errors.inviteCode?.message}
+          {...register("inviteCode")}
         />
 
         <SubmitButton
           variant="primary"
           loading={isSubmitting}
           loadingText="Verifying..."
-          disabled={!inviteCode.trim()}
+          disabled={!isValid}
         >
           Verify code
         </SubmitButton>

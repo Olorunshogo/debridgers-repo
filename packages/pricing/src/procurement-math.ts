@@ -47,11 +47,9 @@ export interface PricingRules {
   serviceFeeRate: number;
   serviceFeeMin: number;
   serviceFeeMax: number;
-  packagesInBase: number;
-  tierOnePackages: number;
-  tierOnePerPackage: number;
-  tierTwoPerPackage: number;
-  deliveryCapOverBase: number;
+  distanceBaseFee: number;
+  distanceRatePerKm: number;
+  distanceRounding: number;
   minimumOrder: number;
   minimumOrderPackages: number;
 }
@@ -60,7 +58,7 @@ export interface PricingRules {
  * `sellPrice` is what the buyer pays for one package of goods, before any fee.
  * `buyPrice` is what Debridgers pays the supplier for one package.
  * `inboundHaulage` is supplier to warehouse, per package, and is part of landed cost, not delivery.
- * `zoneBase` is the zone base fee, which is also the cost of one dedicated trip, and `dropsPerTrip` is how many deliveries share that vehicle, so the trip cost divides by it.
+ * `distanceKm` is the delivery LGA's distance from the Narayi warehouse, which sets the trip cost; `dropsPerTrip` is how many deliveries share that vehicle, so the trip cost divides by it.
  * `loadingPerPackage` is loading and offloading per package: ₦300 for 50kg, ₦500 for 100kg.
  */
 export interface OrderInputs {
@@ -68,7 +66,7 @@ export interface OrderInputs {
   buyPrice: number;
   inboundHaulage: number;
   packages: number;
-  zoneBase: number;
+  distanceKm: number;
   dropsPerTrip: number;
   loadingPerPackage: number;
 }
@@ -94,20 +92,9 @@ export interface OrderBreakdown {
 
 // === Fees
 
-export function deliveryFee(
-  zoneBase: number,
-  packages: number,
-  rules: PricingRules,
-): number {
-  const extra: number = Math.max(0, packages - rules.packagesInBase);
-  const tierOne: number = Math.min(extra, rules.tierOnePackages);
-  const tierTwo: number = extra - tierOne;
-  const uncapped: number =
-    zoneBase +
-    tierOne * rules.tierOnePerPackage +
-    tierTwo * rules.tierTwoPerPackage;
-
-  return Math.min(uncapped, zoneBase + rules.deliveryCapOverBase);
+export function deliveryFee(distanceKm: number, rules: PricingRules): number {
+  const raw = rules.distanceBaseFee + rules.distanceRatePerKm * distanceKm;
+  return Math.floor(raw / rules.distanceRounding) * rules.distanceRounding;
 }
 
 export function serviceFee(itemsTotal: number, rules: PricingRules): number {
@@ -141,20 +128,20 @@ function orderBreakdown(
     buyPrice,
     inboundHaulage,
     packages,
-    zoneBase,
+    distanceKm,
     dropsPerTrip,
     loadingPerPackage,
   } = inputs;
 
   const itemsTotal: number = sellPrice * packages;
-  const delivery: number = deliveryFee(zoneBase, packages, rules);
+  const delivery: number = deliveryFee(distanceKm, rules);
   const service: number = serviceFee(itemsTotal, rules);
   const revenue: number = itemsTotal + delivery + service;
 
   const landedGoods: number = (buyPrice + inboundHaulage) * packages;
   const paystack: number = paystackAt(revenue);
   /* The trip is the cost, and it is shared across every drop it serves. */
-  const vehicle: number = zoneBase / Math.max(1, dropsPerTrip);
+  const vehicle: number = delivery / Math.max(1, dropsPerTrip);
   const loading: number = loadingPerPackage * packages;
 
   const totalCost: number = landedGoods + paystack + vehicle + loading;
@@ -273,12 +260,8 @@ export function sellPriceForMargin(
 /*
  * The order the targets are computed against, in kobo.
  *
- * The taper and the ceiling are the ZONE's own, not the defaults from GET /config/public.
- * Quoting a far zone at the near zone's rates is how the desk came to compute walk-away prices against a schedule checkout does not charge.
- *
- * `zoneBaseKobo` is the zone base fee, which is also the cost of one dedicated trip, and `dropsPerTrip` is how many deliveries share that vehicle, so the trip cost divides by it.
+ * `distanceKm` is the delivery LGA's distance from the Narayi warehouse, which sets the trip cost, and `dropsPerTrip` is how many deliveries share that vehicle, so the trip cost divides by it.
  * `loadingPerPackageKobo` (from assumptions.ts) and `inboundHaulageKobo` are loading/offloading and supplier-to-warehouse cost per package, both in kobo; the latter is part of landed cost.
- * `tierOnePerPackageKobo` and `tierTwoPerPackageKobo` are this zone's own per-package charge for packages 3 to 6 and package 7 onward, and `deliveryCapKobo` is this zone's absolute ceiling on one delivery fee.
  *
  * `targetMarginPercent` is a PERCENTAGE, as typed on the screen and as stored in system_settings.
  * It is divided to a fraction exactly once, inside.
@@ -288,13 +271,10 @@ export function sellPriceForMargin(
  */
 export interface ProcurementContext {
   packages: number;
-  zoneBaseKobo: number;
+  distanceKm: number;
   dropsPerTrip: number;
   loadingPerPackageKobo: number;
   inboundHaulageKobo: number;
-  tierOnePerPackageKobo: number;
-  tierTwoPerPackageKobo: number;
-  deliveryCapKobo: number;
   targetMarginPercent: number;
   productName?: string;
 }
@@ -353,29 +333,17 @@ function marginFraction(percent: number): number {
   return Math.min(Math.max(percent, 0), 100) / 100;
 }
 
-/*
- * The naira fee rules, restated in kobo, with the zone's own taper and ceiling in place of the served defaults.
- * Nothing new is invented here: every figure is either the served rule scaled by 100 or the zone's own row.
- */
-function toKoboRules(
-  rules: PricingRules,
-  context: ProcurementContext,
-): PricingRules {
+/* The naira fee rules, restated in kobo. Every figure here is the served rule scaled by 100 - nothing is invented. */
+function toKoboRules(rules: PricingRules): PricingRules {
   const kobo = (naira: number): number => Math.round(naira * 100);
 
   return {
     serviceFeeRate: rules.serviceFeeRate,
     serviceFeeMin: kobo(rules.serviceFeeMin),
     serviceFeeMax: kobo(rules.serviceFeeMax),
-    packagesInBase: rules.packagesInBase,
-    tierOnePackages: rules.tierOnePackages,
-    tierOnePerPackage: context.tierOnePerPackageKobo,
-    tierTwoPerPackage: context.tierTwoPerPackageKobo,
-    /* The zone carries an absolute ceiling; PricingRules holds headroom. */
-    deliveryCapOverBase: Math.max(
-      0,
-      context.deliveryCapKobo - context.zoneBaseKobo,
-    ),
+    distanceBaseFee: kobo(rules.distanceBaseFee),
+    distanceRatePerKm: kobo(rules.distanceRatePerKm),
+    distanceRounding: kobo(rules.distanceRounding),
     minimumOrder: kobo(rules.minimumOrder),
     minimumOrderPackages: rules.minimumOrderPackages,
   };
@@ -392,11 +360,11 @@ export function procurementTargets(
   rules: PricingRules,
 ): ProcurementTargets {
   const targetMargin: number = marginFraction(input.targetMarginPercent);
-  const koboRules: PricingRules = toKoboRules(rules, input);
+  const koboRules: PricingRules = toKoboRules(rules);
 
   const shared = {
     packages: input.packages,
-    zoneBase: input.zoneBaseKobo,
+    distanceKm: input.distanceKm,
     dropsPerTrip: input.dropsPerTrip,
     loadingPerPackage: input.loadingPerPackageKobo,
     inboundHaulage: input.inboundHaulageKobo,

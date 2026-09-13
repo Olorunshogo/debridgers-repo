@@ -8,8 +8,7 @@ import type { DialogRegistry } from "@debridgers/ui-web";
  *   3. Add the glue component here.
  *   4. Open it with `const { triggerDialog } = useDialog(); triggerDialog('YOUR_KEY', { ...props })`.
  * REQUEST_PAYOUT is the reference implementation - copy its shape.
- * The other hand-rolled modals in this app still own their own useState; migrate them one at a time.
- * See docs/frontend/Context.md rule 12.
+ * Every dialog in this app is react-hook-form + zod backed; see docs/frontend/Context.md.
  * CONFIRM is opened by the table engine for any row action declaring `confirm`.
  */
 export const DIALOG_REGISTRY: DialogRegistry = {
@@ -21,6 +20,6 @@ export const DIALOG_REGISTRY: DialogRegistry = {
   SUPPORT_TICKET: () => import("../components/dialogs/SupportTicketDialog"),
   CHANGE_PASSWORD: () => import("../components/dialogs/ChangePasswordDialog"),
   VERIFY_INVITE: () => import("../components/dialogs/InviteVerificationDialog"),
-  SET_DELIVERY_QUOTE: () =>
-    import("../components/dialogs/SetDeliveryQuoteDialog"),
+  MARK_DELIVERY_FAILED: () =>
+    import("../components/dialogs/MarkDeliveryFailedDialog"),
 };

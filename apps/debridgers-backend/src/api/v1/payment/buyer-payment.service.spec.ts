@@ -101,7 +101,7 @@ describe.skipIf(!hasDb)("BuyerPaymentService", () => {
 
     const [zone] = await t.db
       .insert(schema.zones)
-      .values({ name: "Kaduna South", delivery_fee: 400_000, areas: [] })
+      .values({ name: "Kaduna South", distance_km: 66, areas: [] })
       .returning();
     zoneId = zone.id;
 

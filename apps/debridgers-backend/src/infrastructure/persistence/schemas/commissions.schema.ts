@@ -12,13 +12,12 @@ import { timestamps } from "../../helper/column.helper";
 import { users } from "./users.schema";
 import { orders } from "./orders.schema";
 import { createInsertSchema } from "drizzle-zod";
+import { COMMISSION_STATUSES } from "@debridgers/domain-status";
 
-export const commissionStatusEnum = pgEnum("commission_status", [
-  "pending",
-  "confirmed",
-  "paid",
-  "reversed",
-]);
+export const commissionStatusEnum = pgEnum(
+  "commission_status",
+  COMMISSION_STATUSES,
+);
 
 /*
  * direct: the agent's own field/referral order.

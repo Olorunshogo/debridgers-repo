@@ -3,28 +3,12 @@
  * lifecycle and send the buyer the same wording.
  */
 
-export const ORDER_STATUSES = [
-  "awaiting_quote",
-  "pending",
-  "confirmed",
-  "out_for_delivery",
-  "delivery_failed",
-  "delivered",
-  "cancelled",
-] as const;
-
-export type OrderStatus = (typeof ORDER_STATUSES)[number];
+import type { OrderStatus } from "@debridgers/domain-status";
+export type { OrderStatus };
 
 // === Transitions
 
-/*
- * awaiting_quote has no transitions here on purpose: the only way out is
- * POST /admin/orders/:id/delivery-quote, which needs a fee amount the plain
- * status endpoint cannot carry, and recomputes total_amount as part of
- * leaving the status - see AdminService.setDeliveryQuote.
- */
 export const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  awaiting_quote: [],
   pending: ["confirmed", "cancelled"],
   /*
    * No confirmed -> delivered shortcut. It let an order reach delivered having never been dispatched.
@@ -47,10 +31,6 @@ export const ORDER_STATUS_NOTIFICATION: Record<
   OrderStatus,
   { title: (orderId: number) => string; body: string }
 > = {
-  awaiting_quote: {
-    title: (id) => `Order #${id} received`,
-    body: "We have received your order. Your delivery area needs a manual quote - we'll notify you here once it's ready so you can pay.",
-  },
   pending: {
     title: (id) => `Order #${id} received`,
     body: "We have received your order and are getting it ready.",

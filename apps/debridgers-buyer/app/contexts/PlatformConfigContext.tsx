@@ -22,17 +22,15 @@ import type { PricingRules } from "@debridgers/pricing";
  * Kobo, exactly as the API serves it.
  * Converted once, below.
  *
- * `default_tier_one_per_package_kobo`, `default_tier_two_per_package_kobo` and `default_delivery_cap_over_base_kobo` are defaults: the taper and ceiling are per zone, so a quote for a specific delivery must read them off that zone rather than from here.
+ * `distance_base_fee_kobo`, `distance_rate_per_km_kobo` and `distance_rounding_kobo` are the universal delivery-fee formula; the per-LGA distance itself lives on the zone, not here.
  */
 interface PublicPricingResponse {
   service_fee_rate: number;
   service_fee_min_kobo: number;
   service_fee_max_kobo: number;
-  packages_included_in_base: number;
-  tier_one_package_count: number;
-  default_tier_one_per_package_kobo: number;
-  default_tier_two_per_package_kobo: number;
-  default_delivery_cap_over_base_kobo: number;
+  distance_base_fee_kobo: number;
+  distance_rate_per_km_kobo: number;
+  distance_rounding_kobo: number;
   minimum_order_kobo: number;
   minimum_order_packages: number;
 }
@@ -74,11 +72,9 @@ function toPricingRules(p: PublicPricingResponse): PricingRules {
     serviceFeeRate: p.service_fee_rate,
     serviceFeeMin: naira(p.service_fee_min_kobo),
     serviceFeeMax: naira(p.service_fee_max_kobo),
-    packagesInBase: p.packages_included_in_base,
-    tierOnePackages: p.tier_one_package_count,
-    tierOnePerPackage: naira(p.default_tier_one_per_package_kobo),
-    tierTwoPerPackage: naira(p.default_tier_two_per_package_kobo),
-    deliveryCapOverBase: naira(p.default_delivery_cap_over_base_kobo),
+    distanceBaseFee: naira(p.distance_base_fee_kobo),
+    distanceRatePerKm: naira(p.distance_rate_per_km_kobo),
+    distanceRounding: naira(p.distance_rounding_kobo),
     minimumOrder: naira(p.minimum_order_kobo),
     minimumOrderPackages: p.minimum_order_packages,
   };
