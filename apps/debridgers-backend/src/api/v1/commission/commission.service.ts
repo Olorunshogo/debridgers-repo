@@ -240,14 +240,84 @@ export class CommissionService {
       return;
     }
 
-    await this.walletService.credit(beneficiaryId, amountKobo, {
-      pending: false,
-    });
+    await this.walletService.credit(
+      beneficiaryId,
+      amountKobo,
+      { pending: false },
+      this.db,
+      { reference: `commission:${inserted[0].id}`, description: type },
+    );
 
     this.logger.log(
       `${type}: ${amountKobo} kobo credited to agent ${beneficiaryId} for ${period}` +
         (sourceAgentId ? ` from agent ${sourceAgentId}` : ""),
     );
+  }
+
+  // === Reversal
+
+  /*
+   * Claws back the "direct" commission tied to a refunded order. Only "direct"
+   * commissions carry an order_id - buyer_referral has no order_id column
+   * value set today, and the override types are monthly aggregates with no
+   * single order to point at - so this is the entire reversible surface for a
+   * refund. A commission still "pending" (order delivered, not yet paid to
+   * the agent) is pulled back from pending_balance; one already "paid" is
+   * pulled back from available_balance, which AgentWalletService.reverseCredit
+   * deliberately does not clamp at zero, so an agent who already withdrew it
+   * carries the shortfall against future earnings rather than the company
+   * silently absorbing it.
+   */
+  async reverseCommissionsForOrder(
+    orderId: number,
+    reason: string,
+  ): Promise<void> {
+    const reversible = await this.db
+      .select()
+      .from(schema.commissions)
+      .where(
+        and(
+          eq(schema.commissions.order_id, orderId),
+          eq(schema.commissions.type, "direct"),
+          inArray(schema.commissions.status, ["pending", "paid"]),
+        ),
+      );
+
+    for (const commission of reversible) {
+      await this.db.transaction(async (tx) => {
+        const [updated] = await tx
+          .update(schema.commissions)
+          .set({
+            status: "reversed",
+            reversed_at: new Date(),
+            reversed_reason: reason,
+          })
+          .where(
+            and(
+              eq(schema.commissions.id, commission.id),
+              inArray(schema.commissions.status, ["pending", "paid"]),
+            ),
+          )
+          .returning();
+
+        if (!updated) return;
+
+        await this.walletService.reverseCredit(
+          updated.agent_id,
+          updated.amount_kobo,
+          { fromPending: commission.status === "pending" },
+          tx,
+          {
+            reference: `commission_reversal:${updated.id}`,
+            description: reason,
+          },
+        );
+
+        this.logger.log(
+          `Commission ${updated.id} reversed for agent ${updated.agent_id}: ${updated.amount_kobo} kobo (${reason})`,
+        );
+      });
+    }
   }
 
   /* YYYY-MM-01, the first day of the month an override is calculated for. */

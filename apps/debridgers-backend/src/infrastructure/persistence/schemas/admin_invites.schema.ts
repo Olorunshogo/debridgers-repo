@@ -19,6 +19,10 @@ export const adminInvites = pgTable("admin_invites", {
   used_by_admin_id: integer().references(() => users.id, {
     onDelete: "set null",
   }),
+  revoked_at: timestamp(),
+  revoked_by_admin_id: integer().references(() => users.id, {
+    onDelete: "set null",
+  }),
   expires_at: timestamp().notNull(),
   created_at: timestamp().notNull().defaultNow(),
 });

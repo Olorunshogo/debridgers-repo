@@ -22,7 +22,12 @@
 
 // === Delivery
 
-/** Packages covered by the zone base fee before extras are charged. */
+/*
+ * Packages covered by the zone base tier before extras are charged.
+ * The base is charged per package within this band, not as one flat fee: a
+ * single-package drop pays half the two-package base, since it is not the
+ * trip the base was measured against.
+ */
 export const PACKAGES_INCLUDED_IN_BASE = 2;
 
 /** Packages charged at the first taper step, being packages 3 to 6. */
@@ -205,6 +210,18 @@ export function computeDeliveryFee(
     deliveryCapKobo,
   } = input;
 
+  /*
+   * The base is per package, not a flat fee for the whole band: a single
+   * package trip is not the two-package trip the base was measured against.
+   * Kaduna South's base divides evenly to 2,000 per package; a zone whose
+   * base does not divide evenly rounds to the nearest naira.
+   */
+  const basePackages = Math.min(packageCount, PACKAGES_INCLUDED_IN_BASE);
+  const baseFeeKobo =
+    Math.round(
+      ((zoneFeeKobo / PACKAGES_INCLUDED_IN_BASE) * basePackages) / 100,
+    ) * 100;
+
   const extraPackages = Math.max(0, packageCount - PACKAGES_INCLUDED_IN_BASE);
   const tierOnePackages = Math.min(extraPackages, TIER_ONE_PACKAGE_COUNT);
   const tierTwoPackages = extraPackages - tierOnePackages;
@@ -214,14 +231,14 @@ export function computeDeliveryFee(
     tierTwoPackages * tierTwoPerPackageKobo;
 
   const capKobo = deliveryCapKobo ?? zoneFeeKobo + DELIVERY_CAP_OVER_BASE_KOBO;
-  const beforePromo = Math.min(zoneFeeKobo + uncappedExtras, capKobo);
-  const capped = zoneFeeKobo + uncappedExtras > capKobo;
+  const beforePromo = Math.min(baseFeeKobo + uncappedExtras, capKobo);
+  const capped = baseFeeKobo + uncappedExtras > capKobo;
 
   // The full price is still computed during a promo so the UI can show it struck through next to FREE.
   return {
-    zoneFeeKobo,
+    zoneFeeKobo: baseFeeKobo,
     extraPackages,
-    extraPackagesKobo: beforePromo - zoneFeeKobo,
+    extraPackagesKobo: beforePromo - baseFeeKobo,
     capped,
     deliveryFeeKobo: freeDelivery ? 0 : beforePromo,
     deliveryFeeBeforePromoKobo: beforePromo,

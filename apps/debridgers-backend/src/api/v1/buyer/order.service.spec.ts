@@ -260,10 +260,11 @@ describe.skipIf(!hasDb)("OrderService order creation", () => {
       }),
     );
 
-    /* 4_200_000 item + 400_000 delivery + 126_000 cost-to-serve, being 3% of
-       the goods rather than the ₦100 flat fee this once asserted. */
+    /* 4_200_000 item + 200_000 delivery (one package, half the two-package
+       base) + 126_000 cost-to-serve, being 3% of the goods rather than the
+       ₦100 flat fee this once asserted. */
     expect(result.order.subtotal_kobo).toBe(4_200_000);
-    expect(result.order.total_kobo).toBe(4_726_000);
+    expect(result.order.total_kobo).toBe(4_526_000);
   });
 
   it("rejects an empty cart", async () => {

@@ -58,11 +58,11 @@ const BEANS = naira(55000);
 const PALM_OIL = naira(28000);
 
 describe("delivery fee", () => {
-  it("charges the zone base alone for one or two packages", () => {
+  it("charges the base per package: half for one, the full base for two", () => {
     expect(
       computeDeliveryFee({ zoneFeeKobo: KADUNA_SOUTH, packageCount: 1 })
         .deliveryFeeKobo,
-    ).toBe(naira(4000));
+    ).toBe(naira(2000));
 
     expect(
       computeDeliveryFee({ zoneFeeKobo: KADUNA_SOUTH, packageCount: 2 })
@@ -194,9 +194,9 @@ describe("order totals", () => {
     });
     const totals = computeOrderTotals(RICE, fee, 1);
 
-    expect(totals.deliveryFeeKobo).toBe(naira(4000));
+    expect(totals.deliveryFeeKobo).toBe(naira(2000));
     expect(totals.serviceFeeKobo).toBe(naira(1260));
-    expect(totals.totalKobo).toBe(naira(47260));
+    expect(totals.totalKobo).toBe(naira(45260));
     expect(totals.requiresIndividualQuote).toBe(false);
   });
 

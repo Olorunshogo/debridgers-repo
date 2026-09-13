@@ -106,6 +106,20 @@
       "when": 1789147186781,
       "tag": "0035_other_kaduna_lgas_zone",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1789202782413,
+      "tag": "0036_pale_chamber",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1789202800936,
+      "tag": "0037_charming_scorpion",
+      "breakpoints": true
     }
   ]
 }

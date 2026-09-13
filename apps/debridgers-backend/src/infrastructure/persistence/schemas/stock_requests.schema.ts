@@ -13,7 +13,6 @@ import { createInsertSchema } from "drizzle-zod";
 export const stockRequestStatusEnum = pgEnum("stock_request_status", [
   "pending",
   "fulfilled",
-  "cancelled",
 ]);
 
 /* `amount_to_remit` and `amount_remitted` are kobo; the remit price comes from remitPerPackageKobo. */

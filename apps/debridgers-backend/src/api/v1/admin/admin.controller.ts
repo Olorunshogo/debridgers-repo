@@ -77,6 +77,7 @@ import { ORDER_STATUSES } from "../../shared/order-status";
 
 const updateOrderStatusSchema = z.object({
   status: z.enum(ORDER_STATUSES),
+  reason: z.string().min(1).optional(),
 });
 const setDeliveryQuoteSchema = z.object({
   delivery_fee_kobo: z.number().int().min(0),
@@ -490,7 +491,12 @@ export class AdminController {
     dto: z.infer<typeof updateOrderStatusSchema>,
     @AdminId() adminId: number,
   ) {
-    return this.adminService.updateOrderStatus(id, dto.status, adminId);
+    return this.adminService.updateOrderStatus(
+      id,
+      dto.status,
+      adminId,
+      dto.reason,
+    );
   }
 
   @Patch("orders/:id/delivery-quote")
@@ -715,7 +721,7 @@ export class AdminController {
   @ApiQuery({
     name: "status",
     required: false,
-    enum: ["pending", "fulfilled", "cancelled"],
+    enum: ["pending", "fulfilled"],
   })
   @ApiResponse({
     status: 200,
@@ -741,9 +747,7 @@ export class AdminController {
       },
     },
   })
-  getStockRequests(
-    @Query("status") status?: "pending" | "fulfilled" | "cancelled",
-  ) {
+  getStockRequests(@Query("status") status?: "pending" | "fulfilled") {
     return this.adminService.getStockRequests(status);
   }
 

@@ -24,6 +24,8 @@ import {
   AgentPayoutTargetError,
 } from "./agent-payout-target.service";
 import { LedgerService } from "./ledger.service";
+import { AgentWalletService } from "../wallet/agent-wallet.service";
+import { resolveBuyerAppUrl } from "../../../infrastructure/config/app-url";
 
 @Injectable()
 export class PaymentService {
@@ -40,6 +42,7 @@ export class PaymentService {
     private readonly refundService: RefundService,
     private readonly payoutTargets: AgentPayoutTargetService,
     private readonly ledger: LedgerService,
+    private readonly wallet: AgentWalletService,
   ) {
     this.secretKey = this.config.get<string>("PaystackConfig.secretKey") ?? "";
   }
@@ -108,7 +111,7 @@ export class PaymentService {
     orderId: number;
     buyerId: number;
   }) {
-    const callbackUrl = `${this.config.get<string>("FRONTEND_URL") ?? "http://localhost:3000"}/buyer-dashboard/checkout`;
+    const callbackUrl = `${resolveBuyerAppUrl(this.config)}/buyer-dashboard/checkout`;
 
     const response = await fetch(`${this.baseUrl}/transaction/initialize`, {
       method: "POST",
@@ -375,15 +378,28 @@ export class PaymentService {
     };
 
     if (!data.status) {
-      await this.db
-        .update(schema.withdrawals)
-        .set({
-          status: "rejected",
-          rejection_reason: data.message ?? "Transfer API error",
-          processed_at: new Date(),
-          processed_by: adminId,
-        })
-        .where(eq(schema.withdrawals.id, withdrawalId));
+      /*
+       * "failed" (not "rejected"): rejection is an admin's deliberate call,
+       * this is a transfer that never went out. The wallet was already
+       * debited when the agent requested it, so that debit has to come back
+       * or a bad bank account / a transient Paystack error permanently
+       * erases the agent's balance with no way to get it back.
+       */
+      await this.db.transaction(async (tx) => {
+        await tx
+          .update(schema.withdrawals)
+          .set({
+            status: "failed",
+            error_message: data.message ?? "Transfer API error",
+            processed_at: new Date(),
+            processed_by: adminId,
+          })
+          .where(eq(schema.withdrawals.id, withdrawalId));
+
+        await this.wallet.refundAvailable(withdrawal.agent_id, amountKobo, tx, {
+          reference: `withdrawal_refund:${withdrawalId}`,
+        });
+      });
 
       throw new BadRequestException(
         `Transfer failed: ${data.message ?? "Unknown error"}`,

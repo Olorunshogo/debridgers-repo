@@ -194,6 +194,15 @@ export class AdminInviteService {
 
     const inv = invite[0];
 
+    if (inv.revoked_at !== null) {
+      throw new BadRequestException({
+        message: "Invite code has been revoked",
+        errors: [
+          { field: "invite_code", message: "Invite code has been revoked" },
+        ],
+      });
+    }
+
     if (inv.used_at !== null) {
       throw new BadRequestException({
         message: "Invite code has already been used",
@@ -231,6 +240,31 @@ export class AdminInviteService {
       .where(eq(adminInvites.id, inviteId));
   }
 
+  /* Super admin only, enforced by the controller. Revoking a used invite is a no-op past the fact - it is refused so the audit trail says why nothing changed. */
+  async revokeInvite(inviteId: number, superAdminId: number): Promise<void> {
+    const [invite] = await this.db
+      .select()
+      .from(adminInvites)
+      .where(eq(adminInvites.id, inviteId));
+
+    if (!invite) {
+      throw new BadRequestException("Invite not found");
+    }
+
+    if (invite.used_at !== null) {
+      throw new BadRequestException("Invite has already been used");
+    }
+
+    if (invite.revoked_at !== null) {
+      throw new BadRequestException("Invite has already been revoked");
+    }
+
+    await this.db
+      .update(adminInvites)
+      .set({ revoked_at: new Date(), revoked_by_admin_id: superAdminId })
+      .where(eq(adminInvites.id, inviteId));
+  }
+
   async listInvites(): Promise<(typeof adminInvites.$inferSelect)[]> {
     return await this.db
       .select()
@@ -258,6 +292,10 @@ export class AdminInviteService {
     }
 
     const inv = invite[0];
+
+    if (inv.revoked_at !== null) {
+      throw new BadRequestException("Invite code has been revoked");
+    }
 
     if (inv.used_at !== null) {
       throw new BadRequestException("Invite code has already been used");
@@ -291,6 +329,10 @@ export class AdminInviteService {
     }
 
     const inv = invite[0];
+
+    if (inv.revoked_at !== null) {
+      throw new BadRequestException("Invite code has been revoked");
+    }
 
     if (inv.used_at !== null) {
       throw new BadRequestException("Invite code has already been used");

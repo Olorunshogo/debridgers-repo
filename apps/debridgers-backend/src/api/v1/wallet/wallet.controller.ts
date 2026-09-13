@@ -22,6 +22,7 @@ import { CurrentUser } from "../../shared/decorators/current-user.decorator";
 import { JwtPayload } from "../../../interfaces/users/jwt.type";
 import { PaystackDvaService } from "../payment/paystack-dva.service";
 import { WithdrawalService } from "../payment/withdrawal.service";
+import { resolveBuyerAppUrl } from "../../../infrastructure/config/app-url";
 
 class DepositDto {
   @IsNumber()
@@ -167,9 +168,7 @@ export class WalletController {
     );
 
     // Call Paystack API to generate checkout URL
-    const frontendUrl =
-      this.config.get<string>("FRONTEND_URL") ?? "http://localhost:3000";
-    const callbackUrl = `${frontendUrl}/buyer-dashboard/wallet`;
+    const callbackUrl = `${resolveBuyerAppUrl(this.config)}/buyer-dashboard/wallet`;
 
     const paystackResponse = await fetch(
       `${this.baseUrl}/transaction/initialize`,

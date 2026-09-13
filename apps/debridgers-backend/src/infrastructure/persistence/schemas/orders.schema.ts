@@ -26,6 +26,7 @@ export const orderStatusEnum = pgEnum("order_status", [
   "pending",
   "confirmed",
   "out_for_delivery",
+  "delivery_failed",
   "delivered",
   "cancelled",
 ]);
@@ -87,6 +88,7 @@ export const orders = pgTable("orders", {
   status: orderStatusEnum().notNull().default("pending"),
   delivery_address: text().notNull(),
   cancellation_reason: text(),
+  delivery_failure_reason: text(),
   notes: text(),
   delivered_at: timestamp(),
   paystack_invoice_code: varchar("paystack_invoice_code", { length: 100 }),

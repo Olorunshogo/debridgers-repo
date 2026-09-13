@@ -14,7 +14,9 @@ import { createInsertSchema } from "drizzle-zod";
 export const withdrawalStatusEnum = pgEnum("withdrawal_status", [
   "pending",
   "approved",
+  "processing",
   "rejected",
+  "failed",
   "paid",
 ]);
 
@@ -32,6 +34,7 @@ export const withdrawals = pgTable("withdrawals", {
   payout_reference: varchar("payout_reference", { length: 100 }),
   status: withdrawalStatusEnum().notNull().default("pending"),
   rejection_reason: text(),
+  error_message: text(),
   processed_at: timestamp(),
   processed_by: integer().references(() => users.id, { onDelete: "set null" }),
   ...timestamps,

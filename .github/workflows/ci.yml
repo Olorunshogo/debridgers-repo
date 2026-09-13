@@ -27,6 +27,28 @@ jobs:
       # is the gate and they are only the fast feedback.
       - run: bash scripts/scan-backdoor.sh --all
 
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      # Full history, matching the backdoor scan above: a secret committed once
+      # and later deleted from tracking is still reachable in the object
+      # database, which is exactly the pattern this repo has hit before (TLS
+      # certs, a JWT, an encryption key, all committed then only git-rm'd).
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install gitleaks
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz | tar -xz gitleaks
+          sudo mv gitleaks /usr/local/bin/
+      # .gitleaks-baseline.json is today's findings: real ones already known
+      # (rotate and purge separately) and doc/script examples that are not
+      # secrets. The baseline exists so adopting this scan does not fail CI on
+      # 262 pre-existing hits - only a leak added after this baseline fails
+      # the build. Regenerate it deliberately, never to hide a new leak.
+      - run: gitleaks detect --source . --redact -v --baseline-path .gitleaks-baseline.json
+
   lint:
     name: Lint
     runs-on: ubuntu-latest

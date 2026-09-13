@@ -6,6 +6,7 @@ import {
   numeric,
   timestamp,
   date,
+  text,
 } from "drizzle-orm/pg-core";
 import { timestamps } from "../../helper/column.helper";
 import { users } from "./users.schema";
@@ -16,6 +17,7 @@ export const commissionStatusEnum = pgEnum("commission_status", [
   "pending",
   "confirmed",
   "paid",
+  "reversed",
 ]);
 
 /*
@@ -50,6 +52,8 @@ export const commissions = pgTable("commissions", {
   status: commissionStatusEnum().notNull().default("pending"),
   period: date(),
   paid_at: timestamp(),
+  reversed_at: timestamp(),
+  reversed_reason: text(),
   ...timestamps,
 });
 
