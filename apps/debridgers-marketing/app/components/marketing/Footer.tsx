@@ -12,6 +12,7 @@ import {
 import { ApiError, subscribeToNewsletter } from "@debridgers/api-client";
 
 import { marketingNavLinks } from "./data/data";
+import { dashboardAppUrl } from "../../utils/app-urls";
 // === Footer Woodmark component
 type FooterWordmarkProps = {
   position?: "top" | "bottom";
@@ -225,21 +226,39 @@ export default function Footer() {
               It comes back when there is a privacy document to point at, as /legal/privacy.
             */}
             {[
-              { label: "Terms", to: "/legal/buyer-terms" },
-              { label: "Contact", to: "/contact" },
+              { label: "Terms", to: "/legal/buyer-terms", external: false },
+              { label: "Contact", to: "/contact", external: false },
+              {
+                label: "Careers",
+                to: dashboardAppUrl("careers"),
+                external: true,
+              },
               {
                 label: "WhatsApp",
                 to: supportWhatsAppHref(),
+                external: true,
               },
-            ].map((link) => (
-              <Link
-                key={link.label}
-                to={link.to}
-                className="text-white transition-all duration-300 ease-in-out hover:text-white/80"
-              >
-                {link.label}
-              </Link>
-            ))}
+            ].map((link) =>
+              link.external ? (
+                <a
+                  key={link.label}
+                  href={link.to}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white transition-all duration-300 ease-in-out hover:text-white/80"
+                >
+                  {link.label}
+                </a>
+              ) : (
+                <Link
+                  key={link.label}
+                  to={link.to}
+                  className="text-white transition-all duration-300 ease-in-out hover:text-white/80"
+                >
+                  {link.label}
+                </Link>
+              ),
+            )}
           </div>
         </div>
       </div>

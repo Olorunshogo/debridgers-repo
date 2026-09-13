@@ -230,6 +230,16 @@ export function Header({
                 </NavLink>
               );
             })}
+            {/* Careers only: a separate app on its own subdomain,
+                not a route this app can NavLink to. */}
+            <a
+              href={dashboardAppUrl("careers")}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`font-open-sans p-2.5 text-sm font-semibold transition-colors duration-300 ease-in-out hover:opacity-70 ${linkColor}`}
+            >
+              Careers
+            </a>
           </nav>
 
           {/* Desktop CTA buttons */}
@@ -365,10 +375,11 @@ export function Header({
                         );
                       })}
                       {/* Careers only: a separate app on its own subdomain,
-                          not a route this app can NavLink to, and sidebar-only
-                          for now rather than in the desktop nav above. */}
+                          not a route this app can NavLink to. */}
                       <a
                         href={dashboardAppUrl("careers")}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="text-primary font-syne text-base font-semibold transition-all duration-300 ease-in-out hover:opacity-70"
                         onClick={closeMenu}
                       >

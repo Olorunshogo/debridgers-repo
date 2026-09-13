@@ -17,10 +17,10 @@ export interface MarketingNavLink {
 
 export const marketingNavLinks: readonly MarketingNavLink[] = [
   { label: "Home", href: "/" },
-  { label: "About", href: "/about" },
   { label: "Shop", href: "/shop" },
   // { label: "Agents", href: "/agents" },
   { label: "Contact Us", href: "/contact" },
+  { label: "About", href: "/about" },
 ];
 
 /*

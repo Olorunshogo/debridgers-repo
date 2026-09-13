@@ -1,12 +1,13 @@
-import { ShoppingBag, Bike, Users } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { dashboardAppUrl } from "../../utils/app-urls";
 
 /*
- * The public entry points marketing advertises.
+ * The public entry points marketing advertises as signup destinations.
  * Admin deliberately isn't here - its login/register URLs are unadvertised on purpose, matching the old routes.ts comment this replaces.
+ * Careers isn't here either - it's a public site of its own (careers.debridgers.com), linked directly from the Header/Footer rather than offered as a signup role.
  */
-export type PublicRole = "buyer" | "agent" | "careers";
+export type PublicRole = "buyer" | "agent";
 
 export interface PublicRoleOption {
   value: PublicRole;
@@ -22,18 +23,13 @@ export const PUBLIC_ROLES: readonly PublicRoleOption[] = [
     description: "Order fresh foodstuff at market prices, delivered to you.",
     icon: ShoppingBag,
   },
-  {
-    value: "agent",
-    label: "Agent",
-    description: "Sell in the field and earn commission.",
-    icon: Bike,
-  },
-  {
-    value: "careers",
-    label: "Careers",
-    description: "Apply for a role, or manage people and recruitment.",
-    icon: Users,
-  },
+  // Agent signup is off until agents are fully tested on our end.
+  // {
+  //   value: "agent",
+  //   label: "Agent",
+  //   description: "Sell in the field and earn commission.",
+  //   icon: Bike,
+  // },
 ];
 
 /*
