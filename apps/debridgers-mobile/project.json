@@ -1,0 +1,50 @@
+{
+  "name": "debridgers-mobile",
+  "root": "apps/debridgers-mobile",
+  "sourceRoot": "apps/debridgers-mobile/lib",
+  "projectType": "application",
+  "targets": {
+    "mobile-get": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter pub get",
+        "cwd": "apps/debridgers-mobile"
+      }
+    },
+    "mobile-analyze": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter analyze",
+        "cwd": "apps/debridgers-mobile"
+      }
+    },
+    "mobile-test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter test",
+        "cwd": "apps/debridgers-mobile"
+      }
+    },
+    "mobile-run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter run",
+        "cwd": "apps/debridgers-mobile"
+      }
+    },
+    "mobile-build-apk": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter build apk --dart-define=API_BASE_URL=$API_BASE_URL",
+        "cwd": "apps/debridgers-mobile"
+      }
+    },
+    "mobile-build-ios": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flutter build ios --dart-define=API_BASE_URL=$API_BASE_URL",
+        "cwd": "apps/debridgers-mobile"
+      }
+    }
+  }
+}
