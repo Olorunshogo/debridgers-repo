@@ -3,6 +3,15 @@ image: node:20
 definitions:
   caches:
     pnpm: ~/.pnpm-store
+  services:
+    postgres:
+      image: postgres:16-alpine
+      environment:
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: debridgers
+    redis:
+      image: redis:7-alpine
 
 pipelines:
   branches:
@@ -109,14 +118,3 @@ pipelines:
             - chmod 600 ~/.ssh/id_rsa
             - ssh-keyscan -H $PROD_SERVER_IP >> ~/.ssh/known_hosts
             - ssh root@$PROD_SERVER_IP "cd /opt/debridgers && git pull origin main && bash scripts/deploy.sh main"
-
-definitions:
-  services:
-    postgres:
-      image: postgres:16-alpine
-      environment:
-        POSTGRES_USER: postgres
-        POSTGRES_PASSWORD: postgres
-        POSTGRES_DB: debridgers
-    redis:
-      image: redis:7-alpine

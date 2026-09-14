@@ -86,7 +86,13 @@
     "scan:backdoor:staged": "bash scripts/scan-backdoor.sh --staged",
     "scan:machine": "bash scripts/scan-machine.sh",
     "dev:pricing": "pnpm --filter @debridgers/pricing dev",
-    "build:pricing": "pnpm --filter @debridgers/pricing build"
+    "build:pricing": "pnpm --filter @debridgers/pricing build",
+    "get:mobile": "nx mobile-get debridgers-mobile",
+    "dev:mobile": "nx mobile-run debridgers-mobile",
+    "analyze:mobile": "nx mobile-analyze debridgers-mobile",
+    "test:mobile": "nx mobile-test debridgers-mobile",
+    "build:mobile:apk": "nx mobile-build-apk debridgers-mobile",
+    "build:mobile:ios": "nx mobile-build-ios debridgers-mobile"
   },
   "devDependencies": {
     "@nx/eslint": "22.6.5",

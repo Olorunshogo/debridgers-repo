@@ -15,15 +15,12 @@ function LetterByLetterAnimation({
   duration,
   onComplete,
 }: LetterByLetterAnimationProps) {
-  const [visibleLetters, setVisibleLetters] = useState<string[]>([]);
-
   useEffect(() => {
     const letters = FULL_TEXT.split("");
     let currentIndex = 0;
 
     const interval = setInterval(() => {
       if (currentIndex < letters.length) {
-        setVisibleLetters((prev) => [...prev, letters[currentIndex]]);
         currentIndex++;
       } else {
         clearInterval(interval);
@@ -201,12 +198,8 @@ function HydrationProgressBar({ duration }: HydrationProgressBarProps) {
 }
 
 export function HydrationAnimationOverlay() {
-  const {
-    isHydrating,
-    isInitialLoad,
-    animationDuration,
-    prefersReducedMotion,
-  } = useHydrationAnimation();
+  const { isHydrating, animationDuration, prefersReducedMotion } =
+    useHydrationAnimation();
   const [stage, setStage] = useState<
     "letterByLetter" | "disappear" | "split" | "drop" | "complete"
   >("letterByLetter");
